@@ -107,8 +107,9 @@ var searchData=
   ['publish_5fplace_5fpose_104',['publish_place_pose',['../classfakes_1_1FakeArm.html#a5ed805a8db3a5aeff6044de32302007c',1,'fakes.FakeArm.publish_place_pose()'],['../classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a304d377709db6c0090bb27294643d826',1,'pick_and_place.robot.arm.RobotArm.publish_place_pose()']]],
   ['publish_5fposes_105',['publish_poses',['../classbase__detector__node_1_1BaseDetectorNode.html#a568a423765c335729bb62cd9ee418cb3',1,'base_detector_node::BaseDetectorNode']]],
   ['publish_5ftable_5fcustomer_5fimage_106',['publish_table_customer_image',['../classrestaurant__commands_1_1RESTAURANTCommands.html#ad3d4d63cde1a791b5e2621ed4a71ad6f',1,'restaurant_commands::RESTAURANTCommands']]],
-  ['publishhandlea_107',['PublishHandleA',['../classPublishHandleA.html#a4a615fbf5f5e86783bdd58099dbae332',1,'PublishHandleA']]],
-  ['publishnode_108',['PublishNode',['../classPublishNode.html#a76e851048520c14a6779d2e5d755b105',1,'PublishNode::PublishNode()'],['../classPublishNode.html#a76e851048520c14a6779d2e5d755b105',1,'PublishNode::PublishNode()']]],
-  ['push_5fundo_109',['push_undo',['../classmap__area__tagger_1_1MapCanvas.html#a306e939ab3ded6c538ef51dbe4d36530',1,'map_area_tagger::MapCanvas']]],
-  ['pytest_5freport_5fheader_110',['pytest_report_header',['../namespaceconftest.html#af2f6c5c0884b3b74d52c04c93a902143',1,'conftest']]]
+  ['publish_5ftwist_107',['publish_twist',['../classtest__navigation__manager_1_1TestNavigationManager.html#a8055a1030211add0dc6b246b240be94b',1,'test_navigation_manager::TestNavigationManager']]],
+  ['publishhandlea_108',['PublishHandleA',['../classPublishHandleA.html#a4a615fbf5f5e86783bdd58099dbae332',1,'PublishHandleA']]],
+  ['publishnode_109',['PublishNode',['../classPublishNode.html#a76e851048520c14a6779d2e5d755b105',1,'PublishNode::PublishNode()'],['../classPublishNode.html#a76e851048520c14a6779d2e5d755b105',1,'PublishNode::PublishNode()']]],
+  ['push_5fundo_110',['push_undo',['../classmap__area__tagger_1_1MapCanvas.html#a306e939ab3ded6c538ef51dbe4d36530',1,'map_area_tagger::MapCanvas']]],
+  ['pytest_5freport_5fheader_111',['pytest_report_header',['../namespaceconftest.html#af2f6c5c0884b3b74d52c04c93a902143',1,'conftest']]]
 ];

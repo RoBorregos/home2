@@ -294,6 +294,34 @@ Example service calls</h2>
 <div class="line">ros2 service call /navigation/follow_person std_srvs/srv/SetBool &quot;{data: true}&quot;</div>
 <div class="line">ros2 service call /navigation/follow_person std_srvs/srv/SetBool &quot;{data: false}&quot;</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md149"></a>
+Testing</h1>
+<p><a href="../task_manager/scripts/test/test_navigation_manager.py"><code>task_manager/scripts/test/test_navigation_manager.py</code></a> first checks the basics — ODrive axis errors and states, bus voltage, the merged <code>/scan</code>, the <code>map -&gt; base_link</code> TF and the <code><a class="el" href="namespacenav__central.html">nav_central</a></code> services — and then runs the <code>NavigationTasks</code> functions, which do move the robot.</p>
+<div class="fragment"><div class="line">ros2 run task_manager test_navigation_manager.py</div>
+</div><!-- fragment --><p>Failures print the reason, and the values read (voltages, axis states, scan quality, how far <code>Explore Zone</code> moved and how close <code>Return to Origin</code> stopped) are listed at the end. <code>Explore Zone</code> fails if the robot reports the goal reached without advancing at least 0.5 m of its 1 m step.</p>
+<p><code>wheels:=true</code> spins the base in place while reading <code>/odrive/vel_est</code>, so it reports any wheel that does not turn or that turns the wrong way. It needs a clear floor and only <code><a class="el" href="omni__basics_8launch_8py.html">omni_basics.launch.py</a></code>:</p>
+<div class="fragment"><div class="line">ros2 run task_manager test_navigation_manager.py --ros-args -p wheels:=true</div>
+</div><!-- fragment --><p>In the Gazebo sim (<code>./run.sh simulation --nav</code>, see `simulation/frida_gz_sim`) there is no ODrive, so <code>sim:=true</code> skips the motor, voltage and wheel checks:</p>
+<div class="fragment"><div class="line">./run.sh simulation   # shell in the sim container</div>
+<div class="line">ros2 run task_manager test_navigation_manager.py --ros-args -p sim:=true</div>
+</div><!-- fragment --><table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Parameter   </th><th class="markdownTableHeadNone">Default   </th><th class="markdownTableHeadNone"></th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>basics</code>   </td><td class="markdownTableBodyNone"><code>true</code>   </td><td class="markdownTableBodyNone">Run the base/lidar/TF/service checks    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>sim</code>   </td><td class="markdownTableBodyNone"><code>false</code>   </td><td class="markdownTableBodyNone">Gazebo sim: skip the ODrive motor, voltage and wheel checks    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>wheels</code>   </td><td class="markdownTableBodyNone"><code>false</code>   </td><td class="markdownTableBodyNone">Spin the base to test each wheel    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>dock</code>   </td><td class="markdownTableBodyNone"><code>false</code>   </td><td class="markdownTableBodyNone">Include <code>dock_table</code>    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>mocked</code>   </td><td class="markdownTableBodyNone"><code>false</code>   </td><td class="markdownTableBodyNone">Use the subtask manager mocks, skips the basics    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>clear_logs</code>   </td><td class="markdownTableBodyNone"><code>true</code>   </td><td class="markdownTableBodyNone">Hide the ROS logs while each test runs    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>cmd_vel_topic</code> / <code>stamped_cmd_vel</code>   </td><td class="markdownTableBodyNone"><code>/cmd_vel</code> / <code>true</code>   </td><td class="markdownTableBodyNone">Where the base listens and whether it expects <code>TwistStamped</code>   </td></tr>
+</table>
+<h1><a class="anchor" id="autotoc_md150"></a>
 Nav_ui — live monitor &amp; control panel</h1>
 <p><code><a class="el" href="nav__ui_8py.html">nav_ui.py</a></code> (launched automatically with mapping / general navigation) is the Qt panel used on the field. It renders the map, robot pose, costmaps and planned trajectories, and lets the operator:</p>
 <ul>
@@ -301,7 +329,7 @@ Nav_ui — live monitor &amp; control panel</h1>
 <li>Send goals, change the active map, save maps, resume paused navigation.</li>
 <li>Trigger docking with a configurable offset.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md150"></a>
+<h1><a class="anchor" id="autotoc_md151"></a>
 Robot bases</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -309,7 +337,7 @@ Robot bases</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>omnidriver</code>   </td><td class="markdownTableBodyNone">Holonomic ODrive base   </td><td class="markdownTableBodyNone">Current   </td><td class="markdownTableBodyNone"><code>odrive_serial_twist</code> (cmd_vel → wheels), <code>odrive_dashboard</code> web dashboard, <code>simple_rx</code>   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md151"></a>
+<h1><a class="anchor" id="autotoc_md152"></a>
 External repositories</h1>
 <ul>
 <li><b>Dashgo base driver &amp; launch files</b>: Moved to <a href="https://github.com/RoBorregos/Dashgo.git">RoBorregos/Dashgo</a> </li>
