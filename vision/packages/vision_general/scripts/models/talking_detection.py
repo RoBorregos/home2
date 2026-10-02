@@ -83,8 +83,6 @@ class TalkingDetector:
 
     def update_landmarks(self, landmarks) -> bool:
         if landmarks is None:
-            # Drop history so a face that reappears starts from a clean window
-            # instead of inheriting the previous face's mouth movement.
             self.ratio_buffer.clear()
             self.raw_ratio_buffer.clear()
             self._step_debounce(False)
