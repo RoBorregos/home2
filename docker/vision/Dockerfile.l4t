@@ -40,8 +40,6 @@ RUN pip install \
     ultralytics-thop && \
     pip install --no-deps insightface==1.0.1 ultralytics==8.4.19
 
-# mediapipe (talking detection). --no-deps keeps its numpy<2 / protobuf<5 /
-# opencv-contrib-python requirements from replacing the pinned base builds.
 RUN pip install absl-py attrs flatbuffers sounddevice sentencepiece && \
     pip install --no-deps mediapipe==0.10.18
 
