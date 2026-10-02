@@ -13,9 +13,9 @@ import torch.nn.functional as F
 from embedding_gallery.core.image_embedder import ImageEmbedder
 from embedding_gallery.core.gallery_matcher import UNKNOWN
 
-from lib.dataset import DATA_DIR, REJECTION_TARGET, RESULTS_DIR
-from lib.embed import embed_gallery_photos, embed_labeled_dir, embed_unlabeled_dir
-from lib.metrics import build_gallery, optimize_global
+from core.dataset import DATA_DIR, REJECTION_TARGET, RESULTS_DIR
+from core.embed import embed_gallery_photos, embed_labeled_dir, embed_unlabeled_dir
+from core.metrics import build_gallery, optimize_global
 
 # This experiment keeps the original, stricter recall bar (the benchmark's
 # gate is 0.80) and scores ungated recall (no excluded classes).

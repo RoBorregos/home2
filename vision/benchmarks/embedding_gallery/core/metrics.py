@@ -9,7 +9,7 @@ from collections.abc import Iterable
 import numpy as np
 from embedding_gallery.core.gallery_matcher import UNKNOWN, Gallery
 
-from lib.dataset import (
+from core.dataset import (
     KNOWN_LIMITATION_CLASSES,
     MARGIN_GRID,
     RECALL_TARGET,

@@ -7,16 +7,16 @@ from pathlib import Path
 import numpy as np
 from embedding_gallery.core.image_embedder import ImageEmbedder
 
-from lib.dataset import (
+from core.dataset import (
     DATA_DIR,
     E2E_CACHE_PATH,
     OUT_OF_GALLERY_CLASSES,
     load_translation,
     require_dir,
 )
-from lib.metrics import match_gt_to_boxes
-from lib.prepare_dataset import iter_split, load_class_names
-from lib.proposers import make_box_proposer
+from core.metrics import match_gt_to_boxes
+from core.prepare_dataset import iter_split, load_class_names
+from core.proposers import make_box_proposer
 
 
 def _load_images(paths: list[Path]):

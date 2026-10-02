@@ -35,7 +35,7 @@ The two phases share only the files `gallery_build.py` writes and `EmbeddingMode
 
 ## Results
 
-Benchmarked on `RCW2026_v2` (the training set behind `robocup2026_v1.pt`; 28 raw classes → 26 published after `robocup2026_translation.json`). `lib/prepare_dataset.py` in the benchmark folder slices it into `data/`.
+Benchmarked on `RCW2026_v2` (the training set behind `robocup2026_v1.pt`; 28 raw classes → 26 published after `robocup2026_translation.json`). `core/prepare_dataset.py` in the benchmark folder slices it into `data/`.
 
 **Phase 0: box proposer** (IoU 0.5, 25 held-out images / 104 boxes):
 
@@ -76,7 +76,7 @@ The ArcFace head (`experiments/finetune_arcface.py` → `results/arcface_head.pt
 
 ## Acceptance gate
 
-The original target (recall@1 ≥ 90%, rejection ≥ 80%) was not reached with a frozen backbone. The adjusted gate is **recall@1 ≥ 80%, rejection ≥ 80%**, excluding classes that are only confused with each other and are already handled by `yolo_finetuned`: cutlery (fork/knife/spoon), kitchenware (cup/bowl/plate), cans (coke/red_bull). Other weak classes (e.g. `milk`, ~37%) are not excluded. The numbers live in the benchmark's `lib/dataset.py` (`RECALL_TARGET`, `REJECTION_TARGET`) and `dataset_config.json` (`known_limitation_classes`).
+The original target (recall@1 ≥ 90%, rejection ≥ 80%) was not reached with a frozen backbone. The adjusted gate is **recall@1 ≥ 80%, rejection ≥ 80%**, excluding classes that are only confused with each other and are already handled by `yolo_finetuned`: cutlery (fork/knife/spoon), kitchenware (cup/bowl/plate), cans (coke/red_bull). Other weak classes (e.g. `milk`, ~37%) are not excluded. The numbers live in the benchmark's `core/dataset.py` (`RECALL_TARGET`, `REJECTION_TARGET`) and `dataset_config.json` (`known_limitation_classes`).
 
 **Caveat:** all `RCW2026_v2` images come from one capture session, so `held_out/` is a different-*frame* split, not a different-*session* split. Treat the numbers as optimistic (same backdrop and lighting as the gallery); a perceptual-hash check found ~3% train/test frame overlap.
 

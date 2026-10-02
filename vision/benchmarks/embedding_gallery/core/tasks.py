@@ -2,7 +2,7 @@
 """Benchmark tasks (boxes, embeddings, e2e_eval, e2e_calibrate) and their TASK_REGISTRY.
 
 Each task's `run(**kwargs)` returns a plain dict; report.py prints and saves it.
-run.sh calls `python3 tasks.py <task> [options]`; unset options use each task's defaults.
+run.sh calls `python3 -m core.tasks <task> [options]`; unset options use each task's defaults.
 """
 
 import argparse
@@ -17,7 +17,7 @@ from embedding_gallery.core.gallery_matcher import (
     UNKNOWN,
 )
 
-from lib.dataset import (
+from core.dataset import (
     DATA_DIR,
     E2E_CACHE_PATH,
     MODELS_PATH,
@@ -27,7 +27,7 @@ from lib.dataset import (
     RESULTS_DIR,
     require_dir,
 )
-from lib.embed import (
+from core.embed import (
     clip_proposals,
     collect_real_crops,
     embed_gallery_photos,
@@ -37,7 +37,7 @@ from lib.embed import (
     sample_images,
     split_ground_truth,
 )
-from lib.metrics import (
+from core.metrics import (
     build_gallery,
     gated_recall,
     iou,
@@ -46,13 +46,13 @@ from lib.metrics import (
     optimize_per_class,
     score_thresholds,
 )
-from lib.proposers import (
+from core.proposers import (
     make_box_proposer,
     make_yolo_agnostic_proposer,
     make_yoloe_proposer,
     masked_crop,
 )
-from report import report
+from core.report import report
 
 DEFAULT_BACKBONE = "vit_base_patch14_dinov2.lvd142m"
 

@@ -3,8 +3,8 @@
 Benchmark behind the few-shot object recognition in `ObjectDetect2D` (objects added
 from photos, no retraining). It chose the box proposer and the DINOv2 backbone and
 calibrated the match thresholds. Same shape as `hri/benchmarks/{nlp,stt}/`: `run.sh` →
-`tasks.py` (task registry) → `report.py` (tables and JSON), with `models.json` as the
-registry.
+`core/tasks.py` (task registry) → `core/report.py` (tables and JSON), with `models.json` as
+the registry.
 
 - **Want to add an object to the robot?** That is not this folder: see
   [Adding an object to the gallery](../../README.md#adding-an-object-to-the-gallery-few-shot)
@@ -73,13 +73,13 @@ they are several times slower.
 | File | Role |
 |---|---|
 | `run.sh` | Entry point: picks Python, sets `PYTHONPATH`, runs tasks |
-| `tasks.py` | `TASK_REGISTRY`: `boxes`, `embeddings`, `e2e_eval`, `e2e_calibrate` |
-| `report.py` | Terminal tables and `results/*.json` |
-| `lib/metrics.py` | IoU, gated recall, rejection, global / per-class threshold search |
-| `lib/embed.py` | Embeds `data/` crops and real proposer crops (+ crop cache) |
-| `lib/proposers.py` | Production box proposer and the Phase 0 candidates |
-| `lib/dataset.py` | Paths, gate targets, `dataset_config.json` loader |
-| `lib/prepare_dataset.py` | YOLO-seg export → `data/` |
+| `core/tasks.py` | Entry point run by `run.sh`; `TASK_REGISTRY`: `boxes`, `embeddings`, `e2e_eval`, `e2e_calibrate` |
+| `core/report.py` | Terminal tables and `results/*.json`; `tasks.py` calls it after each task |
+| `core/metrics.py` | IoU, gated recall, rejection, global / per-class threshold search |
+| `core/embed.py` | Embeds `data/` crops and real proposer crops (+ crop cache) |
+| `core/proposers.py` | Production box proposer and the Phase 0 candidates |
+| `core/dataset.py` | Paths, gate targets, `dataset_config.json` loader |
+| `core/prepare_dataset.py` | YOLO-seg export → `data/` |
 | `experiments/` | Optional fine-tunes (`finetune_head`, `finetune_arcface`) |
 
 ## Configuration

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from lib.dataset import (
+from core.dataset import (
     DATA_DIR,
     HARD_NEGATIVE_CLASSES,
     OUT_OF_GALLERY_CLASSES,
@@ -119,8 +119,7 @@ def save_crop(img_path: Path, bbox: list[int], out_path: Path):
 
 
 def _reset_dir(out_dir: Path):
-    """Wipe out_dir before rebuilding — report.py/box_recall_eval.py discover
-    content by directory listing, not a manifest, so a stale leftover dir would silently count as gallery content forever."""
+    """Wipe out_dir before rebuilding: the tasks read it by directory listing, so stale files would count."""
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

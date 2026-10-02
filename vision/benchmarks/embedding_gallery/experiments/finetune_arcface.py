@@ -13,11 +13,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from lib.dataset import E2E_CACHE_PATH as TEST_CACHE_PATH
-from lib.dataset import E2E_TRAIN_CACHE_PATH as TRAIN_CACHE_PATH
-from lib.dataset import RESULTS_DIR
-from lib.embed import collect_real_crops, load_cached_crops
-from lib.metrics import optimize_global, optimize_per_class
+from core.dataset import E2E_CACHE_PATH as TEST_CACHE_PATH
+from core.dataset import E2E_TRAIN_CACHE_PATH as TRAIN_CACHE_PATH
+from core.dataset import RESULTS_DIR
+from core.embed import collect_real_crops, load_cached_crops
+from core.metrics import optimize_global, optimize_per_class
 
 
 class ArcFaceHead(nn.Module):

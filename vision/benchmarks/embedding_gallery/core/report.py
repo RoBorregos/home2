@@ -9,7 +9,7 @@ from pathlib import Path
 
 from embedding_gallery.core.gallery_matcher import UNKNOWN
 
-from lib.dataset import (
+from core.dataset import (
     KNOWN_LIMITATION_CLASSES,
     OUT_OF_GALLERY_CLASSES,
     RESULTS_DIR,
