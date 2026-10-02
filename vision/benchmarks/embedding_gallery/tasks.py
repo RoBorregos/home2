@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
-"""Benchmark tasks and their registry.
+"""Benchmark tasks (boxes, embeddings, e2e_eval, e2e_calibrate) and their TASK_REGISTRY.
 
-Each task is a class with a classmethod `run(**kwargs) -> dict` that computes
-and returns a plain result dict; printing and JSON output live in report.py.
-run.sh invokes this file as `python3 tasks.py <task> [options]`; unset
-options fall back to each task's own defaults.
-
-Tasks:
-  boxes          Phase 0: box-proposer recall (models.json: box_proposers).
-  embeddings     Phase 1: backbone comparison (models.json: backbones).
-  e2e_eval       Recall/rejection using the production proposer's real crops.
-  e2e_calibrate  Per-class threshold calibration on real proposer crops.
+Each task's `run(**kwargs)` returns a plain dict; report.py prints and saves it.
+run.sh calls `python3 tasks.py <task> [options]`; unset options use each task's defaults.
 """
 
 import argparse
@@ -19,7 +11,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from embedding_gallery.backbone import EmbeddingBackbone
+from embedding_gallery.image_embedder import ImageEmbedder
 from embedding_gallery.gallery_matcher import (
     DEFAULT_MARGIN_MIN,
     DEFAULT_MIN_SIMILARITY,
@@ -66,11 +58,9 @@ DEFAULT_BACKBONE = "vit_base_patch14_dinov2.lvd142m"
 
 
 class BoxesTask:
-    """Phase 0: box recall of candidate class-agnostic proposers.
+    """Phase 0: box recall of the candidate class-agnostic proposers.
 
-    If nothing clears the recall bar here, stop and escalate instead of
-    building Phase 1-3 on an unvalidated assumption. Ground truth is one
-    annotations.json per data dir (pixel-space boxes).
+    If none clears the recall bar, stop and escalate before building on it.
     """
 
     name = "boxes"
@@ -211,7 +201,7 @@ class EmbeddingsTask:
             f"{f', img_size={img_size}' if img_size else ''}) "
             "- embedding all crops once..."
         )
-        backbone = EmbeddingBackbone(backbone_id, img_size=img_size).load()
+        backbone = ImageEmbedder(backbone_id, img_size=img_size).load()
 
         gallery_embeddings = embed_gallery_photos(backbone)
         if not gallery_embeddings:
@@ -299,10 +289,9 @@ class EmbeddingsTask:
 
 
 class E2EEvalTask:
-    """Recall using the production box proposer's own crops, not report's
-    ground-truth crops. Real boxes dragged in clutter dropped recall from
-    ~82% oracle to 71.6%; also compares plain-bbox vs. mask-blanked-background
-    variants to test a fix.
+    """Recall with the production proposer's real crops instead of ground-truth ones.
+
+    Also compares plain-bbox crops against mask-blanked-background crops.
     """
 
     name = "e2e_eval"
@@ -329,7 +318,7 @@ class E2EEvalTask:
         translation = load_translation()
 
         print("[e2e] loading gallery (data/gallery_photos/, already built)...")
-        bb = EmbeddingBackbone(backbone).load()
+        bb = ImageEmbedder(backbone).load()
         gallery_embeddings = embed_gallery_photos(bb)
         gallery = build_gallery(
             gallery_embeddings,

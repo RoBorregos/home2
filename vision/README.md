@@ -52,7 +52,7 @@ home2/
 │   │       │   ├── embedding.py           # @register("embedding") — few-shot object gallery
 │   │       │   └── robocup2026_translation.json     # Raw label -> published label
 │   │       └── embedding_gallery/         # Few-shot object gallery tooling (see its README)
-│   │           ├── backbone.py            # DINOv2 embedding backbone (PyTorch / TensorRT)
+│   │           ├── image_embedder.py      # Frozen DINOv2 image embedder (PyTorch / TensorRT)
 │   │           ├── gallery_matcher.py     # Cosine matching against the per-object gallery
 │   │           ├── gallery_build.py       # Builds one gallery entry from photos
 │   │           └── add_object.sh          # One-command "add an object" wrapper

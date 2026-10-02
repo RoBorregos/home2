@@ -16,7 +16,7 @@ page holds the background and the production workflow.
 
 ![Setup and runtime flow for the embedding gallery](embedding_gallery_process.png)
 
-`add_object.sh`, `gallery_build.py`, `backbone.py` and `gallery_matcher.py` live in this folder. `embedding.py`, `yolo_e.py` and `registry.py` stay in `../detectors/` (the node's plugin layer: `EmbeddingModel` is the only `DetectorModel` here), and `fetch_models.py` is `vision/scripts/fetch_models.py`.
+`add_object.sh`, `gallery_build.py`, `image_embedder.py`, `gallery_matcher.py` and `constants.py` live in this folder. `embedding.py`, `yolo_e.py` and `registry.py` stay in `../detectors/` (the node's plugin layer: `EmbeddingModel` is the only `DetectorModel` here), and `fetch_models.py` is `vision/scripts/fetch_models.py`.
 
 | File | Role |
 |---|---|
@@ -25,7 +25,7 @@ page holds the background and the production workflow.
 | `fetch_models.py` | `sync_gallery()` copies the freshly-built gallery into every `detectors/` directory found (source, `install/`, other checkouts) — without this, a node reading a different copy never sees the new object. |
 | `embedding.py` | `EmbeddingModel` — the runtime detector. Calls the box proposer, applies the `max_box_area_frac` clutter filter, batches the backbone forward pass, and turns matches into `Detection`s. |
 | `yolo_e.py` | `YoloEModel` — wraps YOLOE in prompt-free mode as the class-agnostic box proposer. |
-| `backbone.py` | `EmbeddingBackbone` — loads the frozen DINOv2 ViT-B/14 (TensorRT-accelerated) and embeds a batch of crops. |
+| `image_embedder.py` | `ImageEmbedder` — loads the frozen DINOv2 ViT-B/14 (TensorRT-accelerated) and embeds a batch of crops. |
 | `gallery_matcher.py` | `Gallery` — cosine similarity against the gallery with a per-class floor + top1-vs-top2 margin; also owns `DEFAULT_MAX_BOX_AREA_FRAC`. |
 | `registry.py` | Wires `embedding_gallery` in `MODEL_CONFIGS`, loaded by the node at startup. |
 

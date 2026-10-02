@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from embedding_gallery.backbone import EmbeddingBackbone
+from embedding_gallery.image_embedder import ImageEmbedder
 from embedding_gallery.gallery_matcher import UNKNOWN
 
 from lib.dataset import DATA_DIR, REJECTION_TARGET, RESULTS_DIR
@@ -232,7 +232,7 @@ def main():
     args = parser.parse_args()
 
     print("[finetune] embedding all crops with the frozen backbone...")
-    backbone = EmbeddingBackbone(args.backbone).load()
+    backbone = ImageEmbedder(args.backbone).load()
     gallery_raw = embed_gallery_photos(backbone)
     held_out_files, held_out_labels, held_out_raw = embed_labeled_dir(
         backbone, DATA_DIR / "held_out"

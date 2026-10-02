@@ -1,28 +1,8 @@
 #!/usr/bin/env python3
-"""Fetch every vision model weight up front; optionally pre-build TRT engines.
+"""Fetch every vision weight up front so the stack works offline; --warmup also builds TRT engines.
 
-Run INSIDE the vision container (needs ultralytics; insightface for --warmup):
-
-    python3 /workspace/src/vision/scripts/fetch_models.py            # fetch only
-    python3 /workspace/src/vision/scripts/fetch_models.py --warmup   # + TRT export
-    ./run.sh vision --warmup                                         # from the host
-
-Why: `.pt` weights are gitignored and download lazily from the internet on each
-node's first run, followed by minutes of TensorRT export — on competition day,
-with no internet, a fresh container simply breaks. This script makes the stack
-offline-safe: standard weights land in TENSORRT_CACHE_DIR (a persistent mount
-that `load_yolo_trt` already checks), detector weights land next to
-`detectors/registry.py`, and --warmup pre-builds every TRT engine for THIS
-device (engines are device- and TRT-version-specific — never copy them between
-the laptop and the Orin). A MANIFEST.json with sha256 hashes is kept alongside
-the weights for integrity checks.
-
-Also fetches the embedding-gallery detector's dependencies: the DINOv2
-backbone (HF_MODELS, cached under TENSORRT_CACHE_DIR/hf_cache since it isn't
-a single ultralytics asset) and the few-shot object gallery itself
-(sync_gallery() — build it once with gallery_build.py into
-TENSORRT_CACHE_DIR/gallery, this script copies it beside every
-detectors/registry.py found, same as the .pt weights).
+Run inside the vision container (./run.sh vision --warmup); engines are device-specific, never copy them.
+Also fetches the DINOv2 weights and syncs the embedding gallery beside every detectors/registry.py.
 """
 
 import argparse
@@ -66,10 +46,8 @@ DETECTOR_MODELS = [
     "robocup2026_v1.pt",
 ]
 
-# HF-hub-hosted models (not a single ultralytics asset) — e.g. the DINOv2
-# backbone for the embedding-gallery detector. Verified by presence (a
-# successful load), not a single-file sha256: HF Hub artifacts are
-# multi-file (config.json, model.safetensors, ...).
+# HF-hub models (the DINOv2 embedder). Multi-file artifacts, so they are checked
+# by a successful load rather than a sha256.
 HF_MODELS = ["vit_base_patch14_dinov2.lvd142m"]
 
 
@@ -155,10 +133,9 @@ def sync_detector_models(dest: Path):
 
 
 def fetch_hf_models(dest: Path) -> list[str]:
-    """Pre-download timm/HF-hub-hosted models into a persistent cache beside
-    the TensorRT cache, so they survive container rebuilds and don't need
-    internet on competition day (same offline-safety goal as STANDARD_MODELS,
-    different download mechanism)."""
+    """Pre-download HF-hub models into hf_cache beside the TensorRT cache.
+
+    The cache is a persistent mount, so the models work offline on competition day."""
     hf_cache = dest / "hf_cache"
     hf_cache.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("HF_HOME", str(hf_cache))
@@ -182,12 +159,10 @@ def fetch_hf_models(dest: Path) -> list[str]:
 
 
 def sync_gallery(dest: Path):
-    """Copy the embedding gallery (built by gallery_build.py into
-    weights_dir()/gallery) beside every detectors/registry.py found.
-    Unlike sync_detector_models()'s copy-if-missing, this overwrites files
-    that are newer at the source: the gallery is expected to change during
-    setup day as objects get re-shot or added, unlike the static competition
-    YOLO weights."""
+    """Copy the built gallery (weights_dir()/gallery) beside every detectors/registry.py.
+
+    Unlike the weights, it overwrites files that are newer at the source: objects
+    change during setup day."""
     src = dest / GALLERY_DIRNAME
     if not src.is_dir():
         return
@@ -219,22 +194,21 @@ def warmup(dest: Path):
         import numpy as np
 
         from detectors.registry import MODEL_CONFIGS
-        from embedding_gallery.backbone import EmbeddingBackbone
+        from embedding_gallery.image_embedder import ImageEmbedder
 
-        # Match production's actual config (registry.py), not the class
-        # default — otherwise this warms up plain PyTorch while production
-        # runs TensorRT, and the real engine still builds lazily (several
-        # minutes) on the node's first live frame despite --warmup.
+        # Use production's config (registry.py), not the class default: otherwise
+        # this warms up PyTorch while production runs TensorRT, and the engine is
+        # built on the node's first frame anyway.
         use_trt = MODEL_CONFIGS.get("embedding_gallery", {}).get("use_trt", True)
         for name in HF_MODELS:
             print(
                 f"[warmup] forcing kernel compilation for {name} (use_trt={use_trt}) ..."
             )
-            backbone = EmbeddingBackbone(name, use_trt=use_trt).load()
+            embedder = ImageEmbedder(name, use_trt=use_trt).load()
             from PIL import Image
 
             dummy = Image.fromarray(np.zeros((224, 224, 3), dtype=np.uint8))
-            backbone.embed_batch([dummy])
+            embedder.embed_batch([dummy])
         print("[warmup] embedding backbone(s) ready")
     except Exception as e:
         print(f"[warmup] embedding backbone warmup skipped: {e}")

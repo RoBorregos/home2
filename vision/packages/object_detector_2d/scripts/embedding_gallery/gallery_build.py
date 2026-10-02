@@ -2,7 +2,7 @@
 """Build gallery entries from photos: one folder per object under gallery_photos/.
 
 Each photo is cropped to its main object with the production box proposer, the
-crops are embedded with the production backbone and saved as <object>.npy, and
+crops are embedded with the production embedding model and saved as <object>.npy, and
 manifest.json is updated. Run it through add_object.sh.
 
     gallery_build.py <object> [<object> ...] [--no-crop]
@@ -18,7 +18,7 @@ import numpy as np
 from detectors.registry import MODEL_CONFIGS, ModelRegistry
 from PIL import Image
 
-from embedding_gallery.backbone import EmbeddingBackbone
+from embedding_gallery.image_embedder import ImageEmbedder
 from embedding_gallery.constants import (
     CROPS_DIRNAME,
     GALLERY_DIRNAME,
@@ -40,8 +40,8 @@ RECOMMENDED_MAX_PHOTOS = 30
 PHOTOS_DIR = Path(__file__).resolve().parent / PHOTOS_DIRNAME
 
 # Every object in one gallery must share the embedding dimension, so the
-# backbone is always production's (registry.py), never a CLI option.
-BACKBONE_ID = MODEL_CONFIGS["embedding_gallery"]["backbone"]
+# model is always production's (registry.py), never a CLI option.
+MODEL_ID = MODEL_CONFIGS["embedding_gallery"]["backbone"]
 
 
 class BuildError(Exception):
@@ -138,7 +138,7 @@ def crop_photos(
 
 def build_object(
     object_name: str,
-    backbone: EmbeddingBackbone,
+    embedder: ImageEmbedder,
     proposer,
     max_area_frac: float,
     out_dir: Path,
@@ -166,7 +166,7 @@ def build_object(
     else:
         crops = [Image.open(p).convert("RGB") for p in paths]
 
-    vectors = l2_normalize(backbone.embed_batch(crops))
+    vectors = l2_normalize(embedder.embed_batch(crops))
 
     # Check the dimension against the other objects BEFORE writing anything.
     manifest_path = out_dir / MANIFEST_NAME
@@ -192,7 +192,7 @@ def build_object(
     objects[object_name] = {
         "npy": npy_name,
         "num_photos": len(paths),
-        "backbone": BACKBONE_ID,
+        "backbone": MODEL_ID,
         # Keep hand-tuned thresholds across rebuilds; seed new objects with the
         # calibrated defaults.
         "min_similarity": previous.get("min_similarity", DEFAULT_MIN_SIMILARITY),
@@ -231,13 +231,13 @@ def main() -> int:
 
     crop = not args.no_crop
     proposer, max_area_frac = load_box_proposer() if crop else (None, None)
-    backbone = EmbeddingBackbone(BACKBONE_ID).load()
+    embedder = ImageEmbedder(MODEL_ID).load()
     out_dir = gallery_dir()
 
     failures = {}
     for name in names:
         try:
-            build_object(name, backbone, proposer, max_area_frac, out_dir, crop)
+            build_object(name, embedder, proposer, max_area_frac, out_dir, crop)
         except BuildError as e:
             print(f"[gallery_build] FAILED {name}: {e}")
             failures[name] = str(e)

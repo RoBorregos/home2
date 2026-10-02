@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 import numpy as np
-from embedding_gallery.backbone import EmbeddingBackbone
+from embedding_gallery.image_embedder import ImageEmbedder
 
 from lib.dataset import (
     DATA_DIR,
@@ -91,7 +91,7 @@ def collect_real_crops(
     translation = load_translation()
 
     print("[calib] loading gallery (data/gallery_photos/, clean enrollment crops)...")
-    backbone = EmbeddingBackbone(backbone_id).load()
+    backbone = ImageEmbedder(backbone_id).load()
     gallery_embeddings = embed_gallery_photos(backbone)
     gallery_labels = set(gallery_embeddings)
     # Derived from the backbone's output, not hardcoded: a different
