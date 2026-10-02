@@ -257,6 +257,49 @@ ros2 service call /navigation/follow_person std_srvs/srv/SetBool "{data: true}"
 ros2 service call /navigation/follow_person std_srvs/srv/SetBool "{data: false}"
 ```
 
+## Testing
+
+[`task_manager/scripts/test/test_navigation_manager.py`](../task_manager/scripts/test/test_navigation_manager.py)
+first checks the basics — ODrive axis errors and states, bus voltage, the merged
+`/scan`, the `map -> base_link` TF and the `nav_central` services — and then runs
+the `NavigationTasks` functions, which do move the robot.
+
+```bash
+ros2 run task_manager test_navigation_manager.py
+```
+
+Failures print the reason, and the values read (voltages, axis states, scan
+quality, how far `Explore Zone` moved and how close `Return to Origin` stopped)
+are listed at the end. `Explore Zone` fails if the robot reports the goal reached
+without advancing at least 0.5 m of its 1 m step.
+
+`wheels:=true` spins the base in place while reading `/odrive/vel_est`, so it
+reports any wheel that does not turn or that turns the wrong way. It needs a
+clear floor and only `omni_basics.launch.py`:
+
+```bash
+ros2 run task_manager test_navigation_manager.py --ros-args -p wheels:=true
+```
+
+In the Gazebo sim (`./run.sh simulation --nav`, see
+[`simulation/frida_gz_sim`](../simulation/frida_gz_sim/README.md)) there is no
+ODrive, so `sim:=true` skips the motor, voltage and wheel checks:
+
+```bash
+./run.sh simulation   # shell in the sim container
+ros2 run task_manager test_navigation_manager.py --ros-args -p sim:=true
+```
+
+| Parameter | Default | |
+| --- | --- | --- |
+| `basics` | `true` | Run the base/lidar/TF/service checks |
+| `sim` | `false` | Gazebo sim: skip the ODrive motor, voltage and wheel checks |
+| `wheels` | `false` | Spin the base to test each wheel |
+| `dock` | `false` | Include `dock_table` |
+| `mocked` | `false` | Use the subtask manager mocks, skips the basics |
+| `clear_logs` | `true` | Hide the ROS logs while each test runs |
+| `cmd_vel_topic` / `stamped_cmd_vel` | `/cmd_vel` / `true` | Where the base listens and whether it expects `TwistStamped` |
+
 ## Nav_ui — live monitor & control panel
 
 `nav_ui.py` (launched automatically with mapping / general navigation) is the Qt

@@ -62,7 +62,7 @@ set(action_files
   "manipulation/action/GoToHand.action"
   "manipulation/action/PickTask.action"
   "navigation/action/Move.action"
-  "vision/action/DetectPerson.action"
+  "vision/action/ExampleAction.action"
   "vision/action/Xarmmove.action"
 )
 
@@ -150,6 +150,7 @@ set(srv_files
   "vision/srv/MoondreamDetection.srv"
   "vision/srv/DishwasherDetection.srv"
   "vision/srv/DetectHand.srv"
+  "vision/srv/DetectPerson.srv"
   "vision/srv/DetectPointingObject.srv"
   "vision/srv/FindSeat.srv"
   "vision/srv/PersonPoseGesture.srv"

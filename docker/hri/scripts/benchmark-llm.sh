@@ -15,7 +15,7 @@
 #   categorize_shelves — assigns categories to shelves given their contents
 #
 # Flags:
-#   --thinking         — enable thinking mode (removes /no_think from prompts)
+#   --thinking         — enable thinking mode (omits reasoning_effort)
 #
 # Examples:
 #   ./benchmark-llm.sh --usecase is_coherent
@@ -28,7 +28,7 @@ RUNS=5
 PROMPT=""
 MODEL_OVERRIDE=""  # Leave empty to let the server pick its loaded model
 USECASE=""
-NO_THINK=" /no_think"
+REASONING_EFFORT="none"
 
 ENDPOINTS=()
 LABELS=()
@@ -39,10 +39,10 @@ LABELS=()
 usecase_payload() {
     local uc="$1"
     local model="$2"
-    local no_think="$3"
+    local reasoning_effort="$3"
     case "$uc" in
         extract_data)
-            jq -n --arg model "$model" --arg no_think "$no_think" '{
+            jq -n --arg model "$model" --arg reasoning_effort "$reasoning_effort" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
@@ -50,12 +50,12 @@ usecase_payload() {
                 temperature: 0.5,
                 messages: [
                     {role:"system", content:"You will receive a text (`full_text`) and a specific target (`extract_data`). Your task is to extract and return the closest relevant word or phrase that directly answers the target.\nReturn JSON: {\"data\": \"<value or empty string>\"}"},
-                    {role:"user",   content:("<full_text>My name is Carlos and I would like a glass of water.</full_text>\n<extract_data>drink</extract_data>" + $no_think)}
+                    {role:"user",   content:"<full_text>My name is Carlos and I would like a glass of water.</full_text>\n<extract_data>drink</extract_data>"}
                 ]
-            }'
+            } + (if $reasoning_effort == "" then {} else {reasoning_effort: $reasoning_effort} end)'
             ;;
         is_coherent)
-            jq -n --arg model "$model" --arg no_think "$no_think" '{
+            jq -n --arg model "$model" --arg reasoning_effort "$reasoning_effort" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
@@ -63,12 +63,12 @@ usecase_payload() {
                 temperature: 0.0,
                 messages: [
                     {role:"system", content:"Determine if a command is complete and executable by a robot. Output JSON: {\"is_coherent\": true/false}"},
-                    {role:"user",   content:("Command: Go to the kitchen and pick up the apple" + $no_think)}
+                    {role:"user",   content:"Command: Go to the kitchen and pick up the apple"}
                 ]
-            }'
+            } + (if $reasoning_effort == "" then {} else {reasoning_effort: $reasoning_effort} end)'
             ;;
         llm_wrapper)
-            jq -n --arg model "$model" --arg no_think "$no_think" '{
+            jq -n --arg model "$model" --arg reasoning_effort "$reasoning_effort" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
@@ -76,12 +76,12 @@ usecase_payload() {
                 temperature: 0.5,
                 messages: [
                     {role:"system", content:"You are an intelligent assistant. Answer clearly and concisely using the provided context.\n\nContext: The robot picked up a red apple from the kitchen table."},
-                    {role:"user",   content:("What object did the robot pick up?" + $no_think)}
+                    {role:"user",   content:"What object did the robot pick up?"}
                 ]
-            }'
+            } + (if $reasoning_effort == "" then {} else {reasoning_effort: $reasoning_effort} end)'
             ;;
         categorize_shelves)
-            jq -n --arg model "$model" --arg no_think "$no_think" '{
+            jq -n --arg model "$model" --arg reasoning_effort "$reasoning_effort" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
@@ -89,9 +89,9 @@ usecase_payload() {
                 temperature: 0.5,
                 messages: [
                     {role:"system", content:"Assign a unique category to each shelf. Return only JSON: {\"categories\": [\"cat1\",\"cat2\",...]}. Number of categories must match number of shelves."},
-                    {role:"user",   content:("Shelves: [[\"apple\",\"banana\"],[\"water\",\"cup\"],[\"chips\"]], table_objects: [\"soda\"]" + $no_think)}
+                    {role:"user",   content:"Shelves: [[\"apple\",\"banana\"],[\"water\",\"cup\"],[\"chips\"]], table_objects: [\"soda\"]"}
                 ]
-            }'
+            } + (if $reasoning_effort == "" then {} else {reasoning_effort: $reasoning_effort} end)'
             ;;
         *)
             echo "Unknown usecase: $uc" >&2
@@ -108,7 +108,7 @@ while [[ $# -gt 0 ]]; do
         --model) MODEL_OVERRIDE="$2"; shift 2 ;;
         --usecase) USECASE="$2"; shift 2 ;;
         --all) USECASE="all"; shift 1 ;;
-        --thinking) NO_THINK="" ; shift 1 ;;
+        --thinking) REASONING_EFFORT="" ; shift 1 ;;
         --list-usecases)
             echo "Available use cases:"
             echo "  extract_data       — extract a specific piece of info from free text"
@@ -188,12 +188,14 @@ run_single() {
 
         local payload
         if [[ -n "$USECASE" ]]; then
-            payload=$(usecase_payload "$USECASE" "$model" "$NO_THINK")
+            payload=$(usecase_payload "$USECASE" "$model" "$REASONING_EFFORT")
         else
             payload=$(jq -n \
                 --arg model "$model" \
-                --arg content "$PROMPT$NO_THINK" \
-                '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 512, stream_options: {include_usage: true}}')
+                --arg content "$PROMPT" \
+                --arg reasoning_effort "$REASONING_EFFORT" \
+                '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 512, stream_options: {include_usage: true}}
+                 + (if $reasoning_effort == "" then {} else {reasoning_effort: $reasoning_effort} end)')
         fi
 
         # Capture streaming response with timestamps

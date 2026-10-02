@@ -387,7 +387,6 @@ class NavigationTasks:
         CLog.nav(self.node, "ERROR", f"Pose goal failed: {err}")
         return (Status.EXECUTION_ERROR, err)
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
     def _resolve_map_xy(self, point):
         """Return map-frame (x, y) from a PointStamped (transformed to map via TF),
         a geometry_msgs/Point, or an (x, y) sequence. Returns None if a stamped point

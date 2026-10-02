@@ -12,8 +12,10 @@ import rclpy
 import requests
 from nlp.assets.baml_client.sync_client import b
 from nlp.assets.dialogs import (
+    NO_THINKING,
     get_is_coherent_dialog,
     get_previous_command_answer,
+    strip_thinking,
 )
 from openai import OpenAI
 from rclpy.executors import ExternalShutdownException
@@ -147,24 +149,30 @@ class LLMUtils(Node):
 
         self.logger.info("LLMUtils ready")
 
-    def grammar_service(self, req, res):
-        response = (
-            self.client.beta.chat.completions.parse(
-                model=MODEL.GRAMMAR.value,
-                temperature=self.temperature,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You will be presented with some text. Your task is to fix the grammar so that the text is correct. Output ONLY the corrected text, don't include any additional explanations.",
-                    },
-                    {"role": "user", "content": req.text},
-                ],
-            )
-            .choices[0]
-            .message.content
-        )
+    def _parse_content(self, **kwargs):
+        """Message content from the LLM, or None if the request failed."""
+        try:
+            completion = self.client.beta.chat.completions.parse(**kwargs)
+            return strip_thinking(completion.choices[0].message.content)
+        except Exception as e:
+            self.logger.error(f"LLM request failed: {e}")
+            return None
 
-        res.corrected_text = response
+    def grammar_service(self, req, res):
+        response = self._parse_content(
+            model=MODEL.GRAMMAR.value,
+            temperature=self.temperature,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You will be presented with some text. Your task is to fix the grammar so that the text is correct. Output ONLY the corrected text, don't include any additional explanations.",
+                },
+                {"role": "user", "content": req.text},
+            ],
+            extra_body=NO_THINKING,
+        )
+        # LLM unreachable: pass the text through rather than losing the request.
+        res.corrected_text = req.text if response is None else response
         return res
 
     def llm_wrapper_service(self, req, res):
@@ -173,35 +181,29 @@ class LLMUtils(Node):
 
         messages = get_previous_command_answer(context, question)
 
-        response = (
-            self.client.beta.chat.completions.parse(
-                model=MODEL.LLM_WRAPPER.value,
-                temperature=self.temperature,
-                messages=messages,
-            )
-            .choices[0]
-            .message.content
+        response = self._parse_content(
+            model=MODEL.LLM_WRAPPER.value,
+            temperature=self.temperature,
+            messages=messages,
+            extra_body=NO_THINKING,
         )
 
-        if "</think>" in response:
-            response = response.split("</think>")[-1].strip()
-
-        res.answer = response
+        res.answer = "" if response is None else response
         return res
 
     def is_coherent_service_callback(self, req, res):
         self.logger.info(f"Checking coherence for: {req.text}")
         dialog = get_is_coherent_dialog(req.text)
-        response = (
-            self.client.beta.chat.completions.parse(
-                model=MODEL.LLM_WRAPPER.value,
-                temperature=self.temperature,
-                messages=dialog["messages"],
-                response_format=dialog["response_format"],
-            )
-            .choices[0]
-            .message.content
+        response = self._parse_content(
+            model=MODEL.LLM_WRAPPER.value,
+            temperature=self.temperature,
+            messages=dialog["messages"],
+            response_format=dialog["response_format"],
+            extra_body=NO_THINKING,
         )
+        if response is None:
+            res.is_coherent = False
+            return res
         self.logger.info(f"Coherence result: {response}")
         try:
             res.is_coherent = json.loads(response)["is_coherent"]
@@ -212,16 +214,15 @@ class LLMUtils(Node):
 
     def generic_structured_output(self, messages, response_format):
         self.get_logger().info("Generating structured output")
-        response = (
-            self.client.beta.chat.completions.parse(
-                model=MODEL.GENERIC_STRUCTURED_OUTPUT.value,
-                temperature=self.temperature,
-                messages=messages,
-                response_format=response_format,
-            )
-            .choices[0]
-            .message.content
+        response = self._parse_content(
+            model=MODEL.GENERIC_STRUCTURED_OUTPUT.value,
+            temperature=self.temperature,
+            messages=messages,
+            response_format=response_format,
+            extra_body=NO_THINKING,
         )
+        if response is None:
+            raise rclpy.exceptions.ServiceException("LLM request failed")
         self.get_logger().info(f"Response: {response}")
         try:
             response_data = json.loads(response)

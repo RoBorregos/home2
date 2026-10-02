@@ -7,7 +7,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from rclpy.action import ActionServer
 from std_srvs.srv import SetBool
-from frida_interfaces.action import DetectPerson
+from frida_interfaces.action import ExampleAction
 
 # Topics
 SUBSCRIBER_TOPIC = "/example/subscriber_topic"
@@ -39,7 +39,7 @@ class ExampleNode(Node):
 
         # # Create Action Server
         self.example_action_server = ActionServer(
-            self, DetectPerson, ACTION_SERVICE_TOPIC, self.action_callback
+            self, ExampleAction, ACTION_SERVICE_TOPIC, self.action_callback
         )
 
         # Use logger to print messages (this can also be .warn or .error)
@@ -86,15 +86,15 @@ class ExampleNode(Node):
         for i in range(1, 6):
             if goal_handle.is_cancel_requested:
                 goal_handle.canceled()
-                return DetectPerson.Result()
+                return ExampleAction.Result()
 
-            feedback_msg = DetectPerson.Feedback()
+            feedback_msg = ExampleAction.Feedback()
             feedback_msg.feedback = str(i)
             goal_handle.publish_feedback(feedback_msg)
             self.get_logger().info(f"Feedback: {i}")
             time.sleep(1)
 
-        result = DetectPerson.Result()
+        result = ExampleAction.Result()
         result.success = True
         goal_handle.succeed()
         return result
