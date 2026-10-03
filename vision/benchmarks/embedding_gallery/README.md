@@ -3,14 +3,14 @@
 Benchmark behind the few-shot object recognition in `ObjectDetect2D` (objects added
 from photos, no retraining). It chose the box proposer and the DINOv2 backbone and
 calibrated the match thresholds. Same shape as `hri/benchmarks/{nlp,stt}/`: `run.sh` →
-`tasks.py` (task registry) → `report.py` (tables and JSON), with `models.json` as the
-registry.
+`core/tasks.py` (task registry) → `core/report.py` (tables and JSON), with `config/models.json`
+as the registry.
 
 - **Want to add an object to the robot?** That is not this folder: see
   [Adding an object to the gallery](../../README.md#adding-an-object-to-the-gallery-few-shot)
   in `vision/README.md`.
 - Background, accuracy numbers and troubleshooting:
-  [`docs/ai/embedding_gallery.md`](../../../docs/ai/embedding_gallery.md).
+  [`embedding_gallery/README.md`](../../packages/object_detector_2d/scripts/embedding_gallery/README.md).
 
 ## Before you start
 
@@ -73,19 +73,23 @@ they are several times slower.
 | File | Role |
 |---|---|
 | `run.sh` | Entry point: picks Python, sets `PYTHONPATH`, runs tasks |
-| `tasks.py` | `TASK_REGISTRY`: `boxes`, `embeddings`, `e2e_eval`, `e2e_calibrate` |
-| `report.py` | Terminal tables and `results/*.json` |
-| `lib/metrics.py` | IoU, gated recall, rejection, global / per-class threshold search |
-| `lib/embed.py` | Embeds `data/` crops and real proposer crops (+ crop cache) |
-| `lib/proposers.py` | Production box proposer and the Phase 0 candidates |
-| `lib/dataset.py` | Paths, gate targets, `dataset_config.json` loader |
-| `lib/prepare_dataset.py` | YOLO-seg export → `data/` |
+| `core/tasks.py` | Entry point run by `run.sh`; `TASK_REGISTRY`: `boxes`, `embeddings`, `e2e_eval`, `e2e_calibrate` |
+| `core/report.py` | Terminal tables and `results/*.json`; `tasks.py` calls it after each task |
+| `core/metrics.py` | IoU, gated recall, rejection, global / per-class threshold search |
+| `core/embed.py` | Embeds `data/` crops and real proposer crops (+ crop cache) |
+| `core/proposers.py` | Production box proposer and the Phase 0 candidates |
+| `core/dataset.py` | Paths, gate targets, `config/dataset_config.json` loader |
+| `config/` | `models.json` (proposers and backbones) and `dataset_config.json` (class lists) |
+| `core/prepare_dataset.py` | YOLO-seg export → `data/` |
 | `experiments/` | Optional fine-tunes (`finetune_head`, `finetune_arcface`) |
 
 ## Configuration
 
-- `models.json`: `box_proposers` (Phase 0 candidates) and `backbones` (timm id, dim, optional `img_size`).
-- `dataset_config.json`: `out_of_gallery_classes`, `hard_negative_classes`, `known_limitation_classes`. The only place dataset-specific class names live; see the docstring in `lib/dataset.py`.
+- `config/models.json`: `box_proposers` (Phase 0 candidates) and `backbones` (timm id, dim, optional `img_size`).
+- `config/dataset_config.json`: the only place dataset-specific class names live (published labels, after translation).
+  - `out_of_gallery_classes`: held out of `gallery_photos/` to serve as "not in gallery" negatives for unknown-rejection.
+  - `hard_negative_classes`: visually close classes curated into `hard_negatives/` (chosen, not random).
+  - `known_limitation_classes`: excluded from the recall gate because they only confuse each other, never an unrelated class. Start empty and add a class only when a run's confusion breakdown shows evidence.
 
 ## Data
 
@@ -105,6 +109,6 @@ data/
 
 Written to `results/` (gitignored):
 
-- `benchmark_<ts>.json` (`embeddings`) and `thresholds.json` when a backbone passes the gate. Nothing reads it: the live defaults are `DEFAULT_MIN_SIMILARITY` / `DEFAULT_MARGIN_MIN` in `gallery_matcher.py`, which `gallery_build.py` writes into each new object's `manifest.json`.
+- `benchmark_<ts>.json` (`embeddings`) and `thresholds.json` when a backbone passes the gate. Nothing reads it: the live defaults are `DEFAULT_MIN_SIMILARITY` / `DEFAULT_MARGIN_MIN` in `embedding_gallery/core/gallery_matcher.py`, which `gallery_build.py` writes into each new object's `manifest.json`.
 - `box_recall.json` (`boxes`).
 - `e2e_eval_<ts>.json`, `e2e_calibrate_perclass_<ts>.json`, `e2e_crops_cache.npz`, and `e2e_thresholds_perclass.json` when per-class thresholds win. The last one is a different, non-interchangeable file from `thresholds.json`; production does not load it either, so per-class values have to be copied into `gallery/manifest.json` by hand.

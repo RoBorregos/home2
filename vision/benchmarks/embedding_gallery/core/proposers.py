@@ -1,9 +1,9 @@
 """Class-agnostic box proposers: the production one (YOLOE prompt-free) and
-the Phase 0 candidates listed in models.json."""
+the Phase 0 candidates listed in config/models.json."""
 
 import numpy as np
 
-from lib.dataset import DETECTORS_DIR
+from core.dataset import DETECTORS_DIR
 
 BOX_PROPOSER_WEIGHT = DETECTORS_DIR / "yoloe-11l-seg-pf.pt"
 BOX_CONF = 0.10

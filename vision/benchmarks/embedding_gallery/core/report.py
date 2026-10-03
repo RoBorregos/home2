@@ -1,17 +1,15 @@
 """Terminal output and JSON result files for the benchmark tasks.
 
-Tasks (tasks.py) compute and return plain dicts; this module prints them and
-writes them to results/. File names and formats are unchanged from when each
-task was a separate script.
+Tasks (tasks.py) return plain dicts; this module prints them and writes them to results/.
 """
 
 import json
 from datetime import datetime
 from pathlib import Path
 
-from gallery_matcher import UNKNOWN
+from embedding_gallery.core.gallery_matcher import UNKNOWN
 
-from lib.dataset import (
+from core.dataset import (
     KNOWN_LIMITATION_CLASSES,
     OUT_OF_GALLERY_CLASSES,
     RESULTS_DIR,
@@ -37,7 +35,14 @@ def _write_json(path: Path, payload, **dump_kwargs) -> Path:
     return path
 
 
-# ---------------------------------------------------------------- boxes
+def _pct(num: float, den: float) -> str:
+    return f"{num / den * 100 if den else 0.0:.1f}%"
+
+
+def _thresholds_json(thresholds: dict) -> dict:
+    return {
+        c: {"min_similarity": s, "margin_min": m} for c, (s, m) in thresholds.items()
+    }
 
 
 def print_boxes(result: dict) -> None:
@@ -60,11 +65,7 @@ def save_boxes(result: dict, results_dir: Path) -> Path:
     return path
 
 
-# ----------------------------------------------------------- embeddings
-
-
 def print_embeddings(result: dict) -> None:
-    results = result["results"]
     rows = [
         (
             r["backbone"],
@@ -75,7 +76,7 @@ def print_embeddings(result: dict) -> None:
             f"{r['threshold']['min_similarity']}/{r['threshold']['margin_min']}",
             "PASS" if r["targets_met"] else "FAIL",
         )
-        for r in results
+        for r in result["results"]
     ]
     headers = [
         "Backbone",
@@ -97,12 +98,13 @@ def print_embeddings(result: dict) -> None:
     else:
         print("\n" + " | ".join(headers))
         for row in rows:
-            print(" | ".join(str(c) for c in row))
+            print(" | ".join(row))
 
 
 def save_embeddings(result: dict, results_dir: Path) -> Path:
     """Writes benchmark_<ts>.json and, if a backbone passed, thresholds.json."""
     results = result["results"]
+    excluded = sorted(KNOWN_LIMITATION_CLASSES)
     out_path = _write_json(
         results_dir / f"benchmark_{_timestamp()}.json",
         {"timestamp": datetime.now().isoformat(), "results": results},
@@ -113,8 +115,7 @@ def save_embeddings(result: dict, results_dir: Path) -> Path:
     if not passing:
         print(
             "\n[report] GATE NOT MET: no backbone hit recall@1>=90% (excluding "
-            f"{sorted(KNOWN_LIMITATION_CLASSES)}) and unknown-rejection>=80% "
-            "simultaneously."
+            f"{excluded}) and unknown-rejection>=80% simultaneously."
         )
         return out_path
 
@@ -126,144 +127,108 @@ def save_embeddings(result: dict, results_dir: Path) -> Path:
             "chosen_backbone_id": winner["backbone_id"],
             "min_similarity": winner["threshold"]["min_similarity"],
             "margin_min": winner["threshold"]["margin_min"],
-            "excluded_known_limitation_classes": sorted(KNOWN_LIMITATION_CLASSES),
-            "note": "Global threshold from Phase 1's grid sweep, tune per-object "
-            "in gallery/manifest.json if a specific object needs a different "
-            "floor. Gate excludes KNOWN_LIMITATION_CLASSES (already covered by "
-            "yolo_finetuned): recall@1 on those stays below target across every "
-            "backbone/fine-tune tried (see README.md).",
+            "excluded_known_limitation_classes": excluded,
+            "note": "Global threshold from Phase 1's grid sweep; tune per object in "
+            "gallery/manifest.json. The gate excludes known_limitation_classes (see README.md).",
         },
     )
     print(
         f"[report] GATE PASSED by {winner['backbone']} -> results/thresholds.json "
-        f"(recall@1 excludes {sorted(KNOWN_LIMITATION_CLASSES)}, see README.md)"
+        f"(recall@1 excludes {excluded}, see README.md)"
     )
     return out_path
 
 
-# ----------------------------------------------------------- e2e_eval
-
-
-def _summarize(cases: list[dict], pred_key: str, gated: bool) -> dict:
-    localized = [c for c in cases if not c["missed_by_proposer"]]
-    if gated:
-        localized = [
-            c for c in localized if c["expected"] not in KNOWN_LIMITATION_CLASSES
-        ]
-    total = len(localized)
-    correct = sum(1 for c in localized if c[pred_key] == c["expected"])
-    return {
-        "total": total,
-        "correct": correct,
-        "recall": correct / total if total else 0.0,
-    }
+def _recall(cases: list[dict], key: str, gated: bool) -> tuple[int, int]:
+    """(correct, total) over the cases the proposer localized, optionally gated."""
+    localized = [
+        c
+        for c in cases
+        if not c["missed_by_proposer"]
+        and not (gated and c["expected"] in KNOWN_LIMITATION_CLASSES)
+    ]
+    return sum(c[key] == c["expected"] for c in localized), len(localized)
 
 
 def print_e2e_eval(result: dict) -> None:
     cases, ood_cases = result["cases"], result["ood_cases"]
-    total_instances = len(cases)
-    missed = sum(1 for c in cases if c["missed_by_proposer"])
+    total = len(cases)
+    missed = sum(c["missed_by_proposer"] for c in cases)
     with_mask = sum(
-        1 for c in cases if not c["missed_by_proposer"] and c.get("had_mask")
+        not c["missed_by_proposer"] and bool(c.get("had_mask")) for c in cases
     )
 
     print("\n=== End-to-end results (real box proposer, not ground-truth crops) ===")
-    print(f"Total gallery-object instances: {total_instances}")
-    if total_instances:
-        print(
-            f"Missed by box proposer entirely: {missed} "
-            f"({missed / total_instances * 100:.1f}%)"
-        )
-    print(
-        "Localized objects that had a usable mask: "
-        f"{with_mask}/{total_instances - missed}"
-    )
+    print(f"Total gallery-object instances: {total}")
+    if total:
+        print(f"Missed by box proposer entirely: {missed} ({_pct(missed, total)})")
+    print(f"Localized objects that had a usable mask: {with_mask}/{total - missed}")
 
-    for label, key in [
+    for label, key in (
         ("plain bbox crop", "plain_pred"),
         ("masked crop (background blanked)", "masked_pred"),
-    ]:
-        all_r = _summarize(cases, key, gated=False)
-        gated_r = _summarize(cases, key, gated=True)
+    ):
         print(f"\n-- {label} --")
-        print(
-            f"  recall@1 (all classes):   {all_r['recall'] * 100:.1f}%  "
-            f"({all_r['correct']}/{all_r['total']})"
-        )
-        print(
-            "  recall@1 (gated, excl. cutlery/kitchenware/cans): "
-            f"{gated_r['recall'] * 100:.1f}%  ({gated_r['correct']}/{gated_r['total']})"
-        )
+        for text, gated in (
+            ("  recall@1 (all classes):  ", False),
+            ("  recall@1 (gated, excl. cutlery/kitchenware/cans):", True),
+        ):
+            correct, n = _recall(cases, key, gated)
+            print(f"{text} {_pct(correct, n)}  ({correct}/{n})")
 
     print(
         "\n=== Unknown-rejection (out-of-gallery objects: "
         f"{sorted(OUT_OF_GALLERY_CLASSES)}) ==="
     )
-    ood_total = len(ood_cases)
-    if not ood_total:
+    if not ood_cases:
         print("Total out-of-gallery instances: 0")
         return
-    ood_missed = sum(1 for c in ood_cases if c["missed_by_proposer"])
-    print(f"Total out-of-gallery instances: {ood_total}")
+    ood_missed = sum(c["missed_by_proposer"] for c in ood_cases)
+    print(f"Total out-of-gallery instances: {len(ood_cases)}")
     print(
         "Missed by proposer (never boxed -> nothing published, not a false "
-        f"positive): {ood_missed} ({ood_missed / ood_total * 100:.1f}%)"
+        f"positive): {ood_missed} ({_pct(ood_missed, len(ood_cases))})"
     )
-    localized_ood = [c for c in ood_cases if not c["missed_by_proposer"]]
-    for label, key in [
+    localized = [c for c in ood_cases if not c["missed_by_proposer"]]
+    for label, key in (
         ("plain bbox crop", "plain_pred"),
         ("masked crop", "masked_pred"),
-    ]:
-        rejected = sum(1 for c in localized_ood if c[key] == UNKNOWN)
-        n = len(localized_ood)
-        rate = rejected / n if n else 0.0
+    ):
+        rejected = sum(c[key] == UNKNOWN for c in localized)
         print(
-            f"  {label}: unknown-rejection = {rate * 100:.1f}% "
-            f"({rejected}/{n} localized instances)"
+            f"  {label}: unknown-rejection = {_pct(rejected, len(localized))} "
+            f"({rejected}/{len(localized)} localized instances)"
         )
 
 
 def save_e2e_eval(result: dict, results_dir: Path) -> Path:
+    keys = ("n_images", "cases", "ood_cases")
     path = _write_json(
-        results_dir / f"e2e_eval_{_timestamp()}.json",
-        {
-            "n_images": result["n_images"],
-            "cases": result["cases"],
-            "ood_cases": result["ood_cases"],
-        },
+        results_dir / f"e2e_eval_{_timestamp()}.json", {k: result[k] for k in keys}
     )
     print(f"\n[e2e] wrote {path}")
     return path
 
 
-# ------------------------------------------------------- e2e_calibrate
-
-
 def print_e2e_calibrate(result: dict) -> None:
-    prod, best = result["production_global"], result["best_global"]
-    per_class = result["per_class_result"]
+    prod = result["production_global"]
     print("\n=== Comparison on the SAME real-crop data ===")
     print(f"{'':45s} {'Recall (gated)':>16s} {'Rejection':>12s}")
-    print(
-        f"{'global (' + str(prod['min_similarity']) + '/' + str(prod['margin_min']) + ', already in production)':45s} "
-    )
-    print(
-        f"{'  production global threshold':45s} "
-        f"{prod['recall_gated'] * 100:15.1f}% {prod['rejection'] * 100:11.1f}%"
-    )
-    print(
-        f"{'  best global (this run)':45s} "
-        f"{best['recall_gated'] * 100:15.1f}% {best['rejection'] * 100:11.1f}%"
-    )
-    print(
-        f"{'  per-class (greedy)':45s} "
-        f"{per_class['recall_gated'] * 100:15.1f}% {per_class['rejection'] * 100:11.1f}%"
-    )
+    thr = f"{prod['min_similarity']}/{prod['margin_min']}"
+    print(f"{f'global ({thr}, already in production)':45s} ")
+    for label, r in (
+        ("  production global threshold", prod),
+        ("  best global (this run)", result["best_global"]),
+        ("  per-class (greedy)", result["per_class_result"]),
+    ):
+        print(
+            f"{label:45s} {r['recall_gated'] * 100:15.1f}% {r['rejection'] * 100:11.1f}%"
+        )
 
 
 def save_e2e_calibrate(result: dict, results_dir: Path) -> Path:
     """Writes e2e_calibrate_perclass_<ts>.json and, if it wins, e2e_thresholds_perclass.json."""
-    thresholds = result["per_class_thresholds"]
+    thresholds = _thresholds_json(result["per_class_thresholds"])
     path = _write_json(
         results_dir / f"e2e_calibrate_perclass_{_timestamp()}.json",
         {
@@ -271,10 +236,7 @@ def save_e2e_calibrate(result: dict, results_dir: Path) -> Path:
             "n_ood": result["n_ood"],
             "production_global": result["production_global"],
             "best_global": result["best_global"],
-            "per_class_thresholds": {
-                c: {"min_similarity": s, "margin_min": m}
-                for c, (s, m) in thresholds.items()
-            },
+            "per_class_thresholds": thresholds,
             "per_class_result": result["per_class_result"],
         },
     )
@@ -282,12 +244,7 @@ def save_e2e_calibrate(result: dict, results_dir: Path) -> Path:
 
     if result["per_class_beats_global"]:
         _write_json(
-            results_dir / "e2e_thresholds_perclass.json",
-            {
-                c: {"min_similarity": s, "margin_min": m}
-                for c, (s, m) in thresholds.items()
-            },
-            sort_keys=True,
+            results_dir / "e2e_thresholds_perclass.json", thresholds, sort_keys=True
         )
         print(
             "[calib] per-class thresholds beat the global default -> "
@@ -301,21 +258,16 @@ def save_e2e_calibrate(result: dict, results_dir: Path) -> Path:
     return path
 
 
-PRINTERS = {
-    "boxes": print_boxes,
-    "embeddings": print_embeddings,
-    "e2e_eval": print_e2e_eval,
-    "e2e_calibrate": print_e2e_calibrate,
-}
-SAVERS = {
-    "boxes": save_boxes,
-    "embeddings": save_embeddings,
-    "e2e_eval": save_e2e_eval,
-    "e2e_calibrate": save_e2e_calibrate,
+_REPORTERS = {
+    "boxes": (print_boxes, save_boxes),
+    "embeddings": (print_embeddings, save_embeddings),
+    "e2e_eval": (print_e2e_eval, save_e2e_eval),
+    "e2e_calibrate": (print_e2e_calibrate, save_e2e_calibrate),
 }
 
 
 def report(task_name: str, result: dict, results_dir: Path = RESULTS_DIR) -> Path:
     """Prints a task's result and writes its JSON file(s). Returns the main path."""
-    PRINTERS[task_name](result)
-    return SAVERS[task_name](result, Path(results_dir))
+    show, save = _REPORTERS[task_name]
+    show(result)
+    return save(result, Path(results_dir))

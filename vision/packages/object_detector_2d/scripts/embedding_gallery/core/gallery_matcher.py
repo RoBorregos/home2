@@ -6,6 +6,8 @@ from pathlib import Path
 
 import numpy as np
 
+from embedding_gallery.core.constants import MANIFEST_NAME
+
 UNKNOWN = "unknown"
 
 # Calibrated by e2e_calibrate.py against real box-proposer crops (oracle
@@ -55,7 +57,7 @@ class Gallery:
     @classmethod
     def load(cls, gallery_dir: str | Path) -> "Gallery":
         gallery_dir = Path(gallery_dir)
-        manifest_path = gallery_dir / "manifest.json"
+        manifest_path = gallery_dir / MANIFEST_NAME
         manifest = (
             json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
         )

@@ -10,12 +10,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from backbone import EmbeddingBackbone
-from gallery_matcher import UNKNOWN
+from embedding_gallery.core.image_embedder import ImageEmbedder
+from embedding_gallery.core.gallery_matcher import UNKNOWN
 
-from lib.dataset import DATA_DIR, REJECTION_TARGET, RESULTS_DIR
-from lib.embed import embed_gallery_photos, embed_labeled_dir, embed_unlabeled_dir
-from lib.metrics import build_gallery, optimize_global
+from core.dataset import DATA_DIR, REJECTION_TARGET, RESULTS_DIR
+from core.embed import embed_gallery_photos, embed_labeled_dir, embed_unlabeled_dir
+from core.metrics import build_gallery, optimize_global
 
 # This experiment keeps the original, stricter recall bar (the benchmark's
 # gate is 0.80) and scores ungated recall (no excluded classes).
@@ -232,7 +232,7 @@ def main():
     args = parser.parse_args()
 
     print("[finetune] embedding all crops with the frozen backbone...")
-    backbone = EmbeddingBackbone(args.backbone).load()
+    backbone = ImageEmbedder(args.backbone).load()
     gallery_raw = embed_gallery_photos(backbone)
     held_out_files, held_out_labels, held_out_raw = embed_labeled_dir(
         backbone, DATA_DIR / "held_out"

@@ -17,7 +17,7 @@
 #   e2e_eval       recall/rejection with the production proposer's real crops
 #   e2e_calibrate  per-class threshold calibration on real crops
 #
-# Task options (forwarded to tasks.py, which falls back to per-task defaults):
+# Task options (forwarded to core/tasks.py, which falls back to per-task defaults):
 #   --backbones a,b   backbone names from models.json (embeddings; default all)
 #   --backbone ID     timm backbone id (e2e_*)
 #   --source PATH     YOLO-seg export (e2e_*)
@@ -42,7 +42,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-DETECTORS_DIR="$SCRIPT_DIR/../../packages/object_detector_2d/scripts/detectors"
+SCRIPTS_DIR="$SCRIPT_DIR/../../packages/object_detector_2d/scripts"
 ALL_TASKS=(boxes embeddings e2e_eval e2e_calibrate)
 WORK_DIR="${EMBEDDING_WORKDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/embedding_gallery}"
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -95,13 +95,13 @@ abs_path() {
 }
 
 # Run a script of this directory with the right PYTHONPATH (this directory for
-# our modules, detectors/ for backbone.py and gallery_matcher.py, and its
-# parent for `import detectors.registry`).
+# our modules, and the object_detector_2d scripts/ dir for `detectors` and
+# `embedding_gallery`).
 run_py() {
     mkdir -p "$WORK_DIR"
     (
         cd "$WORK_DIR"
-        PYTHONPATH="$SCRIPT_DIR:$DETECTORS_DIR:$DETECTORS_DIR/..:${PYTHONPATH:-}" \
+        PYTHONPATH="$SCRIPT_DIR:$SCRIPTS_DIR:${PYTHONPATH:-}" \
             exec "$PYTHON" "$@"
     )
 }
@@ -148,7 +148,7 @@ echo "Using python: $PYTHON ($("$PYTHON" --version 2>&1))"
 
 case "$MODE" in
     prepare)
-        run_py "$SCRIPT_DIR/lib/prepare_dataset.py" "$@"
+        run_py -m core.prepare_dataset "$@"
         exit 0
         ;;
     experiment)
@@ -156,11 +156,11 @@ case "$MODE" in
         [[ -n "$name" ]] || die "experiment needs a name: finetune-head | finetune-arcface"
         shift
         case "$name" in
-            finetune-head)   script="finetune_head.py" ;;
-            finetune-arcface) script="finetune_arcface.py" ;;
+            finetune-head)   script="finetune_head" ;;
+            finetune-arcface) script="finetune_arcface" ;;
             *) die "Unknown experiment: $name" ;;
         esac
-        run_py "$SCRIPT_DIR/experiments/$script" "$@"
+        run_py -m "experiments.$script" "$@"
         exit 0
         ;;
 esac
@@ -192,7 +192,7 @@ FAILED=false
 for task in "${SELECTED[@]}"; do
     echo ""
     echo "== Task: $task =="
-    if ! run_py "$SCRIPT_DIR/tasks.py" "$task" ${PASSTHROUGH[@]+"${PASSTHROUGH[@]}"}; then
+    if ! run_py -m core.tasks "$task" ${PASSTHROUGH[@]+"${PASSTHROUGH[@]}"}; then
         echo "  ERROR: task '$task' failed" >&2
         FAILED=true
     fi

@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
-"""Benchmark tasks and their registry.
+"""Benchmark tasks (boxes, embeddings, e2e_eval, e2e_calibrate) and their TASK_REGISTRY.
 
-Each task is a class with a classmethod `run(**kwargs) -> dict` that computes
-and returns a plain result dict; printing and JSON output live in report.py.
-run.sh invokes this file as `python3 tasks.py <task> [options]`; unset
-options fall back to each task's own defaults.
-
-Tasks:
-  boxes          Phase 0: box-proposer recall (models.json: box_proposers).
-  embeddings     Phase 1: backbone comparison (models.json: backbones).
-  e2e_eval       Recall/rejection using the production proposer's real crops.
-  e2e_calibrate  Per-class threshold calibration on real proposer crops.
+Each task's `run(**kwargs)` returns a plain dict; report.py prints and saves it.
+run.sh calls `python3 -m core.tasks <task> [options]`; unset options use each task's defaults.
 """
 
 import argparse
@@ -18,29 +10,34 @@ import json
 import time
 from pathlib import Path
 
-import numpy as np
-from backbone import EmbeddingBackbone
-from gallery_matcher import DEFAULT_MARGIN_MIN, DEFAULT_MIN_SIMILARITY, UNKNOWN
+from embedding_gallery.core.image_embedder import ImageEmbedder
+from embedding_gallery.core.gallery_matcher import (
+    DEFAULT_MARGIN_MIN,
+    DEFAULT_MIN_SIMILARITY,
+    UNKNOWN,
+)
 
-from lib.dataset import (
+from core.dataset import (
     DATA_DIR,
     E2E_CACHE_PATH,
     MODELS_PATH,
-    OUT_OF_GALLERY_CLASSES,
     KNOWN_LIMITATION_CLASSES,
     RECALL_TARGET,
     REJECTION_TARGET,
     RESULTS_DIR,
-    load_translation,
+    require_dir,
 )
-from lib.embed import (
+from core.embed import (
+    clip_proposals,
     collect_real_crops,
     embed_gallery_photos,
     embed_labeled_dir,
     embed_unlabeled_dir,
     load_cached_crops,
+    sample_images,
+    split_ground_truth,
 )
-from lib.metrics import (
+from core.metrics import (
     build_gallery,
     gated_recall,
     iou,
@@ -49,36 +46,33 @@ from lib.metrics import (
     optimize_per_class,
     score_thresholds,
 )
-from lib.prepare_dataset import iter_split, load_class_names
-from lib.proposers import (
+from core.proposers import (
     make_box_proposer,
     make_yolo_agnostic_proposer,
     make_yoloe_proposer,
     masked_crop,
 )
-from report import report
+from core.report import report
 
 DEFAULT_BACKBONE = "vit_base_patch14_dinov2.lvd142m"
 
 
 class BoxesTask:
-    """Phase 0: box recall of candidate class-agnostic proposers.
+    """Phase 0: box recall of the candidate class-agnostic proposers.
 
-    If nothing clears the recall bar here, stop and escalate instead of
-    building Phase 1-3 on an unvalidated assumption. Ground truth is one
-    annotations.json per data dir (pixel-space boxes).
+    If none clears the recall bar, stop and escalate before building on it.
     """
 
     name = "boxes"
 
     @classmethod
     def run(cls, data=DATA_DIR / "box_recall", iou_threshold=0.5, **_) -> dict:
-        data_dir = Path(data)
+        data_dir = require_dir(Path(data))
         ann_path = data_dir / "annotations.json"
         if not ann_path.exists():
             raise SystemExit(
-                f"No {ann_path} found. Box recall needs a hand-labeled validation "
-                "set (run prepare_dataset.py) before it can measure anything."
+                f"No {ann_path}: box recall needs the labeled images that "
+                "`./run.sh prepare --source <export>` builds."
             )
         annotations = json.loads(ann_path.read_text())
         candidates = json.loads(MODELS_PATH.read_text())["box_proposers"]
@@ -207,7 +201,7 @@ class EmbeddingsTask:
             f"{f', img_size={img_size}' if img_size else ''}) "
             "- embedding all crops once..."
         )
-        backbone = EmbeddingBackbone(backbone_id, img_size=img_size).load()
+        backbone = ImageEmbedder(backbone_id, img_size=img_size).load()
 
         gallery_embeddings = embed_gallery_photos(backbone)
         if not gallery_embeddings:
@@ -294,11 +288,23 @@ class EmbeddingsTask:
         }
 
 
+def _case(label: str, idx: int | None, plain: list, masked: list, **extra) -> dict:
+    """One e2e_eval record; idx is the matched proposal, None if the proposer missed it."""
+    if idx is None:
+        return {"expected": label, "missed_by_proposer": True}
+    return {
+        "expected": label,
+        "missed_by_proposer": False,
+        "plain_pred": plain[idx],
+        "masked_pred": masked[idx],
+        **extra,
+    }
+
+
 class E2EEvalTask:
-    """Recall using the production box proposer's own crops, not report's
-    ground-truth crops. Real boxes dragged in clutter dropped recall from
-    ~82% oracle to 71.6%; also compares plain-bbox vs. mask-blanked-background
-    variants to test a fix.
+    """Recall with the production proposer's real crops instead of ground-truth ones.
+
+    Also compares plain-bbox crops against mask-blanked-background crops.
     """
 
     name = "e2e_eval"
@@ -321,11 +327,9 @@ class E2EEvalTask:
         from PIL import Image as PILImage
 
         source = Path(source).expanduser()
-        names = load_class_names(source)
-        translation = load_translation()
 
         print("[e2e] loading gallery (data/gallery_photos/, already built)...")
-        bb = EmbeddingBackbone(backbone).load()
+        bb = ImageEmbedder(backbone).load()
         gallery_embeddings = embed_gallery_photos(bb)
         gallery = build_gallery(
             gallery_embeddings,
@@ -337,10 +341,7 @@ class E2EEvalTask:
         print("[e2e] loading box proposer (YOLOE prompt-free, conf=0.10)...")
         propose = make_box_proposer()
 
-        rng = np.random.default_rng(seed)
-        samples = list(iter_split(source, split, names, translation))
-        rng.shuffle(samples)
-        samples = samples[:n_images]
+        samples = sample_images(source, split, n_images, seed)
         print(
             f"[e2e] evaluating on {len(samples)} images from {source.name}/{split}..."
         )
@@ -352,34 +353,22 @@ class E2EEvalTask:
             image = cv2.imread(str(img_path))
             if image is None:
                 continue
-            h, w = image.shape[:2]
-
-            gt_in_gallery = [
-                (label, bbox) for label, bbox in gt_boxes if label in gallery_labels
-            ]
-            gt_ood = [
-                (label, bbox)
-                for label, bbox in gt_boxes
-                if label in OUT_OF_GALLERY_CLASSES
-            ]
+            gt_in_gallery, gt_ood = split_ground_truth(gt_boxes, gallery_labels)
             if not gt_in_gallery and not gt_ood:
                 continue
 
-            plain_crops, masked_crops, kept_px, kept_poly = [], [], [], []
-            for bbox, poly in propose(image):
-                x1, y1, x2, y2 = bbox
-                x1, y1 = max(0, x1), max(0, y1)
-                x2, y2 = min(w, x2), min(h, y2)
-                if x2 <= x1 or y2 <= y1:
-                    continue
-                plain_crops.append(PILImage.fromarray(image[y1:y2, x1:x2][:, :, ::-1]))
-                masked_crops.append(
-                    PILImage.fromarray(
-                        masked_crop(image, [x1, y1, x2, y2], poly)[:, :, ::-1]
-                    )
-                )
-                kept_px.append([x1, y1, x2, y2])
-                kept_poly.append(poly)
+            h, w = image.shape[:2]
+            proposals = clip_proposals(propose(image), w, h)
+            kept_px = [box for box, _ in proposals]
+            kept_poly = [poly for _, poly in proposals]
+            plain_crops = [
+                PILImage.fromarray(image[y1:y2, x1:x2][:, :, ::-1])
+                for x1, y1, x2, y2 in kept_px
+            ]
+            masked_crops = [
+                PILImage.fromarray(masked_crop(image, box, poly)[:, :, ::-1])
+                for box, poly in proposals
+            ]
 
             plain_labels = [None] * len(kept_px)
             masked_labels = [None] * len(kept_px)
@@ -392,36 +381,13 @@ class E2EEvalTask:
                 ]
 
             used = set()
-            for true_label, _gt_bbox, idx in match_gt_to_boxes(
+            for label, _bbox, idx in match_gt_to_boxes(
                 gt_in_gallery, kept_px, used=used
             ):
-                if idx is None:
-                    cases.append({"expected": true_label, "missed_by_proposer": True})
-                    continue
-                cases.append(
-                    {
-                        "expected": true_label,
-                        "missed_by_proposer": False,
-                        "plain_pred": plain_labels[idx],
-                        "masked_pred": masked_labels[idx],
-                        "had_mask": kept_poly[idx] is not None,
-                    }
-                )
-
-            for true_label, _gt_bbox, idx in match_gt_to_boxes(gt_ood, kept_px):
-                if idx is None:
-                    ood_cases.append(
-                        {"expected": true_label, "missed_by_proposer": True}
-                    )
-                    continue
-                ood_cases.append(
-                    {
-                        "expected": true_label,
-                        "missed_by_proposer": False,
-                        "plain_pred": plain_labels[idx],
-                        "masked_pred": masked_labels[idx],
-                    }
-                )
+                extra = {} if idx is None else {"had_mask": kept_poly[idx] is not None}
+                cases.append(_case(label, idx, plain_labels, masked_labels, **extra))
+            for label, _bbox, idx in match_gt_to_boxes(gt_ood, kept_px):
+                ood_cases.append(_case(label, idx, plain_labels, masked_labels))
 
             if (i + 1) % 25 == 0:
                 print(f"[e2e]   ...{i + 1}/{len(samples)} images processed")

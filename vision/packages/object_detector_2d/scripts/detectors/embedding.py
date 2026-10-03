@@ -4,9 +4,14 @@ DINOv2-B embeddings matched via gallery_matcher.Gallery — no retraining to add
 import numpy as np
 from PIL import Image
 
-from .backbone import EmbeddingBackbone
+from embedding_gallery.core.image_embedder import ImageEmbedder
+from embedding_gallery.core.gallery_matcher import (
+    DEFAULT_MAX_BOX_AREA_FRAC,
+    UNKNOWN,
+    Gallery,
+)
+
 from .base import Detection, DetectorModel
-from .gallery_matcher import DEFAULT_MAX_BOX_AREA_FRAC, UNKNOWN, Gallery
 from .registry import MODELS_PATH, ModelRegistry
 
 
@@ -14,7 +19,7 @@ from .registry import MODELS_PATH, ModelRegistry
 class EmbeddingModel(DetectorModel):
     def load(self, config: dict):
         self.box_model = ModelRegistry.get(config["box_model"])
-        self.backbone = EmbeddingBackbone(
+        self.embedder = ImageEmbedder(
             config["backbone"], use_trt=config.get("use_trt", True)
         ).load()
         self.gallery = Gallery.load(MODELS_PATH + config["gallery_dir"])
@@ -37,7 +42,7 @@ class EmbeddingModel(DetectorModel):
 
     def detect(self, image) -> list[Detection]:
         # A fresh install has no enrolled objects — every match would be
-        # UNKNOWN anyway, so skip the box proposer/backbone entirely.
+        # UNKNOWN anyway, so skip the box proposer/embedder entirely.
         if not self.gallery.thresholds and not self.publish_unknown:
             return []
 
@@ -68,7 +73,7 @@ class EmbeddingModel(DetectorModel):
             return []
 
         # One batched forward pass for every crop in the frame, per the plan.
-        embeddings = self.backbone.embed_batch(crops)
+        embeddings = self.embedder.embed_batch(crops)
         matches = self.gallery.match_batch(embeddings)
 
         detections = []

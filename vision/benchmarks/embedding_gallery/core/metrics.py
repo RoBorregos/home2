@@ -1,17 +1,15 @@
 """Scoring and threshold search shared by the tasks and experiments.
 
-Holds the functions that used to be copied between report.py, e2e_eval.py,
-e2e_calibrate.py and finetune_head.py: IoU, gated recall, unknown-rejection
-and the global / per-class (min_similarity, margin_min) searches.
+IoU, gated recall, unknown-rejection and the global / per-class (min_similarity, margin_min) searches.
 """
 
 import itertools
 from collections.abc import Iterable
 
 import numpy as np
-from gallery_matcher import UNKNOWN, Gallery
+from embedding_gallery.core.gallery_matcher import UNKNOWN, Gallery
 
-from lib.dataset import (
+from core.dataset import (
     KNOWN_LIMITATION_CLASSES,
     MARGIN_GRID,
     RECALL_TARGET,
@@ -43,12 +41,9 @@ def iou(a: Iterable[float], b: Iterable[float]) -> float:
 
 
 def match_gt_to_boxes(gt_items, kept_px, used: set | None = None, iou_threshold=0.5):
-    """Greedy best-IoU match of (label, gt_bbox) pairs against kept_px boxes.
+    """Greedy best-IoU match of (label, gt_bbox) pairs to boxes; yields (label, gt_bbox, idx or None).
 
-    Yields (label, gt_bbox, matched_idx); matched_idx is None when no box
-    reaches iou_threshold. `used`, if given, excludes already-matched boxes
-    within this call only. Pass None (e.g. for OOD pairs) so they don't
-    compete with an unrelated call's matches.
+    `used` excludes boxes already matched in this call; pass None so unrelated calls don't compete.
     """
     for true_label, gt_bbox in gt_items:
         best_iou, best_idx = 0.0, -1
@@ -135,9 +130,7 @@ def optimize_global(
 ) -> dict:
     """Sweeps one (min_similarity, margin_min) pair over SIM_GRID x MARGIN_GRID.
 
-    Returns:
-        Best candidate by (both_met, score) with keys min_similarity,
-        margin_min, recall_gated, rejection, both_met and score.
+    Returns the best candidate dict (min_similarity, margin_min, recall_gated, rejection, both_met, score).
     """
     if verbose:
         print(
@@ -178,9 +171,7 @@ def optimize_per_class(
 ):
     """Greedy coordinate descent of per-class thresholds, starting from `init`.
 
-    Returns:
-        (thresholds {class: (min_similarity, margin_min)}, result dict with
-        both_met, score, recall_gated and rejection).
+    Returns (thresholds {class: (min_similarity, margin_min)}, dict with both_met, score, recall_gated, rejection).
     """
 
     def score(thresholds):

@@ -5,17 +5,18 @@ import json
 from pathlib import Path
 
 import numpy as np
-from backbone import EmbeddingBackbone
+from embedding_gallery.core.image_embedder import ImageEmbedder
 
-from lib.dataset import (
+from core.dataset import (
     DATA_DIR,
     E2E_CACHE_PATH,
     OUT_OF_GALLERY_CLASSES,
     load_translation,
+    require_dir,
 )
-from lib.metrics import match_gt_to_boxes
-from lib.prepare_dataset import iter_split, load_class_names
-from lib.proposers import make_box_proposer
+from core.metrics import match_gt_to_boxes
+from core.prepare_dataset import iter_split, load_class_names
+from core.proposers import make_box_proposer
 
 
 def _load_images(paths: list[Path]):
@@ -27,7 +28,7 @@ def _load_images(paths: list[Path]):
 def embed_gallery_photos(backbone) -> dict[str, np.ndarray]:
     """Embeds data/gallery_photos/<object>/*.{jpg,png}: {object: [N, D]}."""
     embeddings = {}
-    for obj_dir in sorted((DATA_DIR / "gallery_photos").iterdir()):
+    for obj_dir in sorted(require_dir(DATA_DIR / "gallery_photos").iterdir()):
         if not obj_dir.is_dir():
             continue
         paths = sorted(
@@ -45,7 +46,7 @@ def embed_labeled_dir(
     backbone, data_dir: Path
 ) -> tuple[list[str], list[str], np.ndarray]:
     """Returns (filenames, labels, embeddings[N, D]) from annotations.json."""
-    ann_path = data_dir / "annotations.json"
+    ann_path = require_dir(data_dir) / "annotations.json"
     if not ann_path.exists():
         raise SystemExit(f"No {ann_path}, see README.md for the expected format.")
     labels_by_file = json.loads(ann_path.read_text())
@@ -59,7 +60,7 @@ def embed_unlabeled_dir(backbone, data_dir: Path) -> tuple[list[str], np.ndarray
     """Returns (filenames, embeddings[N, D]) for every image in data_dir."""
     filenames = sorted(
         p.name
-        for p in data_dir.iterdir()
+        for p in require_dir(data_dir).iterdir()
         if p.suffix.lower() in (".jpg", ".jpeg", ".png")
     )
     if not filenames:
@@ -68,6 +69,33 @@ def embed_unlabeled_dir(backbone, data_dir: Path) -> tuple[list[str], np.ndarray
         )
     embeddings = backbone.embed_batch(_load_images([data_dir / f for f in filenames]))
     return filenames, embeddings
+
+
+def sample_images(source: Path, split: str, n_images: int, seed: int) -> list:
+    """Seeded sample of (image_path, [(label, bbox_px), ...]) from a YOLO-seg export split."""
+    names = load_class_names(source)
+    samples = list(iter_split(source, split, names, load_translation()))
+    np.random.default_rng(seed).shuffle(samples)
+    return samples[:n_images]
+
+
+def split_ground_truth(gt_boxes: list, gallery_labels: set) -> tuple[list, list]:
+    """Splits ground truth into (objects in the gallery, out-of-gallery objects)."""
+    in_gallery = [(label, bbox) for label, bbox in gt_boxes if label in gallery_labels]
+    out_of_gallery = [
+        (label, bbox) for label, bbox in gt_boxes if label in OUT_OF_GALLERY_CLASSES
+    ]
+    return in_gallery, out_of_gallery
+
+
+def clip_proposals(proposals: list, width: int, height: int) -> list:
+    """Clips the proposer's boxes to the image and drops empty ones: [([x1, y1, x2, y2], polygon)]."""
+    clipped = []
+    for (x1, y1, x2, y2), poly in proposals:
+        x1, y1, x2, y2 = max(0, x1), max(0, y1), min(width, x2), min(height, y2)
+        if x2 > x1 and y2 > y1:
+            clipped.append(([x1, y1, x2, y2], poly))
+    return clipped
 
 
 def collect_real_crops(
@@ -87,11 +115,8 @@ def collect_real_crops(
     import cv2
     from PIL import Image as PILImage
 
-    names = load_class_names(source)
-    translation = load_translation()
-
     print("[calib] loading gallery (data/gallery_photos/, clean enrollment crops)...")
-    backbone = EmbeddingBackbone(backbone_id).load()
+    backbone = ImageEmbedder(backbone_id).load()
     gallery_embeddings = embed_gallery_photos(backbone)
     gallery_labels = set(gallery_embeddings)
     # Derived from the backbone's output, not hardcoded: a different
@@ -103,10 +128,7 @@ def collect_real_crops(
     print("[calib] loading box proposer (YOLOE prompt-free, conf=0.10)...")
     propose = make_box_proposer()
 
-    rng = np.random.default_rng(seed)
-    samples = list(iter_split(source, split, names, translation))
-    rng.shuffle(samples)
-    samples = samples[:n_images]
+    samples = sample_images(source, split, n_images, seed)
     print(f"[calib] extracting real-crop embeddings from {len(samples)} images...")
 
     held_out_labels, held_out_emb = [], []
@@ -117,26 +139,16 @@ def collect_real_crops(
         image = cv2.imread(str(img_path))
         if image is None:
             continue
-        h, w = image.shape[:2]
-
-        gt_in_gallery = [
-            (label, bbox) for label, bbox in gt_boxes if label in gallery_labels
-        ]
-        gt_ood = [
-            (label, bbox) for label, bbox in gt_boxes if label in OUT_OF_GALLERY_CLASSES
-        ]
+        gt_in_gallery, gt_ood = split_ground_truth(gt_boxes, gallery_labels)
         if not gt_in_gallery and not gt_ood:
             continue
 
-        crops, kept_px = [], []
-        for bbox, _poly in propose(image):
-            x1, y1, x2, y2 = bbox
-            x1, y1 = max(0, x1), max(0, y1)
-            x2, y2 = min(w, x2), min(h, y2)
-            if x2 <= x1 or y2 <= y1:
-                continue
-            crops.append(PILImage.fromarray(image[y1:y2, x1:x2][:, :, ::-1]))
-            kept_px.append([x1, y1, x2, y2])
+        h, w = image.shape[:2]
+        kept_px = [box for box, _ in clip_proposals(propose(image), w, h)]
+        crops = [
+            PILImage.fromarray(image[y1:y2, x1:x2][:, :, ::-1])
+            for x1, y1, x2, y2 in kept_px
+        ]
 
         crop_emb = (
             backbone.embed_batch(crops)
