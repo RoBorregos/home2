@@ -18,6 +18,7 @@ from task_manager.utils.baml_client.types import (
     GuidePersonTo,
 )
 from task_manager.utils.status import Status
+from task_manager.utils.logger import Logger
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
 
@@ -35,6 +36,15 @@ FOLLOW_RELOCK_ATTEMPTS = 3
 FIND_PERSON_MAX_ROUNDS = 4
 # Scan points closer than this (map frame, meters) count as the same person across rounds.
 FIND_PERSON_VISITED_RADIUS = 0.75
+
+# Arm-only pan sweep (no base/nav rotation): one continuous motion across
+# the arm's pan range instead of hopping between discrete stops, checked
+# for a person at fine time intervals while it's moving. Mimics a person
+# slowly turning their head and stopping the instant they spot someone,
+# instead of turning in steps and pausing to look at each one.
+SEARCH_PAN_RANGE_DEG = 65  # scan from -RANGE to +RANGE (same max validated on hardware)
+SEARCH_SWEEP_VELOCITY = 0.2  # MoveIt velocity scaling factor (0-1); slow, deliberate scan
+SEARCH_POLL_PERIOD = 0.1  # s between person checks while the sweep is in flight
 
 
 class GPSRTask(GenericTask):
@@ -696,6 +706,40 @@ class GPSRTask(GenericTask):
         )
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
+    def _iter_search_poses(self):
+        """Pan the arm continuously from -SEARCH_PAN_RANGE_DEG to
+        +SEARCH_PAN_RANGE_DEG in one single motion (no base/nav motion,
+        and no stopping at intermediate stops), yielding every
+        SEARCH_POLL_PERIOD seconds while it's in flight so callers can
+        check for a person without the arm ever pausing to look. Finding a
+        person is the success condition here, not a failure: it's up to
+        the caller to break out of the loop when its own check (vision)
+        says somebody was seen. That break is what stops the arm -- the
+        cancel below is only the mechanism for stopping immediately
+        wherever the arm currently is, triggered by the find, not the
+        other way around. Callers should pan_to(0) after the loop
+        regardless of how it ends."""
+        manipulation = self.subtask_manager.manipulation
+        manipulation.pan_to(-SEARCH_PAN_RANGE_DEG)
+        goal_handle = manipulation.pan_sweep_start(
+            SEARCH_PAN_RANGE_DEG, velocity=SEARCH_SWEEP_VELOCITY
+        )
+        if goal_handle is None:
+            return
+        result_future = goal_handle.get_result_async()
+        try:
+            while not manipulation.pan_sweep_poll(result_future):
+                yield
+                time.sleep(SEARCH_POLL_PERIOD)
+        finally:
+            # Runs even when the caller breaks early because it found a
+            # person: the generator's .close() fires this via GeneratorExit.
+            # This is just halting the motion, not reporting a failure --
+            # the caller already knows (and logs) that finding someone is
+            # what triggered it.
+            if not result_future.done():
+                manipulation.pan_sweep_cancel(goal_handle)
+
     def _approach_with_arm(self, point) -> bool:
         """Drive to a person point with the arm tucked (nav_pose), then look
         at them (front_stare) ready for the interaction that follows.
@@ -782,9 +826,8 @@ class GPSRTask(GenericTask):
             f"Searching for {value}.",
         )
 
-        for degree in self.pan_angles:
-            self.subtask_manager.manipulation.pan_to(degree)
-
+        found = False
+        for _ in self._iter_search_poses():
             if command.attribute_value == "":
                 status, count = self.subtask_manager.vision.count_by_pose(Poses.STANDING.value)
             elif is_value_in_enum(value, Gestures):
@@ -806,6 +849,7 @@ class GPSRTask(GenericTask):
 
             # If next command is "go_to" dont ask to approach robot
             if status == Status.EXECUTION_SUCCESS and count > 0:
+                found = True
                 self.subtask_manager.hri.say(
                     f"I found a {command.attribute_value}.",
                 )
@@ -813,13 +857,14 @@ class GPSRTask(GenericTask):
                     self.subtask_manager.hri.say("Please approach me.")
                 break
 
-            elif status == Status.TARGET_NOT_FOUND:
-                self.subtask_manager.hri.say(
-                    f"I didn't find any person with {command.attribute_value}.",
-                )
-                self.subtask_manager.hri.say(
-                    "Please approach me.",
-                )
+        self.subtask_manager.manipulation.pan_to(0)
+        if not found:
+            self.subtask_manager.hri.say(
+                f"I didn't find any person with {command.attribute_value}.",
+            )
+            self.subtask_manager.hri.say(
+                "Please approach me.",
+            )
 
         return Status.EXECUTION_SUCCESS, "found" + command.attribute_value
 
@@ -956,13 +1001,11 @@ class GPSRTask(GenericTask):
         person class), filters them to the robot's current room polygon and
         deprojects each to a camera-frame 3D point. Those points are projected
         to the map HERE, while the camera still holds the scan pose, so they
-        stay valid after the arm moves. Pans through self.pan_angles when
-        nobody is in the front view. Returns map-frame PointStamped list,
-        nearest person first."""
-        for pan in [0] + list(self.pan_angles):
-            if pan:
-                self.subtask_manager.manipulation.pan_to(pan)
-                time.sleep(1.0)
+        stay valid after the arm moves. Sweeps the arm pan range in one
+        continuous motion (_iter_search_poses) and stops the instant
+        somebody is seen. Returns map-frame PointStamped list, nearest
+        person first."""
+        for _ in self._iter_search_poses():
             s, _count = self.subtask_manager.vision.count_person()
             points = list(self.subtask_manager.vision.last_person_points)
             points.sort(key=lambda p: p.point.x**2 + p.point.y**2 + p.point.z**2)
@@ -976,8 +1019,16 @@ class GPSRTask(GenericTask):
                 mp.point.x, mp.point.y = xy
                 map_points.append(mp)
             if map_points:
-                if pan:
-                    self.subtask_manager.manipulation.pan_to(0)
+                # Found somebody: this is the search succeeding, not a
+                # failure. Breaking out of the loop stops the in-flight
+                # sweep (see _iter_search_poses) -- that stop is just the
+                # mechanism, triggered BECAUSE we found someone, not the
+                # other way around.
+                Logger.success(
+                    self.subtask_manager.manipulation.node,
+                    f"Person found mid-sweep -- stopping search ({len(map_points)} seen)",
+                )
+                self.subtask_manager.manipulation.pan_to(0)
                 return map_points
         self.subtask_manager.manipulation.pan_to(0)
         return []

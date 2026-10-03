@@ -2,7 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionServer
+from rclpy.action import ActionServer, CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from std_msgs.msg import Bool
@@ -107,6 +107,7 @@ class MotionPlanningServer(Node):
             MoveJoints,
             MOVE_JOINTS_ACTION_SERVER,
             self.move_joints_execute_callback,
+            cancel_callback=self._move_joints_cancel_callback,
             callback_group=self.callback_group,
         )
 
@@ -302,6 +303,13 @@ class MotionPlanningServer(Node):
         )
         return None
 
+    def _move_joints_cancel_callback(self, goal_handle):
+        """Allow callers to interrupt an in-flight joint goal early (e.g. a
+        continuous search sweep that should stop the instant something is
+        detected, instead of running the whole planned trajectory)."""
+        self.get_logger().warn("MoveJoints cancellation requested")
+        return CancelResponse.ACCEPT
+
     def move_joints_execute_callback(self, goal_handle):
         """Manages the lifecycle of the MoveJoints action."""
         if self._in_estop:
@@ -323,6 +331,9 @@ class MotionPlanningServer(Node):
             if was_successful:
                 goal_handle.succeed()
                 result.success = True
+            elif goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+                result.success = False
             else:
                 goal_handle.abort()
                 result.success = False
@@ -471,11 +482,15 @@ class MotionPlanningServer(Node):
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
             was_execution_successful = self.planner.execute_plan(
-                trajectory_plan, is_estop_active=lambda: self._in_estop
+                trajectory_plan,
+                is_estop_active=lambda: self._in_estop
+                or goal_handle.is_cancel_requested,
             )
             if was_execution_successful:
                 self.get_logger().info("Trajectory executed successfully.")
                 return True
+            elif goal_handle.is_cancel_requested:
+                self.get_logger().info("Trajectory execution cancelled.")
             else:
                 self.get_logger().error("Trajectory execution failed.")
         else:
