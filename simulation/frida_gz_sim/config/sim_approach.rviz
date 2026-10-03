@@ -1,0 +1,115 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Enabled: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot_description
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: false
+    - Class: rviz_default_plugins/Map
+      Name: Map
+      Enabled: true
+      Topic:
+        Value: /map
+        Durability Policy: Transient Local
+      Color Scheme: map
+      Alpha: 0.7
+    - Class: rviz_default_plugins/LaserScan
+      Name: Merged scan
+      Enabled: true
+      Topic:
+        Value: /scan
+        Reliability Policy: Best Effort
+      Size (m): 0.05
+      Style: Spheres
+      Color: 255; 60; 60
+      Color Transformer: FlatColor
+    - Class: rviz_default_plugins/Map
+      Name: Global costmap
+      Enabled: false
+      Topic:
+        Value: /global_costmap/costmap
+        Durability Policy: Transient Local
+      Color Scheme: costmap
+      Alpha: 0.2
+    - Class: rviz_default_plugins/Map
+      Name: Local costmap
+      Enabled: true
+      Topic:
+        Value: /local_costmap/costmap
+        Durability Policy: Transient Local
+      Color Scheme: costmap
+      Alpha: 0.5
+    - Class: rviz_default_plugins/Path
+      Name: Planned path
+      Enabled: true
+      Topic:
+        Value: /plan
+      Color: 0; 200; 255
+      Line Width: 0.03
+    - Class: rviz_default_plugins/Odometry
+      Name: Odometry
+      Enabled: false
+      Topic:
+        Value: /odom
+      Keep: 1
+      Covariance:
+        Value: false
+    - Class: rviz_default_plugins/Polygon
+      Name: Footprint
+      Enabled: true
+      Topic:
+        Value: /local_costmap/published_footprint
+      Color: 255; 255; 0
+    - Class: rviz_default_plugins/Path
+      Name: Approach path (MPPI)
+      Enabled: true
+      Topic:
+        Value: /approach_planner/path
+      Color: 255; 0; 255
+      Line Width: 0.04
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Approach candidates
+      Enabled: true
+      Topic:
+        Value: /approach_planner/candidates
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Table docker
+      Enabled: true
+      Topic:
+        Value: /table_docker/markers
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Sim furniture
+      Enabled: true
+      Topic:
+        Value: /sim/furniture_markers
+  Global Options:
+    Fixed Frame: map
+    Frame Rate: 5
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Angle: 0
+      Scale: 160
+      Target Frame: base_link
+      X: 0
+      Y: 0
+Window Geometry:
+  Width: 1280
+  Height: 960
+  Hide Left Dock: true
+  Hide Right Dock: true

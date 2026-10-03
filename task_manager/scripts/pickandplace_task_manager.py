@@ -87,25 +87,21 @@ class Location(Enum):
 
 
 # ==========================================================
-# DOCK OFFSETS — the ONE place to tune docking per location.
-# Stand-off (m) from the surface when docking after arriving:
-#   0.0  -> flush dock (docker default approach)
-#   >0.0 -> stop that far short of the surface (larger = further back). The
-#           dishwasher / cooking_table fronts sit closer than a normal table,
-#           so a flush dock bumps the base into them.
+# DOCK SURFACES — what kind of surface each place is. No distances here: the
+# docker plans the base pose inside that surface type's arm reach band
+# (nav_main/config/approach_profiles.yaml — tune distances THERE, per type).
 #   None -> do NOT dock at this place.
-# Every dock in this task reads from this table. Tune on the robot.
 # ==========================================================
-DOCK_OFFSETS: dict[Location, float | None] = {
+DOCK_SURFACES: dict[Location, str | None] = {
     Location.KITCHEN: None,  # safe_place — start/announce spot, never docks
-    Location.DINING_TABLE: 0.0,  # dinner_table
-    Location.EXTRA_SURFACE: 0.0,  # counter
-    Location.DISHWASHER: 0.32,  # front sits close — stop short
-    Location.DISHWASHER_TAB: 0.32,  # cooking_table, same close front
-    Location.CABINET: 0.30,  # stand off so the arm reaches the shelves
+    Location.DINING_TABLE: "table",  # dinner_table
+    Location.EXTRA_SURFACE: "counter",  # counter
+    Location.DISHWASHER: "dishwasher",  # front sits close — profile stands further back
+    Location.DISHWASHER_TAB: "dishwasher",  # cooking_table, same close front
+    Location.CABINET: "cabinet",  # shelves: room for the arm to reach in
     Location.TRASH_BIN: None,  # trash — detect-and-drop flow, no dock
-    Location.BREAKFAST_SURFACE: 0.0,  # dinner_table
-    Location.BREAKFAST_ITEMS: 0.32,  # dishwasher top (bowl + spoon source)
+    Location.BREAKFAST_SURFACE: "table",  # dinner_table
+    Location.BREAKFAST_ITEMS: "dishwasher",  # dishwasher top (bowl + spoon source)
 }
 
 
@@ -414,12 +410,12 @@ class PickAndPlaceTM(Node):
         return result
 
     def dock_at(self, location: Location):
-        """Dock at `location` with its DOCK_OFFSETS stand-off; skips places marked None."""
-        offset = DOCK_OFFSETS.get(location)
-        if offset is None:
+        """Dock at `location` as its DOCK_SURFACES type; skips places marked None."""
+        surface = DOCK_SURFACES.get(location)
+        if surface is None:
             CLog.nav(self, "DOCK", f"No dock configured for {location.value}, skipping.")
             return
-        self.subtask_manager.nav.dock_table(offset=offset)
+        self.subtask_manager.nav.dock_table(surface_type=surface)
 
     def timeout(self, duration: float = 2.0):
         """Non-blocking wait that keeps spinning ROS"""

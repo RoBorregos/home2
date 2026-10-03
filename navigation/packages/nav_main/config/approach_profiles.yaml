@@ -1,0 +1,49 @@
+# Base placement profiles (nav_main/approach_planner.py).
+#
+# Replaces the per-location stand-offs that task managers used to hardcode
+# (DOCK_OFFSETS / DOCK_TABLE_OFFSET). A task names the SURFACE TYPE it works at;
+# the planner then picks the best base pose inside the reach band.
+#
+#   gap      preferred clearance (m) between the robot's FRONT (the footprint's
+#            front edge in nav2 params) and the detected surface face
+#   gap_min  closest the planner/docker may put the robot
+#   gap_max  farthest the arm still reaches the surface
+#   shape    face model for table_docker: line | circle | auto
+#
+# Initial values reproduce the distances the robot docked at before this change
+# (old offset + min_safe 0.19 - footprint front 0.325), so behaviour on the real
+# robot does not move. Ask manipulation for the measured reach band per surface.
+
+surfaces:
+  # auto: fit line AND circle, keep the better one (dining tables may be round)
+  table:        {gap: 0.03, gap_min: 0.02, gap_max: 0.15, shape: auto}
+  round_table:  {gap: 0.03, gap_min: 0.02, gap_max: 0.15, shape: circle}
+  counter:      {gap: 0.03, gap_min: 0.02, gap_max: 0.15, shape: line}
+  # Front sits close / overhangs above the lidar plane: stand further back.
+  dishwasher:   {gap: 0.19, gap_min: 0.12, gap_max: 0.25, shape: line}
+  # Shelves: the arm needs room to reach in.
+  cabinet:      {gap: 0.17, gap_min: 0.10, gap_max: 0.25, shape: line}
+  shelf:        {gap: 0.17, gap_min: 0.10, gap_max: 0.25, shape: line}
+  # Restaurant: serving at a customer table / bar with the arm tucked in nav_pose.
+  serving_table: {gap: 0.19, gap_min: 0.12, gap_max: 0.25, shape: auto}
+  # Unknown surface: table band, let table_docker pick line/circle.
+  default:      {gap: 0.03, gap_min: 0.02, gap_max: 0.15, shape: auto}
+
+# approach_point (person / object seen by vision): here the band is the distance
+# from the base CENTRE to the target point.
+points:
+  default:      {gap: 0.65, gap_min: 0.50, gap_max: 0.95}
+  person:       {gap: 0.80, gap_min: 0.60, gap_max: 1.10}
+  object:       {gap: 0.65, gap_min: 0.50, gap_max: 0.95}
+
+# Candidate scoring (lower wins): footprint cost (inflation, /252), distance from
+# the preferred gap (/band width), lateral offset from the target (m), travel (m).
+# Docking: every pose sits next to the surface, so inflation says little and the
+# lateral alignment dominates. approach_point: prefer clearance from obstacles.
+weights:
+  dock:  {cost: 0.2, reach: 1.0, lateral: 3.0, travel: 0.3}
+  point: {cost: 1.0, reach: 1.0, lateral: 0.0, travel: 0.3}
+
+# Candidate poses keep this margin (m) from every obstacle except the surface
+# being docked at (the footprint is grown by it for the collision check).
+footprint_padding: 0.03

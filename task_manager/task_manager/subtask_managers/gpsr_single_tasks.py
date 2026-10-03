@@ -278,7 +278,10 @@ class GPSRSingleTask(GenericTask):
         """
         if isinstance(command, dict):
             command = PickObject(**command)
-        self.subtask_manager.nav.dock_table()
+        # Shelves need room for the arm to reach in; tables are docked close.
+        self.subtask_manager.nav.dock_table(
+            surface_type="shelf" if self._at_shelf_furniture() else "table"
+        )
         self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
 
         if self._at_shelf_furniture():
