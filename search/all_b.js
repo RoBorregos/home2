@@ -21,6 +21,5 @@ var searchData=
   ['known_5ffaces_5fpath_18',['known_faces_path',['../classmodels_1_1face__recognition_1_1FaceModel.html#a7157d34848628bed1b845a45e8310d91',1,'models::face_recognition::FaceModel']]],
   ['known_5ffaces_5fpath_19',['KNOWN_FACES_PATH',['../namespaceface__recognition__node.html#a4b2d182930304b364cdc2af6f6b32bef',1,'face_recognition_node']]],
   ['known_5fstrategy_5fkinds_20',['KNOWN_STRATEGY_KINDS',['../namespacepick__and__place_1_1pipelines_1_1profiles.html#a6e3381fe4e1e49e1a6d1f748fa52da22',1,'pick_and_place::pipelines::profiles']]],
-  ['kp_21',['KP',['../namespacenav__goal__arm__pointer.html#a41f08a8f198e639b5c2ca429e7d96881',1,'nav_goal_arm_pointer']]],
-  ['kp_5fconf_22',['KP_CONF',['../namespacemodels_1_1pose__detection.html#abda8d67aad212f9a92a490ded3d4f642',1,'models.pose_detection.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()']]]
+  ['kp_5fconf_21',['KP_CONF',['../namespacemodels_1_1pose__detection.html#abda8d67aad212f9a92a490ded3d4f642',1,'models.pose_detection.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()']]]
 ];

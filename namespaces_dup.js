@@ -268,7 +268,6 @@ var namespaces_dup =
       [ "launch_setup", "namespacenav2__omni.html#a9f93b07e8eb53e1d1c2a1aac7bf8cd7c", null ]
     ] ],
     [ "nav_central", "namespacenav__central.html", "namespacenav__central" ],
-    [ "nav_goal_arm_pointer", "namespacenav__goal__arm__pointer.html", "namespacenav__goal__arm__pointer" ],
     [ "nav_ui", "namespacenav__ui.html", "namespacenav__ui" ],
     [ "node_monitor", "namespacenode__monitor.html", "namespacenode__monitor" ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [

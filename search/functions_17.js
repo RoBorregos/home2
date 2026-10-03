@@ -7,13 +7,12 @@ var searchData=
   ['wait_5ffor_5fservice_4',['wait_for_service',['../classfakes_1_1ServiceStub.html#a1d672590af1cbab86441ceb4cdd08647',1,'fakes::ServiceStub']]],
   ['wait_5funtil_5fready_5',['wait_until_ready',['../classfakes_1_1FakeArm.html#a9f1513b4b24f684a9763a92656ca35ef',1,'fakes.FakeArm.wait_until_ready()'],['../classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a2cba0cd93f2cda190e6faa7b9b4d3692',1,'pick_and_place.robot.arm.RobotArm.wait_until_ready()']]],
   ['warmup_6',['warmup',['../namespacefetch__models.html#a5360c5f687061c19e906deddc153e8a9',1,'fetch_models']]],
-  ['warn_7',['warn',['../classtask__manager_1_1utils_1_1logger_1_1Logger.html#abf0d8c2e64e8cd08ac14409e72dac0bb',1,'task_manager.utils.logger.Logger.warn()'],['../classfakes_1_1FakeLogger.html#a707e53e6218b71e74087121264a18206',1,'fakes.FakeLogger.warn(self, message)']]],
+  ['warn_7',['warn',['../classfakes_1_1FakeLogger.html#a707e53e6218b71e74087121264a18206',1,'fakes.FakeLogger.warn()'],['../classtask__manager_1_1utils_1_1logger_1_1Logger.html#abf0d8c2e64e8cd08ac14409e72dac0bb',1,'task_manager.utils.logger.Logger.warn()']]],
   ['warning_8',['warning',['../classfakes_1_1FakeLogger.html#a0783def4c11108ff3e0c156643152495',1,'fakes::FakeLogger']]],
   ['weights_5fdir_9',['weights_dir',['../namespacefetch__models.html#af50874cba910187c5192111274e0c3d6',1,'fetch_models']]],
   ['weights_5finit_5fclassifier_10',['weights_init_classifier',['../namespaceutils_1_1models_1_1swin_1_1model.html#a639f3563c70b2c18715a61b727c03af5',1,'utils::models::swin::model']]],
   ['weights_5finit_5fkaiming_11',['weights_init_kaiming',['../namespaceutils_1_1models_1_1swin_1_1model.html#a8689d87948d0b96e83256aa831ed16d6',1,'utils::models::swin::model']]],
   ['wheelevent_12',['wheelEvent',['../classnav__ui_1_1NavCanvas.html#a54de06d9f39e1c13ff94729f5f1caa55',1,'nav_ui.NavCanvas.wheelEvent()'],['../classmap__area__tagger_1_1MapCanvas.html#abff48300700155a2e202712daa41f894',1,'map_area_tagger.MapCanvas.wheelEvent()']]],
   ['world_5fto_5fcostmap_13',['world_to_costmap',['../classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html#ad27d8f27ebcd4ebae5ab74f765460043',1,'adaptive_goal_publisher::AdaptiveGoalPublisher']]],
-  ['wrap_5fangle_14',['wrap_angle',['../namespacenav__goal__arm__pointer.html#aaf7966aebe7a64396b221b03b569e7dc',1,'nav_goal_arm_pointer']]],
-  ['write_5fview_5flog_15',['write_view_log',['../namespacelaunch__nav.html#a57e87166d8c220a27ed62563585c7391',1,'launch_nav']]]
+  ['write_5fview_5flog_14',['write_view_log',['../namespacelaunch__nav.html#a57e87166d8c220a27ed62563585c7391',1,'launch_nav']]]
 ];

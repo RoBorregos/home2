@@ -20,7 +20,7 @@ var searchData=
   ['waitforcontrollerinput_2esrv_17',['WaitForControllerInput.srv',['../WaitForControllerInput_8srv.html',1,'']]],
   ['waitforcontrollerinputnode_18',['WaitForControllerInputNode',['../classwait__for__controller__input__node_1_1WaitForControllerInputNode.html',1,'wait_for_controller_input_node']]],
   ['waiting_5ffor_5fbutton_19',['WAITING_FOR_BUTTON',['../classegsr__cut_1_1EGPSRTM_1_1States.html#ad4915c5b9ddd3af97c405e80f15d0fa5',1,'egsr_cut.EGPSRTM.States.WAITING_FOR_BUTTON()'],['../classdemo__manager_1_1DemoTM_1_1States.html#a10e15779ccd6a344d5ad192eb4e7d4c2',1,'demo_manager.DemoTM.States.WAITING_FOR_BUTTON()'],['../classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html#ae9075a794816488c3b0c76bb1ac35aa5',1,'gpsr_task_manager.GPSRTM.TaskStates.WAITING_FOR_BUTTON()']]],
-  ['waiting_5ffor_5fcommand_20',['WAITING_FOR_COMMAND',['../classdemo__manager_1_1DemoTM_1_1States.html#a5b70d79c7e010464303e6e55fbf3085e',1,'demo_manager.DemoTM.States.WAITING_FOR_COMMAND()'],['../classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html#a1b5146f61fc6ec8480fc8e5f5b286ad2',1,'gpsr_task_manager.GPSRTM.TaskStates.WAITING_FOR_COMMAND()']]],
+  ['waiting_5ffor_5fcommand_20',['WAITING_FOR_COMMAND',['../classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html#a1b5146f61fc6ec8480fc8e5f5b286ad2',1,'gpsr_task_manager.GPSRTM.TaskStates.WAITING_FOR_COMMAND()'],['../classdemo__manager_1_1DemoTM_1_1States.html#a5b70d79c7e010464303e6e55fbf3085e',1,'demo_manager.DemoTM.States.WAITING_FOR_COMMAND()']]],
   ['warmup_21',['warmup',['../namespacefetch__models.html#a5360c5f687061c19e906deddc153e8a9',1,'fetch_models']]],
   ['warmup_5fseconds_22',['WARMUP_SECONDS',['../namespacetest__chairs__to__remove.html#a62846161cbea0eacc3d64857643f6fad',1,'test_chairs_to_remove']]],
   ['warn_23',['warn',['../classtask__manager_1_1utils_1_1logger_1_1Logger.html#abf0d8c2e64e8cd08ac14409e72dac0bb',1,'task_manager.utils.logger.Logger.warn()'],['../classfakes_1_1FakeLogger.html#a707e53e6218b71e74087121264a18206',1,'fakes.FakeLogger.warn(self, message)']]],
@@ -39,8 +39,7 @@ var searchData=
   ['wm_5fplaced_36',['wm_placed',['../classdoing__laundry__task__manager_1_1DoingLaundryTM.html#afcbf3d1087669cf79a00c830bc3773ff',1,'doing_laundry_task_manager::DoingLaundryTM']]],
   ['world_5fto_5fcostmap_37',['world_to_costmap',['../classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html#ad27d8f27ebcd4ebae5ab74f765460043',1,'adaptive_goal_publisher::AdaptiveGoalPublisher']]],
   ['worst_5foverall_38',['worst_overall',['../namespaceprobe__cuboid.html#ac49d27172c615164aad3d4f2d650573f',1,'probe_cuboid']]],
-  ['wrap_5fangle_39',['wrap_angle',['../namespacenav__goal__arm__pointer.html#aaf7966aebe7a64396b221b03b569e7dc',1,'nav_goal_arm_pointer']]],
-  ['write_5fview_5flog_40',['write_view_log',['../namespacelaunch__nav.html#a57e87166d8c220a27ed62563585c7391',1,'launch_nav']]],
-  ['wxyzquaternion_41',['WXYZQuaternion',['../namespacevamp_1_1typing.html#aa15b02e295307acf3fe308d20a94f019',1,'vamp::typing']]],
-  ['wz_5fmax_5fseen_42',['wz_max_seen',['../classfollow__calibration_1_1FollowCalibration.html#a6139449c3f3007fa8eec102a6ae682fe',1,'follow_calibration::FollowCalibration']]]
+  ['write_5fview_5flog_39',['write_view_log',['../namespacelaunch__nav.html#a57e87166d8c220a27ed62563585c7391',1,'launch_nav']]],
+  ['wxyzquaternion_40',['WXYZQuaternion',['../namespacevamp_1_1typing.html#aa15b02e295307acf3fe308d20a94f019',1,'vamp::typing']]],
+  ['wz_5fmax_5fseen_41',['wz_max_seen',['../classfollow__calibration_1_1FollowCalibration.html#a6139449c3f3007fa8eec102a6ae682fe',1,'follow_calibration::FollowCalibration']]]
 ];

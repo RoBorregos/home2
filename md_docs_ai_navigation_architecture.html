@@ -209,12 +209,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>COMPUTE_PATH_ACTION_SERVER</code>   </td><td class="markdownTableBodyNone"><code>nav2_msgs/ComputePathToPose</code>   </td><td class="markdownTableBodyNone">Path-planning only (backs <code>NavQuery</code>).   </td></tr>
 </table>
-<p><b>Topics published</b> (latched, <code>TRANSIENT_LOCAL</code>)</p><ul>
-<li><code>/nav/current_goal</code> (<code>geometry_msgs/PoseStamped</code>) — current goal; consumed by the arm pointer so the camera can aim at where the robot is heading.</li>
-<li><code>/nav/goal_active</code> (<code>std_msgs/Bool</code>) — whether a goal is currently being pursued.</li>
-</ul>
 <p><b>Topics subscribed</b></p><ul>
-<li><code>/nav/arm_ready</code> (<code>std_msgs/Bool</code>) — arm pointer says "camera aimed, proceed".</li>
 <li><code>INITIAL_POSE_TOPIC</code> (<code>PoseWithCovarianceStamped</code>) — initial pose from RViz / <code><a class="el" href="namespacenav__ui.html">nav_ui</a></code>.</li>
 <li><code>SCAN_TOPIC</code> = <code>/scan</code> (<code>LaserScan</code>) — used by the door check.</li>
 </ul>
