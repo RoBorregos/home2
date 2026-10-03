@@ -3,11 +3,13 @@
 import json
 import pathlib
 
-# .pt files live in scripts/models/ alongside this file
+from embedding_gallery.core.constants import GALLERY_DIRNAME
+
+# .pt files (and the gallery/ dir) live directly beside this file.
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/"
 
 # To add a new YOLO with the same architecture:
-#   1. Drop the .pt file in scripts/models/
+#   1. Drop the .pt file beside this one (scripts/detectors/)
 #   2. Add one entry here — zero other code changes needed
 #
 # New model architecture (compatible deps) → new file in models/ + one entry here
@@ -30,6 +32,19 @@ MODEL_CONFIGS: dict[str, dict] = {
         "use_trt": True,
     },
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
+    "embedding_box_proposer": {
+        "filename": "yoloe-11l-seg-pf.pt",
+        "type": "yolo_e",
+        "conf": 0.10,
+    },
+    "embedding_gallery": {
+        "type": "embedding",
+        "backbone": "vit_base_patch14_dinov2.lvd142m",
+        "box_model": "embedding_box_proposer",
+        "gallery_dir": GALLERY_DIRNAME,
+        "translation": "robocup2026_translation.json",
+        "use_trt": True,
+    },
 }
 
 

@@ -44,12 +44,20 @@ home2/
 │   │       ├── object_detector_node.py    # Runs N YOLO models, IoU-dedupes across them
 │   │       ├── zero_shot_object_detector_node.py    # YOLOE open-vocabulary detector
 │   │       ├── vision_3D_utils.py         # Pixel -> 3D point helpers
-│   │       └── detectors/                 # Pluggable model layer
-│   │           ├── base.py                # BBOX, Detection, DetectorModel ABC
-│   │           ├── registry.py            # MODEL_CONFIGS catalog + singleton loader
-│   │           ├── yolo.py                # @register("yolo") — v8/v11/v26
-│   │           ├── yolo_e.py              # @register("yolo_e") — YOLOE zero-shot
-│   │           └── robocup2026_translation.json     # Raw label -> published label
+│   │       ├── detectors/                 # Pluggable model layer
+│   │       │   ├── base.py                # BBOX, Detection, DetectorModel ABC
+│   │       │   ├── registry.py            # MODEL_CONFIGS catalog + singleton loader
+│   │       │   ├── yolo.py                # @register("yolo") — v8/v11/v26
+│   │       │   ├── yolo_e.py              # @register("yolo_e") — YOLOE zero-shot
+│   │       │   ├── embedding.py           # @register("embedding") — few-shot object gallery
+│   │       │   └── robocup2026_translation.json     # Raw label -> published label
+│   │       └── embedding_gallery/         # Few-shot object gallery tooling (see its README)
+│   │           ├── add_object.sh          # One-command "add an object" wrapper
+│   │           └── core/
+│   │               ├── constants.py       # Shared names, folders and file extensions
+│   │               ├── image_embedder.py  # Frozen DINOv2 image embedder (PyTorch / TensorRT)
+│   │               ├── gallery_matcher.py # Cosine matching against the per-object gallery
+│   │               └── gallery_build.py   # Builds one gallery entry from photos
 │   │
 │   ├── vision_general/                    # People, tracking and the per-task command nodes
 │   │   ├── config/botsort-reid.yaml       # Ultralytics BoT-SORT tracker config
@@ -80,6 +88,9 @@ home2/
 │   ├── face_recognition.txt               # insightface
 │   ├── utils.txt                          # tqdm, pillow, timm
 │   └── moondream.txt / moondream_server.txt
+│
+├── benchmarks/
+│   └── embedding_gallery/                 # Benchmark behind the few-shot gallery (see its README)
 │
 ├── scripts/
 │   └── fetch_models.py                    # Offline model provisioning + TRT warmup
@@ -113,6 +124,12 @@ must therefore never start two `image_orienter` instances — the per-task launc
 | `yolo_finetuned` | `robocup2026_v1.pt` | `yolo` | 0.6 |
 | `yolo_generic` | `yolo26n.pt` | `yolo` | 0.5 |
 | `zero_shot` | `yoloe-11l-seg.pt` | `yolo_e` | 0.25 |
+| `embedding_box_proposer` | `yoloe-11l-seg-pf.pt` | `yolo_e` | 0.10 |
+| `embedding_gallery` | DINOv2 ViT-B/14 + `gallery/` | `embedding` | per-object similarity floor |
+
+`ObjectDetect2D` runs the models listed under `models:` in `config/parameters.yaml`
+(currently `yolo_finetuned` and `embedding_gallery`). `embedding_box_proposer` is not a
+detector on its own: `embedding_gallery` calls it to get class-agnostic boxes.
 
 Adding a model with the same architecture is a two-step change: drop the `.pt` beside
 `registry.py` and add one dict entry. A model with conflicting dependencies, or one needing
@@ -150,7 +167,7 @@ flowchart LR
 
     subgraph VIS["home2-vision (ROS 2)"]
         IO
-        OD["ObjectDetect2D<br/>yolo_finetuned + yolo_generic"]
+        OD["ObjectDetect2D<br/>yolo_finetuned + embedding_gallery"]
         ZS["ZeroShotDetect2D<br/>yoloe-11l-seg"]
         TRK["tracker_node<br/>yolov8n + ByteTrack, yolo11m-pose"]
         FR["face_recognition<br/>InsightFace buffalo_sc"]
@@ -182,11 +199,29 @@ handles projection and visualization. `vision_general` has the same pattern in
 
 | Node | Purpose | Key interfaces |
 | --- | --- | --- |
-| `ObjectDetect2D` | Runs every model in `MODEL_CONFIGS` continuously and IoU-dedupes across them | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory` |
+| `ObjectDetect2D` | Runs the models listed under `models:` in `config/parameters.yaml` continuously and IoU-dedupes across them | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory` |
 | `ZeroShotDetect2D` | YOLOE open-vocabulary detection for classes not in the finetuned model | pubs `/vision/zero_shot_detections*`; srv `SetDetectorClasses` |
 
 Each node has a fixed activation topic (`/vision/object_detector/active`,
 `/vision/zero_shot_detector/active`) so a task manager can idle the GPU between steps.
+
+#### Adding an object to the gallery (few-shot)
+
+`yolo_finetuned` only knows its training classes. Other objects can be added from photos, with
+no retraining: YOLOE proposes boxes and DINOv2 matches each crop against a per-object gallery.
+It runs alongside `yolo_finetuned` (both are listed in `config/parameters.yaml`).
+
+Put 10-30 photos in
+`vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/`,
+then, inside `home2-vision`:
+
+```bash
+cd /workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery
+./add_object.sh <object_name>    # then restart ObjectDetect2D
+```
+
+Options, accuracy and troubleshooting: [`embedding_gallery/README.md`](packages/object_detector_2d/scripts/embedding_gallery/README.md).
+The benchmark behind the defaults: [`benchmarks/embedding_gallery/`](benchmarks/embedding_gallery/README.md).
 
 ### `vision_general`
 
