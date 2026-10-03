@@ -52,12 +52,15 @@ from frida_constants.vision_constants import (
     RESULTS_TOPIC,
     SET_TARGET_TOPIC,
 )
+from frida_constants.manipulation_constants import (
+    FOLLOW_PERSON_ARM_SERVICE,
+)
 from frida_constants.navigation_constants import (
     FOLLOW_PERSON_NAV_SERVICE,
     GOAL_UPDATE_TOPIC,
 )
 
-ARM_FOLLOW_SERVICE = "/follow_person"
+ARM_FOLLOW_SERVICE = FOLLOW_PERSON_ARM_SERVICE
 STOP_WORDS = {"stop", "s", "q", "quit", "exit"}
 SERVICE_TIMEOUT = 10.0
 # Thresholds the hints are judged against (matched to the current defaults of

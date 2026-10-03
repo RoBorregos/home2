@@ -1,5 +1,5 @@
 # Devel image for access to CUDA compilation
-ARG BASE_IMAGE=nvidia/cuda:11.8.0-devel-ubuntu22.04 
+ARG BASE_IMAGE=roborregos/home2:cpu_base
 FROM ${BASE_IMAGE} AS base
 
 LABEL maintainer="RoBorregos <roborregosteam@gmail.com>"
@@ -11,28 +11,26 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN mkdir -p /workspace/requirements
 
-# Torch+GPU
-RUN pip3 install torch torchvision torchaudio
-
 # ROS Requirements, will need several tools from desktop TODO: change desktop for specific dependencies
 RUN apt update && apt install -y ros-${ROS_DISTRO}-desktop ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-moveit ros-${ROS_DISTRO}-laser-geometry
 
 # Python Requirements
 COPY manipulation/requirements.txt /workspace/requirements/requirements.txt
-RUN pip3 install -r /workspace/requirements/requirements.txt
+# Single pip call so torch/numpy are installed once (PIP_IGNORE_INSTALLED=1 in the base
+# makes a second call overlay a different version instead of replacing it). Same pins as vision.
+RUN pip3 install torch==2.6.0 torchvision==0.21.0 -r /workspace/requirements/requirements.txt
 
 RUN mkdir -p /workspace/src/
 RUN mkdir -p /installs
 RUN chown -R ros:ros /workspace
 RUN chown -R ros:ros /installs
 
-RUN apt update && apt install -y ros-${ROS_DISTRO}-zed-msgs ros-${ROS_DISTRO}-moveit* \
-    ros-${ROS_DISTRO}-gazebo-ros ros-${ROS_DISTRO}-gazebo-ros2-control ros-${ROS_DISTRO}-gazebo-plugins
+RUN apt update && apt install -y ros-${ROS_DISTRO}-zed-msgs ros-${ROS_DISTRO}-moveit*
 # prebuild and more
 WORKDIR /installs
 RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install
 WORKDIR /installs/home2_install
-RUN rosdep init && rosdep update && rosdep install --from-paths /installs/home2_install --ignore-src -r --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control" -y
+RUN rosdep init && rosdep update && rosdep install --from-paths /installs/home2_install --ignore-src -r --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control libvtk-qt" -y
 RUN rosdep fix-permissions
 RUN cd manipulation/packages/gpd && mkdir -p build && cd build && cmake .. && make && make install
 

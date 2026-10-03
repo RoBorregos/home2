@@ -310,7 +310,7 @@ class ODriveDashboardNode(Node):
         self._baud = baud
         self._ser_lock = threading.Lock()
         try:
-            self.ser = serial.Serial(port, baud, timeout=0.1)
+            self.ser = serial.Serial(port, baud, timeout=0.1, write_timeout=0.5)
             self.get_logger().info(f"Serial: {port} @ {baud}")
         except serial.SerialException as e:
             self.get_logger().warn(f"Serial unavailable ({e}) — running in demo mode")
@@ -642,6 +642,12 @@ class ODriveDashboardNode(Node):
                 return
             try:
                 self.ser.write((text + '\r\n').encode())
+            except serial.SerialTimeoutException:
+                # TX stalled (ST-Link not accepting): drop this command. Closing
+                # here would hang draining the stuck queue; replug the ST-Link.
+                self.get_logger().error(
+                    "Serial write timeout: STM link not accepting data",
+                    throttle_duration_sec=5.0)
             except serial.SerialException as e:
                 self.get_logger().error(f"Serial write: {e}")
                 try:
@@ -655,8 +661,9 @@ class ODriveDashboardNode(Node):
     def _receiver(self):
         reconnect_delay = 2.0
         while rclpy.ok():
-            with self._ser_lock:
-                ser = self.ser
+            # No lock here: _serial_write holds it across a blocking write, and if
+            # this thread stops draining RX the ST-Link stalls TX -> deadlock.
+            ser = self.ser
 
             if ser is None:
                 if self._demo:
@@ -664,7 +671,7 @@ class ODriveDashboardNode(Node):
                 port = _find_stm_port(self.get_parameter('serial_port').value)
                 self.get_logger().info(f"Reconnecting serial on {port}...")
                 try:
-                    new_ser = serial.Serial(port, self._baud, timeout=0.1)
+                    new_ser = serial.Serial(port, self._baud, timeout=0.1, write_timeout=0.5)
                     with self._ser_lock:
                         self.ser = new_ser
                     self.discovered_node_ids.clear()
