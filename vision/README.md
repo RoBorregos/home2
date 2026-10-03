@@ -54,6 +54,7 @@ home2/
 │   │       └── embedding_gallery/         # Few-shot object gallery tooling (see its README)
 │   │           ├── add_object.sh          # One-command "add an object" wrapper
 │   │           └── core/
+│   │               ├── constants.py       # Shared names, folders and file extensions
 │   │               ├── image_embedder.py  # Frozen DINOv2 image embedder (PyTorch / TensorRT)
 │   │               ├── gallery_matcher.py # Cosine matching against the per-object gallery
 │   │               └── gallery_build.py   # Builds one gallery entry from photos
@@ -198,7 +199,7 @@ handles projection and visualization. `vision_general` has the same pattern in
 
 | Node | Purpose | Key interfaces |
 | --- | --- | --- |
-| `ObjectDetect2D` | Runs every model in `MODEL_CONFIGS` continuously and IoU-dedupes across them | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory` |
+| `ObjectDetect2D` | Runs the models listed under `models:` in `config/parameters.yaml` continuously and IoU-dedupes across them | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory` |
 | `ZeroShotDetect2D` | YOLOE open-vocabulary detection for classes not in the finetuned model | pubs `/vision/zero_shot_detections*`; srv `SetDetectorClasses` |
 
 Each node has a fixed activation topic (`/vision/object_detector/active`,

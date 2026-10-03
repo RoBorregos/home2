@@ -109,6 +109,6 @@ data/
 
 Written to `results/` (gitignored):
 
-- `benchmark_<ts>.json` (`embeddings`) and `thresholds.json` when a backbone passes the gate. Nothing reads it: the live defaults are `DEFAULT_MIN_SIMILARITY` / `DEFAULT_MARGIN_MIN` in `gallery_matcher.py`, which `gallery_build.py` writes into each new object's `manifest.json`.
+- `benchmark_<ts>.json` (`embeddings`) and `thresholds.json` when a backbone passes the gate. Nothing reads it: the live defaults are `DEFAULT_MIN_SIMILARITY` / `DEFAULT_MARGIN_MIN` in `embedding_gallery/core/gallery_matcher.py`, which `gallery_build.py` writes into each new object's `manifest.json`.
 - `box_recall.json` (`boxes`).
 - `e2e_eval_<ts>.json`, `e2e_calibrate_perclass_<ts>.json`, `e2e_crops_cache.npz`, and `e2e_thresholds_perclass.json` when per-class thresholds win. The last one is a different, non-interchangeable file from `thresholds.json`; production does not load it either, so per-class values have to be copied into `gallery/manifest.json` by hand.
