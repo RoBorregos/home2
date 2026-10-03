@@ -672,6 +672,53 @@ class ManipulationTasks:
         joint_positions["joint1"] = FORWARD_JOINT1_DEG - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
+    def pan_sweep_start(self, to_degrees: float, velocity: float = 0.3):
+        """Start a single continuous pan trajectory towards to_degrees and
+        return immediately with the goal handle (instead of blocking until
+        the arm arrives). Unlike pan_to(), this lets a caller poll something
+        else (e.g. a vision check) while the arm is moving and cancel the
+        motion early with pan_sweep_cancel() the instant it should stop,
+        rather than only being able to check in between discrete steps.
+        Returns None if the goal could not be sent/accepted.
+        """
+        joint_positions = self.get_joint_positions(degrees=True)
+        if not isinstance(joint_positions, dict):
+            Logger.error(
+                self.node, f"Failed to get joint positions in pan_sweep_start: {joint_positions}"
+            )
+            return None
+        joint_positions["joint1"] = FORWARD_JOINT1_DEG - to_degrees
+        joint_names = list(joint_positions.keys())
+        joint_vals = [v * DEG_TO_RAD for v in joint_positions.values()]
+
+        future = self._send_joint_goal(
+            joint_names=joint_names, joint_positions=joint_vals, velocity=velocity
+        )
+        if future is None or isinstance(future, int):
+            Logger.error(self.node, "Failed to send pan sweep goal")
+            return None
+
+        rclpy.spin_until_future_complete(self.node, future)
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            Logger.error(self.node, "Pan sweep goal was rejected")
+            return None
+        return goal_handle
+
+    def pan_sweep_poll(self, result_future) -> bool:
+        """Spin the node briefly so the sweep's result future (from
+        goal_handle.get_result_async(), captured once by the caller) can
+        progress. Returns True once the goal has finished (reached the
+        target, aborted, or been cancelled)."""
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=0.05)
+        return result_future.done()
+
+    def pan_sweep_cancel(self, goal_handle):
+        """Stop an in-flight pan_sweep_start() motion immediately, wherever
+        the arm currently is."""
+        future = goal_handle.cancel_goal_async()
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
     def point(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         joint_positions["joint2"] = joint_positions["joint2"] + degrees
