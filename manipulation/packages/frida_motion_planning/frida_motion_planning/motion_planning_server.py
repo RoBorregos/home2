@@ -483,7 +483,8 @@ class MotionPlanningServer(Node):
             self.execute_trajectory(trajectory_plan)
             was_execution_successful = self.planner.execute_plan(
                 trajectory_plan,
-                is_estop_active=lambda: self._in_estop or goal_handle.is_cancel_requested,
+                is_estop_active=lambda: self._in_estop
+                or goal_handle.is_cancel_requested,
             )
             if was_execution_successful:
                 self.get_logger().info("Trajectory executed successfully.")
