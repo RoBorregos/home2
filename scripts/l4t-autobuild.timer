@@ -1,0 +1,10 @@
+[Unit]
+Description=Run home2 l4t image autobuild every 30 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=30min
+Unit=l4t-autobuild.service
+
+[Install]
+WantedBy=timers.target
