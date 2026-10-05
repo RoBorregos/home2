@@ -13,7 +13,7 @@ find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
 
 #Install directories
-install(DIRECTORY launch scripts/utils config Utils
+install(DIRECTORY launch scripts/utils config
   DESTINATION share/${PROJECT_NAME})
 
 
@@ -41,6 +41,13 @@ install(PROGRAMS
 file(GLOB MODEL_SCRIPTS scripts/models/*.py)
 install(PROGRAMS
   ${MODEL_SCRIPTS}
+  DESTINATION lib/${PROJECT_NAME}/models
+)
+
+# Model weights — installed alongside the Python model modules
+file(GLOB MODEL_WEIGHTS models/*.task)
+install(FILES
+  ${MODEL_WEIGHTS}
   DESTINATION lib/${PROJECT_NAME}/models
 )
 
