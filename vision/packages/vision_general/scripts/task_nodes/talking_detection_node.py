@@ -1,69 +1,57 @@
 #!/usr/bin/env python3
-"""Talking detection ROS2 node. Model logic lives in models.talking_detection.
+"""Talking detection ROS2 node. Landmarks come from models.mediapipe_detector;
+the mouth-ratio oscillation and debounce logic live in models.talking_detection.
+
+Runs only when called: the request carries the frames of ONE person (e.g. the
+face bbox crop from each frame, oldest first) and the response says whether that
+person is talking. Callers such as face recognition send one request per face.
 
 --- Run the node ---
     ros2 run vision_general talking_detection_node.py
 
 --- Query the service ---
-    ros2 service call /vision/is_talking std_srvs/srv/Trigger
+    ros2 service call /vision/is_talking frida_interfaces/srv/IsTalking "{frames: [...]}"
 """
 
-import pathlib
-
 import rclpy
-from ament_index_python.packages import get_package_share_directory
-from frida_constants.vision_constants import IMAGE_ORIENTED_TOPIC, IS_TALKING_TOPIC
-from models.talking_detection import TalkingDetector
-from std_srvs.srv import Trigger
-from vision_runtime import VisionRuntime, spin
-
-MODEL_PATH = (
-    pathlib.Path(get_package_share_directory("vision_general"))
-    / "Utils"
-    / "models"
-    / "face_landmarker.task"
+from cv_bridge import CvBridge, CvBridgeError
+from frida_constants.vision_constants import (
+    IS_TALKING_TOPIC,
+    SILENT_MESSAGE,
+    TALKING_MESSAGE,
 )
+from frida_interfaces.srv import IsTalking
+from models.mediapipe_detector import MediapipeDetector
+from models.talking_detection import MouthActivity
+from rclpy.node import Node
+from vision_runtime import spin
 
 
-class TalkingDetection(VisionRuntime):
+class TalkingDetection(Node):
     def __init__(self):
-        super().__init__(
-            "talking_detection",
-            image_topic=IMAGE_ORIENTED_TOPIC,
-            active_name="talking_detection",
-        )
-        self.detector = TalkingDetector(str(MODEL_PATH))
-        self.processed_stamp = None
+        super().__init__("talking_detection")
+        self.bridge = CvBridge()
+        self.detector = MediapipeDetector()
 
-        self.create_service(
-            Trigger,
-            IS_TALKING_TOPIC,
-            self.is_talking_callback,
-            callback_group=self.callback_group,
-        )
-        self.create_timer(0.03, self.run, callback_group=self.callback_group)
+        self.create_service(IsTalking, IS_TALKING_TOPIC, self.is_talking_callback)
         self.get_logger().info("Talking detection ready")
 
-    def _active_callback(self, msg):
-        super()._active_callback(msg)
-        if not self.active:
-            self.detector.reset()
-
-    def run(self):
-        if not self.active or self.image is None:
-            return
-        # Skip frames already processed so the debounce counts real frames.
-        stamp = self.image_header.stamp if self.image_header is not None else None
-        if stamp is not None and stamp == self.processed_stamp:
-            return
-        self.processed_stamp = stamp
-        self.detector.update(self.image)
-
     def is_talking_callback(self, request, response):
-        talking = self.detector.confirmed_talking
-        response.success = talking
-        response.message = "TALKING" if talking else "SILENT"
-        self.get_logger().info(f"Is talking query: {response.message}")
+        activity = MouthActivity()
+        for msg in request.frames:
+            try:
+                frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            except CvBridgeError as e:
+                self.get_logger().warn(f"Image conversion error: {e}")
+                continue
+            faces = self.detector.detect(frame)
+            activity.update(faces[0] if faces else None)
+
+        response.is_talking = activity.confirmed_talking
+        response.message = TALKING_MESSAGE if response.is_talking else SILENT_MESSAGE
+        self.get_logger().info(
+            f"Is talking query ({len(request.frames)} frames): {response.message}"
+        )
         return response
 
     def destroy_node(self):
