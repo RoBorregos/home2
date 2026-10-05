@@ -24,11 +24,10 @@ def launch_function(context, *args, **kwargs):
 
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
-    # Active omnibase Nav2 profile: 3-WHEEL LIMP (base running degraded, one
-    # wheel out — see nav2_omni_limp.yaml header). Single source for BOTH the
-    # nav2_omni include and the person_goal_smoother restore pair below; point
-    # back at nav2_omni.yaml once the base is healthy again.
-    nav2_omni_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
+    # Active omnibase Nav2 profile: full 4-wheel omni. Single source for BOTH the
+    # nav2_omni include and the person_goal_smoother restore pair below.
+    nav2_omni_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni.yaml')
+    # nav2_omni_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
     nav2_omni_follow_file = nav2_omni_file.replace('.yaml', '_following.yaml')
 
     rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME'))
