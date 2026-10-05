@@ -1,5 +1,8 @@
 var NAVTREEINDEX36 =
 {
+"md_manipulation_packages_vamp_resources_README.html#autotoc_md35":[3,1],
+"md_manipulation_packages_vamp_resources_README.html#autotoc_md36":[3,2],
+"md_manipulation_packages_vamp_resources_README.html#autotoc_md37":[3,2,0],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md38":[3,2,1],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md39":[3,3],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md40":[3,3,0],
@@ -246,8 +249,5 @@ var NAVTREEINDEX36 =
 "namespacedlc__launch.html":[38,0,24],
 "namespacedlc__launch.html#a37ea668562076873e257090bfe0041b7":[38,0,24,0],
 "namespacedock__to__handle.html":[38,0,25],
-"namespacedock__to__handle.html#a59f9e6aafea864ead0f0351ff90215b6":[38,0,25,1],
-"namespacedoing__laundry.html":[38,0,26],
-"namespacedoing__laundry.html#a5484971fda232c2271c7e033fb82a335":[38,0,26,1],
-"namespacedoing__laundry.html#adb8dec639762b94af76da7878d735ef8":[38,0,26,0]
+"namespacedock__to__handle.html#a59f9e6aafea864ead0f0351ff90215b6":[38,0,25,1]
 };

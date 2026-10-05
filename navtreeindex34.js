@@ -1,5 +1,8 @@
 var NAVTREEINDEX34 =
 {
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa778ae3a676cd97471a82cd7f2a47853e":[40,0,3,0,4,0,0,0,7,8],
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa9fce61393e29bd19881f49d3acd8a24e":[40,0,3,0,4,0,0,0,7,6],
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caaa65f9a19a43b17c5c4f822f6daf5a4cf":[40,0,3,0,4,0,0,0,7,3],
 "macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caaebebbb844ff2f348a2e038508132f403":[40,0,3,0,4,0,0,0,7,10],
 "macros_8hpp.html#aa99f2147b3f775316d89971291dbf174":[40,0,3,0,4,0,0,0,0],
 "macros_8hpp.html#ac0a53cb5ed7356485105c7adf5dff4bf":[40,0,3,0,4,0,0,0,3],
@@ -246,8 +249,5 @@ var NAVTREEINDEX34 =
 "md_docs_ai_architecture.html":[16],
 "md_docs_ai_architecture.html#autotoc_md181":[16,0],
 "md_docs_ai_architecture.html#autotoc_md182":[16,1],
-"md_docs_ai_architecture.html#autotoc_md183":[16,1,0],
-"md_docs_ai_architecture.html#autotoc_md184":[16,2],
-"md_docs_ai_coding_standards.html":[17],
-"md_docs_ai_coding_standards.html#autotoc_md186":[17,0]
+"md_docs_ai_architecture.html#autotoc_md183":[16,1,0]
 };

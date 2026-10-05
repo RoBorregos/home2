@@ -58,6 +58,7 @@ var classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "audio_state_publisher", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aa253e0e0f57d73dfd4a86881df439f44", null ],
     [ "command_interpreter_service", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aa836432dd80afa828d28fae447674d8d", null ],
     [ "current_transcription", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a213937c8ef0baca9e1ef30ccf6b97823", null ],
+    [ "display_keyword_publisher", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aaf3d97927de2c8bd1a3a26196b86b5af", null ],
     [ "display_map_publisher", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a87668b69a8ebede6cf19c280a2e61abd", null ],
     [ "display_publisher", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#abd98a157cf5d032a10fcbd1cb8dea07c", null ],
     [ "door_armed_publisher", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a814f43fb2da9ca51578e976163d8853d", null ],

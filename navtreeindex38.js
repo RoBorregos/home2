@@ -1,5 +1,9 @@
 var NAVTREEINDEX38 =
 {
+"namespacefrida__constants_1_1manipulation__constants.html#a9d76d5cfead1632343520928ce472249":[38,0,49,2,80],
+"namespacefrida__constants_1_1manipulation__constants.html#aa69010a5d9d23023490d467c8a93b7e9":[38,0,49,2,58],
+"namespacefrida__constants_1_1manipulation__constants.html#aa6dedb5c9f72415daca739d19d817619":[38,0,49,2,74],
+"namespacefrida__constants_1_1manipulation__constants.html#aaccddbdec7541f9e856c14beed78d764":[38,0,49,2,27],
 "namespacefrida__constants_1_1manipulation__constants.html#ab094c82e8bc2169c93352c9c310afd02":[38,0,49,2,65],
 "namespacefrida__constants_1_1manipulation__constants.html#ab2f8c97db5ed38418102404a5fcdacc1":[38,0,49,2,68],
 "namespacefrida__constants_1_1manipulation__constants.html#ab47629c5a5b394d104d2db6b7a65872b":[38,0,49,2,66],
@@ -245,9 +249,5 @@ var NAVTREEINDEX38 =
 "namespacehelp__me__carry.html#ab5e4a679e827451f1c0776fcf4137ac0":[38,0,68,2],
 "namespacehelp__me__carry.html#ac88fe056201780c2060003e5b20f4b6e":[38,0,68,1],
 "namespacehelp__me__carry.html#aeaa16e1397df6dada482cd75156c8788":[38,0,68,3],
-"namespacehric.html":[38,0,69],
-"namespacehric.html#a9ba344eaf004b5e2b4032d983f068469":[38,0,69,1],
-"namespacehric.html#ad1dd056eac0c72bace8a6fdd839dd77d":[38,0,69,0],
-"namespacehric__commands.html":[38,0,70],
-"namespacehric__commands.html#a19297de37a6bae70e0adcd79a9f3d19e":[38,0,70,10]
+"namespacehric.html":[38,0,69]
 };

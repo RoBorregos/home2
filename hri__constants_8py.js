@@ -9,6 +9,7 @@ var hri__constants_8py =
     [ "CONVESATION_SERVICE", "hri__constants_8py.html#a0dea1a972213b590aaf0c24edf6bba9e", null ],
     [ "DEFAULT_HOTWORDS", "hri__constants_8py.html#ae34afe358408d95f63d076478b349b0b", null ],
     [ "DISPLAY_IMAGE_TOPIC", "hri__constants_8py.html#aaa486a9f7f79cd7c69c81ff85d8ba336", null ],
+    [ "DISPLAY_KEYWORD_TOPIC", "hri__constants_8py.html#ac391c37e744c617d4bae07bb0e04721f", null ],
     [ "DISPLAY_MAP_TOPIC", "hri__constants_8py.html#a3fdac1c86ed416eee896a77aec9c4043", null ],
     [ "DISPLAY_PUBLISHER", "hri__constants_8py.html#a6b6228c6ea413ec24c0b26890dac3fb5", null ],
     [ "DOORBELL_ARMED_TOPIC", "hri__constants_8py.html#af389049cb8421fabf9b65cdd32d4c4fa", null ],

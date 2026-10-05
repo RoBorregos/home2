@@ -9,6 +9,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "CONVESATION_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a0dea1a972213b590aaf0c24edf6bba9e", null ],
     [ "DEFAULT_HOTWORDS", "namespacefrida__constants_1_1hri__constants.html#ae34afe358408d95f63d076478b349b0b", null ],
     [ "DISPLAY_IMAGE_TOPIC", "namespacefrida__constants_1_1hri__constants.html#aaa486a9f7f79cd7c69c81ff85d8ba336", null ],
+    [ "DISPLAY_KEYWORD_TOPIC", "namespacefrida__constants_1_1hri__constants.html#ac391c37e744c617d4bae07bb0e04721f", null ],
     [ "DISPLAY_MAP_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a3fdac1c86ed416eee896a77aec9c4043", null ],
     [ "DISPLAY_PUBLISHER", "namespacefrida__constants_1_1hri__constants.html#a6b6228c6ea413ec24c0b26890dac3fb5", null ],
     [ "DOORBELL_ARMED_TOPIC", "namespacefrida__constants_1_1hri__constants.html#af389049cb8421fabf9b65cdd32d4c4fa", null ],
