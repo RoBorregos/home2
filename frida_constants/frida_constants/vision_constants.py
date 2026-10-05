@@ -151,6 +151,27 @@ CHAIR_REMOVAL_IMAGE_TOPIC = "/vision/chair_removal_image"
 
 # Talking detection node
 IS_TALKING_TOPIC = "/vision/is_talking"
+TALKING_MESSAGE = "TALKING"
+SILENT_MESSAGE = "SILENT"
+
+# MediaPipe face landmarker
+FACE_LANDMARKER_MODEL = "face_landmarker.task"
+
+# Face landmark indices used for the mouth ratio
+UPPER_LIP_LANDMARK = 13
+LOWER_LIP_LANDMARK = 14
+LEFT_MOUTH_LANDMARK = 61
+RIGHT_MOUTH_LANDMARK = 291
+
+# Talking detection tuning
+TALKING_HISTORY_FRAMES = 25
+TALKING_MIN_DELTA = 0.01
+TALKING_DIRECTION_CHANGE_THRESHOLD = 2
+TALKING_DEBOUNCE_ON_FRAMES = 3
+TALKING_DEBOUNCE_OFF_FRAMES = 5
+TALKING_RATIO_CEILING = 0.3
+TALKING_MIN_MEAN_DELTA = 0.01
+TALKING_SMOOTHING_WINDOW = 5
 
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
