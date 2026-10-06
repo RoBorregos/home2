@@ -162,7 +162,7 @@ class HRITasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.start_button_clicked = False
-        # Set when the doorbell (DSP node) is heard at the door.
+        # Set when a doorbell or knock (door_event_detection) is heard at the door.
         self.door_event_detected = False
         self.last_door_event = ""
         self.keyword = ""
@@ -426,7 +426,7 @@ class HRITasks:
             self.keyword = ""
 
     def arm_door_detection(self, armed: bool) -> None:
-        """Enable/disable the doorbell detector.
+        """Enable/disable the door-event (doorbell + knock) detector.
 
         It only listens while armed, so the doorbell can only fire in the window
         where the robot waits at the door — party speech at any other time cannot
@@ -435,7 +435,7 @@ class HRITasks:
         self.door_armed_publisher.publish(Bool(data=armed))
 
     def _get_door_event(self, msg: String) -> None:
-        """Doorbell (DSP node) heard at the door."""
+        """Doorbell or knock (door_event_detection) heard at the door."""
         try:
             data = json.loads(msg.data)
             self.last_door_event = data.get("keyword", "")
