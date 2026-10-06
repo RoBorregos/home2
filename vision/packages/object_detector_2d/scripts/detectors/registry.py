@@ -3,8 +3,6 @@
 import json
 import pathlib
 
-from embedding_gallery.core.constants import GALLERY_DIRNAME
-
 # .pt files (and the gallery/ dir) live directly beside this file.
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/"
 
@@ -41,7 +39,7 @@ MODEL_CONFIGS: dict[str, dict] = {
         "type": "embedding",
         "backbone": "vit_base_patch14_dinov2.lvd142m",
         "box_model": "embedding_box_proposer",
-        "gallery_dir": GALLERY_DIRNAME,
+        "gallery_dir": "gallery",
         "translation": "robocup2026_translation.json",
         "use_trt": True,
     },

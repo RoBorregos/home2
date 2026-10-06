@@ -43,6 +43,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$SCRIPT_DIR/../../packages/object_detector_2d/scripts"
+UTILS_DIR="$SCRIPT_DIR/../../packages/vision_general/scripts"
 ALL_TASKS=(boxes embeddings e2e_eval e2e_calibrate)
 WORK_DIR="${EMBEDDING_WORKDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/embedding_gallery}"
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -95,13 +96,13 @@ abs_path() {
 }
 
 # Run a script of this directory with the right PYTHONPATH (this directory for
-# our modules, and the object_detector_2d scripts/ dir for `detectors` and
-# `embedding_gallery`).
+# our modules, the object_detector_2d scripts/ dir for `detectors` and
+# `embedding_gallery`, and the vision_general scripts/ dir for `utils`).
 run_py() {
     mkdir -p "$WORK_DIR"
     (
         cd "$WORK_DIR"
-        PYTHONPATH="$SCRIPT_DIR:$SCRIPTS_DIR:${PYTHONPATH:-}" \
+        PYTHONPATH="$SCRIPT_DIR:$SCRIPTS_DIR:$UTILS_DIR:${PYTHONPATH:-}" \
             exec "$PYTHON" "$@"
     )
 }

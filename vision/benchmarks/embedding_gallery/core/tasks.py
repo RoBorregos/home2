@@ -10,7 +10,7 @@ import json
 import time
 from pathlib import Path
 
-from embedding_gallery.core.image_embedder import ImageEmbedder
+from utils.models.image_embedder import ImageEmbedder
 from embedding_gallery.core.gallery_matcher import (
     DEFAULT_MARGIN_MIN,
     DEFAULT_MIN_SIMILARITY,

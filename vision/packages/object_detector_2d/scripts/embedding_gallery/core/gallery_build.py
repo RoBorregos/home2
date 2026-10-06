@@ -18,14 +18,13 @@ import numpy as np
 from detectors.registry import MODEL_CONFIGS, ModelRegistry
 from PIL import Image
 
-from embedding_gallery.core.image_embedder import ImageEmbedder
+from utils.models.image_embedder import ImageEmbedder, tensorrt_cache_dir
 from embedding_gallery.core.constants import (
     CROPS_DIRNAME,
     GALLERY_DIRNAME,
     MANIFEST_NAME,
     PHOTO_EXTENSIONS,
     PHOTOS_DIRNAME,
-    tensorrt_cache_dir,
 )
 from embedding_gallery.core.gallery_matcher import (
     DEFAULT_MARGIN_MIN,

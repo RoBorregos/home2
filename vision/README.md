@@ -55,7 +55,6 @@ home2/
 │   │           ├── add_object.sh          # One-command "add an object" wrapper
 │   │           └── core/
 │   │               ├── constants.py       # Shared names, folders and file extensions
-│   │               ├── image_embedder.py  # Frozen DINOv2 image embedder (PyTorch / TensorRT)
 │   │               ├── gallery_matcher.py # Cosine matching against the per-object gallery
 │   │               └── gallery_build.py   # Builds one gallery entry from photos
 │   │
@@ -71,6 +70,7 @@ home2/
 │   │       └── utils/                     # Importable library shared by every node
 │   │           ├── calculations.py        # deproject_pixel_to_point, get_depth, centroids
 │   │           ├── trt_utils.py           # load_yolo_trt(): .pt -> cached TensorRT .engine
+│   │           ├── models/image_embedder.py  # Frozen DINOv2 image embedder (PyTorch / TensorRT)
 │   │           ├── debug_pub.py           # Subscriber-gated, rate-limited debug images
 │   │           └── area_check.py          # Room filtering via nav MapAreas + TF     
 │   │

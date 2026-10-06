@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from embedding_gallery.core.image_embedder import ImageEmbedder
+from utils.models.image_embedder import ImageEmbedder
 from embedding_gallery.core.gallery_matcher import UNKNOWN
 
 from core.dataset import DATA_DIR, REJECTION_TARGET, RESULTS_DIR

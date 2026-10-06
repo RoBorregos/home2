@@ -194,7 +194,7 @@ def warmup(dest: Path):
         import numpy as np
 
         from detectors.registry import MODEL_CONFIGS
-        from embedding_gallery.core.image_embedder import ImageEmbedder
+        from utils.models.image_embedder import ImageEmbedder
 
         # Use production's config (registry.py), not the class default: otherwise
         # this warms up PyTorch while production runs TensorRT, and the engine is

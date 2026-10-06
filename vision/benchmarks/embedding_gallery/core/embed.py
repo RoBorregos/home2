@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 import numpy as np
-from embedding_gallery.core.image_embedder import ImageEmbedder
+from utils.models.image_embedder import ImageEmbedder
 
 from core.dataset import (
     DATA_DIR,

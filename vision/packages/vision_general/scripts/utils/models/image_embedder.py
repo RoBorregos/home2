@@ -8,15 +8,19 @@ from pathlib import Path
 
 import numpy as np
 
-from embedding_gallery.core.constants import tensorrt_cache_dir
-
 CLIP_PREFIX = "clip:"
+DEFAULT_TENSORRT_CACHE_DIR = "/workspace/trt_cache"
 
 # The TensorRT engine is built once for this whole batch range; a batch outside
 # it forces a slow rebuild. TRT_MAX_BATCH is also embed_batch()'s chunk size.
 TRT_MIN_BATCH = 1
 TRT_OPT_BATCH = 8
 TRT_MAX_BATCH = 32
+
+
+def tensorrt_cache_dir() -> Path:
+    """Persistent cache mount (TENSORRT_CACHE_DIR): engines, HF weights and the built gallery."""
+    return Path(os.environ.get("TENSORRT_CACHE_DIR", DEFAULT_TENSORRT_CACHE_DIR))
 
 
 class ImageEmbedder:
