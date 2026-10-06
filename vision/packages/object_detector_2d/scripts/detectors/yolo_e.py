@@ -43,7 +43,7 @@ class YoloEModel(DetectorModel):
 
     def detect(self, image) -> list[Detection]:
         with _SuppressStderr():
-            results = self.model.predict(image, verbose=False)
+            results = self.model.predict(image, conf=self.conf, verbose=False)
         detections = []
         h, w = image.shape[:2]
         for out in results:
@@ -51,8 +51,6 @@ class YoloEModel(DetectorModel):
                 continue
             for box, mask in zip(out.boxes, out.masks):
                 conf = box.conf[0].item()
-                if conf < self.conf:
-                    continue
                 label_id = int(box.cls[0].item())
                 label_text = self.translate(self.model.names[label_id])
                 det = Detection(label_text, label_id, conf)

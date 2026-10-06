@@ -1,21 +1,8 @@
 #!/usr/bin/env python3
-"""Fetch every vision model weight up front; optionally pre-build TRT engines.
+"""Fetch every vision weight up front so the stack works offline; --warmup also builds TRT engines.
 
-Run INSIDE the vision container (needs ultralytics; insightface for --warmup):
-
-    python3 /workspace/src/vision/scripts/fetch_models.py            # fetch only
-    python3 /workspace/src/vision/scripts/fetch_models.py --warmup   # + TRT export
-    ./run.sh vision --warmup                                         # from the host
-
-Why: `.pt` weights are gitignored and download lazily from the internet on each
-node's first run, followed by minutes of TensorRT export — on competition day,
-with no internet, a fresh container simply breaks. This script makes the stack
-offline-safe: standard weights land in TENSORRT_CACHE_DIR (a persistent mount
-that `load_yolo_trt` already checks), detector weights land next to
-`detectors/registry.py`, and --warmup pre-builds every TRT engine for THIS
-device (engines are device- and TRT-version-specific — never copy them between
-the laptop and the Orin). A MANIFEST.json with sha256 hashes is kept alongside
-the weights for integrity checks.
+Run inside the vision container (./run.sh vision --warmup); engines are device-specific, never copy them.
+Also fetches the DINOv2 weights and syncs the embedding gallery beside every detectors/registry.py.
 """
 
 import argparse
@@ -28,12 +15,18 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+sys.path.insert(
+    0, str(REPO_ROOT / "vision" / "packages" / "object_detector_2d" / "scripts")
+)
+from embedding_gallery.core.constants import GALLERY_DIRNAME  # noqa: E402
+
 # Standard ultralytics-hosted weights: name -> YOLO task (None = fetch only)
 STANDARD_MODELS = {
     "yolo11m-pose.pt": "pose",  # hric_commands (wrists), tracker/gpsr/customer pose
     "yolov8n.pt": "detect",  # tracker, moondream person crop
     "yolo26n.pt": "detect",  # object_detector yolo_generic
     "yoloe-11l-seg.pt": None,  # zero_shot (loads via its own YOLOE path)
+    "yoloe-11l-seg-pf.pt": None,  # embedding_box_proposer (prompt-free checkpoint)
 }
 
 # Custom weights that cannot be downloaded — verify presence, warn if missing.
@@ -46,7 +39,16 @@ CUSTOM_MODELS = [
 ]
 
 # Weights the object_detector registry expects beside detectors/registry.py.
-DETECTOR_MODELS = ["yolo26n.pt", "yoloe-11l-seg.pt", "robocup2026_v1.pt"]
+DETECTOR_MODELS = [
+    "yolo26n.pt",
+    "yoloe-11l-seg.pt",
+    "yoloe-11l-seg-pf.pt",
+    "robocup2026_v1.pt",
+]
+
+# HF-hub models (the DINOv2 embedder). Multi-file artifacts, so they are checked
+# by a successful load rather than a sha256.
+HF_MODELS = ["vit_base_patch14_dinov2.lvd142m"]
 
 
 def sha256(path: Path) -> str:
@@ -130,6 +132,53 @@ def sync_detector_models(dest: Path):
                 print(f"[sync]  {name} -> {ddir}")
 
 
+def fetch_hf_models(dest: Path) -> list[str]:
+    """Pre-download HF-hub models into hf_cache beside the TensorRT cache.
+
+    The cache is a persistent mount, so the models work offline on competition day."""
+    hf_cache = dest / "hf_cache"
+    hf_cache.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault("HF_HOME", str(hf_cache))
+
+    try:
+        import timm
+    except ImportError:
+        print("[fetch] timm not installed, skipping HF models:", HF_MODELS)
+        return list(HF_MODELS)
+
+    failures = []
+    for name in HF_MODELS:
+        try:
+            print(f"[fetch] getting  {name} (HF hub) ...")
+            timm.create_model(name, pretrained=True, num_classes=0)
+            print(f"[fetch] ok       {name}")
+        except Exception as e:
+            print(f"[fetch] FAILED   {name}: {e}")
+            failures.append(name)
+    return failures
+
+
+def sync_gallery(dest: Path):
+    """Copy the built gallery (weights_dir()/gallery) beside every detectors/registry.py.
+
+    Unlike the weights, it overwrites files that are newer at the source: objects
+    change during setup day."""
+    src = dest / GALLERY_DIRNAME
+    if not src.is_dir():
+        return
+    for ddir in detector_dirs():
+        target_root = ddir / GALLERY_DIRNAME
+        for item in src.rglob("*"):
+            if item.is_dir():
+                continue
+            rel = item.relative_to(src)
+            target = target_root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if not target.exists() or item.stat().st_mtime > target.stat().st_mtime:
+                shutil.copy2(item, target)
+                print(f"[sync]  {GALLERY_DIRNAME}/{rel} -> {ddir}")
+
+
 def warmup(dest: Path):
     """Pre-build TRT engines + insightface cache for THIS device."""
     sys.path.insert(0, str(REPO_ROOT / "vision" / "packages" / "vision_general"))
@@ -140,6 +189,29 @@ def warmup(dest: Path):
             continue
         print(f"[warmup] building engine for {name} (task={task}) ...")
         load_yolo_trt(str(dest / name), task=task)
+
+    try:
+        import numpy as np
+
+        from detectors.registry import MODEL_CONFIGS
+        from utils.models.image_embedder import ImageEmbedder
+
+        # Use production's config (registry.py), not the class default: otherwise
+        # this warms up PyTorch while production runs TensorRT, and the engine is
+        # built on the node's first frame anyway.
+        use_trt = MODEL_CONFIGS.get("embedding_gallery", {}).get("use_trt", True)
+        for name in HF_MODELS:
+            print(
+                f"[warmup] forcing kernel compilation for {name} (use_trt={use_trt}) ..."
+            )
+            embedder = ImageEmbedder(name, use_trt=use_trt).load()
+            from PIL import Image
+
+            dummy = Image.fromarray(np.zeros((224, 224, 3), dtype=np.uint8))
+            embedder.embed_batch([dummy])
+        print("[warmup] embedding backbone(s) ready")
+    except Exception as e:
+        print(f"[warmup] embedding backbone warmup skipped: {e}")
 
     try:
         import numpy as np
@@ -173,14 +245,17 @@ def main():
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
 
     failures = fetch_standard(dest, manifest)
+    hf_failures = fetch_hf_models(dest)
     missing = check_customs(manifest)
     sync_detector_models(dest)
+    sync_gallery(dest)
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     print(f"[fetch] manifest -> {manifest_path}")
 
     if args.warmup:
         warmup(dest)
 
+    failures = failures + hf_failures
     if failures or missing:
         print(f"\nIncomplete: failed={failures} missing_custom={missing}")
         sys.exit(1)
