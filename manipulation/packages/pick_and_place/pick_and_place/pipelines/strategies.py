@@ -9,7 +9,9 @@ bottom of this file; the numbers each one uses come from
 from dataclasses import dataclass
 from typing import Optional
 
+import numpy as np
 from geometry_msgs.msg import PoseStamped
+from scipy.spatial.transform import Rotation
 
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
@@ -28,6 +30,11 @@ from pick_and_place.robot.geometry import (
     offset_along_approach,
     offset_z,
 )
+
+# base_link x of the ZED's viewing direction above which it already looks out at the
+# table (table_stare is ~0.8); below it the camera sees the robot's own arm and body.
+CAMERA_FORWARD_MIN = 0.35
+WRIST_LIMIT_DEG = 175.0  # MoveIt keeps joint 6 inside +-0.99 pi
 
 
 @dataclass(frozen=True)
@@ -175,20 +182,60 @@ class CartesianApproachPick(PickStrategy):
                 lifted = arm.move_to_pose(
                     offset_z(candidate.pose, profile.post_grasp_height), velocity=0.6
                 )
-            if lifted and abs(approach_axis(candidate.pose)[2]) > 0.9:
-                with arm.phase("wrist_turn"):
-                    self._turn_wrist(arm)
+            if lifted:
+                with arm.phase("aim_camera"):
+                    self._aim_camera_forward(arm)
 
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
 
     @staticmethod
-    def _turn_wrist(arm) -> None:
+    def _aim_camera_forward(arm) -> None:
+        """Spin the wrist until the ZED looks out at the table, not back at the arm.
+
+        From the lift pose the camera can face the robot's own arm and body. The
+        octomap then refills with voxels there after every clear, and the return to
+        the stare pose starts from a state that collides with them. Joint 6 turns
+        the camera about the tool axis, so the best angle follows from where the
+        camera points now and where the tool points.
+        """
+        view = arm.camera_view()
+        if view is None:
+            return
+        forward, tool = view
+        if forward[0] >= CAMERA_FORWARD_MIN:
+            return
+
         joints = arm.get_joints(degrees=True)
         wrist = joints["joints"]["joint6"]
-        turn = wrist + 160.0 if wrist < 90.0 else wrist - 160.0
-        joints["joints"]["joint6"] = max(-175.0, min(175.0, turn))
-        if not arm.move_joints(joints, velocity=0.5):
-            arm.logger.warn("wrist turn failed, might fail to return to previous pose")
+        turns = np.arange(
+            max(-180.0, -WRIST_LIMIT_DEG - wrist),
+            min(180.0, WRIST_LIMIT_DEG - wrist) + 1.0,
+            5.0,
+        )
+
+        if not turns.size:
+            return
+
+        def forward_after(turn_deg):
+            return Rotation.from_rotvec(np.radians(turn_deg) * tool).apply(forward)[0]
+
+        turn = float(max(turns, key=forward_after))
+        if forward_after(turn) < forward[0] + 0.05:
+            return
+        joints["joints"]["joint6"] = wrist + turn
+
+        for _ in range(3):
+            # The camera refills the arm's voxels within ~0.5 s of a clear: plan first.
+            arm.clear_octomap(settle_s=0.0)
+            if arm.move_joints(joints, velocity=0.5):
+                after = arm.camera_view()
+                arm.logger.info(
+                    f"camera forward x {forward[0]:.2f} -> "
+                    f"{after[0][0] if after else float('nan'):.2f} "
+                    f"(wrist turned {turn:.0f} deg)"
+                )
+                return
+        arm.logger.warn("wrist turn failed, the camera may still see the arm")
 
 
 class ForceGuardedDescentPick(PickStrategy):

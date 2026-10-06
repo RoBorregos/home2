@@ -152,6 +152,10 @@ class FakeArm:
         self.calls.append("get_joints")
         return {"joints": {f"joint{i}": 0.0 for i in range(1, 7)}}
 
+    def camera_view(self):
+        self.calls.append("camera_view")
+        return None
+
     def scan_environment(self):
         self.calls.append("scan_environment")
 

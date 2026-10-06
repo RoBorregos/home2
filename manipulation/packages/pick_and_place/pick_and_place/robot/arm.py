@@ -33,6 +33,7 @@ from frida_constants.manipulation_constants import (
     SCAN_ANGLE_VERTICAL,
     XARM_ROBOT_STATES_TOPIC,
 )
+from frida_constants.vision_constants import CAMERA_FRAME
 from frida_interfaces.action import MoveJoints, MoveToPose
 from frida_interfaces.msg import CollisionObject
 from frida_interfaces.srv import (
@@ -54,6 +55,8 @@ from moveit_msgs.srv import GetPositionIK, GetStateValidity
 from rclpy.action import ActionClient
 from rclpy.duration import Duration
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
+from rclpy.time import Time
+from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, SetBool
@@ -418,6 +421,24 @@ class RobotArm:
 
     def get_joints(self, degrees: bool = True):
         return get_joint_positions(self._get_joints_client, degrees=degrees)
+
+    def camera_view(self):
+        """where the ZED looks, the tool's z axis as unit vectors in base_link.
+        None when TF has no answer.
+        """
+        try:
+            axes = []
+            for frame in (CAMERA_FRAME, EEF_LINK_NAME):  # z is forward / the tool axis
+                q = self.tf_buffer.lookup_transform(
+                    "base_link", frame, Time()
+                ).transform.rotation
+                axes.append(
+                    Rotation.from_quat([q.x, q.y, q.z, q.w]).apply([0.0, 0.0, 1.0])
+                )
+        except Exception as exc:
+            self._log.warn(f"[camera_view] no TF: {exc}")
+            return None
+        return axes[0], axes[1]
 
     def scan_environment(self):
         """Sweep the wrist to fill in the octomap around the workspace."""
