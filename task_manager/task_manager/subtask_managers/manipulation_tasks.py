@@ -673,6 +673,44 @@ class ManipulationTasks:
         joint_positions["joint1"] = FORWARD_JOINT1_DEG - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
+    def pan_sweep_start(self, to_degrees: float, velocity: float = 0.3):
+        """Like pan_to() but non-blocking: returns the goal handle right away so
+        the caller can poll and cancel early. None if the goal wasn't accepted."""
+        joint_positions = self.get_joint_positions(degrees=True)
+        if not isinstance(joint_positions, dict):
+            Logger.error(
+                self.node, f"Failed to get joint positions in pan_sweep_start: {joint_positions}"
+            )
+            return None
+        joint_positions["joint1"] = FORWARD_JOINT1_DEG - to_degrees
+        joint_names = list(joint_positions.keys())
+        joint_vals = [v * DEG_TO_RAD for v in joint_positions.values()]
+
+        future = self._send_joint_goal(
+            joint_names=joint_names, joint_positions=joint_vals, velocity=velocity
+        )
+        if future is None or isinstance(future, int):
+            Logger.error(self.node, "Failed to send pan sweep goal")
+            return None
+
+        rclpy.spin_until_future_complete(self.node, future)
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            Logger.error(self.node, "Pan sweep goal was rejected")
+            return None
+        return goal_handle
+
+    def pan_sweep_poll(self, result_future) -> bool:
+        """Spins briefly; returns True once the sweep's result future is done."""
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=0.05)
+        return result_future.done()
+
+    def pan_sweep_cancel(self, goal_handle):
+        """Stop an in-flight pan_sweep_start() motion immediately, wherever
+        the arm currently is."""
+        future = goal_handle.cancel_goal_async()
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
     def point(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         joint_positions["joint2"] = joint_positions["joint2"] + degrees
