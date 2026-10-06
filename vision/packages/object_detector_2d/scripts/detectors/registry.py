@@ -33,7 +33,7 @@ MODEL_CONFIGS: dict[str, dict] = {
     "embedding_box_proposer": {
         "filename": "yoloe-11l-seg-pf.pt",
         "type": "yolo_e",
-        "conf": 0.10,
+        "conf": 0.25,
     },
     "embedding_gallery": {
         "type": "embedding",

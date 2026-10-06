@@ -24,13 +24,11 @@ class EmbeddingModel(DetectorModel):
         ).load()
         self.gallery = Gallery.load(MODELS_PATH + config["gallery_dir"])
         self.publish_unknown = config.get("publish_unknown", False)
-        # Drop oversized boxes before they're even embedded — cheaper than
-        # embedding them and letting the matching decision alone.
+        # Drop oversized boxes before embedding them (cheaper than matching).
         self.max_box_area_frac = config.get(
             "max_box_area_frac", DEFAULT_MAX_BOX_AREA_FRAC
         )
-        # Stable per-run label -> class_id; gallery objects have no fixed
-        # numeric id the way a YOLO .names dict does.
+        # Stable per-run label -> class_id (gallery objects have no fixed id).
         self._label_ids = {
             name: i for i, name in enumerate(sorted(self.gallery.thresholds))
         }
@@ -41,8 +39,7 @@ class EmbeddingModel(DetectorModel):
         )
 
     def detect(self, image) -> list[Detection]:
-        # A fresh install has no enrolled objects — every match would be
-        # UNKNOWN anyway, so skip the box proposer/embedder entirely.
+        # Empty gallery: every match would be UNKNOWN, so skip inference.
         if not self.gallery.thresholds and not self.publish_unknown:
             return []
 
@@ -63,8 +60,7 @@ class EmbeddingModel(DetectorModel):
                 continue
             if (x2 - x1) * (y2 - y1) > self.max_box_area_frac * frame_area:
                 continue
-            # image is BGR (cv2 convention, same as yolo.py/yolo_e.py); PIL
-            # and the DINOv2/CLIP transforms both expect RGB.
+            # image is BGR (cv2); the DINOv2 transform expects RGB.
             crop_rgb = np.asarray(image[y1:y2, x1:x2])[:, :, ::-1]
             crops.append(Image.fromarray(crop_rgb))
             boxes_px.append((x1, y1, x2, y2))

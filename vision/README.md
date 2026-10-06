@@ -124,7 +124,7 @@ must therefore never start two `image_orienter` instances — the per-task launc
 | `yolo_finetuned` | `robocup2026_v1.pt` | `yolo` | 0.6 |
 | `yolo_generic` | `yolo26n.pt` | `yolo` | 0.5 |
 | `zero_shot` | `yoloe-11l-seg.pt` | `yolo_e` | 0.25 |
-| `embedding_box_proposer` | `yoloe-11l-seg-pf.pt` | `yolo_e` | 0.10 |
+| `embedding_box_proposer` | `yoloe-11l-seg-pf.pt` | `yolo_e` | 0.25 |
 | `embedding_gallery` | DINOv2 ViT-B/14 + `gallery/` | `embedding` | per-object similarity floor |
 
 `ObjectDetect2D` runs the models listed under `models:` in `config/parameters.yaml`
