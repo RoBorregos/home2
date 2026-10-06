@@ -144,7 +144,7 @@ To set up personalized instructions for your AI development agent (Claude, Gemin
 
 Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no argument is provided, the script will prompt you for a choice.
 
-Shared agent skills live in `.claude/skills/` (e.g. `orin` — how to connect, test and sync code on the robot). Claude Code and GitHub Copilot load them automatically; other agents are pointed to them by the generated instructions file.
+All agent context lives in `docs/ai/` (e.g. `docs/ai/orin.md` — how to connect, test and sync code on the robot); the generated instructions file points every agent there.
 
 ## Documentation
 

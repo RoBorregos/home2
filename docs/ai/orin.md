@@ -1,8 +1,4 @@
----
-name: orin
-description: How to work on FRIDA's two Jetson Orins (HRI Orin and main Orin) — connecting over SSH, which checkout to use (~/home2 vs ~/dev/<area>), what you may and may not change there, how to test, and how to bring changes back to git. Use whenever a task involves running, testing, debugging or syncing code on the Orin/robot.
----
-
+# Working on the Orins
 # Working on the Orin
 
 FRIDA has **two Orins**, both shared robot computers. Treat them as deploy
