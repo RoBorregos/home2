@@ -164,10 +164,7 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 
 | Name | GitHub | Role |
 | --- | --- | --- |
-| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg) | HRI, Integration |
 | Gerardo Fregoso | [@GerardoFJ](https://github.com/GerardoFJ) | Navigation, Integration |
-| Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
-| Danae Sanchez | [@DanaeSG](https://github.com/DanaeSG) | Vision, Navigation, Integration |
 | Alejandro Gonzalez | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation |
 | Emil Winkler | [@emilwinkp](https://github.com/emilwinkp) | Manipulation |
 | Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
@@ -180,6 +177,9 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 
 | Name | GitHub | Role |
 | --- | --- | --- |
+| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg) | HRI, Integration |
+| Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
+| Danae Sanchez | [@DanaeSG](https://github.com/DanaeSG) | Vision, Navigation, Integration |
 | Adan Flores-Ramirez | [@afr2903](https://github.com/afr2903) | Research |
 | David Vazquez | [@deivideich](https://github.com/Deivideich) | Manipulation |
 | Emiliano Flores | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration |
