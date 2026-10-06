@@ -78,7 +78,7 @@ class DoingLaundryTM(Node):
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         if say:
             Logger.info(self, f"Moving to {sublocation} in {location}")
-            self.subtask_manager.hri.say(f"Navigating to {sublocation}.", wait=False)
+            self.subtask_manager.hri.say(f"I am heading to the {sublocation}.", wait=False)
         return self.subtask_manager.nav.move_to_location(location, sublocation)
 
     def navigate_holding(self, location: str, sublocation: str = "", say: bool = True):
@@ -87,7 +87,9 @@ class DoingLaundryTM(Node):
         self.subtask_manager.manipulation.follow_face(False)
         if say:
             Logger.info(self, f"Carrying basket to {sublocation} in {location}")
-            self.subtask_manager.hri.say(f"Carrying basket to {sublocation}.", wait=False)
+            self.subtask_manager.hri.say(
+                f"I am carrying the basket to the {sublocation}.", wait=False
+            )
         return self.subtask_manager.nav.move_to_location(location, sublocation)
 
     def next_state_after_place(self):
@@ -137,7 +139,9 @@ class DoingLaundryTM(Node):
     def run(self):
         if self.current_state == DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
-            self.subtask_manager.hri.say("Waiting for start button to be pressed.", wait=False)
+            self.subtask_manager.hri.say(
+                "I am ready. Please press the start button when you want me to begin.", wait=False
+            )
             self.subtask_manager.manipulation.move_to_position("nav_pose")
 
             while not self.subtask_manager.hri.start_button_clicked:
@@ -155,7 +159,7 @@ class DoingLaundryTM(Node):
 
             self.navigate_to("laundry", "washing_machine")
 
-            self.subtask_manager.hri.say("Looking for the laundry basket.", wait=False)
+            self.subtask_manager.hri.say("Let me look for the laundry basket.", wait=False)
             status, dets = self.subtask_manager.vision.detect_objects(
                 label="laundry_basket", timeout=5
             )
@@ -195,7 +199,9 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET:
             Logger.info(self, "Requesting integrated basket pick.")
-            self.subtask_manager.hri.say("Picking up the laundry basket.", wait=False)
+            self.subtask_manager.hri.say(
+                "I found it. I am picking up the laundry basket.", wait=False
+            )
             result = self.subtask_manager.manipulation.pick_object("laundry_basket")
 
             if result == Status.EXECUTION_SUCCESS:
@@ -225,7 +231,7 @@ class DoingLaundryTM(Node):
         elif self.current_state == DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY:
             Logger.info(self, "Opening gripper to release basket.")
             self.subtask_manager.manipulation.open_gripper()
-            self.subtask_manager.hri.say("Basket delivered to the table.", wait=False)
+            self.subtask_manager.hri.say("I have brought the basket to the table.", wait=False)
             self.subtask_manager.manipulation.move_arm_vertical(
                 CLOTHES_BASKET_EXIT_HEIGHT, descend=False
             )
@@ -339,7 +345,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.END:
             Logger.state(self, "Ending task")
-            self.subtask_manager.hri.say("Laundry task finished. I will rest now.")
+            self.subtask_manager.hri.say("The laundry is done! I will rest now.")
             self.running_task = False
 
 

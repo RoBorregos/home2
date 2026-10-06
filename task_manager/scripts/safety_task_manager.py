@@ -43,7 +43,9 @@ class SafetyTaskManager(Node):
             self.subtask_manager.manipulation.clear_collision_objects()
             self.subtask_manager.manipulation.move_to_position("nav_pose")
             if say:
-                self.subtask_manager.hri.say(text=f"Going to {location} {sub_location}", wait=False)
+                self.subtask_manager.hri.say(
+                    text=f"I am going to the {location} {sub_location}.", wait=False
+                )
 
             result = Status.EXECUTION_ERROR
             retry = 0
@@ -89,7 +91,7 @@ class SafetyTaskManager(Node):
 
         Logger.info(self, "Saying")
         self.subtask_manager.hri.say(
-            "Hello, My name is Frida, I'm a Friendly Robotic Interactive Domestic Asisstant. I'm here to help you!"
+            "Hello, my name is Frida, I am a Friendly Robotic Interactive Domestic Assistant. I am here to help you!"
         )
 
         # self.subtask_manager.hri.send_display_answer("I couldn't understand you. Can you write your response here? (deus ex machina example)")
@@ -110,7 +112,7 @@ class SafetyTaskManager(Node):
 
         Logger.info(self, "Arrived")
 
-        self.subtask_manager.hri.say("I've arrived.")
+        self.subtask_manager.hri.say("I have arrived.")
         self.subtask_manager.hri.reset_task_status()
 
 
@@ -126,7 +128,9 @@ def main(args=None):
         #     rclpy.spin_once(node, timeout_sec=0.1)
         #     if node.run() == ExecutionStates.END:
         #         break
-        node.subtask_manager.hri.say(text="Ending Safety Task...", wait=True)
+        node.subtask_manager.hri.say(
+            text="I am finishing the safety task now. Thank you!", wait=True
+        )
     except KeyboardInterrupt:
         pass
     finally:
