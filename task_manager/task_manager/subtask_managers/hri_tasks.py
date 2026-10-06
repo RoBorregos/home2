@@ -179,7 +179,6 @@ class HRITasks:
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
-        self.mock_db = self.mock_data
         self.add_entry_service = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.query_entry_service = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
         self.find_closest_service = self.node.create_client(FindClosest, FIND_CLOSEST_SERVICE)
@@ -392,6 +391,7 @@ class HRITasks:
             self.say(f"Sorry, I don't know how to {command}")
             return Status.TARGET_NOT_FOUND
 
+    @mockable(return_value=True)
     def hear_multi(self, status: int) -> bool:
         request = HearMultiThread.Request()
         if status == 0:
@@ -425,6 +425,7 @@ class HRITasks:
             self.node.get_logger().error(f"Error parsing KWS JSON: {e}")
             self.keyword = ""
 
+    @mockable()
     def arm_door_detection(self, armed: bool) -> None:
         """Enable/disable the doorbell detector.
 
@@ -506,6 +507,7 @@ class HRITasks:
 
         return execution_status, heard_text, word_confidences
 
+    @mockable(return_value=lambda self: Future())
     def hear_streaming(
         self,
         timeout: float = 13.0,
@@ -572,6 +574,7 @@ class HRITasks:
         self.current_transcription = feedback_msg.feedback.current_transcription
         self.node.get_logger().info("Received feedback: {0}".format(self.current_transcription))
 
+    @mockable()
     def set_light_state(self, state: AudioStates, play_chime: bool = True):
         """
         Method to set the light state of the respeaker.
@@ -588,6 +591,7 @@ class HRITasks:
         else:
             self.audio_state_publisher.publish(String(data=state.value))
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "yes"))
     def confirm(
         self,
         question: str,
@@ -671,6 +675,7 @@ class HRITasks:
         )
         return Status.TIMEOUT, ""
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_answer"))
     def ask_and_confirm(
         self,
         question: str,
@@ -820,6 +825,12 @@ class HRITasks:
         )
         return Status.TIMEOUT, None
 
+    @mockable(
+        _mock_callback=lambda self, keywords, *args, **kwargs: (
+            Status.EXECUTION_SUCCESS,
+            keywords[0],
+        )
+    )
     def interpret_keyword(
         self, keywords: list[str], timeout: float, play_chime: bool = True
     ) -> str:
@@ -869,6 +880,7 @@ class HRITasks:
         self.cancel_hear_action()
         return execution_status, keyword_listened
 
+    @mockable(_mock_callback=lambda self, text: (Status.EXECUTION_SUCCESS, text))
     @service_check("grammar_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def refactor_text(self, text: str) -> str:
         request = Grammar.Request(text=text)
@@ -1027,6 +1039,7 @@ class HRITasks:
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
+    @mockable()
     def cancel_hear_action(self):
         # Cancel all goals sent by this action client
         self.set_light_state(AudioStates.IDLE)
@@ -1057,7 +1070,7 @@ class HRITasks:
             "roborregos_knowledge",
             "tec_knowledge",
         ],
-    ) -> tuple[Status, str]:
+    ) -> tuple[Status, str, float]:
         """
         Method to answer a question using the RAG service.
 
@@ -1143,10 +1156,9 @@ class HRITasks:
 
     # Embeddings services — delegate to HRI postgres_service node via ROS
 
+    @mockable(return_value=True)
     def _call_add_entry(self, collection: str, documents: list, metadata: dict = None) -> bool:
         """Fire-and-forget AddEntry service call."""
-        if self.mock_db:
-            return True
         req = AddEntry.Request()
         req.document = documents
         req.collection = collection
@@ -1154,12 +1166,11 @@ class HRITasks:
         self.add_entry_service.call_async(req)
         return True
 
+    @mockable(return_value=[])
     def _call_query_entry(
         self, collection: str, query_texts: list, top_k: int, metadata: dict = None
     ) -> list[str]:
         """Synchronous QueryEntry service call. Returns list of JSON strings."""
-        if self.mock_db:
-            return []
         if not self.query_entry_service.service_is_ready():
             self.node.get_logger().warn(f"QueryEntry service not ready (collection={collection})")
             return []
@@ -1230,7 +1241,7 @@ class HRITasks:
         Find the closest item to the query using the HRI FindClosest service.
         documents can be list[str] or list[tuple[str, embedding]] (embeddings are ignored).
         """
-        if self.mock_db or not documents:
+        if not documents:
             return Status.TARGET_NOT_FOUND, FindClosestResult(results=[], similarities=[])
 
         if not self.find_closest_service.service_is_ready():
@@ -1258,9 +1269,10 @@ class HRITasks:
         s = Status.EXECUTION_SUCCESS if result.results else Status.TARGET_NOT_FOUND
         return s, result
 
+    @mockable(return_value=[])
     def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
         """Find the closest items to the query, returning (text, similarity) pairs."""
-        if self.mock_db or not documents:
+        if not documents:
             return []
 
         req = FindClosest.Request()
@@ -1340,6 +1352,7 @@ class HRITasks:
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 1))
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, 0), TIMEOUT)
     def count_from_detections(
         self, detected_labels: list[str], target_object: str
@@ -1470,6 +1483,7 @@ class HRITasks:
 
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add, categorized_shelves
 
+    @mockable()
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
@@ -1486,6 +1500,7 @@ class HRITasks:
         if getattr(self, "_last_display_topic", None):
             self.display_publisher.publish(String(data=self._last_display_topic))
 
+    @mockable()
     def publish_display_step(self, step: str, topic: str = TASK_STEP_TOPIC) -> None:
         if topic == TASK_STEP_TOPIC:
             self.task_step_publisher.publish(String(data=step))
@@ -1520,6 +1535,7 @@ class HRITasks:
             self.node.get_logger().error(f"Error finding closest object: {e}")
             return "unknown"
 
+    @mockable()
     def show_map(self, name="", clear_map: bool = False):
         """
         Method to show the map on the display.
@@ -1541,6 +1557,7 @@ class HRITasks:
 
         self.display_map_publisher.publish(String(data=json.dumps(show_items)))
 
+    @mockable(return_value=True)
     def send_display_answer(self, answer: str) -> bool:
         try:
             msg = String()

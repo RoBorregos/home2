@@ -2,6 +2,7 @@
 Decorators for subtask managers
 """
 
+import functools
 import time
 from rclpy.action import ActionClient
 import rclpy.client
@@ -15,13 +16,17 @@ def mockable(return_value=None, delay=0, mock=False, _mock_callback=None):
     Args:
         return_value: Value to return if mock_data is True
         delay: Delay in seconds before returning the value
+        mock: Force the mock even if the area is not mocked
+        _mock_callback: Function called instead, with the same arguments
     """
 
     def decorator(func):
+        @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
             if getattr(self, "mock_data", False) or mock:
                 if _mock_callback is not None:
-                    return _mock_callback(self, **kwargs)
+                    Logger.mock(self.node, f"{func.__name__}. Using mock callback")
+                    return _mock_callback(self, *args, **kwargs)
                 if delay > 0:
                     time.sleep(delay)
                 value = return_value(self) if callable(return_value) else return_value
@@ -29,7 +34,7 @@ def mockable(return_value=None, delay=0, mock=False, _mock_callback=None):
                 return value
             return func(self, *args, **kwargs)
 
-        wrapper.__name__ = func.__name__
+        wrapper.mockable = True
 
         return wrapper
 
@@ -47,6 +52,7 @@ def service_check(client, return_value=None, timeout=3.0):
     """
 
     def decorator(func):
+        @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
             service_client = getattr(self, client)
 
@@ -63,7 +69,6 @@ def service_check(client, return_value=None, timeout=3.0):
                     return value
             return func(self, *args, **kwargs)
 
-        wrapper.__name__ = func.__name__
         return wrapper
 
     return decorator

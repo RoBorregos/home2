@@ -262,6 +262,7 @@ class ManipulationTasks:
         print("Joint positions from service: ", result.joint_positions)
         return dict(zip(result.joint_names, result.joint_positions))
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check("_fixed_distance_move_client", Status.EXECUTION_ERROR, TIMEOUT)
     def move_arm_vertical(self, distance: float, descend: bool = False):
         """Move the TCP a fixed distance in Z (xArm mode 5 closed-loop).
@@ -319,7 +320,7 @@ class ManipulationTasks:
             return False
         return True
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS, mock=False)
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(client="follow_face_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
     def follow_face(self, follow) -> int:
         """Activate or deactivate face following on the arm."""
@@ -392,6 +393,7 @@ class ManipulationTasks:
 
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def place(
         self,
         close_to: str = "",
@@ -510,6 +512,7 @@ class ManipulationTasks:
             Logger.warning(self.node, f"Error scanning {direction.value}: {e}")
             return True
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def place_on_floor(self, named_position: str = "pick_stare_at_table") -> int:
         try:
             Logger.info(self.node, f"Moving to {named_position}...")
@@ -556,6 +559,7 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error in place_on_floor: {e}")
             return Status.EXECUTION_ERROR
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def place_on_shelf(self, plane_height: int, tolerance: int):
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
         #     Logger.error(self.node, "Manipulation action server not available")
@@ -594,6 +598,7 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def pour(
         self, pour_object_name: str, pour_container_name: str, object_already_grasped: bool = False
     ):
@@ -623,6 +628,7 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def clear_collision_objects(self, include_attached: bool = True) -> int:
         """Remove all collision objects from the planning scene.
         Useful before movements that MoveIt would reject due to stale
@@ -806,6 +812,7 @@ class ManipulationTasks:
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
 
+    @mockable(return_value=lambda self: PoseStamped())
     def get_optimal_pose_for_plane(
         self,
         est_heigth: float,
@@ -832,7 +839,7 @@ class ManipulationTasks:
 
         return result.optimal_pose
 
-    @mockable(return_value=Status.MOCKED)
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
