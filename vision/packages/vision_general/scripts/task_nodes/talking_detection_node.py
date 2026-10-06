@@ -45,7 +45,8 @@ class TalkingDetection(Node):
                 self.get_logger().warn(f"Image conversion error: {e}")
                 continue
             faces = self.detector.detect(frame)
-            activity.update(faces[0] if faces else None)
+            height, width = frame.shape[:2]
+            activity.update(faces[0] if faces else None, width, height)
 
         response.is_talking = activity.confirmed_talking
         response.message = TALKING_MESSAGE if response.is_talking else SILENT_MESSAGE

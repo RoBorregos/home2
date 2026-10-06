@@ -12,6 +12,7 @@ from frida_constants.vision_constants import (
     TALKING_DEBOUNCE_ON_FRAMES,
     TALKING_DIRECTION_CHANGE_THRESHOLD,
     TALKING_HISTORY_FRAMES,
+    TALKING_MAX_MISSED_FRAMES,
     TALKING_MIN_DELTA,
     TALKING_MIN_MEAN_DELTA,
     TALKING_RATIO_CEILING,
@@ -20,12 +21,14 @@ from frida_constants.vision_constants import (
 )
 
 
-def get_mouth_ratio(landmarks) -> float:
-    mouth_height = abs(
-        landmarks[UPPER_LIP_LANDMARK].y - landmarks[LOWER_LIP_LANDMARK].y
+def get_mouth_ratio(landmarks, frame_width: int, frame_height: int) -> float:
+    mouth_height = (
+        abs(landmarks[UPPER_LIP_LANDMARK].y - landmarks[LOWER_LIP_LANDMARK].y)
+        * frame_height
     )
-    mouth_width = abs(
-        landmarks[LEFT_MOUTH_LANDMARK].x - landmarks[RIGHT_MOUTH_LANDMARK].x
+    mouth_width = (
+        abs(landmarks[LEFT_MOUTH_LANDMARK].x - landmarks[RIGHT_MOUTH_LANDMARK].x)
+        * frame_width
     )
     if mouth_width == 0:
         return 0.0
@@ -55,16 +58,23 @@ class MouthActivity:
         self.raw_ratio_buffer: deque = deque(maxlen=TALKING_SMOOTHING_WINDOW)
         self.debounce_counter: int = 0
         self.confirmed_talking: bool = False
+        self.missed_frames: int = 0
 
-    def update(self, landmarks) -> bool:
+    def update(self, landmarks, frame_width: int, frame_height: int) -> bool:
         """Process one frame's landmarks and return whether the person is confirmed talking."""
         if landmarks is None:
+            self.missed_frames += 1
+            if self.missed_frames < TALKING_MAX_MISSED_FRAMES:
+                return self.confirmed_talking
             self.ratio_buffer.clear()
             self.raw_ratio_buffer.clear()
             self._step_debounce(False)
             return self.confirmed_talking
 
-        self.raw_ratio_buffer.append(get_mouth_ratio(landmarks))
+        self.missed_frames = 0
+        self.raw_ratio_buffer.append(
+            get_mouth_ratio(landmarks, frame_width, frame_height)
+        )
         self.ratio_buffer.append(float(np.mean(self.raw_ratio_buffer)))
 
         window = list(self.ratio_buffer)
