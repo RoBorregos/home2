@@ -673,14 +673,8 @@ class ManipulationTasks:
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def pan_sweep_start(self, to_degrees: float, velocity: float = 0.3):
-        """Start a single continuous pan trajectory towards to_degrees and
-        return immediately with the goal handle (instead of blocking until
-        the arm arrives). Unlike pan_to(), this lets a caller poll something
-        else (e.g. a vision check) while the arm is moving and cancel the
-        motion early with pan_sweep_cancel() the instant it should stop,
-        rather than only being able to check in between discrete steps.
-        Returns None if the goal could not be sent/accepted.
-        """
+        """Like pan_to() but non-blocking: returns the goal handle right away so
+        the caller can poll and cancel early. None if the goal wasn't accepted."""
         joint_positions = self.get_joint_positions(degrees=True)
         if not isinstance(joint_positions, dict):
             Logger.error(
@@ -706,10 +700,7 @@ class ManipulationTasks:
         return goal_handle
 
     def pan_sweep_poll(self, result_future) -> bool:
-        """Spin the node briefly so the sweep's result future (from
-        goal_handle.get_result_async(), captured once by the caller) can
-        progress. Returns True once the goal has finished (reached the
-        target, aborted, or been cancelled)."""
+        """Spins briefly; returns True once the sweep's result future is done."""
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=0.05)
         return result_future.done()
 

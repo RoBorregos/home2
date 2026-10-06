@@ -304,9 +304,7 @@ class MotionPlanningServer(Node):
         return None
 
     def _move_joints_cancel_callback(self, goal_handle):
-        """Allow callers to interrupt an in-flight joint goal early (e.g. a
-        continuous search sweep that should stop the instant something is
-        detected, instead of running the whole planned trajectory)."""
+        """Lets callers cancel an in-flight joint goal, e.g. to stop a search sweep early."""
         self.get_logger().warn("MoveJoints cancellation requested")
         return CancelResponse.ACCEPT
 

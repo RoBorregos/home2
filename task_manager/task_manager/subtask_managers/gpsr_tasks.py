@@ -37,13 +37,9 @@ FIND_PERSON_MAX_ROUNDS = 4
 # Scan points closer than this (map frame, meters) count as the same person across rounds.
 FIND_PERSON_VISITED_RADIUS = 0.75
 
-# Arm-only pan sweep (no base/nav rotation): one continuous motion across
-# the arm's pan range instead of hopping between discrete stops, checked
-# for a person at fine time intervals while it's moving. Mimics a person
-# slowly turning their head and stopping the instant they spot someone,
-# instead of turning in steps and pausing to look at each one.
-SEARCH_PAN_RANGE_DEG = 65  # scan from -RANGE to +RANGE (same max validated on hardware)
-SEARCH_SWEEP_VELOCITY = 0.2  # MoveIt velocity scaling factor (0-1); slow, deliberate scan
+# Continuous arm pan sweep used while searching, instead of discrete stops.
+SEARCH_PAN_RANGE_DEG = 65  # scan from -RANGE to +RANGE
+SEARCH_SWEEP_VELOCITY = 0.2  # MoveIt velocity scaling factor (0-1)
 SEARCH_POLL_PERIOD = 0.1  # s between person checks while the sweep is in flight
 
 
@@ -707,18 +703,8 @@ class GPSRTask(GenericTask):
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
     def _iter_search_poses(self):
-        """Pan the arm continuously from -SEARCH_PAN_RANGE_DEG to
-        +SEARCH_PAN_RANGE_DEG in one single motion (no base/nav motion,
-        and no stopping at intermediate stops), yielding every
-        SEARCH_POLL_PERIOD seconds while it's in flight so callers can
-        check for a person without the arm ever pausing to look. Finding a
-        person is the success condition here, not a failure: it's up to
-        the caller to break out of the loop when its own check (vision)
-        says somebody was seen. That break is what stops the arm -- the
-        cancel below is only the mechanism for stopping immediately
-        wherever the arm currently is, triggered by the find, not the
-        other way around. Callers should pan_to(0) after the loop
-        regardless of how it ends."""
+        """Sweeps the arm in one motion, yielding every SEARCH_POLL_PERIOD so the
+        caller can check for a person and break early. Call pan_to(0) after."""
         manipulation = self.subtask_manager.manipulation
         manipulation.pan_to(-SEARCH_PAN_RANGE_DEG)
         goal_handle = manipulation.pan_sweep_start(
@@ -732,11 +718,7 @@ class GPSRTask(GenericTask):
                 yield
                 time.sleep(SEARCH_POLL_PERIOD)
         finally:
-            # Runs even when the caller breaks early because it found a
-            # person: the generator's .close() fires this via GeneratorExit.
-            # This is just halting the motion, not reporting a failure --
-            # the caller already knows (and logs) that finding someone is
-            # what triggered it.
+            # Also runs if the caller breaks early (via GeneratorExit) to stop the arm.
             if not result_future.done():
                 manipulation.pan_sweep_cancel(goal_handle)
 
@@ -1019,11 +1001,7 @@ class GPSRTask(GenericTask):
                 mp.point.x, mp.point.y = xy
                 map_points.append(mp)
             if map_points:
-                # Found somebody: this is the search succeeding, not a
-                # failure. Breaking out of the loop stops the in-flight
-                # sweep (see _iter_search_poses) -- that stop is just the
-                # mechanism, triggered BECAUSE we found someone, not the
-                # other way around.
+                # Breaking here stops the in-flight sweep (_iter_search_poses).
                 Logger.success(
                     self.subtask_manager.manipulation.node,
                     f"Person found mid-sweep -- stopping search ({len(map_points)} seen)",
