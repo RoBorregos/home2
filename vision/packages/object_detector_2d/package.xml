@@ -33,7 +33,7 @@
   <!-- <depend>message_package</depend> -->
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
-  <exec_depend>vision_general</exec_depend>
+  <!-- Not declared: vision_general depends on this package (cycle). embedding.py imports its `utils` package; both ship in the same workspace. -->
 
   <build_depend>rosidl_default_generators</build_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
