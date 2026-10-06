@@ -1,5 +1,21 @@
 var NAVTREEINDEX55 =
 {
+"vector_2utils_8hh.html":[42,0,3,0,7,2,0,0,5,5],
+"vector_2utils_8hh_source.html":[42,0,3,0,7,2,0,0,5,5],
+"vector_8hh.html":[42,0,3,0,7,2,0,0,8],
+"vector_8hh.html#a6e69bf29b86d94e6ac0ccebb1974b477":[42,0,3,0,7,2,0,0,8,1],
+"vector_8hh.html#a7967c0b8a9cea93b9053ff15e1bc8e0f":[42,0,3,0,7,2,0,0,8,0],
+"vector_8hh_source.html":[42,0,3,0,7,2,0,0,8],
+"vision_2benchmarks_2embedding__gallery_2core_2____init_____8py.html":[42,0,7,0,0,0,0],
+"vision_2packages_2moondream__run_2moondream__run_2____init_____8py.html":[42,0,7,1,0,0,0],
+"vision_2packages_2object__detector__2d_2object__detector__2d_2____init_____8py.html":[42,0,7,1,1,1,0],
+"vision_2packages_2object__detector__2d_2scripts_2detectors_2____init_____8py.html":[42,0,7,1,1,2,0,0],
+"vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py.html":[42,0,7,1,1,2,0,4],
+"vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py.html#a518bb5f2252ac2f0372fdbb596bee6bf":[42,0,7,1,1,2,0,4,1],
+"vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py.html#af7cdecddcac99f7c329b866f5ed79ed9":[42,0,7,1,1,2,0,4,0],
+"vision_2packages_2object__detector__2d_2scripts_2embedding__gallery_2____init_____8py.html":[42,0,7,1,1,2,1,1],
+"vision_2packages_2object__detector__2d_2scripts_2embedding__gallery_2core_2____init_____8py.html":[42,0,7,1,1,2,1,0,0],
+"vision_2packages_2object__detector__2d_2scripts_2embedding__gallery_2core_2constants_8py.html":[42,0,7,1,1,2,1,0,1],
 "vision_2packages_2object__detector__2d_2scripts_2embedding__gallery_2core_2constants_8py.html#a68a05b8031d0e4ad92b2ffcf75f2beb6":[42,0,7,1,1,2,1,0,1,0],
 "vision_2packages_2object__detector__2d_2scripts_2embedding__gallery_2core_2constants_8py.html#a82e773423f3ecd883bc241fe592c6b6b":[42,0,7,1,1,2,1,0,1,3],
 "vision_2packages_2object__detector__2d_2scripts_2embedding__gallery_2core_2constants_8py.html#a96af32bedb93d2eb27fb0ad271382364":[42,0,7,1,1,2,1,0,1,4],
@@ -233,14 +249,5 @@ var NAVTREEINDEX55 =
 "xorshift_8hh.html":[42,0,3,0,7,2,0,0,3,3],
 "xorshift_8hh_source.html":[42,0,3,0,7,2,0,0,3,3],
 "yolo_8py.html":[42,0,7,1,1,2,0,5],
-"yolo_8py.html#a0556b9e8141edc9ac29e937068f2d913":[42,0,7,1,1,2,0,5,1],
-"yolo_8py.html#ade4cf7f21233497fdedc15f77ef1c965":[42,0,7,1,1,2,0,5,2],
-"yolo__e_8py.html":[42,0,7,1,1,2,0,6],
-"yolo__e_8py.html#a89ca4a7f0960a269b588337ecb421c6f":[42,0,7,1,1,2,0,6,2],
-"zed__simulator_8py.html":[42,0,7,1,2,1,8],
-"zed__simulator_8py.html#a6d489b3a367f76b4f6c43605f89dbb5f":[42,0,7,1,2,1,8,1],
-"zero__shot__object__detector__node_8launch_8py.html":[42,0,7,1,1,0,2],
-"zero__shot__object__detector__node_8launch_8py.html#aba70d0632c70d26521c3901943462bc4":[42,0,7,1,1,0,2,0],
-"zero__shot__object__detector__node_8py.html":[42,0,7,1,1,2,5],
-"zero__shot__object__detector__node_8py.html#a1489f755c75c3eed93e2fe3ab401521f":[42,0,7,1,1,2,5,1]
+"yolo_8py.html#a0556b9e8141edc9ac29e937068f2d913":[42,0,7,1,1,2,0,5,1]
 };

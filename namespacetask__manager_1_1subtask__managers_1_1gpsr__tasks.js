@@ -10,5 +10,8 @@ var namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks =
     [ "FOLLOW_PERSON_ENABLED", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html#a2f8957dbda32f564d6ddfae8a438e4fd", null ],
     [ "FOLLOW_RELOCK_ATTEMPTS", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html#a1d2e99da985d7aa2b1196f609031d191", null ],
     [ "FOLLOW_STOP_KEYWORDS", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html#afd88f9844a8420cc867007d831c1c3a7", null ],
-    [ "FOLLOW_TRACK_ATTEMPTS", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html#a6734eaa11fdbeb696b8a73003436a6a4", null ]
+    [ "FOLLOW_TRACK_ATTEMPTS", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html#a6734eaa11fdbeb696b8a73003436a6a4", null ],
+    [ "SEARCH_PAN_RANGE_DEG", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html#a8e208f40d04411f41dc4c9213c283e85", null ],
+    [ "SEARCH_POLL_PERIOD", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html#ac7082f33174d72344468e4cdf6e5e7be", null ],
+    [ "SEARCH_SWEEP_VELOCITY", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html#ab2b3e0c9ffeb90515a02b91c3797ae49", null ]
 ];

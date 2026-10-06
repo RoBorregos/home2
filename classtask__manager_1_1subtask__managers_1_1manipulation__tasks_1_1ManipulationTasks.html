@@ -143,6 +143,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a754f198c77bc20c9762b30cb796136b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0083860e231cd2fe8c16e2e776129dde"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a0083860e231cd2fe8c16e2e776129dde">pan_to</a> (self, float degrees)</td></tr>
 <tr class="separator:a0083860e231cd2fe8c16e2e776129dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3245cbea8d76a9f5371439bbdd125ae0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3245cbea8d76a9f5371439bbdd125ae0">pan_sweep_start</a> (self, float to_degrees, float velocity=0.3)</td></tr>
+<tr class="separator:a3245cbea8d76a9f5371439bbdd125ae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a705978923fbb70e109fbe137d0917706"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a705978923fbb70e109fbe137d0917706">pan_sweep_poll</a> (self, result_future)</td></tr>
+<tr class="separator:a705978923fbb70e109fbe137d0917706"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a813112a31914639f0b35e27e5e6af2a2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a813112a31914639f0b35e27e5e6af2a2">pan_sweep_cancel</a> (self, goal_handle)</td></tr>
+<tr class="separator:a813112a31914639f0b35e27e5e6af2a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e45ef3169470631c840f2e9cf8a4562"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a8e45ef3169470631c840f2e9cf8a4562">point</a> (self, float degrees)</td></tr>
 <tr class="separator:a8e45ef3169470631c840f2e9cf8a4562"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80de114128e8ed59e651bac7e70749bc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a80de114128e8ed59e651bac7e70749bc">check_lower</a> (self, float degrees)</td></tr>
@@ -977,6 +983,98 @@ Named position has priority over joint_positions.
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Opens the gripper</pre> 
+</div>
+</div>
+<a id="a813112a31914639f0b35e27e5e6af2a2" name="a813112a31914639f0b35e27e5e6af2a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a813112a31914639f0b35e27e5e6af2a2">&#9670;&#160;</a></span>pan_sweep_cancel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.pan_sweep_cancel </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>goal_handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Stop an in-flight pan_sweep_start() motion immediately, wherever
+the arm currently is.</pre> 
+</div>
+</div>
+<a id="a705978923fbb70e109fbe137d0917706" name="a705978923fbb70e109fbe137d0917706"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a705978923fbb70e109fbe137d0917706">&#9670;&#160;</a></span>pan_sweep_poll()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.pan_sweep_poll </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>result_future</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Spins briefly; returns True once the sweep's result future is done.</pre> 
+</div>
+</div>
+<a id="a3245cbea8d76a9f5371439bbdd125ae0" name="a3245cbea8d76a9f5371439bbdd125ae0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3245cbea8d76a9f5371439bbdd125ae0">&#9670;&#160;</a></span>pan_sweep_start()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.pan_sweep_start </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>to_degrees</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>velocity</em> = <code>0.3</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Like pan_to() but non-blocking: returns the goal handle right away so
+the caller can poll and cancel early. None if the goal wasn't accepted.</pre> 
 </div>
 </div>
 <a id="a0083860e231cd2fe8c16e2e776129dde" name="a0083860e231cd2fe8c16e2e776129dde"></a>

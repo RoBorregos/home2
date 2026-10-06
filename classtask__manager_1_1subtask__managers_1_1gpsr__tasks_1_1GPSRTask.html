@@ -170,6 +170,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:acf8d4de5b413d1a0cdbbfb34887b728c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a729ee3b2a757277e8850b1f1da899b8e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a729ee3b2a757277e8850b1f1da899b8e">_follow_person_tracking</a> (self, FollowPersonUntil command)</td></tr>
 <tr class="separator:a729ee3b2a757277e8850b1f1da899b8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc4ed28c8a984faa58ff956a6c873167"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#acc4ed28c8a984faa58ff956a6c873167">_iter_search_poses</a> (self)</td></tr>
+<tr class="separator:acc4ed28c8a984faa58ff956a6c873167"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68ff8ce69f30ebd881f939ad3f6ce11a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a68ff8ce69f30ebd881f939ad3f6ce11a">_approach_with_arm</a> (self, point)</td></tr>
 <tr class="separator:a68ff8ce69f30ebd881f939ad3f6ce11a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c1ce70af935bad9c0b49dc0162f130a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a1c1ce70af935bad9c0b49dc0162f130a">_approach_found_person</a> (self, point=None)</td></tr>
@@ -399,6 +401,33 @@ Postconditions:
 </pre> 
 </div>
 </div>
+<a id="acc4ed28c8a984faa58ff956a6c873167" name="acc4ed28c8a984faa58ff956a6c873167"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc4ed28c8a984faa58ff956a6c873167">&#9670;&#160;</a></span>_iter_search_poses()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.gpsr_tasks.GPSRTask._iter_search_poses </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Sweeps the arm in one motion, yielding every SEARCH_POLL_PERIOD so the
+caller can check for a person and break early. Call pan_to(0) after.</pre> 
+</div>
+</div>
 <a id="acf8d4de5b413d1a0cdbbfb34887b728c" name="acf8d4de5b413d1a0cdbbfb34887b728c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acf8d4de5b413d1a0cdbbfb34887b728c">&#9670;&#160;</a></span>_recover_lost_person()</h2>
 
@@ -463,9 +492,10 @@ detect_objects path runs the competition-object model, which has NO
 person class), filters them to the robot's current room polygon and
 deprojects each to a camera-frame 3D point. Those points are projected
 to the map HERE, while the camera still holds the scan pose, so they
-stay valid after the arm moves. Pans through self.pan_angles when
-nobody is in the front view. Returns map-frame PointStamped list,
-nearest person first.</pre> 
+stay valid after the arm moves. Sweeps the arm pan range in one
+continuous motion (_iter_search_poses) and stops the instant
+somebody is seen. Returns map-frame PointStamped list, nearest
+person first.</pre> 
 </div>
 </div>
 <a id="a13ce05f6c374ee4753c3c81f8d87064a" name="a13ce05f6c374ee4753c3c81f8d87064a"></a>
