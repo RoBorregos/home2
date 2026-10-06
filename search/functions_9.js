@@ -42,7 +42,7 @@ var searchData=
   ['interpolate_5fto_5fresolution_39',['interpolate_to_resolution',['../structvamp_1_1planning_1_1Path.html#a3391f99ede6674336ab241dc2cc3c353',1,'vamp::planning::Path']]],
   ['interpret_5fkeyword_40',['interpret_keyword',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aa87abb42b344847655a079d3d296f24a',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['inverse_5fmatrix_41',['inverse_matrix',['../namespacevamp_1_1transformations.html#addb91650fa870f8b108ad22b189c7efe',1,'vamp::transformations']]],
-  ['iou_42',['iou',['../namespacedetectors_1_1utils.html#af7cdecddcac99f7c329b866f5ed79ed9',1,'detectors::utils']]],
+  ['iou_42',['iou',['../namespacedetectors_1_1utils.html#af7cdecddcac99f7c329b866f5ed79ed9',1,'detectors.utils.iou()'],['../namespacecore_1_1metrics.html#ab7e9eadd297e6ef1393e1ee1335ff8dc',1,'core.metrics.iou()']]],
   ['iou_5fdeduplicate_43',['iou_deduplicate',['../namespacedetectors_1_1utils.html#a518bb5f2252ac2f0372fdbb596bee6bf',1,'detectors::utils']]],
   ['is_5fahead_5fof_44',['is_ahead_of',['../classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af4cb913b91ca688bc4b504f108414355',1,'task_manager::subtask_managers::nav_tasks::NavigationTasks']]],
   ['is_5faligned_45',['is_aligned',['../namespacevamp_1_1utils.html#a54f335179785be70ca7bf8a33886a937',1,'vamp::utils']]],
@@ -63,5 +63,6 @@ var searchData=
   ['is_5fwaving_5ffrom_5fkeypoints_60',['is_waving_from_keypoints',['../classmodels_1_1pose__detection_1_1PoseDetection.html#ae499214a0de9340a7c2720e78835503a',1,'models::pose_detection::PoseDetection']]],
   ['isperson_61',['isPerson',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac8507dfbfcb889d75f280a11a5fa2d2e',1,'task_manager::subtask_managers::vision_tasks::VisionTasks']]],
   ['isremoved_62',['isRemoved',['../classvamp_1_1planning_1_1NearestNeighborsGNAT.html#afe1aa7d37703fec9c12f5c775e560b63',1,'vamp::planning::NearestNeighborsGNAT']]],
-  ['isvalid_63',['isValid',['../structVAMPStateValidator.html#a908e07c94e7aadbfccd2042f87025ad2',1,'VAMPStateValidator::isValid()'],['../structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4.html#a72198851720d0634fcafd9a7f7fedd6a',1,'unc::robotics::nigh::metric::Space&lt; vamp::planning::NNFloatArray&lt; dim &gt;, LP&lt; 2 &gt; &gt;::isValid()']]]
+  ['isvalid_63',['isValid',['../structVAMPStateValidator.html#a908e07c94e7aadbfccd2042f87025ad2',1,'VAMPStateValidator::isValid()'],['../structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4.html#a72198851720d0634fcafd9a7f7fedd6a',1,'unc::robotics::nigh::metric::Space&lt; vamp::planning::NNFloatArray&lt; dim &gt;, LP&lt; 2 &gt; &gt;::isValid()']]],
+  ['iter_5fsplit_64',['iter_split',['../namespacecore_1_1prepare__dataset.html#acaf1e3853a6d8084896bd19741702816',1,'core::prepare_dataset']]]
 ];

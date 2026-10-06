@@ -1,6 +1,7 @@
 var namespacedetectors =
 [
     [ "base", "namespacedetectors_1_1base.html", "namespacedetectors_1_1base" ],
+    [ "embedding", "namespacedetectors_1_1embedding.html", "namespacedetectors_1_1embedding" ],
     [ "registry", "namespacedetectors_1_1registry.html", "namespacedetectors_1_1registry" ],
     [ "utils", "namespacedetectors_1_1utils.html", [
       [ "iou", "namespacedetectors_1_1utils.html#af7cdecddcac99f7c329b866f5ed79ed9", null ],

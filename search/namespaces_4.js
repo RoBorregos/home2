@@ -15,8 +15,9 @@ var searchData=
   ['doing_5flaundry_5ftask_5fmanager_12',['doing_laundry_task_manager',['../namespacedoing__laundry__task__manager.html',1,'']]],
   ['downsample_5fpc_13',['downsample_pc',['../namespacedownsample__pc.html',1,'']]],
   ['ds4_5fdemo_14',['ds4_demo',['../namespaceds4__demo.html',1,'']]],
-  ['registry_15',['registry',['../namespacedetectors_1_1registry.html',1,'detectors']]],
-  ['utils_16',['utils',['../namespacedetectors_1_1utils.html',1,'detectors']]],
-  ['yolo_17',['yolo',['../namespacedetectors_1_1yolo.html',1,'detectors']]],
-  ['yolo_5fe_18',['yolo_e',['../namespacedetectors_1_1yolo__e.html',1,'detectors']]]
+  ['embedding_15',['embedding',['../namespacedetectors_1_1embedding.html',1,'detectors']]],
+  ['registry_16',['registry',['../namespacedetectors_1_1registry.html',1,'detectors']]],
+  ['utils_17',['utils',['../namespacedetectors_1_1utils.html',1,'detectors']]],
+  ['yolo_18',['yolo',['../namespacedetectors_1_1yolo.html',1,'detectors']]],
+  ['yolo_5fe_19',['yolo_e',['../namespacedetectors_1_1yolo__e.html',1,'detectors']]]
 ];

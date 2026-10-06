@@ -49,6 +49,7 @@ var namespaces_dup =
       [ "_STUB_ATTRIBUTES", "namespaceconftest.html#ad5a7fd97f0fd5e79d6fb857997840717", null ],
       [ "_STUBBED", "namespaceconftest.html#a267ba91a9d10f1ce88460da25bfe1727", null ]
     ] ],
+    [ "core", "namespacecore.html", "namespacecore" ],
     [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
     [ "demo_becas", "namespacedemo__becas.html", "namespacedemo__becas" ],
     [ "demo_ds4", "namespacedemo__ds4.html", [
@@ -80,6 +81,7 @@ var namespaces_dup =
     ] ],
     [ "ds4_demo", "namespaceds4__demo.html", "namespaceds4__demo" ],
     [ "egsr_cut", "namespaceegsr__cut.html", "namespaceegsr__cut" ],
+    [ "embedding_gallery", "namespaceembedding__gallery.html", "namespaceembedding__gallery" ],
     [ "evaluate_mbm", "namespaceevaluate__mbm.html", [
       [ "main", "namespaceevaluate__mbm.html#aa346f69415bd523a19a5647fe30c3740", null ]
     ] ],
@@ -102,17 +104,22 @@ var namespaces_dup =
     [ "fetch_models", "namespacefetch__models.html", [
       [ "check_customs", "namespacefetch__models.html#adc2b1a4d6f420d55cdf89a4c97229587", null ],
       [ "detector_dirs", "namespacefetch__models.html#a74db5d17737c5ccc9c9fdb46b5a5e186", null ],
+      [ "fetch_hf_models", "namespacefetch__models.html#a1bb422a9e576c78935b75f57a3f10d74", null ],
       [ "fetch_standard", "namespacefetch__models.html#a12426f016a212a03cf8484f0b02d7303", null ],
       [ "main", "namespacefetch__models.html#ab617d7e23258dbb9627ab106c4ccee6d", null ],
       [ "sha256", "namespacefetch__models.html#a6924629ba9641e142c0276959b623eea", null ],
       [ "sync_detector_models", "namespacefetch__models.html#aced3e9edb4be47ca126674df3ff8521a", null ],
+      [ "sync_gallery", "namespacefetch__models.html#a32e95f2471460d4dba341548135aadd1", null ],
       [ "warmup", "namespacefetch__models.html#a5360c5f687061c19e906deddc153e8a9", null ],
       [ "weights_dir", "namespacefetch__models.html#af50874cba910187c5192111274e0c3d6", null ],
       [ "CUSTOM_MODELS", "namespacefetch__models.html#a9276c046c78cbf4fb349a37ca158d04e", null ],
       [ "DETECTOR_MODELS", "namespacefetch__models.html#ac892b069cde350920ef0b83cb23fe506", null ],
+      [ "HF_MODELS", "namespacefetch__models.html#a67d48fa4b9072bc083bfb44179ba8de8", null ],
       [ "REPO_ROOT", "namespacefetch__models.html#a3c270b382b139b429601360092212415", null ],
       [ "STANDARD_MODELS", "namespacefetch__models.html#a56e10b2b63b27f2d3d42eea93b554d25", null ]
     ] ],
+    [ "finetune_arcface", "namespacefinetune__arcface.html", "namespacefinetune__arcface" ],
+    [ "finetune_head", "namespacefinetune__head.html", "namespacefinetune__head" ],
     [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", "namespaceflat__grasp__estimator" ],
     [ "flying_sphere", "namespaceflying__sphere.html", [
       [ "main", "namespaceflying__sphere.html#a16e948a58bf363c63448a2e12fbfb72c", null ],

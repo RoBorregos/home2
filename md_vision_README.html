@@ -97,7 +97,7 @@ $(document).ready(function(){initNavTree('md_vision_README.html',''); initResiza
 <blockquote class="doxtable">
 <p>&zwj;Vision <b>does not own the camera</b>. Frames come from the separate <code>home2-zed</code> container (<code>./run.sh zed</code>, Jetson/Orin only) or, on a laptop, from <code><a class="el" href="zed__simulator_8py.html">zed_simulator.py</a></code> publishing a plain webcam onto the same topics. </p>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md156"></a>
+<h1><a class="anchor" id="autotoc_md170"></a>
 Tree structure</h1>
 <div class="fragment"><div class="line">home2/</div>
 <div class="line">│</div>
@@ -130,12 +130,19 @@ Tree structure</h1>
 <div class="line">│   │       ├── object_detector_node.py    # Runs N YOLO models, IoU-dedupes across them</div>
 <div class="line">│   │       ├── zero_shot_object_detector_node.py    # YOLOE open-vocabulary detector</div>
 <div class="line">│   │       ├── vision_3D_utils.py         # Pixel -&gt; 3D point helpers</div>
-<div class="line">│   │       └── detectors/                 # Pluggable model layer</div>
-<div class="line">│   │           ├── base.py                # BBOX, Detection, DetectorModel ABC</div>
-<div class="line">│   │           ├── registry.py            # MODEL_CONFIGS catalog + singleton loader</div>
-<div class="line">│   │           ├── yolo.py                # @register(&quot;yolo&quot;) — v8/v11/v26</div>
-<div class="line">│   │           ├── yolo_e.py              # @register(&quot;yolo_e&quot;) — YOLOE zero-shot</div>
-<div class="line">│   │           └── robocup2026_translation.json     # Raw label -&gt; published label</div>
+<div class="line">│   │       ├── detectors/                 # Pluggable model layer</div>
+<div class="line">│   │       │   ├── base.py                # BBOX, Detection, DetectorModel ABC</div>
+<div class="line">│   │       │   ├── registry.py            # MODEL_CONFIGS catalog + singleton loader</div>
+<div class="line">│   │       │   ├── yolo.py                # @register(&quot;yolo&quot;) — v8/v11/v26</div>
+<div class="line">│   │       │   ├── yolo_e.py              # @register(&quot;yolo_e&quot;) — YOLOE zero-shot</div>
+<div class="line">│   │       │   ├── embedding.py           # @register(&quot;embedding&quot;) — few-shot object gallery</div>
+<div class="line">│   │       │   └── robocup2026_translation.json     # Raw label -&gt; published label</div>
+<div class="line">│   │       └── embedding_gallery/         # Few-shot object gallery tooling (see its README)</div>
+<div class="line">│   │           ├── add_object.sh          # One-command &quot;add an object&quot; wrapper</div>
+<div class="line">│   │           └── core/</div>
+<div class="line">│   │               ├── constants.py       # Shared names, folders and file extensions</div>
+<div class="line">│   │               ├── gallery_matcher.py # Cosine matching against the per-object gallery</div>
+<div class="line">│   │               └── gallery_build.py   # Builds one gallery entry from photos</div>
 <div class="line">│   │</div>
 <div class="line">│   ├── vision_general/                    # People, tracking and the per-task command nodes</div>
 <div class="line">│   │   ├── config/botsort-reid.yaml       # Ultralytics BoT-SORT tracker config</div>
@@ -149,6 +156,7 @@ Tree structure</h1>
 <div class="line">│   │       └── utils/                     # Importable library shared by every node</div>
 <div class="line">│   │           ├── calculations.py        # deproject_pixel_to_point, get_depth, centroids</div>
 <div class="line">│   │           ├── trt_utils.py           # load_yolo_trt(): .pt -&gt; cached TensorRT .engine</div>
+<div class="line">│   │           ├── models/image_embedder.py  # Frozen DINOv2 image embedder (PyTorch / TensorRT)</div>
 <div class="line">│   │           ├── debug_pub.py           # Subscriber-gated, rate-limited debug images</div>
 <div class="line">│   │           └── area_check.py          # Room filtering via nav MapAreas + TF     </div>
 <div class="line">│   │</div>
@@ -167,6 +175,9 @@ Tree structure</h1>
 <div class="line">│   ├── utils.txt                          # tqdm, pillow, timm</div>
 <div class="line">│   └── moondream.txt / moondream_server.txt</div>
 <div class="line">│</div>
+<div class="line">├── benchmarks/</div>
+<div class="line">│   └── embedding_gallery/                 # Benchmark behind the few-shot gallery (see its README)</div>
+<div class="line">│</div>
 <div class="line">├── scripts/</div>
 <div class="line">│   └── fetch_models.py                    # Offline model provisioning + TRT warmup</div>
 <div class="line">│</div>
@@ -180,7 +191,7 @@ Tree structure</h1>
 <div class="line">├── moondream.yaml                         # service `moondream-server` (port 50052)</div>
 <div class="line">├── trt_cache/                             # Persisted weights + TensorRT engines</div>
 <div class="line">└── run.sh                                 # Area entrypoint (called by root run.sh)</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md157"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md171"></a>
 Concepts</h1>
 <p><b>Camera orientation is centralized.</b> FRIDA's camera is not always upright, so exactly one node applies rotation: <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> subscribes to <code>CAMERA_TOPIC</code> and <code>CAMERA_ROTATION_TOPIC</code> (an <code>Int16</code> of 0/90/180/270) and republishes on <code>IMAGE_ORIENTED_TOPIC</code>. Every downstream node consumes the <em>oriented</em> topic. A launch file must therefore never start two <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> instances — the per-task launches that <code>include</code> <code><a class="el" href="object__detector__node_8launch_8py.html">object_detector_node.launch.py</a></code> deliberately do not declare their own.</p>
 <p><b>Detectors are a plugin registry, not hardcoded models.</b> <code><a class="el" href="registry_8py.html">object_detector_2d/scripts/detectors/registry.py</a></code> holds <code>MODEL_CONFIGS</code>:</p>
@@ -192,14 +203,19 @@ Concepts</h1>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>yolo_generic</code>   </td><td class="markdownTableBodyNone"><code>yolo26n.pt</code>   </td><td class="markdownTableBodyNone"><code>yolo</code>   </td><td class="markdownTableBodyNone">0.5    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>zero_shot</code>   </td><td class="markdownTableBodyNone"><code>yoloe-11l-seg.pt</code>   </td><td class="markdownTableBodyNone"><code>yolo_e</code>   </td><td class="markdownTableBodyNone">0.25   </td></tr>
+<td class="markdownTableBodyNone"><code>zero_shot</code>   </td><td class="markdownTableBodyNone"><code>yoloe-11l-seg.pt</code>   </td><td class="markdownTableBodyNone"><code>yolo_e</code>   </td><td class="markdownTableBodyNone">0.25    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>embedding_box_proposer</code>   </td><td class="markdownTableBodyNone"><code>yoloe-11l-seg-pf.pt</code>   </td><td class="markdownTableBodyNone"><code>yolo_e</code>   </td><td class="markdownTableBodyNone">0.25    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespaceembedding__gallery.html">embedding_gallery</a></code>   </td><td class="markdownTableBodyNone">DINOv2 ViT-B/14 + <code>gallery/</code>   </td><td class="markdownTableBodyNone"><code>embedding</code>   </td><td class="markdownTableBodyNone">per-object similarity floor   </td></tr>
 </table>
+<p><code>ObjectDetect2D</code> runs the models listed under <code>models:</code> in <code>config/parameters.yaml</code> (currently <code>yolo_finetuned</code> and <code><a class="el" href="namespaceembedding__gallery.html">embedding_gallery</a></code>). <code>embedding_box_proposer</code> is not a detector on its own: <code><a class="el" href="namespaceembedding__gallery.html">embedding_gallery</a></code> calls it to get class-agnostic boxes.</p>
 <p>Adding a model with the same architecture is a two-step change: drop the <code>.pt</code> beside <code><a class="el" href="registry_8py.html">registry.py</a></code> and add one dict entry. A model with conflicting dependencies, or one needing more than ~4 GB of exclusive GPU, should become a new gRPC container in <code>docker/vision/</code> instead — that is exactly what <code>moondream_run</code> is.</p>
 <p><b>2D boxes become 3D points in the base class.</b> <code><a class="el" href="base__detector__node_8py.html">base_detector_node.py</a></code> pairs each detection with <code>DEPTH_IMAGE_TOPIC</code> and <code>CAMERA_INFO_TOPIC</code>, deprojects the box centroid via <code><a class="el" href="calculations_8py.html">utils/calculations.py</a></code>, transforms it out of <code>CAMERA_FRAME</code> with TF, and publishes both <code>ObjectDetectionArray</code> and RViz markers.</p>
 <p><b>TensorRT engines are built, cached, and device-specific.</b> <code><a class="el" href="trt__utils_8py.html">utils/trt_utils.py</a>::load_yolo_trt</code> exports a <code>.pt</code> to a <code>.engine</code> on first use and caches it in <code>TENSORRT_CACHE_DIR</code> (<code>docker/vision/trt_cache</code>, a persistent mount). <b>Never copy engines between the laptop and the Orin</b> — they are tied to the device and the TensorRT version. Set <code>use_trt: False</code> when working on a PC.**</p>
 <p><b>Weights are provisioned up front, on purpose.</b> <code>.pt</code> files are gitignored and download lazily on a node's first run, followed by minutes of TRT export. On competition day, with no internet, a fresh container simply breaks. <code><a class="el" href="fetch__models_8py.html">vision/scripts/fetch_models.py</a></code> fetches every standard weight, verifies the custom ones, writes a <code>MANIFEST.json</code> of sha256 hashes, and with <code>--warmup</code> pre-builds every engine for <em>this</em> device. Run it before you go offline:</p>
 <div class="fragment"><div class="line">./run.sh vision --warmup</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md158"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md172"></a>
 Vision pipeline</h1>
 <div class="fragment"><div class="line">flowchart LR</div>
 <div class="line">    ZED[home2-zed&lt;br/&gt;ZED wrapper] --&gt;|rgb + depth + camera_info| IO[image_orienter]</div>
@@ -208,7 +224,7 @@ Vision pipeline</h1>
 <div class="line"> </div>
 <div class="line">    subgraph VIS[&quot;home2-vision (ROS 2)&quot;]</div>
 <div class="line">        IO</div>
-<div class="line">        OD[&quot;ObjectDetect2D&lt;br/&gt;yolo_finetuned + yolo_generic&quot;]</div>
+<div class="line">        OD[&quot;ObjectDetect2D&lt;br/&gt;yolo_finetuned + embedding_gallery&quot;]</div>
 <div class="line">        ZS[&quot;ZeroShotDetect2D&lt;br/&gt;yoloe-11l-seg&quot;]</div>
 <div class="line">        TRK[&quot;tracker_node&lt;br/&gt;yolov8n + ByteTrack, yolo11m-pose&quot;]</div>
 <div class="line">        FR[&quot;face_recognition&lt;br/&gt;InsightFace buffalo_sc&quot;]</div>
@@ -227,21 +243,28 @@ Vision pipeline</h1>
 <div class="line">    TRK -.-&gt;|/vision/tracking_results| SM[nav person_goal_smoother]</div>
 <div class="line">    FR -.-&gt;|/vision/follow_face| ARM[manipulation follow_face]</div>
 <div class="line">    TM -.-&gt;|service calls| TRK &amp; FR &amp; HC &amp; GC &amp; MD</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md159"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md173"></a>
 Packages</h1>
-<h2><a class="anchor" id="autotoc_md160"></a>
+<h2><a class="anchor" id="autotoc_md174"></a>
 &lt;tt&gt;object_detector_2d&lt;/tt&gt;</h2>
 <p>The detection backbone. Both nodes share <code>BaseDetectorNode</code>, which declares the camera topics, <code>TARGET_FRAME</code>, <code>DEPTH_ACTIVE</code>, <code>FLIP_IMAGE</code> and <code>MAX_DEPTH_THRESH</code> parameters and handles projection and visualization. <code>vision_general</code> has the same pattern in <code>VisionRuntime</code> (see below).</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Node   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Key interfaces    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>ObjectDetect2D</code>   </td><td class="markdownTableBodyNone">Runs every model in <code>MODEL_CONFIGS</code> continuously and IoU-dedupes across them   </td><td class="markdownTableBodyNone">pubs <code>/vision/detections</code>, <code>/vision/detections_3d</code>, <code>/vision/detections_image</code>; srvs <code>DetectionHandler</code>, <code>YoloDetect</code>, <code>SetTrashCategory</code>    </td></tr>
+<td class="markdownTableBodyNone"><code>ObjectDetect2D</code>   </td><td class="markdownTableBodyNone">Runs the models listed under <code>models:</code> in <code>config/parameters.yaml</code> continuously and IoU-dedupes across them   </td><td class="markdownTableBodyNone">pubs <code>/vision/detections</code>, <code>/vision/detections_3d</code>, <code>/vision/detections_image</code>; srvs <code>DetectionHandler</code>, <code>YoloDetect</code>, <code>SetTrashCategory</code>    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>ZeroShotDetect2D</code>   </td><td class="markdownTableBodyNone">YOLOE open-vocabulary detection for classes not in the finetuned model   </td><td class="markdownTableBodyNone">pubs <code>/vision/zero_shot_detections*</code>; srv <code>SetDetectorClasses</code>   </td></tr>
 </table>
 <p>Each node has a fixed activation topic (<code>/vision/object_detector/active</code>, <code>/vision/zero_shot_detector/active</code>) so a task manager can idle the GPU between steps.</p>
-<h2><a class="anchor" id="autotoc_md161"></a>
+<h3><a class="anchor" id="autotoc_md175"></a>
+Adding an object to the gallery (few-shot)</h3>
+<p><code>yolo_finetuned</code> only knows its training classes. Other objects can be added from photos, with no retraining: YOLOE proposes boxes and DINOv2 matches each crop against a per-object gallery. It runs alongside <code>yolo_finetuned</code> (both are listed in <code>config/parameters.yaml</code>).</p>
+<p>Put 10-30 photos in <code>vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/&lt;object_name&gt;/</code>, then, inside <code>home2-vision</code>:</p>
+<div class="fragment"><div class="line">cd /workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery</div>
+<div class="line">./add_object.sh &lt;object_name&gt;    # then restart ObjectDetect2D</div>
+</div><!-- fragment --><p>Options, accuracy and troubleshooting: <a class="el" href="md_vision_packages_object_detector_2d_scripts_embedding_gallery_README.html">`embedding_gallery/README.md`</a>. The benchmark behind the defaults: <a class="el" href="md_vision_benchmarks_embedding_gallery_README.html">`benchmarks/embedding_gallery/`</a>.</p>
+<h2><a class="anchor" id="autotoc_md176"></a>
 &lt;tt&gt;vision_general&lt;/tt&gt;</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -266,12 +289,12 @@ Packages</h1>
 <td class="markdownTableBodyNone"><code><a class="el" href="namespacezed__simulator.html">zed_simulator</a></code>   </td><td class="markdownTableBodyNone">Publishes a plain webcam onto the ZED topics for laptop dev   </td><td class="markdownTableBodyNone">params <code>video_id</code>, <code>use_zed</code>, <code>visualize</code>   </td><td class="markdownTableBodyNone">—   </td></tr>
 </table>
 <p><code><a class="el" href="pose__detection_8py.html">pose_detection.py</a></code> is a library, not a node: it holds the COCO keypoint constants and the gesture/pose classification used by <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code> and <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>.</p>
-<h3><a class="anchor" id="autotoc_md162"></a>
+<h3><a class="anchor" id="autotoc_md177"></a>
 &lt;tt&gt;VisionRuntime&lt;/tt&gt;</h3>
 <p><code><a class="el" href="vision__runtime_8py.html">scripts/task_nodes/vision_runtime.py</a></code> is the counterpart to <code>object_detector_2d</code>'s <code>BaseDetectorNode</code>: camera subscriptions, the <code>/vision/&lt;node&gt;/active</code> gate, rotation tracking, TF, the debug publisher and a non-spinning <code>call_service</code>. Subclasses read <code>self.image</code>, <code>self.depth_image</code> and <code>self.camera_info</code> as they did when each node owned its own subscriptions.</p>
 <p><code>scripts/task_nodes/</code> holds the runtime and every node that subclasses it: <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>, <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacerestaurant__commands.html">restaurant_commands</a></code>, <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code> and <code><a class="el" href="namespaceface__recognition__node.html">face_recognition_node</a></code>. They all install flat into <code>lib/vision_general/</code>, so <code>from <a class="el" href="namespacevision__runtime.html">vision_runtime</a> import ...</code> resolves in both the source and the installed tree.</p>
 <p><code><a class="el" href="namespacetracker__node.html">tracker_node</a></code> deliberately stays out: it needs a different QoS per stream (BEST_EFFORT colour, RELIABLE depth) and a separate callback group per subscription so its 20 Hz tracking timer is never starved by a service blocking on moondream. <code>VisionRuntime</code> expresses neither.</p>
-<h2><a class="anchor" id="autotoc_md163"></a>
+<h2><a class="anchor" id="autotoc_md178"></a>
 &lt;tt&gt;moondream_run&lt;/tt&gt;</h2>
 <p><code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> is a thin ROS ⇄ gRPC bridge. The model itself lives in a separate container because its dependency set conflicts with the ROS one.</p>
 <table class="markdownTable">
@@ -287,7 +310,7 @@ Packages</h1>
 <td class="markdownTableBodyNone"><code>/vision/moondream_detection</code>   </td><td class="markdownTableBodyNone"><code>MoondreamDetection</code>   </td><td class="markdownTableBodyNone">Open-vocabulary detection (normalized bboxes)   </td></tr>
 </table>
 <p>The gRPC side (<code>MoonDreamService</code> on port <code>50052</code>) exposes <code>EncodeImage</code>, <code>FindObjectPoints</code>, <code>Query</code> and <code>Detect</code>, backed by <code>vikhyatk/moondream2</code>.</p>
-<h1><a class="anchor" id="autotoc_md164"></a>
+<h1><a class="anchor" id="autotoc_md179"></a>
 Running vision</h1>
 <p>Each competition flag maps to one launch file and one set of compose profiles:</p>
 <table class="markdownTable">
@@ -333,7 +356,7 @@ Running vision</h1>
 <div class="line">./run.sh vision --stop           # stop containers, keep them</div>
 <div class="line">./run.sh vision --down           # stop and remove</div>
 <div class="line">./run.sh vision --clean          # delete build/, install/, log/</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md165"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md180"></a>
 Building inside the container</h2>
 <p><code>--build</code> runs exactly this — <code>frida_interfaces</code> and <code><a class="el" href="namespacefrida__constants.html">frida_constants</a></code> are ignored because they come prebuilt from the shared cache container (<code>./run.sh frida_interfaces</code>):</p>
 <div class="fragment"><div class="line">colcon build --packages-ignore frida_interfaces frida_constants \</div>
@@ -342,14 +365,14 @@ Building inside the container</h2>
 </div><!-- fragment --><p>Every <code>scripts/*.py</code> is installed as an executable, so any script can be run directly:</p>
 <div class="fragment"><div class="line">ros2 run vision_general tracker_node.py</div>
 <div class="line">ros2 run object_detector_2d object_detector_node.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md166"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md181"></a>
 Camera</h2>
 <p>On the Orin, start the ZED container (or the wrapper directly):</p>
 <div class="fragment"><div class="line">./run.sh zed</div>
 <div class="line">ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false</div>
 </div><!-- fragment --><p>Anywhere else, publish a webcam onto the same topics. <code>video_id</code> is the <code>/dev/videoN</code> index:</p>
 <div class="fragment"><div class="line">ros2 run vision_general zed_simulator.py --ros-args -p video_id:=1</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md167"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md182"></a>
 Example calls</h2>
 <div class="fragment"><div class="line"># Track the largest person, then stop</div>
 <div class="line">ros2 service call /vision/set_tracking_target std_srvs/srv/SetBool &quot;{data: true}&quot;</div>
@@ -389,7 +412,7 @@ Example calls</h2>
 <div class="line">ros2 topic echo /vision/detections</div>
 <div class="line">ros2 topic echo /vision/person_list</div>
 <div class="line">ros2 topic echo /vision/tracking_results</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md168"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md183"></a>
 Debugging</h1>
 <p>Debug image topics are <b>subscriber-gated</b> by <code><a class="el" href="debug__pub_8py.html">utils/debug_pub.py</a></code>: nothing is encoded until someone subscribes, so leaving them in costs nothing. Open one in <code>rqt_image_view</code>:</p>
 <table class="markdownTable">
@@ -411,10 +434,10 @@ Debugging</h1>
 <div class="line">ros2 node list | grep vision</div>
 </div><!-- fragment --><p>The VLM sidecar logs separately from the ROS container:</p>
 <div class="fragment"><div class="line">docker logs -f home2-moondream-server</div>
-</div><!-- fragment --> <h1><a class="anchor" id="autotoc_md169"></a>
+</div><!-- fragment --> <h1><a class="anchor" id="autotoc_md184"></a>
 Object detection pipeline training</h1>
 <p>The training process involves preparing the dataset, configuring the model, and running the training. You can find the pipeline repository <a href="https://github.com/RoBorregos/home-pipelines/tree/main/vision/object_detector">here</a>.</p>
-<h1><a class="anchor" id="autotoc_md170"></a>
+<h1><a class="anchor" id="autotoc_md185"></a>
 Known issues</h1>
 <p>These are real inconsistencies in the current tree, recorded so they do not surprise you. None of them are fixed by this document.</p>
 <ul>

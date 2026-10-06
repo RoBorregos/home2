@@ -33,6 +33,14 @@ var annotated_dup =
     [ "call_pose_goal", "namespacecall__pose__goal.html", [
       [ "MoveToPoseClient", "classcall__pose__goal_1_1MoveToPoseClient.html", "classcall__pose__goal_1_1MoveToPoseClient" ]
     ] ],
+    [ "core", "namespacecore.html", [
+      [ "tasks", "namespacecore_1_1tasks.html", [
+        [ "BoxesTask", "classcore_1_1tasks_1_1BoxesTask.html", "classcore_1_1tasks_1_1BoxesTask" ],
+        [ "E2ECalibrateTask", "classcore_1_1tasks_1_1E2ECalibrateTask.html", "classcore_1_1tasks_1_1E2ECalibrateTask" ],
+        [ "E2EEvalTask", "classcore_1_1tasks_1_1E2EEvalTask.html", "classcore_1_1tasks_1_1E2EEvalTask" ],
+        [ "EmbeddingsTask", "classcore_1_1tasks_1_1EmbeddingsTask.html", "classcore_1_1tasks_1_1EmbeddingsTask" ]
+      ] ]
+    ] ],
     [ "customer_node", "namespacecustomer__node.html", [
       [ "CustomerNode", "classcustomer__node_1_1CustomerNode.html", "classcustomer__node_1_1CustomerNode" ]
     ] ],
@@ -50,6 +58,9 @@ var annotated_dup =
         [ "BBOX", "classdetectors_1_1base_1_1BBOX.html", null ],
         [ "Detection", "classdetectors_1_1base_1_1Detection.html", "classdetectors_1_1base_1_1Detection" ],
         [ "DetectorModel", "classdetectors_1_1base_1_1DetectorModel.html", "classdetectors_1_1base_1_1DetectorModel" ]
+      ] ],
+      [ "embedding", "namespacedetectors_1_1embedding.html", [
+        [ "EmbeddingModel", "classdetectors_1_1embedding_1_1EmbeddingModel.html", "classdetectors_1_1embedding_1_1EmbeddingModel" ]
       ] ],
       [ "registry", "namespacedetectors_1_1registry.html", [
         [ "ModelRegistry", "classdetectors_1_1registry_1_1ModelRegistry.html", "classdetectors_1_1registry_1_1ModelRegistry" ]
@@ -74,6 +85,16 @@ var annotated_dup =
     [ "egsr_cut", "namespaceegsr__cut.html", [
       [ "EGPSRTM", "classegsr__cut_1_1EGPSRTM.html", "classegsr__cut_1_1EGPSRTM" ]
     ] ],
+    [ "embedding_gallery", "namespaceembedding__gallery.html", [
+      [ "core", "namespaceembedding__gallery_1_1core.html", [
+        [ "gallery_build", "namespaceembedding__gallery_1_1core_1_1gallery__build.html", [
+          [ "BuildError", "classembedding__gallery_1_1core_1_1gallery__build_1_1BuildError.html", null ]
+        ] ],
+        [ "gallery_matcher", "namespaceembedding__gallery_1_1core_1_1gallery__matcher.html", [
+          [ "Gallery", "classembedding__gallery_1_1core_1_1gallery__matcher_1_1Gallery.html", "classembedding__gallery_1_1core_1_1gallery__matcher_1_1Gallery" ]
+        ] ]
+      ] ]
+    ] ],
     [ "ex_orientation_path_constraint", "namespaceex__orientation__path__constraint.html", [
       [ "MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient" ]
     ] ],
@@ -92,6 +113,12 @@ var annotated_dup =
       [ "FakePerception", "classfakes_1_1FakePerception.html", "classfakes_1_1FakePerception" ],
       [ "FakeTFBuffer", "classfakes_1_1FakeTFBuffer.html", "classfakes_1_1FakeTFBuffer" ],
       [ "ServiceStub", "classfakes_1_1ServiceStub.html", "classfakes_1_1ServiceStub" ]
+    ] ],
+    [ "finetune_arcface", "namespacefinetune__arcface.html", [
+      [ "ArcFaceHead", "classfinetune__arcface_1_1ArcFaceHead.html", "classfinetune__arcface_1_1ArcFaceHead" ]
+    ] ],
+    [ "finetune_head", "namespacefinetune__head.html", [
+      [ "ProjectionHead", "classfinetune__head_1_1ProjectionHead.html", "classfinetune__head_1_1ProjectionHead" ]
     ] ],
     [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", [
       [ "FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", "classflat__grasp__estimator_1_1FlatGraspEstimator" ]
@@ -509,6 +536,9 @@ var annotated_dup =
         [ "DebugImagePublisher", "classutils_1_1debug__pub_1_1DebugImagePublisher.html", "classutils_1_1debug__pub_1_1DebugImagePublisher" ]
       ] ],
       [ "models", "namespaceutils_1_1models.html", [
+        [ "image_embedder", "namespaceutils_1_1models_1_1image__embedder.html", [
+          [ "ImageEmbedder", "classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html", "classutils_1_1models_1_1image__embedder_1_1ImageEmbedder" ]
+        ] ],
         [ "swin", "namespaceutils_1_1models_1_1swin.html", [
           [ "model", "namespaceutils_1_1models_1_1swin_1_1model.html", [
             [ "ClassBlock", "classutils_1_1models_1_1swin_1_1model_1_1ClassBlock.html", "classutils_1_1models_1_1swin_1_1model_1_1ClassBlock" ],

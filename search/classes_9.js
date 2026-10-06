@@ -8,6 +8,7 @@ var searchData=
   ['iksolutionlist_5',['IkSolutionList',['../classikfast_1_1IkSolutionList.html',1,'ikfast']]],
   ['iksolutionlistbase_6',['IkSolutionListBase',['../classikfast_1_1IkSolutionListBase.html',1,'ikfast']]],
   ['iksolver_7',['IKSolver',['../classIKSolver.html',1,'']]],
-  ['imageorienter_8',['ImageOrienter',['../classimage__orienter_1_1ImageOrienter.html',1,'image_orienter']]],
-  ['interleavedplan_9',['InterleavedPlan',['../classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html',1,'task_manager::gpsr::merger']]]
+  ['imageembedder_8',['ImageEmbedder',['../classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html',1,'utils::models::image_embedder']]],
+  ['imageorienter_9',['ImageOrienter',['../classimage__orienter_1_1ImageOrienter.html',1,'image_orienter']]],
+  ['interleavedplan_10',['InterleavedPlan',['../classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html',1,'task_manager::gpsr::merger']]]
 ];

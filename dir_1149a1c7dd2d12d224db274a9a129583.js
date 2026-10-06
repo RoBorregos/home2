@@ -1,6 +1,7 @@
 var dir_1149a1c7dd2d12d224db274a9a129583 =
 [
     [ "detectors", "dir_9bb14cb5732342718fbdf6789400b486.html", "dir_9bb14cb5732342718fbdf6789400b486" ],
+    [ "embedding_gallery", "dir_3fa74155f3e5da098b41746b74f22b03.html", "dir_3fa74155f3e5da098b41746b74f22b03" ],
     [ "base_detector_node.py", "base__detector__node_8py.html", "base__detector__node_8py" ],
     [ "object_detector_node.py", "object__detector__node_8py.html", "object__detector__node_8py" ],
     [ "vision_3D_utils.py", "vision__3D__utils_8py.html", "vision__3D__utils_8py" ],

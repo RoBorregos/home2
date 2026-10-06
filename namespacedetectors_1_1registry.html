@@ -170,7 +170,20 @@ Variables</h2></td></tr>
 <div class="line"><span class="lineno">   13</span>        <span class="stringliteral">&quot;use_trt&quot;</span>: <span class="keyword">True</span>,</div>
 <div class="line"><span class="lineno">   14</span>    },</div>
 <div class="line"><span class="lineno">   15</span>    <span class="stringliteral">&quot;zero_shot&quot;</span>: {<span class="stringliteral">&quot;filename&quot;</span>: <span class="stringliteral">&quot;yoloe-11l-seg.pt&quot;</span>, <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;yolo_e&quot;</span>, <span class="stringliteral">&quot;conf&quot;</span>: 0.25},</div>
-<div class="line"><span class="lineno">   16</span>}</div>
+<div class="line"><span class="lineno">   16</span>    <span class="stringliteral">&quot;embedding_box_proposer&quot;</span>: {</div>
+<div class="line"><span class="lineno">   17</span>        <span class="stringliteral">&quot;filename&quot;</span>: <span class="stringliteral">&quot;yoloe-11l-seg-pf.pt&quot;</span>,</div>
+<div class="line"><span class="lineno">   18</span>        <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;yolo_e&quot;</span>,</div>
+<div class="line"><span class="lineno">   19</span>        <span class="stringliteral">&quot;conf&quot;</span>: 0.25,</div>
+<div class="line"><span class="lineno">   20</span>    },</div>
+<div class="line"><span class="lineno">   21</span>    <span class="stringliteral">&quot;embedding_gallery&quot;</span>: {</div>
+<div class="line"><span class="lineno">   22</span>        <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;embedding&quot;</span>,</div>
+<div class="line"><span class="lineno">   23</span>        <span class="stringliteral">&quot;backbone&quot;</span>: <span class="stringliteral">&quot;vit_base_patch14_dinov2.lvd142m&quot;</span>,</div>
+<div class="line"><span class="lineno">   24</span>        <span class="stringliteral">&quot;box_model&quot;</span>: <span class="stringliteral">&quot;embedding_box_proposer&quot;</span>,</div>
+<div class="line"><span class="lineno">   25</span>        <span class="stringliteral">&quot;gallery_dir&quot;</span>: <span class="stringliteral">&quot;gallery&quot;</span>,</div>
+<div class="line"><span class="lineno">   26</span>        <span class="stringliteral">&quot;translation&quot;</span>: <span class="stringliteral">&quot;robocup2026_translation.json&quot;</span>,</div>
+<div class="line"><span class="lineno">   27</span>        <span class="stringliteral">&quot;use_trt&quot;</span>: <span class="keyword">True</span>,</div>
+<div class="line"><span class="lineno">   28</span>    },</div>
+<div class="line"><span class="lineno">   29</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>

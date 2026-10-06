@@ -27,6 +27,7 @@ var hierarchy =
       [ "task_manager.gpsr.leaf_behaviours.OneShotCallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1OneShotCallbackLeaf.html", null ],
       [ "task_manager.gpsr.leaf_behaviours.SequentialFallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1SequentialFallbackLeaf.html", null ]
     ] ],
+    [ "core.tasks.BoxesTask", "classcore_1_1tasks_1_1BoxesTask.html", null ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
     [ "vamp::planning::BSplineSettings", "structvamp_1_1planning_1_1BSplineSettings.html", null ],
     [ "vamp::collision::CAPT::BuildFrame", "structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html", null ],
@@ -41,8 +42,12 @@ var hierarchy =
     [ "detectors.base.Detection", "classdetectors_1_1base_1_1Detection.html", null ],
     [ "vamp.disable_rendering.DisableRendering", "classvamp_1_1disable__rendering_1_1DisableRendering.html", null ],
     [ "vamp::rng::Distribution", "structvamp_1_1rng_1_1Distribution.html", null ],
+    [ "core.tasks.E2ECalibrateTask", "classcore_1_1tasks_1_1E2ECalibrateTask.html", null ],
+    [ "core.tasks.E2EEvalTask", "classcore_1_1tasks_1_1E2EEvalTask.html", null ],
+    [ "core.tasks.EmbeddingsTask", "classcore_1_1tasks_1_1EmbeddingsTask.html", null ],
     [ "vamp::collision::Environment< DataT >", "structvamp_1_1collision_1_1Environment.html", null ],
     [ "Exception", null, [
+      [ "embedding_gallery.core.gallery_build.BuildError", "classembedding__gallery_1_1core_1_1gallery__build_1_1BuildError.html", null ],
       [ "pick_and_place.pipelines.errors.PickAborted", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAborted.html", null ],
       [ "pick_and_place.pipelines.errors.PickAttemptFailed", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAttemptFailed.html", null ],
       [ "pick_and_place.pipelines.errors.PickHardwareError", "classpick__and__place_1_1pipelines_1_1errors_1_1PickHardwareError.html", null ]
@@ -63,6 +68,7 @@ var hierarchy =
     [ "vamp::planning::FMTStarNeighborParams", "structvamp_1_1planning_1_1FMTStarNeighborParams.html", null ],
     [ "pick_and_place.pipelines.profiles.ForceGuardProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html", null ],
     [ "vamp::robots::FRIDA_Real", "structvamp_1_1robots_1_1FRIDA__Real.html", null ],
+    [ "embedding_gallery.core.gallery_matcher.Gallery", "classembedding__gallery_1_1core_1_1gallery__matcher_1_1Gallery.html", null ],
     [ "task_manager.subtask_managers.generic_tasks.GenericTask", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask.html", [
       [ "task_manager.subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classtask__manager_1_1subtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", null ],
       [ "task_manager.subtask_managers.gpsr_tasks.GPSRTask", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]
@@ -85,6 +91,7 @@ var hierarchy =
       [ "ikfast::IkSolutionList< T >", "classikfast_1_1IkSolutionList.html", null ]
     ] ],
     [ "IKSolver", "classIKSolver.html", null ],
+    [ "utils.models.image_embedder.ImageEmbedder", "classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html", null ],
     [ "task_manager.gpsr.merger.InterleavedPlan", "classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html", null ],
     [ "kinematics::KinematicsBase", null, [
       [ "xarm6_ikfast_plugin::IKFastKinematicsPlugin", "classxarm6__ikfast__plugin_1_1IKFastKinematicsPlugin.html", null ]
@@ -97,6 +104,8 @@ var hierarchy =
     [ "task_manager.subtask_managers.manipulation_tasks.ManipulationTasks", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", null ],
     [ "detectors.registry.ModelRegistry", "classdetectors_1_1registry_1_1ModelRegistry.html", null ],
     [ "nn.Module", null, [
+      [ "finetune_arcface.ArcFaceHead", "classfinetune__arcface_1_1ArcFaceHead.html", null ],
+      [ "finetune_head.ProjectionHead", "classfinetune__head_1_1ProjectionHead.html", null ],
       [ "utils.models.swin.model.ClassBlock", "classutils_1_1models_1_1swin_1_1model_1_1ClassBlock.html", null ],
       [ "utils.models.swin.model.PCB", "classutils_1_1models_1_1swin_1_1model_1_1PCB.html", null ],
       [ "utils.models.swin.model.PCB_test", "classutils_1_1models_1_1swin_1_1model_1_1PCB__test.html", null ],
@@ -276,6 +285,7 @@ var hierarchy =
       [ "Servo.Servo", "classServo_1_1Servo.html", null ],
       [ "base_detector_node.BaseDetectorNode", "classbase__detector__node_1_1BaseDetectorNode.html", null ],
       [ "detectors.base.DetectorModel", "classdetectors_1_1base_1_1DetectorModel.html", [
+        [ "detectors.embedding.EmbeddingModel", "classdetectors_1_1embedding_1_1EmbeddingModel.html", null ],
         [ "detectors.yolo.YoloModel", "classdetectors_1_1yolo_1_1YoloModel.html", null ],
         [ "detectors.yolo_e.YoloEModel", "classdetectors_1_1yolo__e_1_1YoloEModel.html", null ]
       ] ]

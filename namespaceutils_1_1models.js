@@ -1,5 +1,6 @@
 var namespaceutils_1_1models =
 [
+    [ "image_embedder", "namespaceutils_1_1models_1_1image__embedder.html", "namespaceutils_1_1models_1_1image__embedder" ],
     [ "reid_model", "namespaceutils_1_1models_1_1reid__model.html", [
       [ "compare_images", "namespaceutils_1_1models_1_1reid__model.html#a523cca143f1465b504a15c56c12b2d2a", null ],
       [ "extract_feature_from_img", "namespaceutils_1_1models_1_1reid__model.html#a754f535d3251ddffaa44e81b0cccb0d8", null ],
