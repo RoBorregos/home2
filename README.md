@@ -139,10 +139,12 @@ For detailed configuration options, see the [CycloneDDS setup docs](docs/cyclone
 To set up personalized instructions for your AI development agent (Claude, Gemini, or Copilot), run the setup script:
 
 ```bash
-./scripts/setup-agent.sh [agent_type]
+./scripts/setup_agent.sh [agent_type]
 ```
 
 Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no argument is provided, the script will prompt you for a choice.
+
+All agent context lives in `docs/ai/` (e.g. `docs/ai/orin.md` — how to connect, test and sync code on the robot); the generated instructions file points every agent there.
 
 ## Documentation
 
