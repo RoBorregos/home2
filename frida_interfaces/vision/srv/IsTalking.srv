@@ -1,0 +1,5 @@
+# Cropped frames of one person (oldest first), e.g. a face bbox crop per frame
+sensor_msgs/Image[] frames
+---
+bool is_talking
+string message

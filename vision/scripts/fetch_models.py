@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import sys
+import urllib.request
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +28,10 @@ STANDARD_MODELS = {
     "yolo26n.pt": "detect",  # object_detector yolo_generic
     "yoloe-11l-seg.pt": None,  # zero_shot (loads via its own YOLOE path)
     "yoloe-11l-seg-pf.pt": None,  # embedding_box_proposer (prompt-free checkpoint)
+}
+
+URL_MODELS = {
+    "face_landmarker.task": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
 }
 
 # Custom weights that cannot be downloaded — verify presence, warn if missing.
@@ -91,6 +96,32 @@ def fetch_standard(dest: Path, manifest: dict) -> list[str]:
                 got = Path(attempt_download_asset(str(target)))
                 if got != target and got.exists():
                     shutil.move(str(got), target)
+            except Exception as e:
+                print(f"[fetch] FAILED   {name}: {e}")
+                failures.append(name)
+                continue
+        digest = sha256(target)
+        known = manifest.get(name)
+        if known and known != digest:
+            print(
+                f"[fetch] WARNING  {name} sha256 changed ({digest[:12]} != {known[:12]})"
+            )
+        manifest[name] = digest
+    return failures
+
+
+def fetch_urls(dest: Path, manifest: dict) -> list[str]:
+    failures = []
+    for name, url in URL_MODELS.items():
+        target = dest / name
+        if target.exists():
+            print(f"[fetch] ok       {target}")
+        else:
+            print(f"[fetch] getting  {name} ...")
+            try:
+                tmp = target.with_suffix(target.suffix + ".part")
+                urllib.request.urlretrieve(url, tmp)
+                tmp.rename(target)
             except Exception as e:
                 print(f"[fetch] FAILED   {name}: {e}")
                 failures.append(name)
@@ -245,6 +276,7 @@ def main():
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
 
     failures = fetch_standard(dest, manifest)
+    failures += fetch_urls(dest, manifest)
     hf_failures = fetch_hf_models(dest)
     missing = check_customs(manifest)
     sync_detector_models(dest)
