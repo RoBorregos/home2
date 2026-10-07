@@ -323,9 +323,6 @@ class DoingLaundryTM(Node):
             Logger.info(self, "Closing laundry machine door.")
             self.subtask_manager.hri.say("Closing the laundry machine door.", wait=False)
             self.subtask_manager.manipulation.close_gripper()
-            # self.subtask_manager.manipulation.move_to_position("initial_close_laundry_pose")
-            # self.subtask_manager.manipulation.move_to_position("mid_close_laundry_pose")
-            # self.subtask_manager.manipulation.move_to_position("end_close_laundry_pose")
             Logger.success(self, "Laundry machine door closed.")
             self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES)
 
