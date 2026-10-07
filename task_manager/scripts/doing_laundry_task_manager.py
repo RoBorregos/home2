@@ -284,7 +284,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE:
             Logger.info(self, "Navigating to laundry machine.")
-            status, error = self.navigate_to("laundry", "laundry_machine")
+            status, error = self.navigate_to("laundry", "washing_machine")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry machine.")
                 self.set_state(DoingLaundryTM.TaskStates.PICK_CLOTHES_WM)
