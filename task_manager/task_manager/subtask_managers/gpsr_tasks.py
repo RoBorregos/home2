@@ -36,6 +36,9 @@ FOLLOW_RELOCK_ATTEMPTS = 3
 FIND_PERSON_MAX_ROUNDS = 4
 # Scan points closer than this (map frame, meters) count as the same person across rounds.
 FIND_PERSON_VISITED_RADIUS = 0.75
+# Degrees to rotate the base between rounds in find_person: full coverage
+# across all rounds (e.g. 4 rounds -> 90 deg each -> 360 deg total).
+FIND_PERSON_ROTATION_DEG = 360 / FIND_PERSON_MAX_ROUNDS
 
 # Continuous arm pan sweep used while searching, instead of discrete stops.
 SEARCH_PAN_RANGE_DEG = 65  # scan from -RANGE to +RANGE
@@ -771,6 +774,8 @@ class GPSRTask(GenericTask):
             self.subtask_manager.vision.track_person(False)
 
     def find_person(self, command: FindPersonByName):
+        """Sweep the arm for the attribute; if nothing confirmed, rotate the
+        base and retry for up to FIND_PERSON_MAX_ROUNDS rounds."""
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
@@ -808,39 +813,60 @@ class GPSRTask(GenericTask):
             f"Searching for {value}.",
         )
 
-        found = False
-        for _ in self._iter_search_poses():
-            if command.attribute_value == "":
-                status, count = self.subtask_manager.vision.count_by_pose(Poses.STANDING.value)
-            elif is_value_in_enum(value, Gestures):
-                status, count = self.subtask_manager.vision.count_by_gesture(value)
-            elif is_value_in_enum(value, Poses):
-                status, count = self.subtask_manager.vision.count_by_pose(value)
-            else:
-                if cache_color is None or cache_cloth is None:
-                    s, color_match = self.subtask_manager.hri.find_closest(
-                        self.color_list, command.attribute_value
-                    )
-                    cache_color = color_match.results[0]
-                    s, cloth_match = self.subtask_manager.hri.find_closest(
-                        self.clothe_list, command.attribute_value
-                    )
-                    cache_cloth = cloth_match.results[0]
+        confirmed = False
+        for round_idx in range(FIND_PERSON_MAX_ROUNDS):
+            found = False
+            for _ in self._iter_search_poses():
+                if command.attribute_value == "":
+                    status, count = self.subtask_manager.vision.count_by_pose(Poses.STANDING.value)
+                elif is_value_in_enum(value, Gestures):
+                    status, count = self.subtask_manager.vision.count_by_gesture(value)
+                elif is_value_in_enum(value, Poses):
+                    status, count = self.subtask_manager.vision.count_by_pose(value)
+                else:
+                    if cache_color is None or cache_cloth is None:
+                        s, color_match = self.subtask_manager.hri.find_closest(
+                            self.color_list, command.attribute_value
+                        )
+                        cache_color = color_match.results[0]
+                        s, cloth_match = self.subtask_manager.hri.find_closest(
+                            self.clothe_list, command.attribute_value
+                        )
+                        cache_cloth = cloth_match.results[0]
 
-                status, count = self.subtask_manager.vision.count_by_color(cache_color, cache_cloth)
+                    status, count = self.subtask_manager.vision.count_by_color(
+                        cache_color, cache_cloth
+                    )
 
-            # If next command is "go_to" dont ask to approach robot
-            if status == Status.EXECUTION_SUCCESS and count > 0:
-                found = True
-                self.subtask_manager.hri.say(
-                    f"I found a {command.attribute_value}.",
-                )
-                if not self._approach_found_person():
-                    self.subtask_manager.hri.say("Please approach me.")
+                # If next command is "go_to" dont ask to approach robot
+                if status == Status.EXECUTION_SUCCESS and count > 0:
+                    found = True
+                    self.subtask_manager.hri.say(
+                        f"I found a {command.attribute_value}.",
+                    )
+                    if not self._approach_found_person():
+                        self.subtask_manager.hri.say("Please approach me.")
+                    # Confirm instead of assuming: the match could be someone else
+                    # with the same attribute.
+                    s, answer = self.subtask_manager.hri.confirm(
+                        "Is this the person you were looking for?",
+                        use_keyword=True,
+                        retries=2,
+                    )
+                    confirmed = answer == "yes"
+                    break
+
+            self.subtask_manager.manipulation.pan_to(0)
+            if confirmed:
                 break
+            # Not found, or found but rejected: rotate to a new heading and
+            # sweep again, unless this was the last round.
+            if round_idx < FIND_PERSON_MAX_ROUNDS - 1:
+                if found:
+                    self.subtask_manager.hri.say("Sorry, let me keep looking.")
+                self.subtask_manager.nav.rotate_in_place(FIND_PERSON_ROTATION_DEG)
 
-        self.subtask_manager.manipulation.pan_to(0)
-        if not found:
+        if not confirmed:
             self.subtask_manager.hri.say(
                 f"I didn't find any person with {command.attribute_value}.",
             )
