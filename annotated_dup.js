@@ -229,8 +229,14 @@ var annotated_dup =
       [ "face_recognition", "namespacemodels_1_1face__recognition.html", [
         [ "FaceModel", "classmodels_1_1face__recognition_1_1FaceModel.html", "classmodels_1_1face__recognition_1_1FaceModel" ]
       ] ],
+      [ "mediapipe_detector", "namespacemodels_1_1mediapipe__detector.html", [
+        [ "MediapipeDetector", "classmodels_1_1mediapipe__detector_1_1MediapipeDetector.html", "classmodels_1_1mediapipe__detector_1_1MediapipeDetector" ]
+      ] ],
       [ "pose_detection", "namespacemodels_1_1pose__detection.html", [
         [ "PoseDetection", "classmodels_1_1pose__detection_1_1PoseDetection.html", "classmodels_1_1pose__detection_1_1PoseDetection" ]
+      ] ],
+      [ "talking_detection", "namespacemodels_1_1talking__detection.html", [
+        [ "MouthActivity", "classmodels_1_1talking__detection_1_1MouthActivity.html", "classmodels_1_1talking__detection_1_1MouthActivity" ]
       ] ],
       [ "tracker", "namespacemodels_1_1tracker.html", [
         [ "TrackerModel", "classmodels_1_1tracker_1_1TrackerModel.html", "classmodels_1_1tracker_1_1TrackerModel" ]
@@ -394,6 +400,9 @@ var annotated_dup =
     ] ],
     [ "table_docker", "namespacetable__docker.html", [
       [ "TableDocker", "classtable__docker_1_1TableDocker.html", "classtable__docker_1_1TableDocker" ]
+    ] ],
+    [ "talking_detection_node", "namespacetalking__detection__node.html", [
+      [ "TalkingDetection", "classtalking__detection__node_1_1TalkingDetection.html", "classtalking__detection__node_1_1TalkingDetection" ]
     ] ],
     [ "task_manager", "namespacetask__manager.html", [
       [ "gpsr", "namespacetask__manager_1_1gpsr.html", [

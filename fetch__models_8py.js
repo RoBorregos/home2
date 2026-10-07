@@ -4,6 +4,7 @@ var fetch__models_8py =
     [ "detector_dirs", "fetch__models_8py.html#a74db5d17737c5ccc9c9fdb46b5a5e186", null ],
     [ "fetch_hf_models", "fetch__models_8py.html#a1bb422a9e576c78935b75f57a3f10d74", null ],
     [ "fetch_standard", "fetch__models_8py.html#a12426f016a212a03cf8484f0b02d7303", null ],
+    [ "fetch_urls", "fetch__models_8py.html#ac787cf6bb2e01bfdca923d741040f779", null ],
     [ "main", "fetch__models_8py.html#ab617d7e23258dbb9627ab106c4ccee6d", null ],
     [ "sha256", "fetch__models_8py.html#a6924629ba9641e142c0276959b623eea", null ],
     [ "sync_detector_models", "fetch__models_8py.html#aced3e9edb4be47ca126674df3ff8521a", null ],
@@ -14,5 +15,6 @@ var fetch__models_8py =
     [ "DETECTOR_MODELS", "fetch__models_8py.html#ac892b069cde350920ef0b83cb23fe506", null ],
     [ "HF_MODELS", "fetch__models_8py.html#a67d48fa4b9072bc083bfb44179ba8de8", null ],
     [ "REPO_ROOT", "fetch__models_8py.html#a3c270b382b139b429601360092212415", null ],
-    [ "STANDARD_MODELS", "fetch__models_8py.html#a56e10b2b63b27f2d3d42eea93b554d25", null ]
+    [ "STANDARD_MODELS", "fetch__models_8py.html#a56e10b2b63b27f2d3d42eea93b554d25", null ],
+    [ "URL_MODELS", "fetch__models_8py.html#acec60494aa88eb183efa2afaee230bb4", null ]
 ];

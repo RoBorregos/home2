@@ -106,6 +106,7 @@ var namespaces_dup =
       [ "detector_dirs", "namespacefetch__models.html#a74db5d17737c5ccc9c9fdb46b5a5e186", null ],
       [ "fetch_hf_models", "namespacefetch__models.html#a1bb422a9e576c78935b75f57a3f10d74", null ],
       [ "fetch_standard", "namespacefetch__models.html#a12426f016a212a03cf8484f0b02d7303", null ],
+      [ "fetch_urls", "namespacefetch__models.html#ac787cf6bb2e01bfdca923d741040f779", null ],
       [ "main", "namespacefetch__models.html#ab617d7e23258dbb9627ab106c4ccee6d", null ],
       [ "sha256", "namespacefetch__models.html#a6924629ba9641e142c0276959b623eea", null ],
       [ "sync_detector_models", "namespacefetch__models.html#aced3e9edb4be47ca126674df3ff8521a", null ],
@@ -116,7 +117,8 @@ var namespaces_dup =
       [ "DETECTOR_MODELS", "namespacefetch__models.html#ac892b069cde350920ef0b83cb23fe506", null ],
       [ "HF_MODELS", "namespacefetch__models.html#a67d48fa4b9072bc083bfb44179ba8de8", null ],
       [ "REPO_ROOT", "namespacefetch__models.html#a3c270b382b139b429601360092212415", null ],
-      [ "STANDARD_MODELS", "namespacefetch__models.html#a56e10b2b63b27f2d3d42eea93b554d25", null ]
+      [ "STANDARD_MODELS", "namespacefetch__models.html#a56e10b2b63b27f2d3d42eea93b554d25", null ],
+      [ "URL_MODELS", "namespacefetch__models.html#acec60494aa88eb183efa2afaee230bb4", null ]
     ] ],
     [ "finetune_arcface", "namespacefinetune__arcface.html", "namespacefinetune__arcface" ],
     [ "finetune_head", "namespacefinetune__head.html", "namespacefinetune__head" ],
@@ -417,6 +419,7 @@ var namespaces_dup =
     ] ],
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", "namespacestoring__groceries__manager" ],
     [ "table_docker", "namespacetable__docker.html", "namespacetable__docker" ],
+    [ "talking_detection_node", "namespacetalking__detection__node.html", "namespacetalking__detection__node" ],
     [ "task_manager", "namespacetask__manager.html", "namespacetask__manager" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
     [ "test_basket_pick", "namespacetest__basket__pick.html", "namespacetest__basket__pick" ],

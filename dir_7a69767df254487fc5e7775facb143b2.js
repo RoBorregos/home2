@@ -14,6 +14,7 @@ var dir_7a69767df254487fc5e7775facb143b2 =
     [ "DetectPointingObject.srv", "DetectPointingObject_8srv.html", null ],
     [ "DishwasherDetection.srv", "DishwasherDetection_8srv.html", null ],
     [ "FindSeat.srv", "FindSeat_8srv.html", null ],
+    [ "IsTalking.srv", "IsTalking_8srv.html", null ],
     [ "MoondreamDetection.srv", "MoondreamDetection_8srv.html", null ],
     [ "ObjectPoints.srv", "ObjectPoints_8srv.html", null ],
     [ "PersonInside.srv", "PersonInside_8srv.html", null ],

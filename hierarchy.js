@@ -102,6 +102,7 @@ var hierarchy =
     [ "task_manager.subtask_managers.hri_dataclasses.Location", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1Location.html", null ],
     [ "task_manager.utils.logger.Logger", "classtask__manager_1_1utils_1_1logger_1_1Logger.html", null ],
     [ "task_manager.subtask_managers.manipulation_tasks.ManipulationTasks", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", null ],
+    [ "models.mediapipe_detector.MediapipeDetector", "classmodels_1_1mediapipe__detector_1_1MediapipeDetector.html", null ],
     [ "detectors.registry.ModelRegistry", "classdetectors_1_1registry_1_1ModelRegistry.html", null ],
     [ "nn.Module", null, [
       [ "finetune_arcface.ArcFaceHead", "classfinetune__arcface_1_1ArcFaceHead.html", null ],
@@ -128,6 +129,7 @@ var hierarchy =
     [ "ompl::base::MotionValidator", null, [
       [ "VAMPMotionValidator", "structVAMPMotionValidator.html", null ]
     ] ],
+    [ "models.talking_detection.MouthActivity", "classmodels_1_1talking__detection_1_1MouthActivity.html", null ],
     [ "arm_pkg.moveit_configs_builder.MoveItConfigs", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigs.html", null ],
     [ "arm_pkg.moveit_configs_builder_sim.MoveItConfigs", "classarm__pkg_1_1moveit__configs__builder__sim_1_1MoveItConfigs.html", null ],
     [ "pick_and_place.fix_position_to_plane.MyPoint", "classpick__and__place_1_1fix__position__to__plane_1_1MyPoint.html", null ],
@@ -376,6 +378,7 @@ var hierarchy =
       [ "simulate_position.SimulatePosition", "classsimulate__position_1_1SimulatePosition.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "table_docker.TableDocker", "classtable__docker_1_1TableDocker.html", null ],
+      [ "talking_detection_node.TalkingDetection", "classtalking__detection__node_1_1TalkingDetection.html", null ],
       [ "temp_follow.FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", null ],
       [ "test_basket_pick.TestRimPick", "classtest__basket__pick_1_1TestRimPick.html", null ],
       [ "test_chairs_to_remove.TestChairsToRemove", "classtest__chairs__to__remove_1_1TestChairsToRemove.html", null ],
