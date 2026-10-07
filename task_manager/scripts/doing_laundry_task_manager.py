@@ -284,7 +284,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE:
             Logger.info(self, "Navigating to laundry machine.")
-            status, error = self.navigate_to("laundry", "laundry_machine")
+            status, error = self.navigate_to("laundry", "washing_machine")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry machine.")
                 self.set_state(DoingLaundryTM.TaskStates.PICK_CLOTHES_WM)
@@ -323,9 +323,6 @@ class DoingLaundryTM(Node):
             Logger.info(self, "Closing laundry machine door.")
             self.subtask_manager.hri.say("Closing the laundry machine door.", wait=False)
             self.subtask_manager.manipulation.close_gripper()
-            # self.subtask_manager.manipulation.move_to_position("initial_close_laundry_pose")
-            # self.subtask_manager.manipulation.move_to_position("mid_close_laundry_pose")
-            # self.subtask_manager.manipulation.move_to_position("end_close_laundry_pose")
             Logger.success(self, "Laundry machine door closed.")
             self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES)
 

@@ -163,13 +163,9 @@ class ManipulationTasks:
     def _set_gripper_state(self, state: str):
         """
         Controls the gripper state.
-        State: 'open' o 'close'
+        State: 'open' or 'close'
         """
         try:
-            # if not self.gripper_client.wait_for_service(timeout_sec=TIMEOUT):
-            #     Logger.error(self.node, "Gripper service not available")
-            #     return Status.ExecutionError
-
             req = SetBool.Request()
             req.data = state == "open"
 
@@ -201,16 +197,9 @@ class ManipulationTasks:
         Named position has priority over joint_positions.
         """
         if named_position:
-            # joint_positions = self.get_named_target(named_position)
-            # joint_positions = joint_positions["positions"].keys()
-
             joint_positions = self.get_named_target(named_position)
-
             degrees = joint_positions.get("degrees", False)
-
             joint_positions = joint_positions["joints"]
-
-            self.node.get_logger().info(f"dict: {joint_positions}")
 
         # Determine format of joint_positions and apply degree conversion if needed.
         if isinstance(joint_positions, dict):
@@ -287,8 +276,6 @@ class ManipulationTasks:
         acceleration=0.0,
         planner_id="",
     ):
-        print("Joint names: ", joint_names)
-        print("Joint positions: ", joint_positions)
         goal_msg = MoveJoints.Goal()
         goal_msg.joint_names = joint_names
         goal_msg.joint_positions = joint_positions
