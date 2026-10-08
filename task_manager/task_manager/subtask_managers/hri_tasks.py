@@ -112,7 +112,7 @@ InterpreterAvailableCommands = Union[
 
 
 def confirm_query(interpreted_text, target_info):
-    return f"Did you say {target_info}? Yes or no?"
+    return f"Did you say {target_info}?"
 
 
 def contains_any(text: List[str], keywords: List[str]) -> bool:
@@ -150,6 +150,82 @@ def remove_punctuation(text: str) -> str:
 def format_transcription(text: str) -> str:
     """Format the interpreted text to remove punctuation and convert to lowercase."""
     return remove_punctuation(text).split(" ")
+
+
+# Casual negative replies accepted as "no" by the confirmation loop. The
+# affirmation lexicon lives in frida_constants/data/positive.json (self.positive).
+NEGATION_PHRASES = ["no", "nope", "nah", "not", "dont", "do not", "wrong", "incorrect"]
+
+# How many times the user may correct the word being confirmed before the loop
+# just re-asks the question, so a noisy transcript cannot spin forever.
+MAX_CONFIRM_WORD_UPDATES = 2
+
+# Optional one-line instruction spoken once before the confirmation loop.
+CONFIRM_HINT = False
+CONFIRM_HINT_TEXT = "You can say yes, no, or say the word again."
+
+
+def _tokens(text: str) -> list[str]:
+    """Normalized word tokens, reusing remove_punctuation (lowercase, no punctuation)."""
+    return remove_punctuation(text or "").split()
+
+
+def _phrase_index(text: str, phrase: str) -> int:
+    """Start position of `phrase` inside `text` (word tokens), or -1 when absent."""
+    text_tokens = _tokens(text)
+    phrase_tokens = _tokens(phrase)
+    if not phrase_tokens:
+        return -1
+    span = len(phrase_tokens)
+    for i in range(len(text_tokens) - span + 1):
+        if text_tokens[i : i + span] == phrase_tokens:
+            return i
+    return -1
+
+
+def classify_confirmation(
+    transcription: str,
+    expected_words: list[str] | None = None,
+    affirmations: list[str] | None = None,
+    negations: list[str] | None = None,
+    last_hotwords: str = "",
+) -> tuple:
+    """Decide what an utterance means while the robot waits for a confirmation.
+
+    The earliest cue wins: "not coffee" is a "no" even though coffee is expected,
+    while "coffee, not tea" is a "yes". Ties follow expected, affirmation, negation.
+
+    Args:
+        transcription: raw speech-to-text output of the reply.
+        expected_words: the words the robot expects (the answer under confirmation).
+        affirmations: phrases that mean "yes" (frida_constants positive.json).
+        negations: phrases that mean "no" (NEGATION_PHRASES by default).
+        last_hotwords: hotwords sent to STT; a transcription equal to them is silence.
+    Returns:
+        tuple: (decision, word) where decision is one of "yes", "no", "new_word"
+            (the user said something else, word is the normalized candidate) or
+            "none" (nothing usable was heard).
+    """
+    text = " ".join(_tokens(transcription))
+    if not text or text == " ".join(_tokens(last_hotwords)):
+        return "none", ""
+
+    cues = []
+    for priority, decision, phrases in (
+        (0, "yes", expected_words or []),
+        (1, "yes", affirmations or []),
+        (2, "no", negations or []),
+    ):
+        for phrase in phrases:
+            index = _phrase_index(text, phrase)
+            if index >= 0:
+                cues.append((index, priority, decision, phrase))
+
+    if not cues:
+        return "new_word", text
+
+    _, _, decision, phrase = min(cues)
+    return decision, phrase
 
 
 class HRITasks:
@@ -588,12 +664,63 @@ class HRITasks:
         else:
             self.audio_state_publisher.publish(String(data=state.value))
 
+    def _listen_for_confirmation(self, expected_words: list[str], timeout: float) -> tuple:
+        """Listen once for a confirmation that can also repeat or correct a word.
+
+        Runs streaming STT biased with the expected words in parallel with the KWS
+        yes/no model, then classifies the reply with classify_confirmation().
+
+        Returns:
+            tuple: (decision, word) as classify_confirmation(), plus the KWS keyword
+                as "yes"/"no" when STT heard nothing usable.
+        """
+        self.keyword = ""
+        hear_status, transcription, _ = self.hear(
+            hotwords=", ".join(expected_words),
+            initial_prompt=f"The expected words are: {', '.join(expected_words)}.",
+            max_audio_length=timeout,
+        )
+        decision, word = classify_confirmation(
+            transcription if hear_status == Status.EXECUTION_SUCCESS else "",
+            expected_words,
+            self.positive,
+            NEGATION_PHRASES,
+            self.last_hotwords,
+        )
+        if decision == "none" and self.keyword in ("yes", "no"):
+            return self.keyword, self.keyword
+        return decision, word
+
+    def _correct_confirmed_word(self, word: str, options: list[str] | None = None) -> str:
+        """Turn a raw correction into the word to confirm, or "" if it is not one.
+
+        With options the correction has to land close to one of them; without options
+        the NLP service has to confirm it is not just another way of saying "yes".
+        """
+        if options:
+            status, closest = self.find_closest(options, word)
+            if (
+                status != Status.EXECUTION_SUCCESS
+                or not closest.similarities
+                or closest.similarities[0] < SKIP_CONFIRMATION_SIMILARITY_THRESHOLD
+            ):
+                return ""
+            return closest.results[0]
+
+        status, is_positive = self.is_positive(word)
+        return word if status == Status.EXECUTION_SUCCESS and not is_positive else ""
+
     def confirm(
         self,
         question: str,
         use_keyword: bool = True,
         retries: int = 3,
         wait_between_retries: float = 5,
+        *,
+        expected_words: list[str] | None = None,
+        question_builder=None,
+        options: list[str] | None = None,
+        return_word: bool = False,
     ):
         """
         Method to confirm a specific question. Could be used for deus ex machina, to confirm a specific action.
@@ -603,14 +730,29 @@ class HRITasks:
             use_keyword: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             wait_between_retries: the amount of time to wait between retries
+            expected_words: words the robot expects in the answer. When set, the user can
+                also repeat one of them (to confirm) or say a different word (to correct it).
+            question_builder: callable(word) -> str used to rebuild the question after a correction
+            options: candidate answers a correction is snapped to with find_closest
+            return_word: if True, also return the word that was confirmed
         Returns:
             Status: the status of the execution
             str: "yes" (user confirms), "no" (user doesn't confirm), or "" (no response interpreted).
+            str: confirmed word, only when return_word is True.
         """
         Logger.info(
             self.node,
             "Asking for confirmation: " + question,
         )
+
+        def pack(status: Status, decision: str, word: str = ""):
+            """Backward compatible 2-tuple, or (status, decision, word) if return_word."""
+            return (status, decision, word) if return_word else (status, decision)
+
+        candidate = expected_words[0] if expected_words else ""
+        word_updates = 0
+        if CONFIRM_HINT:
+            self.say(CONFIRM_HINT_TEXT)
         current_attempt = 0
         while current_attempt < retries:
             current_attempt += 1
@@ -621,9 +763,28 @@ class HRITasks:
             if use_keyword:
                 # self.say("Please confirm by saying yes or no")
 
-                s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
-                if s == Status.EXECUTION_SUCCESS:
-                    return Status.EXECUTION_SUCCESS, keyword
+                if expected_words:
+                    decision, word = self._listen_for_confirmation(
+                        expected_words, wait_between_retries
+                    )
+                    if decision == "yes":
+                        return pack(Status.EXECUTION_SUCCESS, "yes", candidate)
+                    if decision == "no":
+                        return pack(Status.EXECUTION_SUCCESS, "no", candidate)
+                    if decision == "new_word" and word_updates < MAX_CONFIRM_WORD_UPDATES:
+                        corrected = self._correct_confirmed_word(word, options)
+                        if corrected:
+                            # A correction re-asks the question without using a retry.
+                            word_updates += 1
+                            current_attempt -= 1
+                            candidate = corrected
+                            if question_builder:
+                                question = question_builder(candidate)
+                            continue
+                else:
+                    s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
+                    if s == Status.EXECUTION_SUCCESS:
+                        return pack(Status.EXECUTION_SUCCESS, keyword, candidate)
             else:
                 accepted_future = self.hear_streaming(timeout=wait_between_retries)
 
@@ -637,10 +798,10 @@ class HRITasks:
                         format_transcription(self.current_transcription), self.positive
                     ):
                         self.cancel_hear_action()
-                        return Status.EXECUTION_SUCCESS, "yes"
+                        return pack(Status.EXECUTION_SUCCESS, "yes", candidate)
                     if "no" in format_transcription(self.current_transcription):
                         self.cancel_hear_action()
-                        return Status.EXECUTION_SUCCESS, "no"
+                        return pack(Status.EXECUTION_SUCCESS, "no", candidate)
                     rclpy.spin_once(self.node, timeout_sec=0.1)
 
                 # Add an extra second to ensure the action server has enough time to process the request
@@ -661,15 +822,15 @@ class HRITasks:
                         )
                         or self.is_positive(self.current_transcription)[1]
                     ):
-                        return Status.EXECUTION_SUCCESS, "yes"
+                        return pack(Status.EXECUTION_SUCCESS, "yes", candidate)
 
-                    return Status.EXECUTION_SUCCESS, "no"
+                    return pack(Status.EXECUTION_SUCCESS, "no", candidate)
 
         Logger.info(
             self.node,
             "Confirmation timed out for: " + question,
         )
-        return Status.TIMEOUT, ""
+        return pack(Status.TIMEOUT, "", candidate)
 
     def ask_and_confirm(
         self,
@@ -802,10 +963,33 @@ class HRITasks:
                 else:
                     confirmation_text = confirm_question
 
+                def question_builder(word: str, _heard: str = interpreted_text) -> str:
+                    # Rebuilt after the user corrects the word being confirmed.
+                    if callable(confirm_question):
+                        return confirm_question(_heard, word)
+                    return f"Do you say {word}?"
+
                 # Ask for confirmation
                 if target_info != "" and target_found:
-                    s, confirmation = self.confirm(confirmation_text, use_keyword, 3)
+                    s, confirmation, confirmed_word = self.confirm(
+                        confirmation_text,
+                        use_keyword,
+                        3,
+                        expected_words=[target_info],
+                        question_builder=question_builder,
+                        options=options,
+                        return_word=True,
+                    )
                     if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
+                        # The user may have corrected the word, so remap the new one too.
+                        if confirmed_word and confirmed_word != target_info:
+                            target_info = confirmed_word
+                            if remap is not None:
+                                normalized_target_info = remove_punctuation(target_info)
+                                for remap_key, remap_value in remap.items():
+                                    if remove_punctuation(remap_key) == normalized_target_info:
+                                        target_info = remap_value
+                                        break
                         return Status.EXECUTION_SUCCESS, target_info
 
             # Wait for the minimum time between retries
@@ -821,11 +1005,22 @@ class HRITasks:
         return Status.TIMEOUT, None
 
     def interpret_keyword(
-        self, keywords: list[str], timeout: float, play_chime: bool = True
+        self,
+        keywords: list[str],
+        timeout: float,
+        play_chime: bool = True,
+        hotwords: str = "",
+        initial_prompt: str = "",
     ) -> str:
         self.cancel_hear_action()
 
-        self.hear_streaming(timeout=timeout, silence_time=timeout, play_chime=play_chime)
+        self.hear_streaming(
+            timeout=timeout,
+            silence_time=timeout,
+            play_chime=play_chime,
+            hotwords=hotwords,
+            initial_prompt=initial_prompt,
+        )
 
         start_time = self.node.get_clock().now()
         self.keyword = ""
