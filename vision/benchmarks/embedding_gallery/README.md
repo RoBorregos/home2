@@ -105,6 +105,111 @@ data/
 `gallery_photos/` must not overlap `held_out/`, or recall@1 measures memorization. All
 `RCW2026_v2` images come from one capture session, so treat the numbers as optimistic.
 
+## Image and text embeddings
+
+The shared `ImageEmbedder` supports CLIP text queries in the same embedding space
+as image crops. With `vision/packages/vision_general/scripts` on `PYTHONPATH`:
+
+```python
+from utils.models.image_embedder import ImageEmbedder
+
+embedder = ImageEmbedder("clip:ViT-B/32").load()
+assert embedder.dim == 512
+queries = embedder.embed_text(["a red cup", "a cereal box"], normalize=True)
+images = embedder.embed_batch(crops, normalize=True)  # RGB PIL images
+cosine_scores = images @ queries.T
+```
+
+Both methods return float32 arrays and default to raw embeddings. Existing
+gallery callers keep that default. `dim` loads the model lazily if necessary;
+timm backbones expose their image dimension but reject `embed_text`. Empty
+batches return `[0, dim]` arrays. Text beyond CLIP's context limit raises an
+error instead of silently truncating the query.
+
+The CPU, CUDA and Orin vision images install the same pinned official OpenAI
+CLIP revision from `vision/requirements/clip.txt`. Existing images need rebuilding.
+For an independent environment, install that requirements file alongside the
+appropriate torch/torchvision versions; do not install the unrelated PyPI `clip`
+package. CLIP uses its standard `~/.cache/clip` weight cache: load ViT-B/32 once
+while online under the same runtime user, and retain that cache for offline runs.
+
+### Compatibility checks
+
+From the repository root, with `pytest` and `numpy` installed:
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q vision/packages/vision_general/tests
+```
+
+The API tests cover raw output preservation, normalization, backend selection,
+lazy loading, batching, empty inputs and unsupported text models. Real encoder
+tests run when `torch`, `timm` and official `clip` are installed. They use small
+random models without downloading weights; they validate API compatibility,
+not recognition accuracy. `PYTEST_DISABLE_PLUGIN_AUTOLOAD` avoids unrelated ROS
+pytest plugins affecting these standalone tests.
+
+For pretrained ViT-B/32 validation, set `CLIP_TEST_WEIGHTS` to an existing local
+checkpoint. To also compare raw outputs with the exact branch baseline, export
+the original module and set `IMAGE_EMBEDDER_BASELINE`:
+
+```bash
+git show 816fca5f:vision/packages/vision_general/scripts/utils/models/image_embedder.py > /tmp/image_embedder_baseline.py
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+  CLIP_TEST_WEIGHTS="$HOME/.cache/clip/ViT-B-32.pt" \
+  IMAGE_EMBEDDER_BASELINE=/tmp/image_embedder_baseline.py \
+  python3 -m pytest -q vision/packages/vision_general/tests
+```
+
+This compares the baseline and candidate with identical loaded weights and
+inputs. It does not replace the dataset benchmark below.
+
+### Orin memory and latency
+
+Run inside the rebuilt vision container with the production model weights and
+a populated gallery available. Use a representative crop and the verified
+power/clock settings. From this benchmark directory:
+
+```bash
+python3 profile_clip.py --image /path/to/crop.jpg --text "a red cup" \
+  --batch-size 8 --warmup 5 --iterations 30 \
+  --power-mode "record actual nvpmodel mode and clock settings here" \
+  --output results/clip_orin_batch8.json
+```
+
+Repeat in a fresh process for batch sizes 1 and 32. The runner loads the
+production `embedding_gallery` registry entry (including its box proposer),
+warms its GPU embedding backend, then loads and warms CLIP. It refuses an empty
+gallery or unavailable GPU backend. Reports include synchronized wall latency
+(preprocessing, transfers and output conversion included), mean/p50/p95, memory
+snapshots, versions, hardware, model settings and Git revision/status.
+
+Gallery latency covers crop embedding and matching; it excludes box proposal
+and ROS. Both models stay loaded, but calls are sequential. PyTorch memory
+counters exclude TensorRT/ORT allocations, so CUDA free memory and system
+available RAM are recorded separately. Jetson uses shared memory: do not add
+these counters together. Other processes can affect the global readings.
+
+### Gallery regression check
+
+Run the following on the baseline and candidate in separate checkouts, using
+the same environment, weights and an identical prepared `data/` directory:
+
+```bash
+./run.sh --tasks embeddings --backbones dinov2_vitb14,clip_vit_b32 \
+  --results-dir /absolute/path/to/separate-results
+./run.sh --tasks e2e_eval --source /absolute/path/to/RCW2026_v2 \
+  --n-images 150 --seed 42 --results-dir /absolute/path/to/separate-results
+```
+
+Use distinct result directories for each revision. Compare recall@1, gated
+recall, hard-negative precision, unknown rejection, selected thresholds and
+per-image predictions, ignoring timestamps. Investigate any changes rather
+than accepting rounded headline metrics. Do not regenerate the sampled data
+between runs or use `--from-cache`, which can bypass the modified embedder.
+The `--data` option only applies to the boxes task; embeddings reads this
+directory's `data/`. Orin measurements and dataset regression results must be
+attached before treating issue #1348's acceptance criteria as complete.
+
 ## Results
 
 Written to `results/` (gitignored):
