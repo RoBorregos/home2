@@ -55,13 +55,20 @@ def _render_dds_panel(infra: infra_checks.InfraSnapshot) -> Panel:
     t = Table.grid(padding=(0, 1))
     t.add_column()
     t.add_column()
-    rows = [
+    t.add_row(
+        _icon(dds.rmem_max >= infra_checks.EXPECTED_RMEM_MAX),
+        f"rmem_max = {dds.rmem_max}",
+    )
+    # Host files are informational: containers generate their own /etc/cyclonedds.xml.
+    for present, label in (
         (dds.cyclone_xml, "/etc/cyclonedds.xml"),
-        (dds.sysctl_conf, "sysctl buffers"),
-        (dds.rmem_max >= infra_checks.EXPECTED_RMEM_MAX, f"rmem_max = {dds.rmem_max}"),
-    ]
-    for ok, label in rows:
-        t.add_row(_icon(ok), label)
+        (dds.sysctl_conf, "sysctl buffers conf"),
+        (dds.cyclone_env, "/etc/cyclonedds.env"),
+    ):
+        t.add_row(
+            Text("✓", style="green") if present else Text("!", style="bold yellow"),
+            label if present else f"{label} (not on host)",
+        )
     t.add_row(Text("•", style="cyan"), f"RMW = {dds.rmw_impl or 'default'}")
     if dds.cyclone_iface:
         t.add_row(Text("•", style="cyan"), f"iface = {dds.cyclone_iface}")
@@ -215,7 +222,7 @@ def _render_hints(
     if not infra.dds.ok:
         lines.append(
             _hint(
-                " ⨯ DDS host config incomplete → sudo bash scripts/setup_cyclonedds.sh",
+                " ⨯ DDS host not ready (rmem_max / roudi) → sudo bash scripts/setup_cyclonedds.sh",
                 "red",
             )
         )
@@ -295,11 +302,13 @@ def main() -> int:
 
     console = Console()
     layout = _build_layout()
+    console.print("[dim]waiting for DDS discovery…[/dim]")
+    probe = ros_introspection.RosProbe()
     try:
         with Live(layout, console=console, refresh_per_second=2, screen=True):
             while True:
                 infra_snap = infra_checks.snapshot(container_names)
-                ros_snap = ros_introspection.snapshot(hz_window=HZ_WINDOW)
+                ros_snap = probe.snapshot(hz_window=HZ_WINDOW)
                 _update_node_states(area_states, set(ros_snap.nodes))
 
                 layout["header"].update(
@@ -320,6 +329,8 @@ def main() -> int:
                 time.sleep(max(0.0, REFRESH_SECONDS - HZ_WINDOW))
     except KeyboardInterrupt:
         console.print("[dim]dashboard stopped[/dim]")
+    finally:
+        probe.close()
     return 0
 
 

@@ -81,19 +81,16 @@ check_dds_host() {
     _print_header "DDS Host Config"
     local ok=true
 
-    if [ -f "$CYCLONE_XML_PATH" ]; then
-        echo -e "${GREEN} ✓ ${CYCLONE_XML_PATH} present${NC}"
-    else
-        echo -e "${RED} ⨯ ${CYCLONE_XML_PATH} missing (run: sudo bash scripts/setup_cyclonedds.sh)${NC}"
-        ok=false
-    fi
-
-    if [ -f "$CYCLONE_SYSCTL_PATH" ]; then
-        echo -e "${GREEN} ✓ ${CYCLONE_SYSCTL_PATH} present${NC}"
-    else
-        echo -e "${RED} ⨯ ${CYCLONE_SYSCTL_PATH} missing${NC}"
-        ok=false
-    fi
+    # Only rmem_max and RouDi decide ok/fail (same as status/infra_checks.py).
+    # Host /etc files are informational: the images ship their own /etc/cyclonedds.xml.
+    local path
+    for path in "$CYCLONE_XML_PATH" "$CYCLONE_SYSCTL_PATH"; do
+        if [ -f "$path" ]; then
+            echo -e "${GREEN} ✓ ${path} present${NC}"
+        else
+            echo -e "${YELLOW} ! ${path} not on host (optional: sudo bash scripts/setup_cyclonedds.sh)${NC}"
+        fi
+    done
 
     local rmem
     rmem=$(sysctl -n net.core.rmem_max 2>/dev/null || echo 0)
@@ -115,8 +112,7 @@ check_dds_host() {
             echo -e "${BLUE} • CYCLONE_INTERFACE = autodetermine${NC}"
         fi
     else
-        echo -e "${RED} ⨯ ${CYCLONE_ENV_PATH} missing (containers won't pick up the interface)${NC}"
-        ok=false
+        echo -e "${YELLOW} ! ${CYCLONE_ENV_PATH} not on host (containers use autodetermine)${NC}"
     fi
 
     if _shm_expected; then
@@ -146,7 +142,7 @@ print_infra_summary() {
     if [ "$INFRA_DDS_OK" = "fail" ] || [ ${#INFRA_FAILED_AREAS[@]} -gt 0 ]; then
         _print_header "Diagnóstico rápido"
         if [ "$INFRA_DDS_OK" = "fail" ]; then
-            echo -e "${RED} ⨯ Host DDS config incomplete — fix this first; missing nodes may just be a symptom.${NC}"
+            echo -e "${RED} ⨯ DDS host not ready (rmem_max / home2-roudi) — fix this first; missing nodes may just be a symptom.${NC}"
             echo -e "${BLUE}   → sudo bash scripts/setup_cyclonedds.sh${NC}"
         fi
         for area in "${!INFRA_FAILED_AREAS[@]}"; do

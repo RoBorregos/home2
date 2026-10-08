@@ -18,6 +18,7 @@ JETSON_MARKER = Path("/etc/nv_tegra_release")
 class DdsHealth:
     cyclone_xml: bool
     sysctl_conf: bool
+    cyclone_env: bool
     rmem_max: int
     rmw_impl: str
     cyclone_iface: str
@@ -25,10 +26,10 @@ class DdsHealth:
 
     @property
     def ok(self) -> bool:
+        # Same criterion as check_infra.sh: only what affects DDS inside the
+        # containers. Host /etc files are informational (images ship their own XML).
         return (
-            self.cyclone_xml
-            and self.sysctl_conf
-            and self.rmem_max >= EXPECTED_RMEM_MAX
+            self.rmem_max >= EXPECTED_RMEM_MAX
             and self.iceoryx_roudi_status != "missing"
         )
 
@@ -129,6 +130,7 @@ def check_dds() -> DdsHealth:
     return DdsHealth(
         cyclone_xml=CYCLONE_XML.is_file(),
         sysctl_conf=CYCLONE_SYSCTL.is_file(),
+        cyclone_env=CYCLONE_ENV.is_file(),
         rmem_max=_sysctl_rmem(),
         rmw_impl=os.environ.get("RMW_IMPLEMENTATION", ""),
         cyclone_iface=_cyclone_iface(),

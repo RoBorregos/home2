@@ -27,7 +27,7 @@ Extra `run.sh` flags (`--build`, `--recreate`, ...) are ignored. Tasks:
 
 | Panel         | Source                                   | Meaning                                                               |
 | ------------- | ---------------------------------------- | --------------------------------------------------------------------- |
-| Host DDS      | `/etc/cyclonedds.*`, sysctl, `home2-roudi` | Output of `scripts/setup_cyclonedds.sh`; RouDi only checked when SHM is expected (Jetson or `CYCLONE_SHM=1`). RMW is informational. |
+| Host DDS      | `net.core.rmem_max`, `home2-roudi`, `/etc/cyclonedds.*` | Red only if `rmem_max` is below the expected value or RouDi is down when SHM is expected (Jetson or `CYCLONE_SHM=1`). Host `/etc/cyclonedds.*` files and RMW are informational (yellow `!` when missing): the images generate their own `/etc/cyclonedds.xml`. `status.sh` uses the same criterion. |
 | Logs          | `docker logs home2-integration`          | Last task manager lines, colored by level.                           |
 | Live signals  | `configs/critical_topics.yaml`           | Hz of key topics (camera, `/tf`, `/scan`, `/cmd_vel`).               |
 | Containers    | `configs/<area>_infra.cfg`               | `docker ps` state. Names are prefix-matched (`home2-display` → `home2-display-l4t`). |
@@ -71,6 +71,9 @@ purpose so they don't show as false failures.
 
 - The probe runs on the host with the default RMW; it discovers the Cyclone
   containers over UDP (all containers use `network_mode: host`, domain 0).
+  One probe node is kept for the whole session and the dashboard waits ~1.5 s
+  for discovery before the first refresh; a node queried right after creation
+  sees an empty or partial graph.
 - Sampling the camera topic for Hz pulls images over loopback for 0.8 s every
   refresh; remove it from `critical_topics.yaml` if it costs too much.
 - `--finals` has no dedicated launch in vision/manipulation/navigation, so only
