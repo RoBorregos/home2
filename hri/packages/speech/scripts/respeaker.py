@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import math
+from collections import deque
+
 import rclpy
 import usb.core
 import usb.util
@@ -10,24 +13,21 @@ from speech.tuning import Tuning
 from std_msgs.msg import Int16, String
 
 
-class MovingAverage:
+class AngleMovingAverage:
+    """Moving average of angles in degrees, wrap-aware.
+
+    Averages the unit vectors instead of the raw degrees: a plain mean of 350
+    and 10 gives 180 (the opposite side) instead of 0.
+    """
+
     def __init__(self, window_size):
-        self.window_size = window_size
-        self.data = [0] * window_size  # Circular buffer
-        self.sum = 0
-        self.size = 0
-        self.index = 0
+        self.angles = deque(maxlen=window_size)
 
-    def next(self, val):
-        if self.size < self.window_size:
-            self.size += 1
-
-        self.sum -= self.data[self.index]
-        self.data[self.index] = val
-        self.sum += val
-        self.index = (self.index + 1) % self.window_size
-
-        return self.sum / self.size
+    def next(self, degrees):
+        self.angles.append(math.radians(degrees))
+        x = sum(math.cos(a) for a in self.angles)
+        y = sum(math.sin(a) for a in self.angles)
+        return math.degrees(math.atan2(y, x)) % 360.0
 
 
 class Respeaker(Node):
@@ -51,7 +51,7 @@ class Respeaker(Node):
 
         # Properties
         self.dev = usb.core.find(idVendor=0x2886, idProduct=0x0018)
-        self.moving_average = MovingAverage(10)
+        self.moving_average = AngleMovingAverage(10)
 
         if self.dev:
             self.tuning = Tuning(self.dev)
@@ -71,7 +71,7 @@ class Respeaker(Node):
     def publish_DOA(self):
         if self.tuning:
             next_angle = self.moving_average.next(self.tuning.direction)
-            self.publisher_.publish(Int16(data=int(next_angle)))
+            self.publisher_.publish(Int16(data=int(round(next_angle)) % 360))
         else:
             self.get_logger().error("Respeaker not found.")
 
