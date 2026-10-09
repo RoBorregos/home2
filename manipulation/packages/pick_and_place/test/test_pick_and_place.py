@@ -135,9 +135,11 @@ def test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis():
     assert distance == pytest.approx(profile.pre_grasp_height)
     assert (
         arm.calls.index("cartesian_approach")
-        < arm.calls.index("attach_pick_object")
         < arm.calls.index("close_gripper")
+        < arm.calls.index("attach_pick_object")
     )
+    assert arm.close_settles == [0.0]
+    assert "move_to_pose" not in arm.calls
 
 
 def test_gpd_still_reports_the_pick_when_attaching_fails(strategies):
@@ -408,6 +410,14 @@ def test_the_nested_pick_does_not_return_to_a_carry_pose(strategies, monkeypatch
 
     assert captured["return_to_carry"] is False
     assert captured["in_configuration"] is True
+
+
+def test_the_pour_picks_a_shape_object_with_gpd(strategies):
+    perception = pour_perception()
+    run_pour(FakeArm(), perception, strategies)
+
+    assert "detect_grasps" in perception.calls
+    assert "generate_grasps" not in perception.calls
 
 
 # ============================================================================

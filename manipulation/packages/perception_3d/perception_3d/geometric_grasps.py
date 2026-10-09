@@ -47,8 +47,8 @@ assert len(OBJECT_GRASP_CLASS) == sum(
 ), "an object is listed under two grasp classes"
 DEFORMABLE_OBJECTS = frozenset({"clothes", "bread", "chip_bag", "towel", "plush_toy"})
 
-GRIPPER_MAX_APERTURE = 0.09
-GRIPPER_HALF_THICKNESS = 0.03
+GRIPPER_MAX_APERTURE = 0.095
+GRIPPER_HALF_THICKNESS = 0.032
 
 MIN_POINTS_FOR_PCA = 10
 ELONGATION_MIN_RATIO = 2.0
@@ -450,14 +450,8 @@ def turn(vector: np.ndarray, degrees: float) -> np.ndarray:
 def approaches(grasp_class, away, short_axis, long_axis) -> list:
     tangent = np.array([-away[1], away[0]])
     tops = [(f"top {t}", 0, away, turn(tangent, t)) for t in (0, 45, 90, 135)]
-    if grasp_class == GRASP_CLASS_ROUND:
+    if grasp_class in (GRASP_CLASS_ROUND, GRASP_CLASS_CYLINDRICAL):
         return tops
-    if grasp_class == GRASP_CLASS_CYLINDRICAL:
-        return tops + [
-            (f"{TILT_NAMES[tilt]} {az:+d}", tilt, turn(away, az), turn(tangent, az))
-            for tilt in (45, 90)
-            for az in (-30, 0, 30)
-        ]
     tilts = (0, 45, 90) if grasp_class == GRASP_CLASS_BOX else range(0, 91, 15)
     found = []
     for name, closing, other in (

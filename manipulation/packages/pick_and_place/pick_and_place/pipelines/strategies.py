@@ -164,7 +164,10 @@ class CartesianApproachPick(PickStrategy):
             arm.check_abort()
             distance = profile.effective_descent_distance
             if not arm.cartesian_approach(
-                approach_axis(candidate.pose), distance, profile.descent_speed
+                approach_axis(candidate.pose),
+                distance,
+                profile.descent_speed,
+                close_on_reach=True,
             ):
                 raise PickAttemptFailed(
                     f"approach of {distance * 1000:.0f} mm did not complete"
@@ -173,18 +176,12 @@ class CartesianApproachPick(PickStrategy):
         with arm.phase("attach_object"):
             arm.attach_pick_object()
 
-        with arm.phase("close_gripper"):
-            arm.close_gripper(settle_s=profile.close_settle)
-
         if profile.lift_after_grasp:
             with arm.phase("lift"):
                 arm.clear_octomap()
                 lifted = arm.move_to_pose(
                     offset_z(candidate.pose, profile.post_grasp_height), velocity=0.6
                 )
-            if lifted:
-                with arm.phase("aim_camera"):
-                    self._aim_camera_forward(arm)
 
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
 

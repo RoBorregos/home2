@@ -641,13 +641,14 @@ class RobotArm:
     # ==================================================================
 
     @contextmanager
-    def cartesian_velocity_mode(self, label: str):
+    def cartesian_velocity_mode(self, label: str, on_mode1=None):
         """Hold the arm in mode 5 for the duration of the block.
 
         Whatever happens inside -- an exception, an e-stop, an early return --
         the exit path zeroes the velocity and restores mode 1. Leaving the arm
         in mode 5 takes the trajectory controller offline, so every subsequent
-        MoveIt goal would fail.
+        MoveIt goal would fail. ``on_mode1`` runs once mode 1 is back, before the
+        controller recovery wait.
         """
         if not self._set_xarm_mode(0):
             raise PickHardwareError(f"[{label}] could not enter mode 0")
@@ -663,7 +664,7 @@ class RobotArm:
             yield
         finally:
             self._stop_cartesian_velocity()
-            self._restore_mode1()
+            self._restore_mode1(on_mode1)
 
     def _send_cartesian_velocity(
         self, speed_mm_s: float, label: str, direction=(0.0, 0.0, 1.0)
@@ -870,7 +871,11 @@ class RobotArm:
         return reached
 
     def cartesian_approach(
-        self, direction, distance_m: float, speed_mm_s: float
+        self,
+        direction,
+        distance_m: float,
+        speed_mm_s: float,
+        close_on_reach: bool = False,
     ) -> bool:
         label = "CartesianApproach"
         direction = np.asarray(direction)
@@ -897,7 +902,13 @@ class RobotArm:
         )
 
         reached = False
-        with self.cartesian_velocity_mode(label):
+
+        def close_now():
+            if reached and close_on_reach:
+                self._log.info(f"[{label}] closing gripper")
+                self.close_gripper(settle_s=0.0)
+
+        with self.cartesian_velocity_mode(label, on_mode1=close_now):
             self._send_cartesian_velocity(speed_mm_s, label, direction)
 
             timeout = (distance_m * 1000.0 / speed_mm_s) * DESCENT_TIMEOUT_FACTOR
@@ -979,7 +990,7 @@ class RobotArm:
         except Exception as exc:
             self._log.error(f"[xArm] stop error: {exc}")
 
-    def _restore_mode1(self):
+    def _restore_mode1(self, on_mode1=None):
         self._log.info("[xArm] restoring mode 1...")
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
@@ -995,6 +1006,8 @@ class RobotArm:
                 time.sleep(1.0)
                 continue
 
+            if on_mode1 is not None:
+                on_mode1()
             self._log.info(
                 f"[xArm] waiting {MODE1_RECOVERY_TIME}s for the trajectory controller"
             )

@@ -85,6 +85,7 @@ class PickRequest:
     min_distance: float = 0.0
     max_distance: float = PICK_MAX_DISTANCE
     is_shelf: bool = False
+    use_gpd: bool = False
     in_configuration: bool = False
     # False leaves the arm where the grasp ended, for callers that move on from
     # there themselves (the pour lifts straight up from the grasp).
@@ -114,7 +115,7 @@ def execute(
 ) -> Tuple[bool, PickOutcome]:
     """Pick an object. Returns (success, outcome)."""
     strategy_key = resolve_pick_strategy(request.object_name)
-    if request.is_shelf and strategy_key in SHAPE_STRATEGY_KEYS:
+    if (request.is_shelf or request.use_gpd) and strategy_key in SHAPE_STRATEGY_KEYS:
         strategy_key = PICK_STRATEGY_GPD
     return _pick(arm, perception, request, strategies, strategy_key)
 

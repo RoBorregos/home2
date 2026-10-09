@@ -164,10 +164,15 @@ class FakeArm:
         self.descents.append((distance_m, speed_mm_s))
         return self._next(self._descent_results, True)
 
-    def cartesian_approach(self, direction, distance_m, speed_mm_s):
+    def cartesian_approach(
+        self, direction, distance_m, speed_mm_s, close_on_reach=False
+    ):
         self.calls.append("cartesian_approach")
         self.approaches.append((direction, distance_m, speed_mm_s))
-        return self._next(self._descent_results, True)
+        reached = self._next(self._descent_results, True)
+        if reached and close_on_reach:
+            self.close_gripper(settle_s=0.0)
+        return reached
 
     def force_guarded_descent(self, guard):
         self.calls.append("force_guarded_descent")
