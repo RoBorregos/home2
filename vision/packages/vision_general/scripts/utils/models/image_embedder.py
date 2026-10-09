@@ -24,7 +24,7 @@ def tensorrt_cache_dir() -> Path:
 
 
 class ImageEmbedder:
-    """Embeds PIL crops into feature vectors with a frozen model.
+    """Embeds PIL crops, and CLIP text queries, into feature vectors.
 
     Runs through TensorRT (onnxruntime) when ``use_trt`` is set and a GPU provider
     exists, otherwise PyTorch. CLIP has no TensorRT path.
@@ -68,20 +68,40 @@ class ImageEmbedder:
             self._load_trt_session()
         return self
 
-    def embed_batch(self, crops: list, chunk_size: int = TRT_MAX_BATCH) -> np.ndarray:
+    @property
+    def dim(self) -> int:
+        """Embedding dimension; loads the model on first access if needed."""
+        if self._model is None:
+            self.load()
+        if self.is_clip:
+            return int(self._model.text_projection.shape[-1])
+        return int(self._model.num_features)
+
+    @staticmethod
+    def _normalize(feats: np.ndarray) -> np.ndarray:
+        norms = np.linalg.norm(feats, axis=1, keepdims=True)
+        return feats / np.maximum(norms, np.finfo(np.float32).tiny)
+
+    def embed_batch(
+        self, crops: list, chunk_size: int = TRT_MAX_BATCH, normalize: bool = False
+    ) -> np.ndarray:
         """Embeds RGB PIL crops.
 
         Args:
-            crops: Non-empty list of PIL images.
+            crops: List of PIL images; empty input returns ``[0, dim]``.
             chunk_size: Crops per forward pass, so a large batch does not
                 allocate one huge tensor.
+            normalize: Return unit-length vectors (zero vectors stay zero).
 
         Returns:
-            ``[N, D]`` float32 array, not normalized: callers cache the raw
-            vectors before choosing a threshold strategy.
+            ``[N, D]`` float32 array. Raw by default, preserving gallery caches.
         """
+        if chunk_size <= 0:
+            raise ValueError("chunk_size must be positive")
         if self._model is None:
             self.load()
+        if not crops:
+            return np.empty((0, self.dim), dtype=np.float32)
 
         embed_chunk = (
             self._embed_chunk_trt
@@ -92,7 +112,37 @@ class ImageEmbedder:
             embed_chunk(crops[i : i + chunk_size])
             for i in range(0, len(crops), chunk_size)
         ]
-        return np.concatenate(feats, axis=0)
+        feats = np.concatenate(feats, axis=0)
+        return self._normalize(feats) if normalize else feats
+
+    def embed_text(self, texts: list[str], normalize: bool = False) -> np.ndarray:
+        """Embed text in CLIP's image space as an ``[N, D]`` float32 array.
+
+        Only CLIP models support text. Outputs are raw unless ``normalize`` is
+        true. Text exceeding CLIP's context length raises a tokenizer error.
+        Empty input returns an array with shape ``[0, D]``.
+        """
+        if not self.is_clip:
+            raise ValueError(
+                "embed_text requires a CLIP model (model_id='clip:<name>')"
+            )
+        if isinstance(texts, str):
+            raise TypeError("texts must be a list of strings, not a single string")
+        if self._model is None:
+            self.load()
+        if not texts:
+            return np.empty((0, self.dim), dtype=np.float32)
+
+        import clip
+
+        feats = []
+        with self._torch.no_grad():
+            for i in range(0, len(texts), TRT_MAX_BATCH):
+                tokens = clip.tokenize(texts[i : i + TRT_MAX_BATCH]).to(self._device)
+                chunk = self._model.encode_text(tokens)
+                feats.append(chunk.cpu().numpy().astype(np.float32))
+        result = np.concatenate(feats, axis=0)
+        return self._normalize(result) if normalize else result
 
     def _load_clip(self) -> None:
         import clip
