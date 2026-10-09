@@ -21,6 +21,9 @@ from frida_constants.manipulation_constants import (
     GET_JOINT_SERVICE,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
+    JOINT_VELOCITY_MODE,
+    MANIPULATION_ENSURE_ARM_READY_SERVICE,
+    MOVEIT_MODE,
     MOVE_JOINTS_ACTION_SERVER,
     MOVE_TO_POSE_ACTION_SERVER,
     PICK_ACCELERATION,
@@ -31,6 +34,7 @@ from frida_constants.manipulation_constants import (
     SAFETY_HEIGHT,
     SCAN_ANGLE_HORIZONTAL,
     SCAN_ANGLE_VERTICAL,
+    XARM_MOVEVELOCITY_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
 )
 from frida_interfaces.action import MoveJoints, MoveToPose
@@ -56,7 +60,7 @@ from rclpy.duration import Duration
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
-from std_srvs.srv import Empty, SetBool
+from std_srvs.srv import Empty, SetBool, Trigger
 from tf2_ros import Buffer, TransformListener
 from xarm_msgs.msg import RobotMsg
 from xarm_msgs.srv import MoveVelocity, SetInt16
@@ -73,6 +77,8 @@ MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
 MODE1_RECOVERY_TIME = 3.0  # s - wait after restoring mode 1 for traj controller
 MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 DESCENT_TIMEOUT_FACTOR = 2.5  # closed-loop descent timeout vs. expected duration
+SERVICE_TIMEOUT = 5.0
+SET_MODE_RETRIES = 2
 
 
 class ContactResult:
@@ -119,6 +125,8 @@ class RobotArm:
         self._latest_robot_state: Optional[RobotMsg] = None
         self._estop = False
         self._scene_snapshot = []
+        # True while a velocity command is in flight (the face node sends one at a time)
+        self.joint_velocity_busy = False
 
         # --- observability context ------------------------------------------
         self._goal_handle = None
@@ -175,6 +183,15 @@ class RobotArm:
         )
         self._set_state_client = node.create_client(
             SetInt16, "/xarm/set_state", callback_group=group
+        )
+        self._joint_velocity_client = node.create_client(
+            MoveVelocity, XARM_MOVEVELOCITY_SERVICE, callback_group=group
+        )
+        self._reset_controller_client = node.create_client(
+            Trigger, MANIPULATION_ENSURE_ARM_READY_SERVICE, callback_group=group
+        )
+        self._tgpio_reset_client = node.create_client(
+            SetInt16, "/xarm/config_tgpio_reset_when_stop", callback_group=group
         )
 
         # --- subscriptions ---------------------------------------------------------------
@@ -831,6 +848,101 @@ class RobotArm:
                     break
 
         return reached
+
+    # ==================================================================
+    # xArm joint-velocity mode (face / person following)
+    # ==================================================================
+
+    def enter_joint_velocity_mode(self) -> bool:
+        return self._set_mode_and_state(JOINT_VELOCITY_MODE)
+
+    def leave_joint_velocity_mode(self) -> bool:
+        return self._set_mode_and_state(MOVEIT_MODE, reset_controller=True)
+
+    def disable_tgpio_reset(self):
+        # Disable TGPIO reset on state changes so the gripper stays closed
+        # across mode switches. Must be called AFTER the driver is up.
+        if self._tgpio_reset_client.wait_for_service(timeout_sec=SERVICE_TIMEOUT):
+            req = SetInt16.Request()
+            req.data = 0
+            future = self._tgpio_reset_client.call_async(req)
+            self.wait_for_future(future)
+            self._log.info(
+                "TGPIO reset on stop disabled (gripper preserved across mode switches)"
+            )
+        else:
+            self._log.warn(
+                "config_tgpio_reset_when_stop service not available -- gripper may open during mode switches",
+            )
+
+    def _set_mode_and_state(self, mode: int, reset_controller: bool = False) -> bool:
+        """Set xArm mode and state.
+
+        Gripper state is preserved automatically thanks to the
+        config_tgpio_reset_when_stop(0) call done at init.
+        """
+        mode_request = SetInt16.Request()
+        mode_request.data = mode
+        state_request = SetInt16.Request()
+        state_request.data = 0
+
+        for attempt in range(SET_MODE_RETRIES):
+            try:
+                self._log.info(f"Setting mode to {mode} (attempt {attempt + 1})")
+                future_mode = self._set_mode_client.call_async(mode_request)
+                future_mode = wait_for_future(future_mode)
+                if not future_mode:
+                    self._log.error("Failed to set mode")
+                    continue
+                self._log.info("Mode set")
+
+                self._log.info("Setting state to 0 (active)")
+                future_state = self._set_state_client.call_async(state_request)
+                future_state = wait_for_future(future_state)
+                if not future_state:
+                    self._log.error("Failed to set state")
+                    continue
+                self._log.info("State set")
+
+                if reset_controller:
+                    self._log.info("Resetting trajectory controller")
+                    future_ctrl = self._reset_controller_client.call_async(
+                        Trigger.Request()
+                    )
+                    future_ctrl = wait_for_future(future_ctrl)
+                    if not future_ctrl:
+                        self._log.error("Failed to reset controller")
+                        continue
+                    self._log.info("Controller reset successfully")
+
+                return True
+            except Exception as e:
+                self._log.error(f"Error setting arm mode: {e}")
+
+        self._log.error(f"Failed to set mode {mode} after {SET_MODE_RETRIES} attempts")
+        return False
+
+    def send_joint_velocity(self, speeds):
+        """Send one joint velocity command; the done callback reports it."""
+        request = MoveVelocity.Request()
+        request.is_sync = True
+        request.speeds = speeds
+        future = self._joint_velocity_client.call_async(request)
+        future.add_done_callback(self._on_joint_velocity_done)
+
+    def _on_joint_velocity_done(self, future):
+        try:
+            result = future.result()
+            if result is None:
+                self._log.error("Velocity service returned None")
+            elif result.ret != 0:
+                self._log.warn(
+                    f"Velocity service ret={result.ret}", throttle_duration_sec=2.0
+                )
+        except Exception as e:
+            self._log.error(f"Velocity command failed: {e}")
+        finally:
+            self.joint_velocity_busy = False
 
     def _set_xarm_mode(self, mode: int) -> bool:
         try:
