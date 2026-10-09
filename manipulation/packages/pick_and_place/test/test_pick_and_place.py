@@ -8,7 +8,9 @@ inside the container. They pin decisions, not geometry: a green run is not a
 working robot.
 """
 
+import asyncio
 import inspect
+import threading
 import pytest
 import yaml
 
@@ -29,6 +31,7 @@ from frida_interfaces.msg import ManipulationTask, PlaceParams
 from pathlib import Path
 from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import (
+    follow as follow_pipeline,
     pick as pick_pipeline,
     place as place_pipeline,
     pour as pour_pipeline,
@@ -318,6 +321,31 @@ def test_the_nested_pick_does_not_return_to_a_carry_pose(strategies, monkeypatch
 
 
 # ============================================================================
+# follow_pipeline
+# ============================================================================
+
+
+@pytest.fixture
+def no_sleep(monkeypatch):
+    monkeypatch.setattr(follow_pipeline.time, "sleep", lambda seconds: None)
+
+
+def test_face_on_and_off_switch_mode_once_each(no_sleep):
+    arm = FakeArm()
+    state = follow_pipeline.FaceState()
+    follow_pipeline.face_on(arm, state)
+    follow_pipeline.face_on(arm, state)
+    follow_pipeline.face_off(arm, state)
+    follow_pipeline.face_off(arm, state)
+    assert arm.calls == [
+        "disable_tgpio_reset",
+        "enter_joint_velocity_mode",
+        "send_joint_velocity",
+        "leave_joint_velocity_mode",
+    ]
+
+
+# ============================================================================
 # manipulation_core
 # ============================================================================
 
@@ -331,6 +359,9 @@ def core():
     node._logger = FakeLogger()
     node.get_logger = lambda: node._logger
     node._last_pick = PickOutcome()
+    node._follow_lock = threading.Lock()
+    node._face = follow_pipeline.FaceState()
+    node._person = follow_pipeline.PersonState()
     node._pipelines = {
         ManipulationTask.PICK: node._run_pick,
         ManipulationTask.PICK_CLOSEST: node._run_pick_closest,
@@ -367,6 +398,32 @@ class _Request:
                 "object_already_grasped": False,
             },
         )()
+
+
+class _GoalHandle:
+    is_cancel_requested = False
+
+    def __init__(self, request):
+        self.request = request
+
+    def succeed(self):
+        pass
+
+    def abort(self):
+        pass
+
+
+def test_a_task_goal_stops_face_following_before_the_pipeline_runs(core, no_sleep):
+    follow_pipeline.face_on(core.arm, core._face)
+    seen = []
+    core._pipelines[ManipulationTask.PICK] = lambda request: seen.append(
+        list(core.arm.calls)
+    )
+
+    asyncio.run(core.manipulation_callback(_GoalHandle(_Request())))
+
+    assert "leave_joint_velocity_mode" in seen[0]
+    assert not core._face.is_following_face_active
 
 
 def test_every_task_type_has_a_pipeline(core):
