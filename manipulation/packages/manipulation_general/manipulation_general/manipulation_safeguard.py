@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import math
+import time
 import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -35,6 +36,10 @@ from frida_pymoveit2.robots.xarm6 import (
 # Per-joint limits from frida_pymoveit2/robots/xarm6.py — same source MoveIt uses.
 _JOINT_NAMES = xarm6_joint_names()
 _BOUNDS_TOLERANCE = 0.11  # slightly above start_state_max_bounds_error (0.1 rad)
+# The xArm reports STOPPED between set_mode and set_state(0) (~0.35 s) on a mode
+# switch, e.g. entering mode 5 for a cartesian approach. STOPPED with err == 0 only
+# counts as an e-stop once it outlasts that.
+_STOP_DEBOUNCE_S = 0.8
 
 
 class ManipulationSafeguard(Node):
@@ -44,6 +49,7 @@ class ManipulationSafeguard(Node):
 
         self._arm_state: RobotMsg | None = None
         self._in_estop = False
+        self._stopped_since: float | None = None
         self._pending_target_angles: list[float] | None = None
 
         # Subscribe so _arm_state is populated for the on-demand ensure_arm_ready
@@ -131,7 +137,17 @@ class ManipulationSafeguard(Node):
 
     def _on_arm_state(self, msg: RobotMsg):
         self._arm_state = msg
-        is_fault = msg.state == XARM_STATE_STOPPED or msg.err != 0
+        now = time.monotonic()
+        if msg.state != XARM_STATE_STOPPED:
+            self._stopped_since = None
+        elif self._stopped_since is None:
+            self._stopped_since = now
+        stopped = (
+            self._stopped_since is not None
+            and now - self._stopped_since >= _STOP_DEBOUNCE_S
+        )
+        # An error code (the button gives err=2) is a fault at once.
+        is_fault = msg.err != 0 or stopped
         if is_fault and not self._in_estop:
             self._in_estop = True
             reason = f"state={msg.state}, err={msg.err}"

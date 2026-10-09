@@ -33,6 +33,7 @@ from frida_constants.manipulation_constants import (
     SCAN_ANGLE_VERTICAL,
     XARM_ROBOT_STATES_TOPIC,
 )
+from frida_constants.vision_constants import CAMERA_FRAME
 from frida_interfaces.action import MoveJoints, MoveToPose
 from frida_interfaces.msg import CollisionObject
 from frida_interfaces.srv import (
@@ -54,6 +55,8 @@ from moveit_msgs.srv import GetPositionIK, GetStateValidity
 from rclpy.action import ActionClient
 from rclpy.duration import Duration
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
+from rclpy.time import Time
+from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, SetBool
@@ -258,6 +261,12 @@ class RobotArm:
             return None
         return self._latest_robot_state.pose[2] / 1000.0
 
+    def tcp_xyz(self) -> Optional[np.ndarray]:
+        """Current tool-centre-point XYZ in metres, or None if unknown."""
+        if self._latest_robot_state is None:
+            return None
+        return np.array(self._latest_robot_state.pose[:3]) / 1000.0
+
     def tip_offset(self, param_name: str) -> float:
         """Read a tip-offset ROS parameter by name."""
         return float(self._node.get_parameter(param_name).value)
@@ -413,6 +422,24 @@ class RobotArm:
     def get_joints(self, degrees: bool = True):
         return get_joint_positions(self._get_joints_client, degrees=degrees)
 
+    def camera_view(self):
+        """where the ZED looks, the tool's z axis as unit vectors in base_link.
+        None when TF has no answer.
+        """
+        try:
+            axes = []
+            for frame in (CAMERA_FRAME, EEF_LINK_NAME):  # z is forward / the tool axis
+                q = self.tf_buffer.lookup_transform(
+                    "base_link", frame, Time()
+                ).transform.rotation
+                axes.append(
+                    Rotation.from_quat([q.x, q.y, q.z, q.w]).apply([0.0, 0.0, 1.0])
+                )
+        except Exception as exc:
+            self._log.warn(f"[camera_view] no TF: {exc}")
+            return None
+        return axes[0], axes[1]
+
     def scan_environment(self):
         """Sweep the wrist to fill in the octomap around the workspace."""
         joints = self.get_joints(degrees=True)
@@ -545,6 +572,14 @@ class RobotArm:
             self.wait_for_future(self._attach_client.call_async(request), timeout=10)
         return True
 
+    def add_collision_object(self, obj: CollisionObject) -> None:
+        request = AddCollisionObjects.Request()
+        request.collision_objects.append(obj)
+        if not self._add_objects_client.wait_for_service(timeout_sec=3.0):
+            self._log.warn(f"add_collision_objects unavailable; '{obj.id}' not added")
+            return
+        self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
+
     def add_shelf_ceiling_guard(self, place_pose, table_height: float) -> None:
         """Block the place return from routing up into the compartment ceiling.
 
@@ -606,13 +641,14 @@ class RobotArm:
     # ==================================================================
 
     @contextmanager
-    def cartesian_velocity_mode(self, label: str):
+    def cartesian_velocity_mode(self, label: str, on_mode1=None):
         """Hold the arm in mode 5 for the duration of the block.
 
         Whatever happens inside -- an exception, an e-stop, an early return --
         the exit path zeroes the velocity and restores mode 1. Leaving the arm
         in mode 5 takes the trajectory controller offline, so every subsequent
-        MoveIt goal would fail.
+        MoveIt goal would fail. ``on_mode1`` runs once mode 1 is back, before the
+        controller recovery wait.
         """
         if not self._set_xarm_mode(0):
             raise PickHardwareError(f"[{label}] could not enter mode 0")
@@ -628,14 +664,16 @@ class RobotArm:
             yield
         finally:
             self._stop_cartesian_velocity()
-            self._restore_mode1()
+            self._restore_mode1(on_mode1)
 
-    def _send_cartesian_velocity(self, speed_mm_s: float, label: str) -> None:
+    def _send_cartesian_velocity(
+        self, speed_mm_s: float, label: str, direction=(0.0, 0.0, 1.0)
+    ) -> None:
         if not self._cartesian_velocity_client.wait_for_service(timeout_sec=2.0):
             raise PickHardwareError(f"[{label}] vc_set_cartesian_velocity unavailable")
 
         request = MoveVelocity.Request()
-        request.speeds = [0.0, 0.0, speed_mm_s, 0.0, 0.0, 0.0]
+        request.speeds = [*(speed_mm_s * np.asarray(direction)), 0.0, 0.0, 0.0]
         request.is_tool_coord = False
         request.duration = 0.0
 
@@ -832,6 +870,79 @@ class RobotArm:
 
         return reached
 
+    def cartesian_approach(
+        self,
+        direction,
+        distance_m: float,
+        speed_mm_s: float,
+        close_on_reach: bool = False,
+    ) -> bool:
+        label = "CartesianApproach"
+        direction = np.asarray(direction)
+        self._log.info(
+            f"[{label}] moving {distance_m * 1000:.0f}mm along "
+            f"{direction.round(2).tolist()} at {speed_mm_s:.1f} mm/s"
+        )
+
+        # Read the start height before any mode switch, so a stale TCP reading
+        # cannot be mistaken for progress.
+        wait_start = time.time()
+        while self.tcp_xyz() is None:
+            if time.time() - wait_start > 1.0:
+                self._log.error(
+                    f"[{label}] no robot_states after 1s, cannot verify the move"
+                )
+                return False
+            time.sleep(0.05)
+
+        start_xyz = self.tcp_xyz()
+        self._log.info(
+            f"[{label}] start={(start_xyz * 1000).round(1).tolist()}mm "
+            f"target={((start_xyz + direction * distance_m) * 1000).round(1).tolist()}mm"
+        )
+
+        reached = False
+
+        def close_now():
+            if reached and close_on_reach:
+                self._log.info(f"[{label}] closing gripper")
+                self.close_gripper(settle_s=0.0)
+
+        with self.cartesian_velocity_mode(label, on_mode1=close_now):
+            self._send_cartesian_velocity(speed_mm_s, label, direction)
+
+            timeout = (distance_m * 1000.0 / speed_mm_s) * DESCENT_TIMEOUT_FACTOR
+            loop_start = time.time()
+
+            while True:
+                time.sleep(0.02)  # 50 Hz
+                elapsed = time.time() - loop_start
+
+                if elapsed > timeout:
+                    self._log.warn(
+                        f"[{label}] timeout after {elapsed:.1f}s (limit={timeout:.1f}s)"
+                    )
+                    break
+
+                if self._estop:
+                    self._log.warn(f"[{label}] e-stop during approach")
+                    raise PickAborted("e-stop during cartesian approach")
+
+                current_xyz = self.tcp_xyz()
+                if current_xyz is None:
+                    continue
+
+                moved = float(np.dot(current_xyz - start_xyz, direction))
+                if moved >= distance_m:
+                    self._log.info(
+                        f"[{label}] reached: moved={moved * 1000:.1f}mm "
+                        f"(target={distance_m * 1000:.0f}mm)"
+                    )
+                    reached = True
+                    break
+
+        return reached
+
     def _set_xarm_mode(self, mode: int) -> bool:
         try:
             if not self._set_mode_client.wait_for_service(timeout_sec=2.0):
@@ -879,7 +990,7 @@ class RobotArm:
         except Exception as exc:
             self._log.error(f"[xArm] stop error: {exc}")
 
-    def _restore_mode1(self):
+    def _restore_mode1(self, on_mode1=None):
         self._log.info("[xArm] restoring mode 1...")
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
@@ -895,6 +1006,8 @@ class RobotArm:
                 time.sleep(1.0)
                 continue
 
+            if on_mode1 is not None:
+                on_mode1()
             self._log.info(
                 f"[xArm] waiting {MODE1_RECOVERY_TIME}s for the trajectory controller"
             )

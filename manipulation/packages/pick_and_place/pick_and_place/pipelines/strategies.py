@@ -9,18 +9,32 @@ bottom of this file; the numbers each one uses come from
 from dataclasses import dataclass
 from typing import Optional
 
+import numpy as np
 from geometry_msgs.msg import PoseStamped
+from scipy.spatial.transform import Rotation
 
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
+    PICK_STRATEGY_BOX,
+    PICK_STRATEGY_CYLINDRICAL,
     PICK_STRATEGY_FLAT,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_RIM,
+    PICK_STRATEGY_ROUND,
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.profiles import PickProfile
-from pick_and_place.robot.geometry import offset_z
+from pick_and_place.robot.geometry import (
+    approach_axis,
+    offset_along_approach,
+    offset_z,
+)
+
+# base_link x of the ZED's viewing direction above which it already looks out at the
+# table (table_stare is ~0.8); below it the camera sees the robot's own arm and body.
+CAMERA_FORWARD_MIN = 0.35
+WRIST_LIMIT_DEG = 175.0  # MoveIt keeps joint 6 inside +-0.99 pi
 
 
 @dataclass(frozen=True)
@@ -118,6 +132,107 @@ class FixedDistanceDescentPick(PickStrategy):
 
         # No lift: the pick pipeline chooses the return pose.
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
+
+
+class CartesianApproachPick(PickStrategy):
+    """Back off along the grasp's approach axis, then close straight in on it.
+
+    The rim strategy, tilted: the arm moves to a pre-grasp behind the grasp, drives
+    straight forward along the approach axis (the path the generator checked for
+    collisions), attaches the fitted object, closes and saves its heights are left
+    to the pick pipeline, which holds the fitted object
+    """
+
+    def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
+        profile = self.profile
+
+        if profile.validate_endpoint:
+            with arm.phase("validate_endpoint"):
+                if arm.endpoint_self_collides(candidate.pose):
+                    raise PickAttemptFailed("grasp pose self-collides with robot")
+
+        with arm.phase("open_gripper"):
+            arm.open_gripper()
+
+        pre_grasp = offset_along_approach(candidate.pose, -profile.pre_grasp_height)
+        with arm.phase("approach_pre_grasp"):
+            arm.clear_octomap()
+            if not arm.move_to_pregrasp(pre_grasp, profile.pre_grasp_velocity):
+                raise PickAttemptFailed("pre-grasp unreachable")
+
+        with arm.phase("cartesian_approach"):
+            arm.check_abort()
+            distance = profile.effective_descent_distance
+            if not arm.cartesian_approach(
+                approach_axis(candidate.pose),
+                distance,
+                profile.descent_speed,
+                close_on_reach=True,
+            ):
+                raise PickAttemptFailed(
+                    f"approach of {distance * 1000:.0f} mm did not complete"
+                )
+
+        with arm.phase("attach_object"):
+            arm.attach_pick_object()
+
+        if profile.lift_after_grasp:
+            with arm.phase("lift"):
+                arm.clear_octomap()
+                arm.move_to_pose(
+                    offset_z(candidate.pose, profile.post_grasp_height), velocity=0.6
+                )
+
+        return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
+
+    @staticmethod
+    def _aim_camera_forward(arm) -> None:
+        """Spin the wrist until the ZED looks out at the table, not back at the arm.
+
+        From the lift pose the camera can face the robot's own arm and body. The
+        octomap then refills with voxels there after every clear, and the return to
+        the stare pose starts from a state that collides with them. Joint 6 turns
+        the camera about the tool axis, so the best angle follows from where the
+        camera points now and where the tool points.
+        """
+        view = arm.camera_view()
+        if view is None:
+            return
+        forward, tool = view
+        if forward[0] >= CAMERA_FORWARD_MIN:
+            return
+
+        joints = arm.get_joints(degrees=True)
+        wrist = joints["joints"]["joint6"]
+        turns = np.arange(
+            max(-180.0, -WRIST_LIMIT_DEG - wrist),
+            min(180.0, WRIST_LIMIT_DEG - wrist) + 1.0,
+            5.0,
+        )
+
+        if not turns.size:
+            return
+
+        def forward_after(turn_deg):
+            return Rotation.from_rotvec(np.radians(turn_deg) * tool).apply(forward)[0]
+
+        turn = float(max(turns, key=forward_after))
+        if forward_after(turn) < forward[0] + 0.05:
+            return
+        joints["joints"]["joint6"] = wrist + turn
+
+        for _ in range(3):
+            # The camera refills the arm's voxels within ~0.5 s of a clear: plan first.
+            arm.clear_octomap(settle_s=0.0)
+            if arm.move_joints(joints, velocity=0.5):
+                after = arm.camera_view()
+                arm.logger.info(
+                    f"camera forward x {forward[0]:.2f} -> "
+                    f"{after[0][0] if after else float('nan'):.2f} "
+                    f"(wrist turned {turn:.0f} deg)"
+                )
+                return
+        arm.logger.warn("wrist turn failed, the camera may still see the arm")
 
 
 class ForceGuardedDescentPick(PickStrategy):
@@ -220,6 +335,9 @@ STRATEGIES = {
     PICK_STRATEGY_RIM: FixedDistanceDescentPick,
     PICK_STRATEGY_BOWL: FixedDistanceDescentPick,
     PICK_STRATEGY_PEAK: FixedDistanceDescentPick,
+    PICK_STRATEGY_BOX: CartesianApproachPick,
+    PICK_STRATEGY_CYLINDRICAL: CartesianApproachPick,
+    PICK_STRATEGY_ROUND: CartesianApproachPick,
     PICK_STRATEGY_GPD: DirectGraspPick,
 }
 

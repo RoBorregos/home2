@@ -7,6 +7,7 @@ facade from becoming a god object, and keeps the pipelines free of ROS clients.
 from typing import List, Optional, Tuple
 
 from frida_constants.manipulation_constants import (
+    GENERATE_GRASPS_SERVICE,
     GRASP_DETECTION_SERVICE,
     HEATMAP_PLACE_SERVICE,
     PICK_PERCEPTION_SERVICE,
@@ -15,7 +16,7 @@ from frida_constants.manipulation_constants import (
 from frida_constants.vision_constants import DETECTION_HANDLER_TOPIC_SRV
 from frida_interfaces.srv import (
     DetectionHandler,
-    EstimateFlatGrasp,
+    GenerateGrasps,
     GraspDetection,
     HeatmapPlace,
     PickPerceptionService,
@@ -30,10 +31,8 @@ from pick_and_place.utils.perception_utils import (
     point_in_range,
 )
 
-ESTIMATE_FLAT_GRASP_SERVICE = "/manipulation/estimate_flat_grasp"
-
 # Defaults, in seconds. Callers override where their flow needs different ones.
-FLAT_GRASP_TIMEOUT = 5.0
+GENERATE_GRASPS_TIMEOUT = 5.0
 DETECT_TIMEOUT = 2.0
 CLUSTER_TIMEOUT = 60.0
 
@@ -61,8 +60,8 @@ class Perception:
         self.heatmap_place_client = node.create_client(
             HeatmapPlace, HEATMAP_PLACE_SERVICE, callback_group=group
         )
-        self.flat_grasp_client = node.create_client(
-            EstimateFlatGrasp, ESTIMATE_FLAT_GRASP_SERVICE, callback_group=group
+        self.generate_grasps_client = node.create_client(
+            GenerateGrasps, GENERATE_GRASPS_SERVICE, callback_group=group
         )
 
     @property
@@ -99,29 +98,29 @@ class Perception:
         """Run GPD over a cluster. Returns (poses, scores), possibly empty."""
         return get_grasps(self.grasp_detection_client, cluster, cfg_path)
 
-    def estimate_flat_grasp(
-        self, object_name: str, timeout: float = FLAT_GRASP_TIMEOUT + 3.0
+    def generate_grasps(
+        self, object_name: str, timeout: float = GENERATE_GRASPS_TIMEOUT + 3.0
     ) -> Optional[object]:
-        """Ask the flat-grasp estimator for a top-down pose.
+        """Ask the grasp generator for ranked grasp candidates.
 
         Returns the service response, or None when unavailable or unsuccessful;
         the caller logs the reason.
         """
         from frida_motion_planning.utils.ros_utils import wait_for_future
 
-        if not self.flat_grasp_client.wait_for_service(timeout_sec=5.0):
-            self._log.error("estimate_flat_grasp service unavailable")
+        if not self.generate_grasps_client.wait_for_service(timeout_sec=5.0):
+            self._log.error("generate_grasps service unavailable")
             return None
 
-        request = EstimateFlatGrasp.Request()
+        request = GenerateGrasps.Request()
         request.object_name = object_name
-        request.num_samples = 0  # let the estimator use its default
-        future = self.flat_grasp_client.call_async(request)
+        request.num_samples = 0  # let the generator use its default
+        future = self.generate_grasps_client.call_async(request)
         future = wait_for_future(future, timeout=timeout)
         response = future.result() if future else None
 
         if response is None or not response.success:
             reason = response.message if response is not None else "no response"
-            self._log.error(f"Flat grasp estimation failed for {object_name}: {reason}")
+            self._log.error(f"Grasp generation failed for {object_name}: {reason}")
             return None
         return response

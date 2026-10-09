@@ -77,8 +77,8 @@ def generate_launch_description():
             ),
             Node(
                 package="perception_3d",
-                executable="flat_grasp_estimator.py",
-                name="flat_grasp_estimator",
+                executable="grasp_generator.py",
+                name="grasp_generator",
                 output="screen",
                 emulate_tty=True,
             ),

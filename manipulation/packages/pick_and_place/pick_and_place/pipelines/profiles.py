@@ -15,11 +15,13 @@ import yaml
 STRATEGY_FORCE_GUARDED = "force_guarded"
 STRATEGY_FIXED_DISTANCE = "fixed_distance"
 STRATEGY_DIRECT = "direct"
+STRATEGY_CARTESIAN = "cartesian"
 
 KNOWN_STRATEGY_KINDS = (
     STRATEGY_FORCE_GUARDED,
     STRATEGY_FIXED_DISTANCE,
     STRATEGY_DIRECT,
+    STRATEGY_CARTESIAN,
 )
 
 PROFILES_FILE_ENV_VAR = "FRIDA_PICK_PROFILES_FILE"
@@ -85,6 +87,7 @@ class PickProfile:
     num_alternatives: int
     alternative_step: float
     pre_grasp_height: float
+    post_grasp_height: float
     pre_grasp_velocity: float
     close_settle: float
     validate_endpoint: bool
@@ -133,7 +136,7 @@ class PickProfile:
                 f"got {self.post_contact_retract}"
             )
 
-        if self.strategy == STRATEGY_FIXED_DISTANCE:
+        if self.strategy in (STRATEGY_FIXED_DISTANCE, STRATEGY_CARTESIAN):
             # A non-positive descent would drive the arm upward into the plan,
             # or not move at all -- both are configuration mistakes.
             if self.effective_descent_distance <= 0.0:
