@@ -29,9 +29,9 @@ def generate_launch_description():
                 executable="motion_planning_server.py",
             ),
             Node(
-                package="manipulation_general",
-                executable="follow_face_node.py",
-                name="follow_face_node",
+                package="pick_and_place",
+                executable="manipulation_core.py",
+                name="manipulation_core",
                 output="screen",
                 emulate_tty=True,
             ),

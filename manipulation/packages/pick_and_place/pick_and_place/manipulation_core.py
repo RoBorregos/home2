@@ -1,34 +1,44 @@
 #!/usr/bin/env python3
 """The manipulation node.
 
-One node owns the whole manipulation task: it serves ManipulationAction and
-GoToHand, and dispatches each task type to a pipeline. The pipelines
-(``pipelines/pick.py``, ``place.py``, ``pour.py``) hold the logic and talk to
-the robot through ``robot/arm.py`` and ``robot/perception.py``.
+One node owns the whole manipulation task: it serves ManipulationAction,
+GoToHand and the face / person follow services, and dispatches each task type
+to a pipeline. The pipelines (``pipelines/pick.py``, ``place.py``, ``pour.py``,
+``follow.py``) hold the logic and talk to the robot through ``robot/arm.py``
+and ``robot/perception.py``.
 
 """
 
 import copy
+import threading
+import time
+from dataclasses import fields
 
 import numpy as np
 import rclpy
 from frida_constants.manipulation_constants import (
     FIXED_DISTANCE_MOVE_SERVICE,
+    FOLLOW_FACE_ARM_SERVICE,
+    FOLLOW_PERSON_ARM_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
     MANIPULATION_ACTION_SERVER,
     RIM_DESCENT_SPEED,
 )
+from frida_constants.vision_constants import CENTROID_TOPIC, FOLLOW_TOPIC
 from frida_interfaces.action import GoToHand, ManipulationAction
 from frida_interfaces.msg import ManipulationTask
-from frida_interfaces.srv import FixedDistanceMove
+from frida_interfaces.srv import FixedDistanceMove, FollowFace
 from frida_motion_planning.utils.tf_utils import transform_point
-from geometry_msgs.msg import PoseStamped
+from frida_pymoveit2.robots import xarm6
+from geometry_msgs.msg import Point, PoseStamped, Twist
 from rclpy.action import ActionServer, CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
+from std_msgs.msg import Float64
 from tf_transformations import quaternion_from_euler
 from transforms3d.quaternions import quat2mat
 
+from pick_and_place.pipelines import follow as follow_pipeline
 from pick_and_place.pipelines import pick as pick_pipeline
 from pick_and_place.pipelines import place as place_pipeline
 from pick_and_place.pipelines import pour as pour_pipeline
@@ -40,6 +50,8 @@ from pick_and_place.robot.perception import Perception
 
 # Yaw angles swept when reaching towards a person's hand, in order.
 HAND_APPROACH_ANGLES = [0, 180, 200, 220, 240, 270]
+
+FACE_LOOP_PERIOD = 0.1
 
 # The merged node absorbs four nodes' worth of callbacks, and a task callback
 # blocks for minutes while it runs.
@@ -102,6 +114,7 @@ class ManipulationCore(Node):
             self._fixed_distance_move_cb,
             callback_group=self.callback_group,
         )
+        self._setup_follow()
 
         self.arm.wait_until_ready()
         self.get_logger().info(
@@ -134,6 +147,8 @@ class ManipulationCore(Node):
             self.get_logger().warn("E-stop active, aborting manipulation task")
             goal_handle.abort()
             return result
+
+        self._preempt_follow()
 
         pipeline = self._pipelines.get(request.task_type)
         if pipeline is None:
@@ -243,6 +258,7 @@ class ManipulationCore(Node):
 
     async def go_to_hand_callback(self, goal_handle):
         """Reach towards a person's hand to hand an object over."""
+        self._preempt_follow()
         self.get_logger().info("Executing go to hand goal...")
         result = GoToHand.Result()
         result.success = False
@@ -312,6 +328,7 @@ class ManipulationCore(Node):
     # ==================================================================
 
     def _fixed_distance_move_cb(self, request, response):
+        self._preempt_follow()
         # Service callers get a boolean, not an exception: an e-stop or a mode
         # fault here is a failed move, not a crashed service.
         try:
@@ -322,6 +339,176 @@ class ManipulationCore(Node):
             self.get_logger().warn(f"[FixedDescent] move failed: {exc}")
             response.success = False
         return response
+
+    # ==================================================================
+    # Follow
+    # ==================================================================
+
+    def _setup_follow(self):
+        self._declare_person_parameters()
+        self._follow_lock = threading.Lock()
+        self._face = follow_pipeline.FaceState()
+        self._person = follow_pipeline.PersonState()
+
+        self.create_subscription(
+            Point,
+            FOLLOW_TOPIC,
+            self._face_detection_callback,
+            2,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            Point,
+            CENTROID_TOPIC,
+            self._centroid_cb,
+            10,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            Twist,
+            "/cmd_vel",
+            self._cmd_vel_cb,
+            10,
+            callback_group=self.callback_group,
+        )
+        self.base_yaw_pub = self.create_publisher(Float64, "/follow/base_yaw", 10)
+
+        self._follow_face_srv = self.create_service(
+            FollowFace,
+            FOLLOW_FACE_ARM_SERVICE,
+            self._follow_face_service_callback,
+            callback_group=self.callback_group,
+        )
+        self._follow_person_srv = self.create_service(
+            FollowFace,
+            FOLLOW_PERSON_ARM_SERVICE,
+            self._follow_person_service_cb,
+            callback_group=self.callback_group,
+        )
+
+        self.create_timer(
+            FACE_LOOP_PERIOD, self._face_loop, callback_group=self.callback_group
+        )
+        self._person_dt = 1.0 / self.get_parameter("follow_person.control_rate").value
+        self.create_timer(
+            self._person_dt, self._person_loop, callback_group=self.callback_group
+        )
+
+    def _declare_person_parameters(self):
+        # Gains act on the normalized centroid error in [-1, 1]. Retuned for
+        # keeping up with a walking person (validate with follow_calibration.py):
+        # kp up 1.0->1.8, new kd (lead/damping), deadzone down, max_vel up.
+        self.declare_parameter("follow_person.kp", 1.8)
+        self.declare_parameter("follow_person.ki", 0.1)
+        self.declare_parameter("follow_person.kd", 0.12)
+        self.declare_parameter("follow_person.kff", 1.0)
+        self.declare_parameter("follow_person.dead_zone", 0.03)
+        self.declare_parameter("follow_person.max_velocity", 1.2)
+        # Wider pan range than the old -2.8..-0.5; safe because velocity now
+        # TAPERS over soft_limit_margin before a limit instead of cutting hard
+        # (it was the hard slam into the limit that faulted the xArm, not the
+        # range itself). Neutral (forward) is joint1_neutral = -1.5707.
+        self.declare_parameter("follow_person.joint1_min", -3.05)
+        self.declare_parameter("follow_person.joint1_max", -0.2)
+        self.declare_parameter("follow_person.soft_limit_margin", 0.35)
+        self.declare_parameter("follow_person.control_rate", 20.0)
+        self.declare_parameter("follow_person.centroid_timeout", 1.5)
+        self.declare_parameter("follow_person.integral_clamp", 0.3)
+        # On centroid timeout, slowly pan back to neutral so the camera faces
+        # forward (where the lost-person nav goal is taking the base).
+        self.declare_parameter("follow_person.recenter_enabled", True)
+        self.declare_parameter("follow_person.recenter_velocity", 0.3)
+        # Reactive "unload-the-arm" base yaw: when joint1 has panned off neutral
+        # (person to the side), rotate the BASE so joint1 returns toward neutral
+        # -> effectively unlimited pan and the person stays in the camera FOV.
+        # Verify the SIGN of base_yaw_kp on the robot (flip if the base
+        # turns the wrong way); joint1_neutral = forward-pointing joint1 value.
+        # OFF by default: the reactive base-yaw overshoots/oscillates with the
+        # current arm+base coupling — to be revisited (likely alongside re-acquisition).
+        # Tuned-down gains kept for when it's re-enabled.
+        self.declare_parameter("follow_person.base_yaw_enabled", False)
+        self.declare_parameter("follow_person.base_yaw_kp", 0.5)
+        self.declare_parameter("follow_person.joint1_neutral", -1.5707)
+        self.declare_parameter("follow_person.base_yaw_max", 0.25)
+
+    def _person_params(self):
+        return follow_pipeline.PersonParams(
+            **{
+                field.name: self.get_parameter(f"follow_person.{field.name}").value
+                for field in fields(follow_pipeline.PersonParams)
+            }
+        )
+
+    def _preempt_follow(self):
+        with self._follow_lock:
+            if self._face.is_following_face_active:
+                follow_pipeline.face_off(self.arm, self._face)
+            if self._person.active:
+                follow_pipeline.person_off(self.arm, self._person)
+
+    def _follow_face_service_callback(
+        self, request: FollowFace.Request, response: FollowFace.Response
+    ):
+        """Handle follow face service requests."""
+        with self._follow_lock:
+            if request.follow_face:
+                follow_pipeline.face_on(self.arm, self._face)
+            else:
+                follow_pipeline.face_off(self.arm, self._face)
+
+        response.success = True
+        return response
+
+    def _follow_person_service_cb(self, request, response):
+        with self._follow_lock:
+            if request.follow_face:
+                follow_pipeline.person_on(self.arm, self._person)
+            else:
+                follow_pipeline.person_off(self.arm, self._person)
+        response.success = True
+        return response
+
+    def _face_detection_callback(self, msg: Point):
+        """Receive face position from vision."""
+        self._face.face_x = msg.x
+        self._face.face_y = msg.y
+        self._face.last_face_detection_time = time.time()
+        self._face.has_new_face_data = True
+
+    def _centroid_cb(self, msg: Point):
+        follow_pipeline.person_centroid(self.arm, self._person, msg)
+
+    def _cmd_vel_cb(self, msg: Twist):
+        self._person.base_omega_z = msg.angular.z
+
+    def _face_loop(self):
+        """Timer callback: send velocity commands to track the face."""
+        follow_pipeline.face_tick(self.arm, self._face)
+
+    def _person_loop(self):
+        self._update_person_joints()
+        base_yaw = follow_pipeline.person_tick(
+            self.arm, self._person, self._person_params(), self._person_dt
+        )
+        self._publish_base_yaw(base_yaw)
+
+    def _update_person_joints(self):
+        msg = self.arm.joint_state
+        if msg is None:
+            return
+        for name, pos in zip(msg.name, msg.position):
+            if name in xarm6.joint_names():
+                self._person.joint_positions[name] = pos
+        if follow_pipeline.TARGET_JOINT in self._person.joint_positions:
+            self.get_logger().info(
+                f"Joint states received (joint1={self._person.joint_positions[follow_pipeline.TARGET_JOINT]:.3f})",
+                once=True,
+            )
+
+    def _publish_base_yaw(self, value: float):
+        msg = Float64()
+        msg.data = float(value)
+        self.base_yaw_pub.publish(msg)
 
 
 def main(args=None):
