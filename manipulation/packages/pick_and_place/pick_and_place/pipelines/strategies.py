@@ -179,7 +179,7 @@ class CartesianApproachPick(PickStrategy):
         if profile.lift_after_grasp:
             with arm.phase("lift"):
                 arm.clear_octomap()
-                lifted = arm.move_to_pose(
+                arm.move_to_pose(
                     offset_z(candidate.pose, profile.post_grasp_height), velocity=0.6
                 )
 
