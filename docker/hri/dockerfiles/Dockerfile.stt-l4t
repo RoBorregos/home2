@@ -40,8 +40,8 @@ RUN git clone https://github.com/PyAV-Org/PyAV.git && \
 
 # Install additional Python dependencies
 WORKDIR /app
-COPY ../../hri/requirements/stt.txt requirements.txt
-COPY ../../hri/proto_interfaces /tmp/proto_interfaces
+COPY hri/requirements/stt.txt requirements.txt
+COPY hri/proto_interfaces /tmp/proto_interfaces
 RUN pip-install-reqs /app/requirements.txt && \
     pip install --upgrade protobuf && \
     pip install /tmp/proto_interfaces && \

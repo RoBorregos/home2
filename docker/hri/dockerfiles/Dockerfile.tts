@@ -1,7 +1,8 @@
 ARG BASE_IMAGE=python:3.10-bookworm
 FROM ${BASE_IMAGE}
-
-WORKDIR /app
+# Extra pip index for torch (pulled by kokoro). Empty = pick by base: the
+# CPU-only wheels when the base has no CUDA, PyPI's CUDA build otherwise.
+ARG TORCH_INDEX_URL=
 
 ARG USERNAME=ros
 ARG USER_UID=1000
@@ -11,17 +12,10 @@ ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
-# Create a non-root user
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    # Add sudo support for the non-root user
-    && apt-get update \
-    && apt-get install -y sudo \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
-    && chmod 0440 /etc/sudoers.d/$USERNAME \
-    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sudo \
     python3 \
     python3-pip \
     python3-venv \
@@ -30,16 +24,22 @@ RUN apt-get update && apt-get install -y \
     libportaudiocpp0 \
     portaudio19-dev \
     espeak-ng \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid $USER_GID $USERNAME \
+    && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME \
+    && python3 -m venv "$VIRTUAL_ENV"
 
-RUN python3 -m venv "$VIRTUAL_ENV"
-
-COPY hri/requirements/tts.txt requirements.txt
-RUN python3 -m pip install --upgrade pip
-RUN pip install --no-cache-dir -r /app/requirements.txt
-RUN pip install --upgrade protobuf
-RUN pip install --no-cache-dir click
-RUN python3 -m spacy download en_core_web_sm
-
+COPY hri/requirements/tts.txt /tmp/requirements/tts.txt
 COPY hri/proto_interfaces /tmp/proto_interfaces
-RUN pip install --no-cache-dir /tmp/proto_interfaces
+RUN --mount=type=cache,target=/root/.cache/pip \
+    TORCH_INDEX="${TORCH_INDEX_URL}"; \
+    if [ -z "$TORCH_INDEX" ] && [ ! -d /usr/local/cuda ]; then TORCH_INDEX=https://download.pytorch.org/whl/cpu; fi; \
+    if [ -n "$TORCH_INDEX" ]; then set -- --extra-index-url "$TORCH_INDEX"; fi; \
+    pip install --upgrade pip \
+    && pip install "$@" -r /tmp/requirements/tts.txt click \
+    && pip install --upgrade protobuf \
+    && pip install /tmp/proto_interfaces \
+    && python3 -m spacy download en_core_web_sm \
+    && rm -rf /tmp/requirements /tmp/proto_interfaces
