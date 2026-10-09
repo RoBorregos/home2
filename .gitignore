@@ -43,3 +43,6 @@ restaurant_runs/
 gpsr_runs/
 hri/benchmarks/*/results/*
 !hri/benchmarks/*/results/.gitkeep
+
+# Local embedding-gallery benchmark data, tools and reports.
+/vision/benchmarks/embedding_gallery/
