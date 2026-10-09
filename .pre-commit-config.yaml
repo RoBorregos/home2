@@ -1,3 +1,6 @@
+# Immutable Orin evidence: formatting source snapshots would invalidate checksums.
+exclude: ^vision/benchmarks/embedding_gallery/validation/orin_evidence/
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.

@@ -1,0 +1,26 @@
+diff --git a/manipulation/packages/vamp b/manipulation/packages/vamp
+--- a/manipulation/packages/vamp
++++ b/manipulation/packages/vamp
+@@ -1 +1 @@
+-Subproject commit 2573e1174afb3455d56d485812166dbd8947f929
++Subproject commit 2573e1174afb3455d56d485812166dbd8947f929-dirty
+diff --git a/manipulation/packages/xarm_ros2 b/manipulation/packages/xarm_ros2
+index 878e7ba0..1b4c9949 160000
+--- a/manipulation/packages/xarm_ros2
++++ b/manipulation/packages/xarm_ros2
+@@ -1 +1 @@
+-Subproject commit 878e7ba0b9f64bb488d006e2fa519eadf230ac3f
++Subproject commit 1b4c99494bb01dfa9fe7b8f418530282179e284b-dirty
+diff --git a/vision/scripts/fetch_models.py b/vision/scripts/fetch_models.py
+index 26cc622b..8b62b691 100644
+--- a/vision/scripts/fetch_models.py
++++ b/vision/scripts/fetch_models.py
+@@ -212,7 +212,7 @@ def sync_gallery(dest: Path):
+ 
+ def warmup(dest: Path):
+     """Pre-build TRT engines + insightface cache for THIS device."""
+-    sys.path.insert(0, str(REPO_ROOT / "vision" / "packages" / "vision_general"))
++    sys.path.insert(0, str(REPO_ROOT / "vision" / "packages" / "vision_general" / "scripts"))
+     from utils.trt_utils import load_yolo_trt
+ 
+     for name, task in STANDARD_MODELS.items():

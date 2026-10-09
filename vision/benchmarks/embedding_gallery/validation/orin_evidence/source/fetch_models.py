@@ -212,9 +212,7 @@ def sync_gallery(dest: Path):
 
 def warmup(dest: Path):
     """Pre-build TRT engines + insightface cache for THIS device."""
-    sys.path.insert(
-        0, str(REPO_ROOT / "vision" / "packages" / "vision_general" / "scripts")
-    )
+    sys.path.insert(0, str(REPO_ROOT / "vision" / "packages" / "vision_general" / "scripts"))
     from utils.trt_utils import load_yolo_trt
 
     for name, task in STANDARD_MODELS.items():

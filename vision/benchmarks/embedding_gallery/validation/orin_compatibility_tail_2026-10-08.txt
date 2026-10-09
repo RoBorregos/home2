@@ -1,0 +1,44 @@
+User-provided follow-up transcript, received 2026-10-08.
+Chat escaping removed. This is the same test run as the original log, not another execution.
+
+ros@localhost:/workspace/src$ tail -n 40 /tmp/embedding-compatibility.log
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-7.4.4, pluggy-1.4.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /workspace/src
+collecting ... collected 16 items
+
+vision/packages/vision_general/tests/test_image_embedder.py::test_image_defaults_preserve_raw_gallery_vectors[False-False] PASSED [  6%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_image_defaults_preserve_raw_gallery_vectors[True-True] PASSED [ 12%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_image_defaults_preserve_raw_gallery_vectors[True-False] PASSED [ 18%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_clip_text_chunks_order_dtype_and_normalization PASSED [ 25%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_timm_rejects_text_without_loading PASSED [ 31%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_dimension_loads_once[clip:ViT-B/32-512] PASSED [ 37%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_dimension_loads_once[dinov2-768] PASSED [ 43%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_empty_inputs_and_invalid_chunk_size PASSED [ 50%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_single_string_rejected_before_loading PASSED [ 56%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_tokenizer_errors_are_preserved PASSED [ 62%]
+vision/packages/vision_general/tests/test_image_embedder.py::test_lazy_text_loading PASSED [ 68%]
+vision/packages/vision_general/tests/test_image_embedder_integration.py::test_real_clip_encoder_contract_without_weights PASSED [ 75%]
+vision/packages/vision_general/tests/test_image_embedder_integration.py::test_real_timm_dimension_and_raw_output PASSED [ 81%]
+vision/packages/vision_general/tests/test_image_embedder_integration.py::test_pretrained_clip_vit_b32 PASSED [ 87%]
+vision/packages/vision_general/tests/test_profile_clip.py::test_measure_waits_for_gpu_before_and_after_each_call PASSED [ 93%]
+vision/packages/vision_general/tests/test_profile_clip.py::test_memory_keeps_global_and_torch_counters_separate PASSED [100%]
+
+=============================== warnings summary ===============================
+vision/packages/vision_general/tests/test_image_embedder_integration.py::test_real_clip_encoder_contract_without_weights
+  /usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:371: UserWarning: Found GPU0 Orin which is of compute capability (CC) 8.7.
+  The following list shows the CCs this version of PyTorch was built for and the hardware CCs it supports:
+  - 8.0 which supports hardware CC >=8.0,<9.0 except {8.7}
+  - 9.0 which supports hardware CC >=9.0,<10.0
+  - 10.0 which supports hardware CC >=10.0,<11.0 except {10.1}
+  - 11.0 which supports hardware CC >=11.0,<12.0
+  - 12.0 which supports hardware CC >=12.0,<13.0
+    _warn_unsupported_code(d, device_cc, code_ccs)
+
+vision/packages/vision_general/tests/test_image_embedder_integration.py::test_pretrained_clip_vit_b32
+  /usr/local/lib/python3.12/dist-packages/torch/jit/_serialization.py:176: DeprecationWarning: `torch.jit.load` is deprecated. Please switch to `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 16 passed, 2 warnings in 8.96s ========================

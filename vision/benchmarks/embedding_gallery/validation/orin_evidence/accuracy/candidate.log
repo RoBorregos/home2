@@ -1,0 +1,26 @@
+CANDIDATO: /workspace/src/vision/packages/vision_general/scripts/utils/models/image_embedder.py
+
+[report] backbone=dinov2_vitb14 (vit_base_patch14_dinov2.lvd142m) - embedding all crops once...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:371: UserWarning: Found GPU0 Orin which is of compute capability (CC) 8.7.
+The following list shows the CCs this version of PyTorch was built for and the hardware CCs it supports:
+- 8.0 which supports hardware CC >=8.0,<9.0 except {8.7}
+- 9.0 which supports hardware CC >=9.0,<10.0
+- 10.0 which supports hardware CC >=10.0,<11.0 except {10.1}
+- 11.0 which supports hardware CC >=11.0,<12.0
+- 12.0 which supports hardware CC >=12.0,<13.0
+  _warn_unsupported_code(d, device_cc, code_ccs)
+[report] embedded: 575 gallery, 542 held_out, 100 hard_negatives, 45 out_of_gallery
+[report] best threshold: {'min_similarity': np.float64(0.5), 'margin_min': np.float64(0.1), 'recall_gated': 0.673, 'rejection': 0.689, 'both_met': False, 'score': 0.672566371681416}
+
+[report] backbone=clip_vit_b32 (clip:ViT-B/32) - embedding all crops once...
+[report] embedded: 575 gallery, 542 held_out, 100 hard_negatives, 45 out_of_gallery
+[report] best threshold: {'min_similarity': np.float64(0.85), 'margin_min': np.float64(0.0), 'recall_gated': 0.617, 'rejection': 0.533, 'both_met': False, 'score': 0.5333333333333333}
+
+Backbone | Recall@1 (all) | Recall@1 (gated) | Hard-neg precision | Unknown rejection | min_sim/margin | Gate
+dinov2_vitb14 | 54% | 67% | 95% | 69% | 0.5/0.1 | FAIL
+clip_vit_b32 | 56% | 62% | 54% | 53% | 0.85/0.0 | FAIL
+
+[report] wrote /workspace/src/vision/benchmarks/embedding_gallery/results/issue1348_accuracy/candidate/benchmark_20261009_002825.json
+
+[report] GATE NOT MET: no backbone hit recall@1>=90% (excluding ['bowl', 'coke', 'cup', 'fork', 'knife', 'plate', 'red_bull', 'spoon']) and unknown-rejection>=80% simultaneously.

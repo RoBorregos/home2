@@ -1,0 +1,33 @@
+Using python: python3 (Python 3.12.3)
+[prepare_dataset] 28 raw classes -> 26 published classes (via translation.json)
+[prepare_dataset] raw: ['apple', 'blue_cereal_box', 'bowl', 'brown_cereal_box', 'chocomilk_box', 'coca_cola', 'coca_cola_zero', 'cup', 'fork', 'green_elgae_pack', 'knife', 'laundry_basket', 'lemmon', 'mangosteen', 'peach', 'pepsi_cola', 'plate', 'pringles', 'red_bell_pepper', 'red_ramen_pack', 'redbull', 'rubik_cube', 'sponge', 'spoon', 'toothpaste_blue_box', 'trash_bin', 'water_bottle', 'yellow_bell_pepper']
+[prepare_dataset] published: ['apple', 'bowl', 'coke', 'cornflakes', 'cup', 'fork', 'instant_noodles', 'knife', 'laundry_basket', 'lemon', 'mangostane', 'milk', 'peach', 'pepsi', 'plate', 'pringles', 'red_bellpepper', 'red_bull', 'rubiks_cube', 'seaweed', 'soju', 'sponge', 'spoon', 'toothpaste', 'trash_bin', 'yellow_bellpepper']
+[gallery_photos] cup: 25 crops
+[gallery_photos] lemon: 25 crops
+[gallery_photos] coke: 25 crops
+[gallery_photos] milk: 25 crops
+[gallery_photos] pringles: 25 crops
+[gallery_photos] sponge: 25 crops
+[gallery_photos] trash_bin: 25 crops
+[gallery_photos] knife: 25 crops
+[gallery_photos] apple: 25 crops
+[gallery_photos] plate: 25 crops
+[gallery_photos] bowl: 25 crops
+[gallery_photos] laundry_basket: 25 crops
+[gallery_photos] red_bull: 25 crops
+[gallery_photos] pepsi: 25 crops
+[gallery_photos] fork: 25 crops
+[gallery_photos] peach: 25 crops
+[gallery_photos] toothpaste: 25 crops
+[gallery_photos] spoon: 25 crops
+[gallery_photos] cornflakes: 25 crops
+[gallery_photos] red_bellpepper: 25 crops
+[gallery_photos] soju: 25 crops
+[gallery_photos] yellow_bellpepper: 25 crops
+[gallery_photos] instant_noodles: 25 crops
+[held_out] 542 crops across 23 classes
+[hard_negatives] 100 crops across ['apple', 'bowl', 'cup', 'fork', 'knife', 'peach', 'plate', 'red_bellpepper', 'spoon', 'yellow_bellpepper']
+[out_of_gallery] 45 crops from held-out classes ['mangostane', 'rubiks_cube', 'seaweed']
+[box_recall] 25 images, 113 boxes
+
+[prepare_dataset] DONE. Remember the session-leakage caveat in this script's docstring before trusting recall@1/unknown-rejection numbers computed from this data as a real Phase 1 gate pass.

@@ -1,0 +1,9 @@
+User-reported comparison output from the Orin container.
+Baseline report: baseline/benchmark_20261009_001941.json
+Candidate report: candidate/benchmark_20261009_002825.json
+Both paths are relative to results/issue1348_accuracy/ on the Orin.
+The full JSON files have not been transferred to this workspace.
+
+DATOS: checksums idénticos.
+RESULTADOS: JSON idénticos, excluyendo timestamp.
+Coinciden métricas, umbrales y todas las predicciones registradas.
