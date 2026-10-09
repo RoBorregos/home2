@@ -1,27 +1,24 @@
 ARG BASE_IMAGE=python:3.10-bookworm
 FROM ${BASE_IMAGE}
 
-WORKDIR /app
-
 # Keep Python dependencies isolated from distro-managed Python.
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
-COPY hri/requirements/stt.txt requirements.txt
+WORKDIR /app
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
-    portaudio19-dev \
     python3-venv \
-    && rm -rf /var/lib/apt/lists/*
+    portaudio19-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv "$VIRTUAL_ENV"
 
-RUN python3 -m venv "$VIRTUAL_ENV"
-
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install requests==2.32.5
-
+COPY hri/requirements/stt.txt /tmp/requirements/stt.txt
 COPY hri/proto_interfaces /tmp/proto_interfaces
-RUN pip install --no-cache-dir /tmp/proto_interfaces
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r /tmp/requirements/stt.txt requests==2.32.5 \
+    && pip install /tmp/proto_interfaces \
+    && rm -rf /tmp/requirements /tmp/proto_interfaces
