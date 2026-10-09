@@ -11,24 +11,27 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     return LaunchDescription(
         [
-            Node(
-                package="manipulation_general",
-                executable="follow_face_node.py",
-                name="follow_face_node",
-                output="screen",
-                emulate_tty=True,
-            ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution(
                         [
-                            FindPackageShare("xarm_api"),
+                            FindPackageShare("arm_pkg"),
                             "launch",
-                            "xarm6_driver.launch.py",
+                            "frida_moveit_config.launch.py",
                         ]
                     )
                 ),
-                launch_arguments={"robot_ip": "192.168.31.180"}.items(),
+            ),
+            Node(
+                package="frida_motion_planning",
+                executable="motion_planning_server.py",
+            ),
+            Node(
+                package="pick_and_place",
+                executable="manipulation_core.py",
+                name="manipulation_core",
+                output="screen",
+                emulate_tty=True,
             ),
         ]
     )

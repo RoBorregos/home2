@@ -133,7 +133,7 @@ class ManipulationTasks:
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=1)
     @service_check("follow_person_client", Status.EXECUTION_ERROR, TIMEOUT)
     def follow_person(self, follow: bool = True) -> int:
-        """Enable/disable arm tracking of a person via follow_person_controller.
+        """Enable/disable arm tracking of a person via manipulation_core.
 
         When True, the xArm joint1 rotates to keep the tracked person
         centered in the camera image (PI + base-velocity feedforward).
@@ -333,7 +333,7 @@ class ManipulationTasks:
 
         try:
             future = self.follow_face_client.call_async(request)
-            # Mode switching in follow_face_node takes time, use longer timeout
+            # Mode switching in manipulation_core takes time, use longer timeout
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
 

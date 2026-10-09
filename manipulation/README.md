@@ -68,7 +68,7 @@ Only what the pick-and-place path uses.
 | **`perception_3d`** | `test_only_orchestrator`, `pick_primitives`, `plane_service`, `flat_grasp_estimator`, `downsample_pc` | Segments objects and surfaces from the point cloud |
 | **`place`** | `heatmapPlace_Server` | Scores a surface and returns the best free spot |
 | **`arm_pkg`** | `gpd_service` | Wraps the GPD library; also owns the MoveIt launch files |
-| **`manipulation_general`** | `manipulation_safeguard`, `follow_face_node`, `follow_person_controller` | Task launch files (`ppc`, `gpsr`, …); watches the xArm state and clears errors / re-enables motion; face and person following |
+| **`manipulation_general`** | `manipulation_safeguard` | Task launch files (`ppc`, `gpsr`, …); watches the xArm state and clears errors / re-enables motion |
 | **`frida_pymoveit2`** | *(library)* | xArm6 joint names and `JOINT_POSITION_LIMITS` |
 | **`xarm_utils`** | *(library)* | Shelf level geometry |
 | **`vamp_moveit_plugin`** | *(MoveIt plugin)* | VAMP planner, with OMPL fallback |
@@ -254,8 +254,8 @@ hardcode them.
 
 ## 7. Face / person following
 
-`follow_face_node` (`/follow_face`) and `follow_person_controller` (`/follow_person`) live in `manipulation_general`; they were moved here from `task_manager`.
-While either one is active, the xArm is in velocity mode (4), so turn it off before sending MoveIt goals.
+`manipulation_core` serves `/follow_face` and `/follow_person` (logic in `pick_and_place/pipelines/follow.py`), so it must be running.
+While either one is active, the xArm is in velocity mode (4); any manipulation goal turns it off first and it is not resumed.
 Face following also needs `face_recognition` enabled (it starts paused). If the arm doesn't move, check `ros2 topic hz /vision/follow_face`.
 
 ---
@@ -271,7 +271,7 @@ Face following also needs `face_recognition` enabled (it starts paused). If the 
 | Change where a place lands | `place/scripts/heatmapPlace_Server.py` |
 | Change object/surface segmentation | `perception_3d/` |
 | Add a named arm pose | `frida_constants/xarm_configurations.py` |
-| Tune face / person following | `manipulation_general/manipulation_general/follow_*.py`; face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |
+| Tune face / person following | `pick_and_place/pipelines/follow.py` (person gains: `follow_person.*` parameters); face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |
 | Add a message, service or action | `frida_interfaces/manipulation/` |
 
 ---
