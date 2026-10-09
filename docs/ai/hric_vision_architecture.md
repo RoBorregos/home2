@@ -194,7 +194,7 @@ Applied across tracker / smoother / arm controller to stop losing the person
   the goal ahead of a walking person; on tracker loss (`timeout` now 2.0 s) it
   drives to the person's LAST-KNOWN position facing their direction of travel
   (`lost_behavior:=halt` restores the old freeze-in-place).
-- **follow_person_controller** (arm): PID (kd computed at centroid rate in the
+- **follow_person** (arm, hosted by `manipulation_core`): PID (kd computed at centroid rate in the
   subscriber, LPF'd), kp 1.0→1.8, max_vel 0.8→1.2, joint1 range widened to
   [-3.05, -0.2] with a velocity TAPER over the last 0.35 rad (no more hard-stop
   slams — the old xArm fault mode), recenters to neutral on centroid timeout,

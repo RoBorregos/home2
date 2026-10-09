@@ -125,7 +125,7 @@ class RobotArm:
         self._latest_robot_state: Optional[RobotMsg] = None
         self._estop = False
         self._scene_snapshot = []
-        # True while a velocity command is in flight (the face node sends one at a time)
+        # True while a velocity command is in flight (face follow sends one at a time)
         self.joint_velocity_busy = False
 
         # --- observability context ------------------------------------------
@@ -879,7 +879,7 @@ class RobotArm:
         """Set xArm mode and state.
 
         Gripper state is preserved automatically thanks to the
-        config_tgpio_reset_when_stop(0) call done at init.
+        config_tgpio_reset_when_stop(0) call made by disable_tgpio_reset.
         """
         mode_request = SetInt16.Request()
         mode_request.data = mode

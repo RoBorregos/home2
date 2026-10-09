@@ -19,7 +19,7 @@ TARGET_JOINT = "joint1"
 
 @dataclass
 class FaceState:
-    """What the face node keeps between ticks."""
+    """What face follow keeps between ticks."""
 
     # State
     is_following_face_active: bool = False
@@ -192,7 +192,7 @@ def person_on(arm, state: PersonState):
     state.centroid_time = 0.0  # don't act on a centroid from a past run
     arm.enter_joint_velocity_mode()
     # Activate only AFTER the mode switch: with the multithreaded
-    # executor the control loop keeps ticking during the sleeps above,
+    # executor the control loop keeps ticking during the mode switch above,
     # and velocity commands before mode 4 error out on the xArm.
     state.active = True
     arm.logger.info("Following enabled (velocity mode)")

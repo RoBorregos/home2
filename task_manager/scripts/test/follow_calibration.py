@@ -23,9 +23,9 @@ Usage (nav+vision+manipulation stacks up first):
     ros2 run task_manager follow_calibration.py --ros-args -p stage:=arm
 
 Live-tune while it runs (params are read every control tick):
-    ros2 param set /follow_person_controller kp 2.0
-    ros2 param set /follow_person_controller kd 0.2
-    ros2 param set /follow_person_controller max_velocity 1.0
+    ros2 param set /manipulation_core follow_person.kp 2.0
+    ros2 param set /manipulation_core follow_person.kd 0.2
+    ros2 param set /manipulation_core follow_person.max_velocity 1.0
     ros2 param set /person_goal_smoother lead_time 0.6
     ros2 param set /person_goal_smoother follow_distance 0.8
 
@@ -64,13 +64,13 @@ ARM_FOLLOW_SERVICE = FOLLOW_PERSON_ARM_SERVICE
 STOP_WORDS = {"stop", "s", "q", "quit", "exit"}
 SERVICE_TIMEOUT = 10.0
 # Thresholds the hints are judged against (matched to the current defaults of
-# tracker_node / person_goal_smoother / follow_person_controller).
+# tracker_node / person_goal_smoother / manipulation_core follow_person.*).
 GOOD_CENTROID_HZ = 8.0
 RESULTS_VS_CENTROID = 0.6  # results rate should be >= this x centroid rate
 SMOOTHER_TIMEOUT_S = 2.0  # person_goal_smoother 'timeout' default
 ARM_ERR_LAGGY = 0.25  # mean |centroid| above this = arm lagging
 FLIPS_OSCILLATING = 1.5  # error sign flips/s above this = oscillating
-J1_MIN, J1_MAX, J1_MARGIN = -3.05, -0.2, 0.35  # follow_person_controller defaults
+J1_MIN, J1_MAX, J1_MARGIN = -3.05, -0.2, 0.35  # manipulation_core follow_person.* defaults
 # Fallback only: the real cap is read from controller_server (FollowPath.vx_max)
 # once follow mode is active, so the saturation hint is judged against whatever
 # profile is actually loaded (healthy nav2_omni_following vs the 3-wheel limp one).
@@ -319,7 +319,7 @@ class FollowCalibration(Node):
             if mean_err > ARM_ERR_LAGGY and flips_per_s < FLIPS_OSCILLATING:
                 hints.append(
                     f"Arm lags the person (mean |err| {mean_err:.2f}): raise kp "
-                    "(ros2 param set /follow_person_controller kp <val>) or max_velocity."
+                    "(ros2 param set /manipulation_core follow_person.kp <val>) or max_velocity."
                 )
             if flips_per_s > FLIPS_OSCILLATING:
                 hints.append(f"Arm oscillates ({flips_per_s:.1f} flips/s): lower kp or raise kd.")
