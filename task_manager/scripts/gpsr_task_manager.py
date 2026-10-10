@@ -249,9 +249,19 @@ class GPSRTM(Node):
         kind = getattr(plan_action.action, "action", "?")
         self.subtask_manager.hri.publish_display_step(f"executing:{kind}", GPSR_TASK_STEP_TOPIC)
 
+    def _capture_command(self, command, status, result):
+        """Snapshot + result of each executed command as evidence for referees."""
+        action = getattr(command, "action", "?")
+        outcome = "completed" if status == Status.EXECUTION_SUCCESS else "failed"
+        self.subtask_manager.hri.publish_display_capture(
+            f"{action} {outcome}",
+            data={"command": str(command), "status": str(status), "result": str(result)},
+        )
+
     def _on_action_complete(self, plan_action, status, result):
         if status == Status.EXECUTION_SUCCESS:
             self._completed.add((plan_action.source_cmd, plan_action.source_idx))
+        self._capture_command(plan_action.action, status, result)
         try:
             self.subtask_manager.hri.add_command_history(plan_action.action, result, status)
         except Exception as e:  # noqa: BLE001
@@ -370,6 +380,7 @@ class GPSRTM(Node):
                     continue
                 try:
                     status, res = handler(command)
+                    self._capture_command(command, status, res)
                     self.subtask_manager.hri.add_command_history(command, res, status)
                 except Exception as e:  # noqa: BLE001
                     self.get_logger().warning(f"Sequential fallback error on {command}: {e}")
@@ -554,6 +565,7 @@ class GPSRTM(Node):
                         status, res = exec_commad(command)
                         self.get_logger().info(f"status-> {str(status)}")
                         self.get_logger().info(f"res-> {str(res)}")
+                        self._capture_command(command, status, res)
                         self.subtask_manager.hri.add_command_history(
                             command,
                             res,
