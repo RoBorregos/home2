@@ -1,14 +1,14 @@
 [Unit]
-Description=home2 l4t image autobuild (poll + build + push)
+Description=home2 l4t image autobuild (poll + build locally, no push)
 After=docker.service network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
 User=orin
-Environment=L4T_AUTOBUILD_DIR=%h/l4t-autobuild/home2
-# Bootstraps its own clone on first run (see l4t_autobuild.sh) — doesn't
-# depend on the dev's working clone of home2 or its currently checked-out branch.
+# Hardcoded: %h resolves to root's home here, not orin's.
+Environment=L4T_AUTOBUILD_DIR=/home/orin/l4t-autobuild/home2
+# Bootstraps its own clone on first run.
 ExecStart=/bin/bash -c '[ -d "$L4T_AUTOBUILD_DIR/.git" ] || git clone --quiet https://github.com/RoBorregos/home2.git "$L4T_AUTOBUILD_DIR"; exec bash "$L4T_AUTOBUILD_DIR/scripts/l4t_autobuild.sh"'
 StandardOutput=journal
 StandardError=journal

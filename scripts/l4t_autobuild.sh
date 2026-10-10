@@ -1,21 +1,15 @@
 #!/bin/bash
-# Polls origin/main for l4t-relevant changes and builds + pushes the l4t
-# images to Docker Hub. Runs on the Orin (self-hosted runners aren't
-# available for this repo) via a systemd timer every 30 min — see
-# scripts/l4t-autobuild.service and scripts/l4t-autobuild.timer.
+# Builds l4t images locally on the Orin when origin/main changes (no push,
+# this is the only machine that runs them). Triggered by the systemd timer.
 #
-# Mirrors the build matrix in .github/workflows/docker-publish.yml (base +
-# hri/vision/navigation/manipulation/integration) so l4t images stay
-# equivalent to what that workflow produces for cpu/cuda.
+# Needs buildx on the default "docker" driver, not "docker-container" —
+# the latter can't see local images, so FROM l4t_base pulls from Docker Hub.
 #
 # Usage: bash scripts/l4t_autobuild.sh [--force]
-#   --force  Build everything regardless of what changed since the last run.
 
 set -euo pipefail
 
-# Deliberately NOT the dev's working clone of home2 (it may have someone
-# else's branch/uncommitted work checked out) — this script owns its own
-# clone so it's always safe to checkout/switch branches in it.
+# Own clone, not the dev's working copy — safe to checkout/switch branches.
 REPO_DIR="${L4T_AUTOBUILD_DIR:-$HOME/l4t-autobuild/home2}"
 REPO_URL="https://github.com/RoBorregos/home2.git"
 STATE_FILE="$REPO_DIR/.l4t_autobuild_last_sha"
@@ -72,27 +66,20 @@ area_changed() {
 
 git -c advice.detachedHead=false checkout "$REMOTE_SHA" --quiet
 
-echo "$LOG_PREFIX logging in to Docker Hub as roborregos..."
-if [ "$(docker system info 2>/dev/null | grep 'Username:' | awk '{print $2}')" != "roborregos" ]; then
-  echo "$LOG_PREFIX not logged in as roborregos. Run 'docker login' once on this machine first." >&2
-  exit 1
-fi
-
 FAILED=()
 
-build_push() {
+build_image() {
   # context, tag, dockerfile, then any extra --build-arg ... pairs
   local context="$1" tag="$2" file="$3"; shift 3
   echo "$LOG_PREFIX building $tag ($file, context=$context)"
   if docker buildx build \
       --platform linux/arm64 \
       -f "$file" \
-      --cache-from "type=registry,ref=${tag}" \
       --tag "$tag" \
-      --push \
+      --load \
       "$@" \
       "$context"; then
-    echo "$LOG_PREFIX pushed $tag"
+    echo "$LOG_PREFIX built $tag"
   else
     echo "$LOG_PREFIX FAILED: $tag" >&2
     FAILED+=("$tag")
@@ -100,9 +87,9 @@ build_push() {
 }
 
 REBUILD_BASE=false
-if base_changed || ! docker manifest inspect roborregos/home2:l4t_base > /dev/null 2>&1; then
+if base_changed || ! docker image inspect roborregos/home2:l4t_base > /dev/null 2>&1; then
   REBUILD_BASE=true
-  build_push "$REPO_DIR/docker" "roborregos/home2:l4t_base" "docker/Dockerfile.ROS-l4t" \
+  build_image "$REPO_DIR/docker" "roborregos/home2:l4t_base" "docker/Dockerfile.ROS-l4t" \
     --build-arg BASE_IMAGE=ubuntu:24.04 \
     --build-arg ROS_DISTRO=jazzy \
     --build-arg USER_UID=1000 \
@@ -110,33 +97,33 @@ if base_changed || ! docker manifest inspect roborregos/home2:l4t_base > /dev/nu
 fi
 
 if area_changed hri || [ "$REBUILD_BASE" = true ]; then
-  build_push "$REPO_DIR" "roborregos/home2:hri-l4t" "docker/hri/dockerfiles/Dockerfile.ROS" \
+  build_image "$REPO_DIR" "roborregos/home2:hri-l4t" "docker/hri/dockerfiles/Dockerfile.ROS" \
     --build-arg BASE_IMAGE=roborregos/home2:l4t_base
-  build_push "$REPO_DIR" "roborregos/home2:hri-stt-l4t" "docker/hri/dockerfiles/Dockerfile.stt-l4t" \
+  build_image "$REPO_DIR" "roborregos/home2:hri-stt-l4t" "docker/hri/dockerfiles/Dockerfile.stt-l4t" \
     --build-arg BASE_IMAGE=roborregos/home2:l4t_base
-  build_push "$REPO_DIR" "roborregos/home2:hri-tts-l4t" "docker/hri/dockerfiles/Dockerfile.tts-l4t" \
+  build_image "$REPO_DIR" "roborregos/home2:hri-tts-l4t" "docker/hri/dockerfiles/Dockerfile.tts-l4t" \
     --build-arg BASE_IMAGE=roborregos/home2:l4t_base
-  build_push "$REPO_DIR/docker/hri" "roborregos/home2:hri-ollama-l4t" "docker/hri/dockerfiles/Dockerfile.ollama" \
+  build_image "$REPO_DIR/docker/hri" "roborregos/home2:hri-ollama-l4t" "docker/hri/dockerfiles/Dockerfile.ollama" \
     --build-arg BASE_IMAGE=roborregos/home2:l4t_base
 fi
 
 if area_changed vision || [ "$REBUILD_BASE" = true ]; then
-  build_push "$REPO_DIR" "roborregos/home2:vision-l4t" "docker/vision/Dockerfile.l4t" \
+  build_image "$REPO_DIR" "roborregos/home2:vision-l4t" "docker/vision/Dockerfile.l4t" \
     --build-arg BASE_IMAGE=roborregos/home2:l4t_base
 fi
 
 if area_changed navigation || [ "$REBUILD_BASE" = true ]; then
-  build_push "$REPO_DIR" "roborregos/home2:navigation-l4t" "docker/navigation/Dockerfile.l4t" \
+  build_image "$REPO_DIR" "roborregos/home2:navigation-l4t" "docker/navigation/Dockerfile.l4t" \
     --build-arg BASE_IMAGE=roborregos/home2:l4t_base
 fi
 
 if area_changed manipulation || [ "$REBUILD_BASE" = true ]; then
-  build_push "$REPO_DIR" "roborregos/home2:manipulation-l4t" "docker/manipulation/Dockerfile.l4t" \
+  build_image "$REPO_DIR" "roborregos/home2:manipulation-l4t" "docker/manipulation/Dockerfile.l4t" \
     --build-arg BASE_IMAGE=roborregos/home2:l4t_base
 fi
 
 if area_changed integration || [ "$REBUILD_BASE" = true ]; then
-  build_push "$REPO_DIR" "roborregos/home2:integration-l4t" "docker/integration/Dockerfile" \
+  build_image "$REPO_DIR" "roborregos/home2:integration-l4t" "docker/integration/Dockerfile" \
     --build-arg BASE_IMAGE=roborregos/home2:l4t_base
 fi
 
