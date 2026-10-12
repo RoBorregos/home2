@@ -89,8 +89,8 @@ class NavigationTasks:
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
         self.approach_point_srv = self.node.create_client(ApproachPoint, APPROACH_POINT_SERVICE)
-        # TF buffer so move_to_point can accept a PointStamped in any frame (e.g. a
-        # camera-frame customer detection) and transform it to map before navigating.
+        # TF buffer so point-based nav helpers can accept a PointStamped in any frame
+        # (e.g. a camera-frame customer detection) and transform it to map.
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self.node)
         # Origin pose captured the first time get_current_pose() succeeds (return_to_origin)
@@ -404,37 +404,12 @@ class NavigationTasks:
                     )
                     ps = do_transform_point(ps, tf)
                 except Exception as e:
-                    CLog.nav(self.node, "ERROR", f"move_to_point: TF {frame}->map failed: {e}")
+                    CLog.nav(self.node, "ERROR", f"_resolve_map_xy: TF {frame}->map failed: {e}")
                     return None
             return float(ps.point.x), float(ps.point.y)
         if isinstance(point, Point):
             return float(point.x), float(point.y)
         return float(point[0]), float(point[1])
-
-    def move_to_point(self, point, standoff_distance=0.0):
-        """Navigate to a point. `point` may be a PointStamped (any frame — transformed
-        to map), a geometry_msgs/Point, or an (x, y) sequence in the map frame. With
-        standoff_distance>0, stop that far short of the point, facing it."""
-        xy = self._resolve_map_xy(point)
-        if xy is None:
-            return (Status.EXECUTION_ERROR, "could not transform point to map frame")
-        px, py = xy
-        yaw = 0.0
-        status, cur = self.get_current_pose()
-        if status == Status.EXECUTION_SUCCESS and cur is not None:
-            dx, dy = px - cur.pose.position.x, py - cur.pose.position.y
-            dist = math.hypot(dx, dy)
-            if dist > 1e-3:
-                yaw = math.atan2(dy, dx)
-                if 0.0 < standoff_distance < dist:
-                    px -= (dx / dist) * standoff_distance
-                    py -= (dy / dist) * standoff_distance
-        goal = PoseStamped()
-        goal.header.frame_id = "map"
-        goal.pose.position.x = px
-        goal.pose.position.y = py
-        goal.pose.orientation = self._yaw_to_quaternion(yaw)
-        return self.move_to_pose(goal)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=2)
     @service_check(
