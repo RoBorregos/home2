@@ -48,7 +48,7 @@ PLAN_REWRITE_INSTRUCTION = (
 
 
 def confirm_command(interpreted_text, target_info):
-    return f"Is your command: {target_info}? Yes or no?"
+    return f"Is your command: {target_info}?"
 
 
 def search_command(command, objects: list[object]):

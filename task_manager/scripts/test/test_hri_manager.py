@@ -23,7 +23,11 @@ from _merger_helpers import (
     evaluate_expectations,
     make_locator,
 )
-from task_manager.subtask_managers.hri_tasks import HRITasks
+from task_manager.subtask_managers.hri_tasks import (
+    HRITasks,
+    NEGATION_PHRASES,
+    classify_confirmation,
+)
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
@@ -94,6 +98,8 @@ TEST_MAP = False
 TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
+TEST_CONFIRM = True
+TEST_CONFIRM_WORD = False
 TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
@@ -249,6 +255,12 @@ class TestHriManager(Node):
 
         if TEST_IS_NEGATIVE:
             self.test_is_negative()
+
+        if TEST_CONFIRM:
+            self.test_confirm()
+
+        if TEST_CONFIRM_WORD:
+            self.test_confirm_word()
 
         if TEST_DATA_EXTRACTOR:
             self.test_data_extractor()
@@ -713,6 +725,95 @@ class TestHriManager(Node):
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
         return cases
 
+    def test_confirm(self):
+        """Offline test of classify_confirmation(): no HRI service needed."""
+        test_cases_file = os.path.join(DATA_DIR, "confirm.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"confirm_{date_str}.csv")
+
+        results = []
+        cases = []
+        passed_tests = 0
+
+        for i, (transcription, expected_word, expected_output, last_hotwords) in enumerate(
+            test_cases, 1
+        ):
+            self.get_logger().info(f"Test case {i}")
+
+            actual_output = None
+            success = False
+
+            try:
+                decision, word = classify_confirmation(
+                    transcription,
+                    [expected_word],
+                    self.hri_manager.positive,
+                    NEGATION_PHRASES,
+                    last_hotwords,
+                )
+                actual_output = decision
+                success = decision == expected_output
+                if success:
+                    passed_tests += 1
+                    self.get_logger().info(f"Test passed! (word: {word})")
+                else:
+                    self.get_logger().error(f"Test failed. (word: {word})")
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {e}")
+                actual_output = f"EXCEPTION: {e}"
+
+            results.append([i, transcription, expected_output, actual_output, success])
+            cases.append(
+                {
+                    "input": transcription,
+                    "expected": expected_output,
+                    "got": actual_output,
+                    "passed": success,
+                }
+            )
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["test_number", "input", "expected_output", "actual_output", "success"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+        return cases
+
+    def test_confirm_word(self):
+        """Live test of the confirmation word loop: repeat the word or correct it.
+
+        The robot asks for a favorite drink and always confirms it, so the tester
+        can (a) repeat the drink to accept it or (b) say another drink and then
+        confirm the corrected word.
+        """
+        options = ["Kuat", "orange juice", "iced tea", "Coca-Cola"]
+        self.get_logger().info(
+            "test_confirm_word: answer with a drink, then repeat it or correct it."
+        )
+
+        s, answer = self.hri_manager.ask_and_confirm(
+            "What is your favorite drink?",
+            "Drink",
+            "The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
+            options=options,
+            always_confirm=True,
+            retries=2,
+        )
+
+        if s == Status.EXECUTION_SUCCESS and answer in options:
+            self.get_logger().info(f"test_confirm_word PASSED: {answer}")
+        else:
+            self.get_logger().error(f"test_confirm_word FAILED: status={s}, answer={answer}")
+
     def test_data_extractor(self):
         test_cases_file = os.path.join(DATA_DIR, "data_extractor.json")
         with open(test_cases_file, "r") as f:
@@ -1160,6 +1261,7 @@ class TestHriManager(Node):
         "is_coherent": "test_is_coherent",
         "is_positive": "test_is_positive",
         "is_negative": "test_is_negative",
+        "confirm": "test_confirm",
         "extract_data": "test_data_extractor",
         "categorize_shelves": "test_categorize_shelves",
     }
