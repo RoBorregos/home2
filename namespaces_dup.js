@@ -450,6 +450,7 @@ var namespaces_dup =
     [ "test_hric_vision", "namespacetest__hric__vision.html", "namespacetest__hric__vision" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", "namespacetest__manipulation__manager" ],
+    [ "test_mocks", "namespacetest__mocks.html", "namespacetest__mocks" ],
     [ "test_navigation_manager", "namespacetest__navigation__manager.html", "namespacetest__navigation__manager" ],
     [ "test_pep257", "namespacetest__pep257.html", [
       [ "test_pep257", "namespacetest__pep257.html#ac69de1fd6a28f245460be3110acc273f", null ]

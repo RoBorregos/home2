@@ -145,8 +145,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2d99faaa11e11c340c4de49deaebb5a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73ac130dc34af9774383fa13ee83372f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a73ac130dc34af9774383fa13ee83372f">cancel_hear_action</a> (self)</td></tr>
 <tr class="separator:a73ac130dc34af9774383fa13ee83372f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c06e98fa6b32a997e8f2ca1c62a4589"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a3c06e98fa6b32a997e8f2ca1c62a4589">answer_question</a> (self, str question, int top_k=3, float threshold=0.1, list collections=[&quot;frida_knowledge&quot;, &quot;roborregos_knowledge&quot;, &quot;tec_knowledge&quot;,])</td></tr>
-<tr class="separator:a3c06e98fa6b32a997e8f2ca1c62a4589"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45a10bcbd5dd6e8e01311a43bad60554"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, str, float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a45a10bcbd5dd6e8e01311a43bad60554">answer_question</a> (self, str question, int top_k=3, float threshold=0.1, list collections=[&quot;frida_knowledge&quot;, &quot;roborregos_knowledge&quot;, &quot;tec_knowledge&quot;,])</td></tr>
+<tr class="separator:a45a10bcbd5dd6e8e01311a43bad60554"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a259cd0f36669f840340854b57d8df34e"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, list[str]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a259cd0f36669f840340854b57d8df34e">take_order</a> (self, int retries=3)</td></tr>
 <tr class="separator:a259cd0f36669f840340854b57d8df34e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab97b2565555d6f96ca261e726b78fd7a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#ab97b2565555d6f96ca261e726b78fd7a">add_command_history</a> (self, <a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a44f64af8d322961b668968e808f3d511">InterpreterAvailableCommands</a> command, result, status)</td></tr>
@@ -230,8 +230,6 @@ Public Attributes</h2></td></tr>
 <tr class="separator:abdd73811356f251ad2c27c2375533f3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1458c5a97e32e470c5d8eb49b369dcf3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a1458c5a97e32e470c5d8eb49b369dcf3">questions_publisher</a></td></tr>
 <tr class="separator:a1458c5a97e32e470c5d8eb49b369dcf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53b68bb31121a8a20eef0cf84128a83a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a53b68bb31121a8a20eef0cf84128a83a">mock_db</a></td></tr>
-<tr class="separator:a53b68bb31121a8a20eef0cf84128a83a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91848ce4502151e2ff862c086b21d7f5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a91848ce4502151e2ff862c086b21d7f5">add_entry_service</a></td></tr>
 <tr class="separator:a91848ce4502151e2ff862c086b21d7f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e883130459dba2d08afd60436d00fa0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a9e883130459dba2d08afd60436d00fa0">query_entry_service</a></td></tr>
@@ -665,14 +663,14 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a3c06e98fa6b32a997e8f2ca1c62a4589" name="a3c06e98fa6b32a997e8f2ca1c62a4589"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3c06e98fa6b32a997e8f2ca1c62a4589">&#9670;&#160;</a></span>answer_question()</h2>
+<a id="a45a10bcbd5dd6e8e01311a43bad60554" name="a45a10bcbd5dd6e8e01311a43bad60554"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45a10bcbd5dd6e8e01311a43bad60554">&#9670;&#160;</a></span>answer_question()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"> tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, str] task_manager.subtask_managers.hri_tasks.HRITasks.answer_question </td>
+          <td class="memname"> tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, str, float] task_manager.subtask_managers.hri_tasks.HRITasks.answer_question </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
@@ -2755,20 +2753,6 @@ Returns:
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.hri_tasks.HRITasks.mock_data</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a53b68bb31121a8a20eef0cf84128a83a" name="a53b68bb31121a8a20eef0cf84128a83a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a53b68bb31121a8a20eef0cf84128a83a">&#9670;&#160;</a></span>mock_db</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">task_manager.subtask_managers.hri_tasks.HRITasks.mock_db</td>
         </tr>
       </table>
 </div><div class="memdoc">

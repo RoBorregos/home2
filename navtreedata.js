@@ -452,44 +452,47 @@ var NAVTREE =
     [ "Decorators", "md_docs_task_manager_decorators.html", [
       [ "Mockable", "md_docs_task_manager_decorators.html#autotoc_md402", [
         [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md403", null ],
-        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md404", null ]
-      ] ],
-      [ "Service Check", "md_docs_task_manager_decorators.html#autotoc_md405", [
-        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md406", null ],
+        [ "Rules", "md_docs_task_manager_decorators.html#autotoc_md404", null ],
+        [ "Mocking an area", "md_docs_task_manager_decorators.html#autotoc_md405", null ],
+        [ "Testing", "md_docs_task_manager_decorators.html#autotoc_md406", null ],
         [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md407", null ]
       ] ],
-      [ "Example", "md_docs_task_manager_decorators.html#autotoc_md408", null ]
+      [ "Service Check", "md_docs_task_manager_decorators.html#autotoc_md408", [
+        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md409", null ],
+        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md410", null ]
+      ] ],
+      [ "Example", "md_docs_task_manager_decorators.html#autotoc_md411", null ]
     ] ],
     [ "Object Categorization and Shelf Assignment", "md_docs_task_manager_ppc_categorization.html", [
-      [ "Overview", "md_docs_task_manager_ppc_categorization.html#autotoc_md410", null ],
-      [ "Categorization Logic", "md_docs_task_manager_ppc_categorization.html#autotoc_md411", null ],
-      [ "Shelf Assignment Algorithm", "md_docs_task_manager_ppc_categorization.html#autotoc_md412", [
-        [ "1. Existing Category Match", "md_docs_task_manager_ppc_categorization.html#autotoc_md413", null ],
-        [ "2. Empty Shelf Distribution", "md_docs_task_manager_ppc_categorization.html#autotoc_md414", null ],
-        [ "3. Overflow Distribution (Avoiding \"Miscellaneous\")", "md_docs_task_manager_ppc_categorization.html#autotoc_md415", null ]
+      [ "Overview", "md_docs_task_manager_ppc_categorization.html#autotoc_md413", null ],
+      [ "Categorization Logic", "md_docs_task_manager_ppc_categorization.html#autotoc_md414", null ],
+      [ "Shelf Assignment Algorithm", "md_docs_task_manager_ppc_categorization.html#autotoc_md415", [
+        [ "1. Existing Category Match", "md_docs_task_manager_ppc_categorization.html#autotoc_md416", null ],
+        [ "2. Empty Shelf Distribution", "md_docs_task_manager_ppc_categorization.html#autotoc_md417", null ],
+        [ "3. Overflow Distribution (Avoiding \"Miscellaneous\")", "md_docs_task_manager_ppc_categorization.html#autotoc_md418", null ]
       ] ],
-      [ "API Compatibility", "md_docs_task_manager_ppc_categorization.html#autotoc_md416", null ],
-      [ "Testing", "md_docs_task_manager_ppc_categorization.html#autotoc_md417", null ]
+      [ "API Compatibility", "md_docs_task_manager_ppc_categorization.html#autotoc_md419", null ],
+      [ "Testing", "md_docs_task_manager_ppc_categorization.html#autotoc_md420", null ]
     ] ],
     [ "PPC 2026 — Estrategia de tiempo y maximización de puntos", "md_docs_task_manager_ppc_time_strategy_2026.html", [
-      [ "0. Resumen ejecutivo", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md419", [
-        [ "Capacidades confirmadas del robot (2026-06-30, definen el routing)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md420", null ]
+      [ "0. Resumen ejecutivo", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md422", [
+        [ "Capacidades confirmadas del robot (2026-06-30, definen el routing)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md423", null ]
       ] ],
-      [ "0.bis Datos CONFIRMADOS de la sede (repo RoboCupAtHome/Incheon2026)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md421", null ],
-      [ "1. Scoring oficial (verificado) y lo realmente alcanzable", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md422", null ],
-      [ "2. A dónde se va el tiempo (time sinks rankeados)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md423", null ],
-      [ "3. Plan de cambios (por prioridad)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md424", [
-        [ "TIER 0 — Cambio estructural (mayor impacto, bajo riesgo)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md425", null ],
-        [ "TIER 1 — Tiempo gratis (0 pts en riesgo)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md426", null ],
-        [ "TIER 2 — Routing correcto al scoresheet (con nuestras capacidades)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md427", null ],
-        [ "TIER 3 — Tuning de primitivas (NO días antes de competir)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md428", null ],
-        [ "NO TOCAR", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md429", null ]
+      [ "0.bis Datos CONFIRMADOS de la sede (repo RoboCupAtHome/Incheon2026)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md424", null ],
+      [ "1. Scoring oficial (verificado) y lo realmente alcanzable", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md425", null ],
+      [ "2. A dónde se va el tiempo (time sinks rankeados)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md426", null ],
+      [ "3. Plan de cambios (por prioridad)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md427", [
+        [ "TIER 0 — Cambio estructural (mayor impacto, bajo riesgo)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md428", null ],
+        [ "TIER 1 — Tiempo gratis (0 pts en riesgo)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md429", null ],
+        [ "TIER 2 — Routing correcto al scoresheet (con nuestras capacidades)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md430", null ],
+        [ "TIER 3 — Tuning de primitivas (NO días antes de competir)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md431", null ],
+        [ "NO TOCAR", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md432", null ]
       ] ],
-      [ "4. \"Race plan\" recomendado para 420 s", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md430", null ],
-      [ "5. Checklist de Setup-Days (cosas a fijar/confirmar)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md431", null ],
-      [ "6.bis Mapa de roles PPC → waypoints raw de la cocina (LocationsNames)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md432", null ],
-      [ "6.ter Lo que Nav debe grabar (Arena Mapping, Miér, 10 min/arena × 3)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md433", null ],
-      [ "6. Riesgos / pendientes", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md434", null ]
+      [ "4. \"Race plan\" recomendado para 420 s", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md433", null ],
+      [ "5. Checklist de Setup-Days (cosas a fijar/confirmar)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md434", null ],
+      [ "6.bis Mapa de roles PPC → waypoints raw de la cocina (LocationsNames)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md435", null ],
+      [ "6.ter Lo que Nav debe grabar (Arena Mapping, Miér, 10 min/arena × 3)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md436", null ],
+      [ "6. Riesgos / pendientes", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md437", null ]
     ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
@@ -555,39 +558,39 @@ var NAVTREEINDEX =
 "classrestaurant__commands_1_1RESTAURANTCommands.html#ae38426dee2fa09684e4cedcba0de4db5",
 "classtable__docker_1_1TableDocker.html#a2ba46c9b0e6f16eab69387cebce83d39",
 "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a63560fee8c3ef2c8987aaeafd9361495",
-"classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#af8d4a777115089b1d33540282b3933ff",
-"classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8dcd858b0599ee39be54d169774b8d21",
-"classtest__chairs__to__remove_1_1TestChairsToRemove.html#a6fb08ad090c4bc516bb7074eb12adbbe",
-"classtest__manipulation__manager_1_1TestManipulationManager.html#a8402896fa951a79f640a0ad94a7591d2",
-"classtracker__node_1_1SingleTracker.html#a32d3c3c6f7586fc5e70ca24068b9fc5a",
-"classutils_1_1models_1_1swin_1_1model_1_1ft__net__convnext.html#a752e5d2d7436c2fcb5d1e2884ce4828f",
-"classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#a7767279c08debefb07bd2a0cb7810a3b",
-"classxarm6__ikfast__plugin_1_1IKFastKinematicsPlugin.html",
-"dir_85db5410f68e2552f17bfb58546a3a49.html",
-"follow__calibration_8py.html",
-"gpsr__single__tasks_8py.html#a9c9027b6a23f7c6f110fd538b7de0640",
-"lidar__setup_8launch_8py.html#a270b8733299546018e10198255b2f9bf",
-"md_docs_Run_Areas_nav.html",
-"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md70",
-"namespaceclose__by__generators.html",
-"namespacefinetune__arcface.html",
-"namespacefrida__constants_1_1navigation__constants.html#a380761a1cbe9b53237dd9b24e10cb908",
-"namespaceimage__orienter.html",
-"namespacenode__monitor.html#a049068fab5dfff854f23ebc295ef8255",
-"namespaceproblem__tar__to__pkl__json.html#af7ad160e11b2b69c3f904adeb6a852b3",
-"namespacetask__manager_1_1utils_1_1exploration__planner.html",
-"namespacetracker__node.html#a31ff474623ba03e3fc97d08114c58089",
-"namespacevamp_1_1transformations.html#ac6c2c654c689a72e8d6bfc014f955ff2",
-"person__goal__smoother_8py.html#a3ca7c135ff4f834238e8cfc54e67ed08",
-"record__relative__pose_8py.html#a5b8f44ea816afb929415be7362869603",
-"structBoxPrimitiveParams.html#aa16abf6eefdca9ea3600982e568eebeb",
-"structvamp_1_1VectorInterface.html#a9e97e9d411ea80bcffcf9bda0f5aa609",
-"structvamp_1_1collision_1_1Cuboid.html#ae85878a80b4071b164353f792aecdf99",
-"structvamp_1_1planning_1_1FCITStarNeighborParams.html#aa77c4b4d9ba2616c3a51fa5618740a50",
-"structvamp_1_1planning_1_1utils_1_1QueueNode.html#ad7156df417d3aea42db3b8745a9696e6",
-"test__basket__pick_8py.html#af37a22bc1c70d537ecb52c7fac03c3b5",
-"transformations_8py.html#a524690d47d69819cfaef7dc54518b359",
-"wait__for__controller__input__node_8py.html"
+"classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#afc94e7948fc72ace40c06952d6c59278",
+"classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8fd6bbd9e18caf416ec9e16212345afe",
+"classtest__chairs__to__remove_1_1TestChairsToRemove.html#a8e248812fa92451e08ab0d6669ed0b65",
+"classtest__manipulation__manager_1_1TestManipulationManager.html#a873514434b49ea911147c59425dbc8fb",
+"classtracker__node_1_1SingleTracker.html#a10e75e91092cbd1219712ac89ff78b13",
+"classutils_1_1models_1_1swin_1_1model_1_1ft__net.html#a8e507f56ec2130708ee7aa2e7d14710d",
+"classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#a2fcdc262f756f4b35c8f3e06e6e8ee7e",
+"classvision__runtime_1_1VisionRuntime.html#af49efb4dbcc5f7a52c80d9bf78c95079",
+"dir_6c50f4b4cb7fb9e0bc61cbcb3a48cb1e.html",
+"flat__grasp__estimator_8py.html#a0208ff612e53cacf9d650adc4092bbc1",
+"globals_vars.html",
+"launch__nav_8py.html#a4c9f86d0f37d390231dea2f12029bc78",
+"masive__testin_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",
+"md_manipulation_packages_vamp_README.html#autotoc_md18",
+"namespaceattachments.html#a43331084867eb005f9f5b0b783163757",
+"namespaceface__recognition__node.html#abe2d04ddc5e2378a7b776a096ca9c278",
+"namespacefrida__constants_1_1manipulation__constants.html#ae83c2600137783c55e5ac4720c44f7e3",
+"namespacehric__commands.html#a36beb79351df54403135ea9f8da7d6de",
+"namespacenav2__omni.html",
+"namespaceprobe__cuboid.html#a84487e83505430307cb20498bef7597b",
+"namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html#a564154d84694edae2c6fd15d69727e26",
+"namespacetest__vision__manager.html#a5af7fcb61586f0325548838066cec24b",
+"namespacevamp_1_1transformations.html#a22baca1313c728b421da4913a199bf70",
+"odrive__dashboard_8py.html#ae7b743bd1a620042db5e01141402dca7",
+"proposers_8py.html#a83c949929a2955a3bf2136cb19c3e91f",
+"sphere__cuboid_8hh_source.html",
+"structvamp_1_1VectorInterface.html#a8640c0f0a85bd9d11725aad12d39f7ff",
+"structvamp_1_1collision_1_1Cuboid.html#a272115151ce54e9cffbd1ec0105f40a1",
+"structvamp_1_1planning_1_1FCITRoadmapNode.html#a299e65257c92f71bd5c85307718efb4b",
+"structvamp_1_1planning_1_1ShortcutSettings.html",
+"table__docker_8py.html#afca04db1c5ba4a082ef81fed1cf99e18",
+"timeouts_8py.html#a020a32041627835b5d9bb1c993760dda",
+"vision__constants__cpp_8hpp.html#a63e24b7b0629e3e1ecf9354882537a15"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

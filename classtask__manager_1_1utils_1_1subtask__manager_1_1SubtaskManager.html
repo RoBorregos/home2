@@ -92,6 +92,7 @@ $(document).ready(function(){initNavTree('classtask__manager_1_1utils_1_1subtask
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">task_manager.utils.subtask_manager.SubtaskManager Class Reference</div></div>
@@ -100,10 +101,15 @@ $(document).ready(function(){initNavTree('classtask__manager_1_1utils_1_1subtask
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae4a05fb0055df631581fa8051f7cb5bb"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html#ae4a05fb0055df631581fa8051f7cb5bb">__init__</a> (self, node, <a class="el" href="classtask__manager_1_1utils_1_1task_1_1Task.html">Task</a> task, list[str] mock_areas=[])</td></tr>
-<tr class="separator:ae4a05fb0055df631581fa8051f7cb5bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38188df4e14c24f755fa9c5569293a7d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html#a38188df4e14c24f755fa9c5569293a7d">__init__</a> (self, node, <a class="el" href="classtask__manager_1_1utils_1_1task_1_1Task.html">Task</a> task, list[str]|None mock_areas=None)</td></tr>
+<tr class="separator:a38188df4e14c24f755fa9c5569293a7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19430b8acb7d5d4a35ad4ead107978cf"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html#a19430b8acb7d5d4a35ad4ead107978cf">get_mocked_areas</a> (self)</td></tr>
 <tr class="separator:a19430b8acb7d5d4a35ad4ead107978cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a6b8267c566f3fc2c0755aa6e5fed426d"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html#a6b8267c566f3fc2c0755aa6e5fed426d">validate_areas</a> (list[str] mock_areas)</td></tr>
+<tr class="separator:a6b8267c566f3fc2c0755aa6e5fed426d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -119,8 +125,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a276325f3ac0c10a217cdcb4d6b8b8820"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ae4a05fb0055df631581fa8051f7cb5bb" name="ae4a05fb0055df631581fa8051f7cb5bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae4a05fb0055df631581fa8051f7cb5bb">&#9670;&#160;</a></span>__init__()</h2>
+<a id="a38188df4e14c24f755fa9c5569293a7d" name="a38188df4e14c24f755fa9c5569293a7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a38188df4e14c24f755fa9c5569293a7d">&#9670;&#160;</a></span>__init__()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -146,8 +152,8 @@ Public Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">list[str] &#160;</td>
-          <td class="paramname"><em>mock_areas</em> = <code>[]</code>&#160;</td>
+          <td class="paramtype">list[str] | None &#160;</td>
+          <td class="paramname"><em>mock_areas</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -176,6 +182,32 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a6b8267c566f3fc2c0755aa6e5fed426d" name="a6b8267c566f3fc2c0755aa6e5fed426d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b8267c566f3fc2c0755aa6e5fed426d">&#9670;&#160;</a></span>validate_areas()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> list[str] task_manager.utils.subtask_manager.SubtaskManager.validate_areas </td>
+          <td>(</td>
+          <td class="paramtype">list[str]&#160;</td>
+          <td class="paramname"><em>mock_areas</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Raise if any area name is not one of AREAS</pre> 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>

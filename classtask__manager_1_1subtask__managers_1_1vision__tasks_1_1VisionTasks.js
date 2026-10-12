@@ -4,7 +4,7 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "_call", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ab0451b8e4a2116c22b74a4c2fc69961a", null ],
     [ "_capture", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6967efa0cf23bb240e059909b619433f", null ],
     [ "_handle_moondream_response", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#afdd13fd658f056bcf41a534bac93d377", null ],
-    [ "_mock_moondream_async", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6dd7ba7f8453595df8847da08ada94e7", null ],
+    [ "_mock_moondream_async", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aae22c3678affb0bae449cf24cf696bdd", null ],
     [ "_set_node_active", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af2feee7ffb0e49ff71fe244249cdd63f", null ],
     [ "_tracked_point_callback", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a96b0298e417afbdb20c071cd954f08ea", null ],
     [ "activate_face_recognition", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae904a386996cab8ca35793fba86a4de0", null ],

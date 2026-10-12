@@ -392,6 +392,7 @@ var hierarchy =
       [ "test_hric_vision.HRICVisionTest", "classtest__hric__vision_1_1HRICVisionTest.html", null ],
       [ "test_manager.TestTaskManager", "classtest__manager_1_1TestTaskManager.html", null ],
       [ "test_manipulation_manager.TestManipulationManager", "classtest__manipulation__manager_1_1TestManipulationManager.html", null ],
+      [ "test_mocks.TestMocks", "classtest__mocks_1_1TestMocks.html", null ],
       [ "test_navigation_manager.TestNavigationManager", "classtest__navigation__manager_1_1TestNavigationManager.html", null ],
       [ "test_plan_parser.TestPlanParser", "classtest__plan__parser_1_1TestPlanParser.html", null ],
       [ "test_start_button.TestHriManager", "classtest__start__button_1_1TestHriManager.html", null ],

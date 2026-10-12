@@ -245,8 +245,6 @@ Public Attributes</h2></td></tr>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:ab59e1054048560ef34bc40c07286668a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ab59e1054048560ef34bc40c07286668a">delay</a></td></tr>
 <tr class="separator:ab59e1054048560ef34bc40c07286668a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4109865115594ab098d2e17ab6fa574a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a4109865115594ab098d2e17ab6fa574a">mock</a></td></tr>
-<tr class="separator:a4109865115594ab098d2e17ab6fa574a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -258,8 +256,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a6967efa0cf23bb240e059909b619433f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96b0298e417afbdb20c071cd954f08ea"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a96b0298e417afbdb20c071cd954f08ea">_tracked_point_callback</a> (self, PointStamped msg)</td></tr>
 <tr class="separator:a96b0298e417afbdb20c071cd954f08ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6dd7ba7f8453595df8847da08ada94e7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6dd7ba7f8453595df8847da08ada94e7">_mock_moondream_async</a> (self, callback=None, **kwargs)</td></tr>
-<tr class="separator:a6dd7ba7f8453595df8847da08ada94e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae22c3678affb0bae449cf24cf696bdd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aae22c3678affb0bae449cf24cf696bdd">_mock_moondream_async</a> (self, str prompt=&quot;&quot;, bool query_person=False, callback=None)</td></tr>
+<tr class="separator:aae22c3678affb0bae449cf24cf696bdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afdd13fd658f056bcf41a534bac93d377"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#afdd13fd658f056bcf41a534bac93d377">_handle_moondream_response</a> (self, future, callback)</td></tr>
 <tr class="separator:afdd13fd658f056bcf41a534bac93d377"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -478,8 +476,8 @@ loops don't flood the evidence folder with near-duplicate frames.
 <pre class="fragment">Callback to handle the response from the description service.</pre> 
 </div>
 </div>
-<a id="a6dd7ba7f8453595df8847da08ada94e7" name="a6dd7ba7f8453595df8847da08ada94e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6dd7ba7f8453595df8847da08ada94e7">&#9670;&#160;</a></span>_mock_moondream_async()</h2>
+<a id="aae22c3678affb0bae449cf24cf696bdd" name="aae22c3678affb0bae449cf24cf696bdd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae22c3678affb0bae449cf24cf696bdd">&#9670;&#160;</a></span>_mock_moondream_async()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -496,14 +494,20 @@ loops don't flood the evidence folder with near-duplicate frames.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>callback</em> = <code>None</code>, </td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>prompt</em> = <code>&quot;&quot;</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">**&#160;</td>
-          <td class="paramname"><em>kwargs</em>&#160;</td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>query_person</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>callback</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1915,28 +1919,6 @@ feed nav.approach_point().</pre>
           <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks.last_person_points</td>
         </tr>
       </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a4109865115594ab098d2e17ab6fa574a" name="a4109865115594ab098d2e17ab6fa574a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4109865115594ab098d2e17ab6fa574a">&#9670;&#160;</a></span>mock</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks.mock</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 </div>

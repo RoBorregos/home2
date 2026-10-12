@@ -510,6 +510,9 @@ var annotated_dup =
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", [
       [ "TestManipulationManager", "classtest__manipulation__manager_1_1TestManipulationManager.html", "classtest__manipulation__manager_1_1TestManipulationManager" ]
     ] ],
+    [ "test_mocks", "namespacetest__mocks.html", [
+      [ "TestMocks", "classtest__mocks_1_1TestMocks.html", "classtest__mocks_1_1TestMocks" ]
+    ] ],
     [ "test_navigation_manager", "namespacetest__navigation__manager.html", [
       [ "TestNavigationManager", "classtest__navigation__manager_1_1TestNavigationManager.html", "classtest__navigation__manager_1_1TestNavigationManager" ]
     ] ],
