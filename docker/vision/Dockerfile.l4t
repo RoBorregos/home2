@@ -37,8 +37,16 @@ RUN pip install \
     requests \
     scikit-image \
     onnx \
-    ultralytics-thop && \
-    pip install --no-deps insightface==1.0.1 ultralytics==8.4.19
+    ultralytics-thop \
+    absl-py \
+    attrs \
+    flatbuffers \
+    sounddevice \
+    sentencepiece && \
+    pip install --no-deps \
+    insightface==1.0.1 \
+    ultralytics==8.4.19 \
+    mediapipe==0.10.18
 
 WORKDIR /workspace
 
