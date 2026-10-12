@@ -178,7 +178,7 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 | Marco Galindo | [@m2galindo](https://github.com/m2galindo) | Vision, Manipulation |
 | Jasiel Aldana | [@JasielAlPa](https://github.com/JasielAlPa) | Navigation |
 | Rebecca Gómez | [@Becca-731](https://github.com/Becca-731) | Navigation, Mechanics |
-| Rodrigo Gamboa | [@Rodrogamby](https://github.com/Rodrogamby) | Navigation |
+| Rodrigo Gamboa Herrera | [@Rodrogamby](https://github.com/Rodrogamby) | Navigation |
 | Luis Alvaro Rosales Salazar | [@luisrosales852](https://github.com/luisrosales852) | HRI, Integration |
 
 
