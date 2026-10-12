@@ -173,6 +173,7 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 | Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27) | HRI, Integration |
 | Jose Dominguez | [@JLDominguezM](https://github.com/JLDominguezM) | Manipulation, Integration |
 | Luis Benvenuto | [@biweep863](https://github.com/biweep863) | HRI, Integration |
+| Juan Pablo Gutierrez| [@jpgtzg](https://github.com/jpgtzg) | HRI, Vision |
 
 ## Past Contributors
 
