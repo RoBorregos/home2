@@ -1,6 +1,7 @@
 var vision__tasks_8py =
 [
     [ "task_manager.subtask_managers.vision_tasks.VisionTasks", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks" ],
+    [ "CAPTURE_THROTTLE_S", "vision__tasks_8py.html#a39b3ef50b107061e45aeed9baf20bb57", null ],
     [ "finally", "vision__tasks_8py.html#ac6e675c9289634b4ed7ef6840b510f19", null ],
     [ "IS_TRACKING_TOPIC", "vision__tasks_8py.html#add8920b2469d6bc25ce6aceb7b0fe0b3", null ],
     [ "node", "vision__tasks_8py.html#ab304cd6fe5f54fe06d682e757d70edb9", null ],

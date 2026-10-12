@@ -173,6 +173,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a02d28510f034f3bd5f9340d49524af31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae71d80a33694d63243002c22d71e8aa"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, dict[int, list[str]], dict[int, list[str]], dict[int, list[str]]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aae71d80a33694d63243002c22d71e8aa">categorize_objects</a> (self, list[str] table_objects, dict[int, list[str]] shelves)</td></tr>
 <tr class="separator:aae71d80a33694d63243002c22d71e8aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a343c6ad43fb9762b4557920866770e27"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a343c6ad43fb9762b4557920866770e27">publish_display_capture</a> (self, str label, str topic=&quot;&quot;, dict data=None)</td></tr>
+<tr class="separator:a343c6ad43fb9762b4557920866770e27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b585eaedb621fbd08533d8ea38f6426"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a6b585eaedb621fbd08533d8ea38f6426">publish_display_topic</a> (self, str topic)</td></tr>
 <tr class="separator:a6b585eaedb621fbd08533d8ea38f6426"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e1a863c4249f4938015016532f57b61"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a7e1a863c4249f4938015016532f57b61">publish_display_step</a> (self, str step, str topic=TASK_STEP_TOPIC)</td></tr>
@@ -220,6 +222,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a72424b44994d456be86a8e5497f272d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd98a157cf5d032a10fcbd1cb8dea07c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#abd98a157cf5d032a10fcbd1cb8dea07c">display_publisher</a></td></tr>
 <tr class="separator:abd98a157cf5d032a10fcbd1cb8dea07c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af047ae132d7aa5be82c218f404674f5e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#af047ae132d7aa5be82c218f404674f5e">display_capture_publisher</a></td></tr>
+<tr class="separator:af047ae132d7aa5be82c218f404674f5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a87668b69a8ebede6cf19c280a2e61abd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a87668b69a8ebede6cf19c280a2e61abd">display_map_publisher</a></td></tr>
 <tr class="separator:a87668b69a8ebede6cf19c280a2e61abd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdd73811356f251ad2c27c2375533f3f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#abdd73811356f251ad2c27c2375533f3f">answers_publisher</a></td></tr>
@@ -1758,6 +1762,50 @@ Returns:
 </pre> 
 </div>
 </div>
+<a id="a343c6ad43fb9762b4557920866770e27" name="a343c6ad43fb9762b4557920866770e27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a343c6ad43fb9762b4557920866770e27">&#9670;&#160;</a></span>publish_display_capture()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> None task_manager.subtask_managers.hri_tasks.HRITasks.publish_display_capture </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>label</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>topic</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">dict &#160;</td>
+          <td class="paramname"><em>data</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Ask the display to snapshot a frame (from `topic`, or its current feed).
+
+The display saves it under logs/evidence/&lt;run&gt;/ (with `data` in
+captures.jsonl) and shows it in the end-of-task gallery.
+</pre> 
+</div>
+</div>
 <a id="a7e1a863c4249f4938015016532f57b61" name="a7e1a863c4249f4938015016532f57b61"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7e1a863c4249f4938015016532f57b61">&#9670;&#160;</a></span>publish_display_step()</h2>
 
@@ -2363,6 +2411,20 @@ Returns:
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.hri_tasks.HRITasks.current_transcription</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af047ae132d7aa5be82c218f404674f5e" name="af047ae132d7aa5be82c218f404674f5e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af047ae132d7aa5be82c218f404674f5e">&#9670;&#160;</a></span>display_capture_publisher</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.hri_tasks.HRITasks.display_capture_publisher</td>
         </tr>
       </table>
 </div><div class="memdoc">

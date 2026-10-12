@@ -8,6 +8,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "COMMAND_INTERPRETER_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a1b90a05ff939b4a199c904ade172ace2", null ],
     [ "CONVESATION_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a0dea1a972213b590aaf0c24edf6bba9e", null ],
     [ "DEFAULT_HOTWORDS", "namespacefrida__constants_1_1hri__constants.html#ae34afe358408d95f63d076478b349b0b", null ],
+    [ "DISPLAY_CAPTURE_TOPIC", "namespacefrida__constants_1_1hri__constants.html#aeb5838294ab9ecb470e096c7ebce5774", null ],
     [ "DISPLAY_IMAGE_TOPIC", "namespacefrida__constants_1_1hri__constants.html#aaa486a9f7f79cd7c69c81ff85d8ba336", null ],
     [ "DISPLAY_KEYWORD_TOPIC", "namespacefrida__constants_1_1hri__constants.html#ac391c37e744c617d4bae07bb0e04721f", null ],
     [ "DISPLAY_MAP_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a3fdac1c86ed416eee896a77aec9c4043", null ],

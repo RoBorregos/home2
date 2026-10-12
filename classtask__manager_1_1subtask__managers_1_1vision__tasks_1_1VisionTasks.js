@@ -2,6 +2,7 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
 [
     [ "__init__", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a53d9e32bae885356d98525d2cedbcbd3", null ],
     [ "_call", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ab0451b8e4a2116c22b74a4c2fc69961a", null ],
+    [ "_capture", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6967efa0cf23bb240e059909b619433f", null ],
     [ "_handle_moondream_response", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#afdd13fd658f056bcf41a534bac93d377", null ],
     [ "_mock_moondream_async", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6dd7ba7f8453595df8847da08ada94e7", null ],
     [ "_set_node_active", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af2feee7ffb0e49ff71fe244249cdd63f", null ],
@@ -40,8 +41,10 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "setup_services", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a3b043d37f055718cdc1b53e520544a17", null ],
     [ "track_person", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aca96fc5f914a03db25dd2020be357c1e", null ],
     [ "visual_info", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aa72bad9e29a78ab2ba67eb90d7f5fea7", null ],
+    [ "_capture_pub", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a7decdf2021e2030d54fb6b5f1ba2733b", null ],
     [ "_face_rec_active", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aa556ea70cfdbf923086cd9651b8bafc4", null ],
     [ "_face_rec_pub", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#abd1dfcfa73d8c41980699544d304ffaa", null ],
+    [ "_last_capture_ts", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aa87d668d16068e2ca796eba4f4a7765f", null ],
     [ "_tracked_point", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8f1c36f1e933e2cb0f2076d1d060a790", null ],
     [ "chairs_to_remove_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af2935515cd6e6208ca78db5c49caf58c", null ],
     [ "count_by_color_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a90204cacd38264cf4ff07b661926ce34", null ],

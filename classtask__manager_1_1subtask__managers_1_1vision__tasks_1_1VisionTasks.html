@@ -254,6 +254,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:ab0451b8e4a2116c22b74a4c2fc69961a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2feee7ffb0e49ff71fe244249cdd63f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af2feee7ffb0e49ff71fe244249cdd63f">_set_node_active</a> (self, publisher, bool active)</td></tr>
 <tr class="separator:af2feee7ffb0e49ff71fe244249cdd63f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6967efa0cf23bb240e059909b619433f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6967efa0cf23bb240e059909b619433f">_capture</a> (self, str key, str label, str topic=&quot;&quot;, dict data=None)</td></tr>
+<tr class="separator:a6967efa0cf23bb240e059909b619433f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96b0298e417afbdb20c071cd954f08ea"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a96b0298e417afbdb20c071cd954f08ea">_tracked_point_callback</a> (self, PointStamped msg)</td></tr>
 <tr class="separator:a96b0298e417afbdb20c071cd954f08ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6dd7ba7f8453595df8847da08ada94e7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6dd7ba7f8453595df8847da08ada94e7">_mock_moondream_async</a> (self, callback=None, **kwargs)</td></tr>
@@ -267,6 +269,10 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:abd1dfcfa73d8c41980699544d304ffaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa556ea70cfdbf923086cd9651b8bafc4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aa556ea70cfdbf923086cd9651b8bafc4">_face_rec_active</a></td></tr>
 <tr class="separator:aa556ea70cfdbf923086cd9651b8bafc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7decdf2021e2030d54fb6b5f1ba2733b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a7decdf2021e2030d54fb6b5f1ba2733b">_capture_pub</a></td></tr>
+<tr class="separator:a7decdf2021e2030d54fb6b5f1ba2733b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa87d668d16068e2ca796eba4f4a7765f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aa87d668d16068e2ca796eba4f4a7765f">_last_capture_ts</a></td></tr>
+<tr class="separator:aa87d668d16068e2ca796eba4f4a7765f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f1c36f1e933e2cb0f2076d1d060a790"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8f1c36f1e933e2cb0f2076d1d060a790">_tracked_point</a></td></tr>
 <tr class="separator:a8f1c36f1e933e2cb0f2076d1d060a790"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -369,6 +375,64 @@ Protected Attributes</h2></td></tr>
 Returns (None, result) on a response, or (Status, None) when the call
 timed out (Status.TIMEOUT) or raised (Status.EXECUTION_ERROR). Callers
 map the result's fields onto their own (Status, payload) contract.
+</pre> 
+</div>
+</div>
+<a id="a6967efa0cf23bb240e059909b619433f" name="a6967efa0cf23bb240e059909b619433f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6967efa0cf23bb240e059909b619433f">&#9670;&#160;</a></span>_capture()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.vision_tasks.VisionTasks._capture </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>label</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>topic</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">dict &#160;</td>
+          <td class="paramname"><em>data</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Ask the display to save a snapshot as evidence after a successful detection.
+
+Throttled per `key` (one per detection kind) so calls from polling
+loops don't flood the evidence folder with near-duplicate frames.
 </pre> 
 </div>
 </div>
@@ -1457,6 +1521,28 @@ feed nav.approach_point().</pre>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a7decdf2021e2030d54fb6b5f1ba2733b" name="a7decdf2021e2030d54fb6b5f1ba2733b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7decdf2021e2030d54fb6b5f1ba2733b">&#9670;&#160;</a></span>_capture_pub</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks._capture_pub</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aa556ea70cfdbf923086cd9651b8bafc4" name="aa556ea70cfdbf923086cd9651b8bafc4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa556ea70cfdbf923086cd9651b8bafc4">&#9670;&#160;</a></span>_face_rec_active</h2>
 
@@ -1490,6 +1576,28 @@ feed nav.approach_point().</pre>
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks._face_rec_pub</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa87d668d16068e2ca796eba4f4a7765f" name="aa87d668d16068e2ca796eba4f4a7765f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa87d668d16068e2ca796eba4f4a7765f">&#9670;&#160;</a></span>_last_capture_ts</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks._last_capture_ts</td>
         </tr>
       </table>
   </td>

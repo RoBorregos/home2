@@ -2,6 +2,7 @@ var classgpsr__task__manager_1_1GPSRTM =
 [
     [ "TaskStates", "classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html", null ],
     [ "__init__", "classgpsr__task__manager_1_1GPSRTM.html#a832d99db6d49331ce7301823d3c32d69", null ],
+    [ "_capture_command", "classgpsr__task__manager_1_1GPSRTM.html#a5010127f6b3d5f08c9e74c6373e8524f", null ],
     [ "_current_robot_xy", "classgpsr__task__manager_1_1GPSRTM.html#a67a1de333eb8f3b25278fa033f5a8d3e", null ],
     [ "_execute_interleaved_batch", "classgpsr__task__manager_1_1GPSRTM.html#af6b2fd61bf7b5bee3ac6dd7ba4ef1cb7", null ],
     [ "_execute_sequential_fallback", "classgpsr__task__manager_1_1GPSRTM.html#a8db9899803b4978d55001f5bf5c7fc1c", null ],
