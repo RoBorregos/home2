@@ -131,7 +131,7 @@ class CartesianApproachPick(PickStrategy):
     """Back off along the grasp's approach axis, then close straight in on it.
 
     The rim strategy, tilted: the arm moves to a pre-grasp behind the grasp, drives
-    straight forward along the approach axis, attaches the fitted object, closes and saves 
+    straight forward along the approach axis, attaches the fitted object, closes and saves
     the PickOutcome data like height.
     """
 
