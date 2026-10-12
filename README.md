@@ -172,6 +172,7 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 | Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
 | Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27) | HRI, Integration |
 | Jose Dominguez | [@JLDominguezM](https://github.com/JLDominguezM) | Manipulation, Integration |
+| Luis Benvenuto | [@biweep863](https://github.com/biweep863) | HRI, Integration |
 
 ## Past Contributors
 
