@@ -116,12 +116,7 @@ class ImageEmbedder:
         return self._normalize(feats) if normalize else feats
 
     def embed_text(self, texts: list[str], normalize: bool = False) -> np.ndarray:
-        """Embed text in CLIP's image space as an ``[N, D]`` float32 array.
-
-        Only CLIP models support text. Outputs are raw unless ``normalize`` is
-        true. Text exceeding CLIP's context length raises a tokenizer error.
-        Empty input returns an array with shape ``[0, D]``.
-        """
+        """Embed CLIP text as an ``[N, D]`` float32 array, optionally normalized."""
         if not self.is_clip:
             raise ValueError(
                 "embed_text requires a CLIP model (model_id='clip:<name>')"
