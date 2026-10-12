@@ -176,6 +176,10 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 | Juan Pablo Gutierrez| [@jpgtzg](https://github.com/jpgtzg) | HRI, Vision |
 | Andrés Rodríguez | [@TEC-Andres](https://github.com/TEC-Andres) | HRI |
 | Marco Galindo | [@m2galindo](https://github.com/m2galindo) | Vision, Manipulation |
+| Jasiel Aldana | [@JasielAlPa](https://github.com/JasielAlPa) | Navigation |
+| Rebecca Gómez | [@Becca-731](https://github.com/Becca-731) | Navigation, Mechanics |
+| Rodrigo Gamboa | [@Rodrogamby](https://github.com/Rodrogamby) | Navigation |
+
 ## Past Contributors
 
 | Name | GitHub | Role |
