@@ -175,7 +175,7 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 | Luis Benvenuto | [@biweep863](https://github.com/biweep863) | HRI, Integration |
 | Juan Pablo Gutierrez| [@jpgtzg](https://github.com/jpgtzg) | HRI, Vision |
 | Andrés Rodríguez | [@TEC-Andres](https://github.com/TEC-Andres) | HRI |
-
+| Marco Galindo | [@m2galindo](https://github.com/m2galindo) | Vision, Manipulation |
 ## Past Contributors
 
 | Name | GitHub | Role |
