@@ -39,6 +39,7 @@ GEMINI.md
 **/trt_cache
 vision/packages/vision_general/models/*.task
 manipulation/packages/contact_graspnet/
+manipulation/packages/mujoco_ros2_control/
 restaurant_runs/
 gpsr_runs/
 hri/benchmarks/*/results/*
