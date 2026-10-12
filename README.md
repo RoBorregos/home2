@@ -168,7 +168,7 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 | Alejandro Gonzalez | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation |
 | Emil Winkler | [@emilwinkp](https://github.com/emilwinkp) | Manipulation |
 | Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
-| Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI |
+| Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI, Navigation |
 | Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
 | Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27) | HRI, Integration |
 | Jose Dominguez | [@JLDominguezM](https://github.com/JLDominguezM) | Manipulation, Integration |
