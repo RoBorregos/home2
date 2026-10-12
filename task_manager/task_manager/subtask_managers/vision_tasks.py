@@ -278,6 +278,7 @@ class VisionTasks:
             String(data=json.dumps({"label": label, "topic": topic, "data": data}))
         )
 
+    @mockable()
     def activate_face_recognition(self):
         """Activate face recognition node."""
         if not self._face_rec_active:
@@ -285,6 +286,7 @@ class VisionTasks:
             self._face_rec_active = True
             Logger.info(self.node, "Face recognition activated")
 
+    @mockable()
     def deactivate_face_recognition(self):
         """Deactivate face recognition node."""
         if self._face_rec_active:
@@ -302,6 +304,7 @@ class VisionTasks:
         """Callback for the face list subscriber"""
         self.person_list = msg.list
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def get_track_person(self):
         """Get the track person status"""
         Logger.info(self.node, "Getting track person status")
@@ -349,6 +352,7 @@ class VisionTasks:
         else:
             return None, None
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_name"))
     def get_person_name(self, fresh_timeout: float = 0.0):
         """Get the name of the person detected.
 
@@ -461,7 +465,7 @@ class VisionTasks:
         Logger.success(self.node, "Objects detected")
         return Status.EXECUTION_SUCCESS, detections
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2, mock=False)
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("detect_person_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_person(self, timeout: float = TIMEOUT) -> int:
         """Returns true when a person is detected"""
@@ -492,9 +496,7 @@ class VisionTasks:
                 return True
         return False
 
-    @mockable(
-        return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False
-    )
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2)
     @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_query(self, prompt: str, query_person: bool = False) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -518,9 +520,7 @@ class VisionTasks:
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    @mockable(
-        return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False
-    )
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2)
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=60.0) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -544,7 +544,7 @@ class VisionTasks:
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    def _mock_moondream_async(self, callback=None, **kwargs):
+    def _mock_moondream_async(self, prompt: str = "", query_person: bool = False, callback=None):
         """Mock for moondream_query_async: fire the callback like the real path."""
         if callback:
             callback(Status.EXECUTION_SUCCESS, "a mocked person description")
@@ -675,8 +675,8 @@ class VisionTasks:
             result.people.list
         ) > 0 else PointStamped()
 
-    @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
-    @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
+    @service_check("count_by_pose_client", (Status.EXECUTION_ERROR, 300), TIMEOUT)
     def count_by_pose(self, pose: str) -> tuple[int, int]:
         """Count the number of people with the requested pose or gesture"""
 
@@ -703,7 +703,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
-    @service_check("count_person_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @service_check("count_person_client", (Status.EXECUTION_ERROR, 300), TIMEOUT)
     def count_person(self) -> tuple[int, int]:
         """Count ALL people currently in frame (no pose/gesture/clothes filter)."""
 
@@ -727,7 +727,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
-    @service_check("count_by_gesture_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @service_check("count_by_gesture_client", (Status.EXECUTION_ERROR, 300), TIMEOUT)
     def count_by_gesture(self, gesture: str) -> tuple[int, int]:
         """Count the number of people with the requested gesture"""
 
@@ -755,7 +755,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
-    @service_check("count_by_color_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @service_check("count_by_color_client", (Status.EXECUTION_ERROR, 300), TIMEOUT)
     def count_by_color(self, color: str, clothing: str) -> tuple[int, int]:
         """Count the number of people with the requested color and clothing"""
 
@@ -784,7 +784,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""))
-    @service_check("find_person_info_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @service_check("find_person_info_client", (Status.EXECUTION_ERROR, ""), TIMEOUT)
     def find_person_info(self, type_requested: str) -> tuple[int, str]:
         """Get the pose or gesture of the person in the image"""
 
@@ -926,6 +926,7 @@ class VisionTasks:
         )
         return Status.EXECUTION_SUCCESS, result.customer_tables
 
+    @mockable()
     def camera_upside_down(self, flip):
         """Publish the camera rotation on CAMERA_ROTATION_TOPIC.
 
