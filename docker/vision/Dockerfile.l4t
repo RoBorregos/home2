@@ -21,6 +21,11 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 # which requires internet access we won't have at competition time.
 ENV YOLO_AUTOINSTALL=false
 
+# Keep the same CLIP implementation as the CPU/CUDA vision images. The base
+# image's pip constraints preserve its Jetson torch/torchvision versions.
+COPY vision/requirements/clip.txt /tmp/clip-requirements.txt
+RUN pip install -r /tmp/clip-requirements.txt
+
 # Python requirements (pins that l4t_base already provides are skipped).
 # The second file is installed with --no-deps so these packages can't replace
 # the base's torch, numpy and OpenCV builds.
