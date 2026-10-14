@@ -1,5 +1,9 @@
 var NAVTREEINDEX52 =
 {
+"structvamp_1_1planning_1_1ConstantNeighborParams.html#a266f4302bc78633dada7f086b2219632":[41,0,172,5,5,1],
+"structvamp_1_1planning_1_1ConstantNeighborParams.html#a51fc63d01539aef169e96c8efd2a6198":[42,0,102,3,5,2],
+"structvamp_1_1planning_1_1ConstantNeighborParams.html#a51fc63d01539aef169e96c8efd2a6198":[41,0,172,5,5,2],
+"structvamp_1_1planning_1_1FCIT.html":[41,0,172,5,6],
 "structvamp_1_1planning_1_1FCIT.html":[42,0,102,3,6],
 "structvamp_1_1planning_1_1FCIT.html#a1e223779a24a9867a39355a7a92e8801":[42,0,102,3,6,0],
 "structvamp_1_1planning_1_1FCIT.html#a1e223779a24a9867a39355a7a92e8801":[41,0,172,5,6,0],
@@ -245,9 +249,5 @@ var NAVTREEINDEX52 =
 "structvamp_1_1planning_1_1RoadmapSettings.html#a0479725d9c189fecefa7408a65bd4ae5":[41,0,172,5,27,7],
 "structvamp_1_1planning_1_1RoadmapSettings.html#a39ebc436b392a8ce21ffe4237afac71a":[42,0,102,3,27,0],
 "structvamp_1_1planning_1_1RoadmapSettings.html#a39ebc436b392a8ce21ffe4237afac71a":[41,0,172,5,27,0],
-"structvamp_1_1planning_1_1RoadmapSettings.html#a479d1265e05db21c3c58754f1d8d8af8":[42,0,102,3,27,6],
-"structvamp_1_1planning_1_1RoadmapSettings.html#a479d1265e05db21c3c58754f1d8d8af8":[41,0,172,5,27,6],
-"structvamp_1_1planning_1_1RoadmapSettings.html#a52f5d9ad08b5e48976c813394d52f75f":[41,0,172,5,27,5],
-"structvamp_1_1planning_1_1RoadmapSettings.html#a52f5d9ad08b5e48976c813394d52f75f":[42,0,102,3,27,5],
-"structvamp_1_1planning_1_1RoadmapSettings.html#a5da03bb69145f91bfaac3845e03e7533":[41,0,172,5,27,1]
+"structvamp_1_1planning_1_1RoadmapSettings.html#a479d1265e05db21c3c58754f1d8d8af8":[42,0,102,3,27,6]
 };

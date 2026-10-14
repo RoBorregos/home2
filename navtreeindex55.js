@@ -1,5 +1,9 @@
 var NAVTREEINDEX55 =
 {
+"test__vision__manager_8py.html#ad094f13a85560e6fe2de1b8ca7308f93":[43,0,6,1,1,18,23],
+"test__vision__manager_8py.html#ad75e75c8402f819461da26e3619d4f2e":[43,0,6,1,1,18,33],
+"test__vision__manager_8py.html#ae2b0ce7c71775a2ca3d5b3adede9eac0":[43,0,6,1,1,18,27],
+"test__vision__manager_8py.html#aebbe063290ad8b35ea232dba384a5709":[43,0,6,1,1,18,15],
 "test__vision__manager_8py.html#aefaf4e76b7a27ce34e660b4d3e670319":[43,0,6,1,1,18,9],
 "test__vision__manager_8py.html#af1f55b9234c584a0b4170e8e7de72061":[43,0,6,1,1,18,25],
 "tf__utils_8py.html":[43,0,3,0,1,1,1,6],
@@ -245,9 +249,5 @@ var NAVTREEINDEX55 =
 "vision__constants_8py.html#acda94204316d127125cb8c635a12a998":[43,0,1,1,7,0],
 "vision__constants_8py.html#acf6e486b4cc84dc5cfa930625c958b0c":[43,0,1,1,7,57],
 "vision__constants_8py.html#ad7c0b6b8ade68dd8360358e7771bafe9":[43,0,1,1,7,70],
-"vision__constants_8py.html#adb75a39014b3fd92e84a9b62fc570e3c":[43,0,1,1,7,11],
-"vision__constants_8py.html#ade2cfd7493db8c3ca8f8d4a38f172db7":[43,0,1,1,7,68],
-"vision__constants_8py.html#ae81858853172505ec9962a0534d48b01":[43,0,1,1,7,8],
-"vision__constants_8py.html#ae997a2f4f938ff186bcfb6dda87eb9f2":[43,0,1,1,7,38],
-"vision__constants_8py.html#af3422ede0e186367f2078ca2c576e108":[43,0,1,1,7,66]
+"vision__constants_8py.html#adb75a39014b3fd92e84a9b62fc570e3c":[43,0,1,1,7,11]
 };

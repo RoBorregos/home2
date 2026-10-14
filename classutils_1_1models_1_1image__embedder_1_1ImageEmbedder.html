@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('classutils_1_1models_1_1image__embedde
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classutils_1_1models_1_1image__embedder_1_1ImageEmbedder-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">utils.models.image_embedder.ImageEmbedder Class Reference</div></div>
@@ -106,8 +107,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5488e1b31e815d5adbf1e8f494190a5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8048e0ab794ade33629e2c6ae799e078"><td class="memItemLeft" align="right" valign="top">&quot;ImageEmbedder&quot;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html#a8048e0ab794ade33629e2c6ae799e078">load</a> (self)</td></tr>
 <tr class="separator:a8048e0ab794ade33629e2c6ae799e078"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa48f72495b6505fd67deb2b82c5f9848"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html#aa48f72495b6505fd67deb2b82c5f9848">embed_batch</a> (self, list crops, int chunk_size=<a class="el" href="namespaceutils_1_1models_1_1image__embedder.html#a889031d37a67aa5afc360d5e0b6ec621">TRT_MAX_BATCH</a>)</td></tr>
-<tr class="separator:aa48f72495b6505fd67deb2b82c5f9848"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c41f25540a4ebff6b3d584133043604"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html#a5c41f25540a4ebff6b3d584133043604">dim</a> (self)</td></tr>
+<tr class="separator:a5c41f25540a4ebff6b3d584133043604"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45d9276440f60c0893278a4bec5bcca8"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html#a45d9276440f60c0893278a4bec5bcca8">embed_batch</a> (self, list crops, int chunk_size=<a class="el" href="namespaceutils_1_1models_1_1image__embedder.html#a889031d37a67aa5afc360d5e0b6ec621">TRT_MAX_BATCH</a>, bool normalize=False)</td></tr>
+<tr class="separator:a45d9276440f60c0893278a4bec5bcca8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b97aec5cb4f5d5e915ff734a34f27c7"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html#a5b97aec5cb4f5d5e915ff734a34f27c7">embed_text</a> (self, list[str] texts, bool normalize=False)</td></tr>
+<tr class="separator:a5b97aec5cb4f5d5e915ff734a34f27c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -139,6 +144,11 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a786b7baf1b5d29231bf49b806bab3fdc"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html#a786b7baf1b5d29231bf49b806bab3fdc">_load_trt_session</a> (self)</td></tr>
 <tr class="separator:a786b7baf1b5d29231bf49b806bab3fdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-methods" name="pro-static-methods"></a>
+Static Protected Member Functions</h2></td></tr>
+<tr class="memitem:ad8786800b5e20ce33cc035693ab047d1"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html#ad8786800b5e20ce33cc035693ab047d1">_normalize</a> (np.ndarray feats)</td></tr>
+<tr class="separator:ad8786800b5e20ce33cc035693ab047d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a4c2fd6edb9d863acca4765c8f23d432f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html#a4c2fd6edb9d863acca4765c8f23d432f">_model</a></td></tr>
@@ -157,7 +167,7 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a2ed8888d4b7f961b35cc694b1e3b58cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Embeds PIL crops into feature vectors with a frozen model.
+<div class="textblock"><pre class="fragment">Embeds PIL crops, and CLIP text queries, into feature vectors.
 
 Runs through TensorRT (onnxruntime) when ``use_trt`` is set and a GPU provider
 exists, otherwise PyTorch. CLIP has no TensorRT path.
@@ -394,6 +404,32 @@ Args:
 
 </div>
 </div>
+<a id="ad8786800b5e20ce33cc035693ab047d1" name="ad8786800b5e20ce33cc035693ab047d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8786800b5e20ce33cc035693ab047d1">&#9670;&#160;</a></span>_normalize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> np.ndarray utils.models.image_embedder.ImageEmbedder._normalize </td>
+          <td>(</td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>feats</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a9d824ebb9a204876275306ae35707e07" name="a9d824ebb9a204876275306ae35707e07"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9d824ebb9a204876275306ae35707e07">&#9670;&#160;</a></span>_onnx_path()</h2>
 
@@ -446,8 +482,26 @@ Args:
 
 </div>
 </div>
-<a id="aa48f72495b6505fd67deb2b82c5f9848" name="aa48f72495b6505fd67deb2b82c5f9848"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa48f72495b6505fd67deb2b82c5f9848">&#9670;&#160;</a></span>embed_batch()</h2>
+<a id="a5c41f25540a4ebff6b3d584133043604" name="a5c41f25540a4ebff6b3d584133043604"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c41f25540a4ebff6b3d584133043604">&#9670;&#160;</a></span>dim()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> int utils.models.image_embedder.ImageEmbedder.dim </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Embedding dimension; loads the model on first access if needed.</pre> 
+</div>
+</div>
+<a id="a45d9276440f60c0893278a4bec5bcca8" name="a45d9276440f60c0893278a4bec5bcca8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45d9276440f60c0893278a4bec5bcca8">&#9670;&#160;</a></span>embed_batch()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -468,7 +522,13 @@ Args:
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int &#160;</td>
-          <td class="paramname"><em>chunk_size</em> = <code><a class="el" href="namespaceutils_1_1models_1_1image__embedder.html#a889031d37a67aa5afc360d5e0b6ec621">TRT_MAX_BATCH</a></code>&#160;</td>
+          <td class="paramname"><em>chunk_size</em> = <code><a class="el" href="namespaceutils_1_1models_1_1image__embedder.html#a889031d37a67aa5afc360d5e0b6ec621">TRT_MAX_BATCH</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>normalize</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -480,14 +540,48 @@ Args:
 <pre class="fragment">Embeds RGB PIL crops.
 
 Args:
-    crops: Non-empty list of PIL images.
+    crops: List of PIL images; empty input returns ``[0, dim]``.
     chunk_size: Crops per forward pass, so a large batch does not
         allocate one huge tensor.
+    normalize: Return unit-length vectors (zero vectors stay zero).
 
 Returns:
-    ``[N, D]`` float32 array, not normalized: callers cache the raw
-    vectors before choosing a threshold strategy.
+    ``[N, D]`` float32 array. Raw by default, preserving gallery caches.
 </pre> 
+</div>
+</div>
+<a id="a5b97aec5cb4f5d5e915ff734a34f27c7" name="a5b97aec5cb4f5d5e915ff734a34f27c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b97aec5cb4f5d5e915ff734a34f27c7">&#9670;&#160;</a></span>embed_text()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> np.ndarray utils.models.image_embedder.ImageEmbedder.embed_text </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[str]&#160;</td>
+          <td class="paramname"><em>texts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>normalize</em> = <code>False</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Embed CLIP text as an ``[N, D]`` float32 array, optionally normalized.</pre> 
 </div>
 </div>
 <a id="a8048e0ab794ade33629e2c6ae799e078" name="a8048e0ab794ade33629e2c6ae799e078"></a>
