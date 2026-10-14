@@ -46,7 +46,7 @@ install(PROGRAMS ${MISC_NODES}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch scripts
+install(DIRECTORY launch scripts config
   DESTINATION share/${PROJECT_NAME})
 
 # Install python config

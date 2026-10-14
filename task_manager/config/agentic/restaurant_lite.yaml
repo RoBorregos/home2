@@ -1,0 +1,73 @@
+# Restaurant (one table cycle) for the agentic task manager.
+# Points are approximations of the score sheet — replace with the official
+# values of the current rulebook before using the numbers for decisions.
+name: restaurant_lite
+time_limit_s: 420
+persona: >
+  You are FRIDA (Friendly Robotic Interactive Domestic Assistant) from RoBorregos,
+  working as a waiter robot. You are polite, calm and a little playful.
+rules: |
+  - Serve the table that called: take the order, tell the barman, bring every item.
+  - Each item delivered by the robot itself scores full points; if a human hands the
+    object to the robot (deus ex machina) it scores half.
+  - The whole task has a hard time limit; unfinished items score nothing.
+  - Errors that mention "out of arm workspace" or "not detected" do not go away by retrying.
+  - Slipped grasps, blocked paths, place collisions and speech not understood are transient:
+    they usually succeed on the next try.
+permanent_errors:
+  - out of arm workspace
+  - not detected
+steps:
+  - id: wait_start
+    skill: wait_start_button
+    critical: true
+    max_attempts: 100
+  - id: greet
+    skill: say
+    args: {text: "Hello, I am Frida, your waiter today. Raise your hand to order!"}
+  - id: go_table
+    skill: navigate
+    args: {location: customer_table}
+    points: 50
+    max_attempts: 3
+  - id: take_order
+    skill: take_order
+    points: 100
+    max_attempts: 3
+    fallbacks: [ask_to_type_order]
+    fallback_points: 50
+    critical: true
+  - id: go_bar
+    skill: navigate
+    args: {location: bar}
+    max_attempts: 3
+    skippable: false
+  - id: tell_barman
+    skill: tell_barman
+    points: 50
+  - foreach: orders
+    as: item
+    steps:
+      - id: pick
+        skill: pick
+        args: {object: "{item}"}
+        points: 100
+        max_attempts: 3
+        fallbacks: [deus_pick]
+        fallback_points: 50
+      - id: deliver
+        skill: navigate
+        args: {location: customer_table}
+        max_attempts: 3
+        skippable: false  # holding the item: never skip the trip
+      - id: place
+        skill: place
+        points: 50
+        max_attempts: 3
+        fallbacks: [deus_place]
+        fallback_points: 25
+      - id: back_to_bar
+        skill: navigate
+        args: {location: bar}
+        max_attempts: 3
+        skippable: false

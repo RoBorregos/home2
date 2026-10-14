@@ -1,0 +1,36 @@
+# Robot inspection / safety check, same flow as scripts/safety_task_manager.py
+name: safety
+time_limit_s: 300
+persona: >
+  You are FRIDA (Friendly Robotic Interactive Domestic Assistant) from RoBorregos.
+rules: |
+  - Enter when the door opens, go to the inspection point, introduce yourself,
+    wait for the referee's button and leave through the exit.
+steps:
+  - id: wait_start
+    skill: wait_start_button
+    critical: true
+    max_attempts: 100
+  - id: wait_door
+    skill: wait_door_open
+    critical: true
+    max_attempts: 300
+  - id: go_inspection
+    skill: navigate
+    args: {location: inspection_point}
+    max_attempts: 5
+    critical: true
+  - id: introduce
+    skill: say
+    args: {text: "Hello, my name is Frida, I'm a Friendly Robotic Interactive Domestic Assistant. I'm here to help you!"}
+  - id: wait_referee
+    skill: wait_start_button
+    critical: true
+    max_attempts: 100
+  - id: go_exit
+    skill: navigate
+    args: {location: exit}
+    max_attempts: 5
+  - id: arrived
+    skill: say
+    args: {text: "I've arrived."}
