@@ -21,32 +21,13 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 # which requires internet access we won't have at competition time.
 ENV YOLO_AUTOINSTALL=false
 
-RUN pip install \
-    cmake==3.25.2 \
-    lap \
-    tqdm \
-    pillow \
-    timm \
-    pyyaml \
-    "onnxslim>=0.1.71" \
-    grpcio==1.71.0 \
-    protobuf==5.29.1 \
-    matplotlib \
-    polars \
-    psutil \
-    requests \
-    scikit-image \
-    onnx \
-    ultralytics-thop \
-    absl-py \
-    attrs \
-    flatbuffers \
-    sounddevice \
-    sentencepiece && \
-    pip install --no-deps \
-    insightface==1.0.1 \
-    ultralytics==8.4.19 \
-    mediapipe==0.10.18
+# Python requirements (pins that l4t_base already provides are skipped).
+# The second file is installed with --no-deps so these packages can't replace
+# the base's torch, numpy and OpenCV builds.
+COPY vision/requirements /tmp/requirements
+RUN pip-install-reqs /tmp/requirements/l4t.txt && \
+    pip-install-reqs /tmp/requirements/l4t-nodeps.txt -- --no-deps && \
+    rm -rf /tmp/requirements
 
 WORKDIR /workspace
 
