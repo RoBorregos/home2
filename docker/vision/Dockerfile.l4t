@@ -13,7 +13,7 @@ ENV OPENBLAS_CORETYPE=ARMV8
 # TensorRT python and CycloneDDS/iceoryx come from l4t_base.
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
-    curl libjpeg-dev \
+    curl libjpeg-dev libportaudio2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Disable Ultralytics' runtime auto-install of missing packages (e.g. tensorrt,
