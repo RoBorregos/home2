@@ -17,9 +17,9 @@ ask_for_model() {
 }
 
 echo "Which models do you want to download?"
-echo "  1) qwen3-4b         (Qwen3-4B Q4_K_M GGUF, for llama.cpp)"
+echo "  1) qwen3.5-4b       (Qwen3.5-4B UD-Q4_K_XL GGUF, for llama.cpp) [production]"
 echo "  2) rbrgs            (fine-tuned command interpreter GGUF, for llama.cpp)"
-echo "  3) qwen3            (Qwen3 via Ollama)"
+echo "  3) qwen3.5          (Qwen3.5-4B via Ollama)"
 echo "  4) nomic-embed-text (embeddings via Ollama)"
 echo "  5) DeepFilterNet3"
 echo "  6) ei-door          (Door detection)"
@@ -40,19 +40,27 @@ download_gguf() {
     local name="$1"
     local url="$2"
     local dest="$3"
-    if [ ! -f "$dest" ]; then
+    if [ ! -s "$dest" ]; then
         echo "Downloading $name..."
-        curl -L "$url" -o "$dest"
+        partial="${dest}.partial"
+        rm -f "$partial"
+        if curl --fail --location --retry 3 "$url" -o "$partial"; then
+            mv "$partial" "$dest"
+        else
+            rm -f "$partial"
+            echo "Error: failed to download $name."
+            return 1
+        fi
     else
         echo "$name already exists. Skipping."
     fi
 }
 
 # ── GGUFs for llama.cpp ───────────────────────────────────────────────────────
-if ask_for_model qwen3-4b 1; then
-    download_gguf "qwen3-4b" \
-        "https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf" \
-        "$SCRIPT_DIR/qwen3-4b.Q4_K_M.gguf"
+if ask_for_model qwen3.5-4b 1; then
+    download_gguf "qwen3.5-4b" \
+        "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-UD-Q4_K_XL.gguf" \
+        "$SCRIPT_DIR/Qwen3.5-4B-UD-Q4_K_XL.gguf"
 fi
 
 if ask_for_model rbrgs 2; then
@@ -192,32 +200,44 @@ if ask_for_model ei-kws 7; then
     download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338" || FAILED_MODELS="$FAILED_MODELS ei-kws"
 fi
 
-if ask_for_model qwen3 3 || ask_for_model nomic-embed-text 4; then
-    # Detect available image
-    if docker images | grep -q "dustynv/ollama"; then
-        IMAGE="dustynv/ollama:0.6.8-r36.4"
-        COMMAND="ollama serve"
-    elif docker images | grep -q "ollama/ollama"; then
-        IMAGE="ollama/ollama"
-        COMMAND=""
-    else
-        echo "Error: No compatible Ollama image found. Pulling the default image..."
-        docker pull ollama/ollama:latest
-        IMAGE="ollama/ollama"
-        COMMAND=""
+if ask_for_model qwen3.5 3 || ask_for_model nomic-embed-text 4; then
+    OLLAMA_IMAGE="${OLLAMA_IMAGE:-ollama/ollama:0.34.2}"
+
+    echo "Running Ollama image: $OLLAMA_IMAGE"
+
+    if ! CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$SCRIPT_DIR":/ollama -e OLLAMA_MODELS=/ollama "$OLLAMA_IMAGE"); then
+        echo "Error: failed to start the Ollama download container."
+        exit 1
     fi
 
-    echo "Running: docker run -d --rm --runtime=nvidia -v \"$SCRIPT_DIR\":/ollama -e OLLAMA_MODELS=/ollama $IMAGE $COMMAND"
+    ATTEMPT=0
+    until docker exec "$CONTAINER_ID" ollama list >/dev/null 2>&1; do
+        ATTEMPT=$((ATTEMPT + 1))
+        if [ "$ATTEMPT" -ge 30 ]; then
+            echo "Error: Ollama did not become ready."
+            docker stop "$CONTAINER_ID" >/dev/null
+            exit 1
+        fi
+        sleep 2
+    done
 
-    # Don't quote $COMMAND to allow for multiple word commands
-    CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$SCRIPT_DIR":/ollama -e OLLAMA_MODELS=/ollama "$IMAGE" $COMMAND)
-
-    if ask_for_model qwen3 3; then
-        docker exec "$CONTAINER_ID" ollama pull qwen3
+    if ask_for_model qwen3.5 3; then
+        if ! docker exec "$CONTAINER_ID" ollama pull qwen3.5:4b; then
+            docker stop "$CONTAINER_ID" >/dev/null
+            exit 1
+        fi
+        # The ROS nodes request this alias; Ollama needs the tag to exist.
+        if ! docker exec "$CONTAINER_ID" ollama cp qwen3.5:4b frida-llm; then
+            docker stop "$CONTAINER_ID" >/dev/null
+            exit 1
+        fi
     fi
 
     if ask_for_model nomic-embed-text 4; then
-        docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
+        if ! docker exec "$CONTAINER_ID" ollama pull nomic-embed-text; then
+            docker stop "$CONTAINER_ID" >/dev/null
+            exit 1
+        fi
     fi
 
     docker stop "$CONTAINER_ID"

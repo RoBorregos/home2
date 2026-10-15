@@ -1,0 +1,75 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Enabled: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot_description
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: false
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Camera cloud
+      Enabled: true
+      Topic:
+        Value: /point_cloud
+        Reliability Policy: Best Effort
+      Size (m): 0.01
+      Style: Points
+      Size (Pixels): 2
+      Color Transformer: AxisColor
+      Axis: Z
+    - Class: rviz_default_plugins/Image
+      Name: Detections
+      Enabled: true
+      Topic:
+        Value: /vision/detections_image
+    - Class: moveit_rviz_plugin/PlanningScene
+      Name: PlanningScene
+      Enabled: true
+      Planning Scene Topic: /monitored_planning_scene
+      Robot Description: robot_description
+      Scene Geometry:
+        Scene Alpha: 0.6
+        Show Scene Geometry: true
+      Scene Robot:
+        Show Robot Visual: false
+        Show Robot Collision: false
+    - Class: moveit_rviz_plugin/Trajectory
+      Name: Planned trajectory
+      Enabled: true
+      Robot Description: robot_description
+      Trajectory Topic: /display_planned_path
+      Loop Animation: false
+      State Display Time: 0.05 s
+  Global Options:
+    Fixed Frame: base_link
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 2.6
+      Focal Point:
+        X: 0.3
+        Y: 0.2
+        Z: 0.6
+      Pitch: 0.55
+      Yaw: 3.6
+      Target Frame: <Fixed Frame>
+Window Geometry:
+  Width: 1400
+  Height: 900

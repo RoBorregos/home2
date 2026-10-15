@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="controllers_file" default="$(find frida_gz_sim)/config/gz_controllers.yaml"/>
+  <xacro:arg name="image_width" default="640"/>
+  <xacro:arg name="image_height" default="360"/>
+  <xacro:arg name="camera_rate" default="10"/>
+  <!-- Mobile base: drop the world anchor and add the gz drive, odometry and lidars -->
+  <xacro:arg name="mobile_base" default="false"/>
+  <xacro:arg name="cmd_vel_topic" default="/sim/cmd_vel"/>
+  <xacro:arg name="lidar_rate" default="10"/>
+  <xacro:property name="mobile_base" value="$(arg mobile_base)"/>
+
+  <!-- Real robot description; pass ros2_control_plugin:=gz_ros2_control/GazeboSimSystem -->
+  <xacro:include filename="$(find frida_description)/urdf/omnibase/FRIDA_Real.urdf.xacro"/>
+
+  <!-- Static base for the manipulation worlds; the nav worlds drive base_link instead -->
+  <xacro:unless value="${mobile_base}">
+    <link name="world"/>
+    <joint name="world_to_base_link" type="fixed">
+      <parent link="world"/>
+      <child link="base_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:unless>
+
+  <xacro:if value="${mobile_base}">
+    <!-- Holonomic drive: gz sets the base velocity directly, like the mecanum base does.
+         The wheel_FL/FR/RL/RR joints from FRIDA_Real.urdf.xacro are fixed (cosmetic
+         only) - there is no per-wheel actuation, so this does not reproduce wheel-level
+         dynamics or the 3-wheel limp behavior described in nav2_omni_limp.yaml. -->
+    <gazebo>
+      <plugin filename="gz-sim-velocity-control-system" name="gz::sim::systems::VelocityControl">
+        <topic>$(arg cmd_vel_topic)</topic>
+      </plugin>
+      <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+        <odom_frame>odom</odom_frame>
+        <robot_base_frame>base_link</robot_base_frame>
+        <odom_topic>/sim/odom</odom_topic>
+        <tf_topic>/sim/odom_tf</tf_topic>
+        <odom_publish_frequency>50</odom_publish_frequency>
+        <dimensions>2</dimensions>
+      </plugin>
+    </gazebo>
+    <!-- The base is velocity-driven, so gravity would only fight the controller -->
+    <gazebo reference="base_link">
+      <gravity>false</gravity>
+    </gazebo>
+
+    <!-- RPLIDAR C1 pair. Each one is blind over the ~90 deg wedge its own chassis
+         covers, the same wedge the real driver drops with ignore_array. -->
+    <xacro:macro name="omni_lidar" params="link topic">
+      <gazebo reference="${link}">
+        <sensor name="${link}_scan" type="gpu_lidar">
+          <always_on>true</always_on>
+          <update_rate>$(arg lidar_rate)</update_rate>
+          <topic>${topic}</topic>
+          <gz_frame_id>${link}</gz_frame_id>
+          <lidar>
+            <scan>
+              <horizontal>
+                <samples>370</samples>
+                <resolution>1</resolution>
+                <min_angle>1.6057</min_angle>
+                <max_angle>6.2483</max_angle>
+              </horizontal>
+            </scan>
+            <range>
+              <min>0.20</min>
+              <max>12.0</max>
+              <resolution>0.01</resolution>
+            </range>
+            <noise>
+              <type>gaussian</type>
+              <mean>0.0</mean>
+              <stddev>0.01</stddev>
+            </noise>
+          </lidar>
+        </sensor>
+      </gazebo>
+    </xacro:macro>
+    <xacro:omni_lidar link="lidar_front" topic="scan_front"/>
+    <xacro:omni_lidar link="lidar_rear" topic="scan_rear"/>
+  </xacro:if>
+
+  <!-- Gripper fingers, both commanded directly (no mimic in sim) -->
+  <ros2_control name="FridaGripperSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <joint name="rightfinger">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="leftfinger">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <gazebo>
+    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters>$(arg controllers_file)</parameters>
+    </plugin>
+  </gazebo>
+
+  <!-- Firmware-like gravity compensation on the arm -->
+  <xacro:macro name="no_gravity" params="link">
+    <gazebo reference="${link}">
+      <gravity>false</gravity>
+    </gazebo>
+  </xacro:macro>
+  <xacro:no_gravity link="link1"/>
+  <xacro:no_gravity link="link2"/>
+  <xacro:no_gravity link="link3"/>
+  <xacro:no_gravity link="link4"/>
+  <xacro:no_gravity link="link5"/>
+  <xacro:no_gravity link="link6"/>
+
+  <!-- Grippy finger pads -->
+  <xacro:macro name="finger_pad" params="link">
+    <gazebo reference="${link}">
+      <gravity>false</gravity>
+      <mu1>4.0</mu1>
+      <mu2>4.0</mu2>
+      <kp>1000000.0</kp>
+      <kd>100.0</kd>
+      <minDepth>0.001</minDepth>
+      <maxVel>0.1</maxVel>
+    </gazebo>
+  </xacro:macro>
+  <xacro:finger_pad link="right_finger"/>
+  <xacro:finger_pad link="left_finger"/>
+
+  <!-- ZED2 frames normally published by the zed_wrapper -->
+  <link name="zed_camera_center"/>
+  <joint name="zed_camera_center_joint" type="fixed">
+    <parent link="zed_camera_link"/>
+    <child link="zed_camera_center"/>
+    <origin xyz="0 0 0.015" rpy="0 0.05 0"/>
+  </joint>
+  <link name="zed_left_camera_frame"/>
+  <joint name="zed_left_camera_joint" type="fixed">
+    <parent link="zed_camera_center"/>
+    <child link="zed_left_camera_frame"/>
+    <origin xyz="-0.01 0.06 0" rpy="0 0 0"/>
+  </joint>
+  <link name="zed_left_camera_frame_optical"/>
+  <joint name="zed_left_camera_optical_joint" type="fixed">
+    <parent link="zed_left_camera_frame"/>
+    <child link="zed_left_camera_frame_optical"/>
+    <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+  </joint>
+  <link name="zed_right_camera_frame"/>
+  <joint name="zed_right_camera_joint" type="fixed">
+    <parent link="zed_camera_center"/>
+    <child link="zed_right_camera_frame"/>
+    <origin xyz="-0.01 -0.06 0" rpy="0 0 0"/>
+  </joint>
+  <link name="zed_right_camera_frame_optical"/>
+  <joint name="zed_right_camera_optical_joint" type="fixed">
+    <parent link="zed_right_camera_frame"/>
+    <child link="zed_right_camera_frame_optical"/>
+    <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+  </joint>
+
+  <!-- Simulated ZED left RGB-D stream (looks along +X of the left camera frame) -->
+  <gazebo reference="zed_left_camera_frame">
+    <sensor name="zed_rgbd" type="rgbd_camera">
+      <always_on>true</always_on>
+      <update_rate>$(arg camera_rate)</update_rate>
+      <topic>zed_rgbd</topic>
+      <gz_frame_id>zed_left_camera_frame_optical</gz_frame_id>
+      <camera>
+        <horizontal_fov>1.76</horizontal_fov>
+        <image>
+          <width>$(arg image_width)</width>
+          <height>$(arg image_height)</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>10.0</far>
+        </clip>
+        <depth_camera>
+          <clip>
+            <near>0.2</near>
+            <far>10.0</far>
+          </clip>
+        </depth_camera>
+      </camera>
+    </sensor>
+  </gazebo>
+</robot>

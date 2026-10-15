@@ -42,13 +42,6 @@ def _tps_cell(r: dict) -> str:
     return _fmt(r.get("p50_tokens_per_s"), ".1f")
 
 
-def _json_cell(r: dict) -> str:
-    rate = r.get("json_fail_rate")
-    if rate is None:
-        return "—"
-    return f"{rate * 100:.0f}% ({r.get('json_checked', 0) - r.get('json_ok', 0)}/{r.get('json_checked', 0)})"
-
-
 def print_model_table(model: str, task_results: dict[str, dict]) -> None:
     if _RICH:
         _print_rich(model, task_results)
@@ -65,7 +58,6 @@ def _print_rich(model: str, task_results: dict) -> None:
     t.add_column("TTFT p50", justify="right")
     t.add_column("TTFT p95", justify="right")
     t.add_column("tok/s p50 (end-to-end)", justify="right")
-    t.add_column("JSON fail", justify="right")
     t.add_column("Schema", justify="left")
 
     degraded = False
@@ -77,8 +69,6 @@ def _print_rich(model: str, task_results: dict) -> None:
             if not total
             else ("green" if pct >= 80 else ("yellow" if pct >= 60 else "red"))
         )
-        rate = r.get("json_fail_rate")
-        json_color = "green" if rate == 0 else ("red" if rate else "white")
         mode = r.get("schema_mode", "—")
         if mode and "json_object" in mode:
             degraded = True
@@ -91,7 +81,6 @@ def _print_rich(model: str, task_results: dict) -> None:
             _fmt(r.get("p50_ttft_ms")),
             _fmt(r.get("p95_ttft_ms")),
             _tps_cell(r),
-            f"[{json_color}]{_json_cell(r)}[/{json_color}]",
             mode,
         )
 
@@ -134,7 +123,7 @@ def _print_plain(model: str, task_results: dict) -> None:
     print(f"\n=== Model: {model} ===")
     header = (
         f"{'Task':<22} {'Cases':>6} {'Accuracy':>14} {'TTFTp50':>9} {'TTFTp95':>9}"
-        f" {'tok/s (end-to-end)':>18} {'JSONfail':>14} {'Schema':<13}"
+        f" {'tok/s (end-to-end)':>18} {'Schema':<13}"
     )
     print(header)
     print("-" * len(header))
@@ -147,7 +136,7 @@ def _print_plain(model: str, task_results: dict) -> None:
         print(
             f"{task_name:<22} {total:>6} {acc:>14} {_fmt(r.get('p50_ttft_ms')):>9}"
             f" {_fmt(r.get('p95_ttft_ms')):>9} {_tps_cell(r):>18}"
-            f" {_json_cell(r):>14} {r.get('schema_mode', '—'):<13}"
+            f" {r.get('schema_mode', '—'):<13}"
         )
     if usage_missing:
         print(f"Note: {_USAGE_NOTE}")
@@ -171,7 +160,6 @@ def print_comparison_table(all_results: dict[str, dict[str, dict]]) -> None:
         ),
         ("TTFT p50", lambda r: _fmt(r.get("p50_ttft_ms"))),
         ("tok/s p50 (end-to-end)", _tps_cell),
-        ("JSON fail", _json_cell),
     ]
 
     if _RICH:
@@ -233,9 +221,6 @@ def save_json(all_results: dict, output_dir: str, config: Optional[dict] = None)
                 "p50_decode_tokens_per_s": r.get("p50_decode_tokens_per_s"),
                 "usage_missing": r.get("usage_missing", False),
                 "schema_mode": r.get("schema_mode"),
-                "json_checked": r.get("json_checked"),
-                "json_ok": r.get("json_ok"),
-                "json_fail_rate": r.get("json_fail_rate"),
                 "runs_ok": r.get("runs_ok"),
                 "runs_requested": r.get("runs_requested"),
                 "errors": r.get("errors"),
