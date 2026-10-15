@@ -86,8 +86,6 @@ class ScheduleTM(ExperimentTM):
     def _on_display_answer(self, msg: String):
         self.display_answer = msg.data.strip()
 
-    # ------------------------------------------------------------ identify
-
     def _ask(self, question: str, prompt: str, hotwords: str = "") -> str:
         self.say(question)
         status, text, _ = self.hri.hear(initial_prompt=prompt, hotwords=hotwords)
@@ -210,8 +208,6 @@ class ScheduleTM(ExperimentTM):
                 self.say("Sorry, I couldn't open your record. Let's try again.")
         return None
 
-    # ------------------------------------------------------------- answers
-
     def _classify(self, question: str) -> tuple[str | None, str]:
         intent = classify_keywords(question)
         if intent:
@@ -288,8 +284,6 @@ class ScheduleTM(ExperimentTM):
             names = ", ".join(others[:-1]) + (" and " if len(others) > 1 else "") + others[-1]
             return f"In team {team['name']} you are with {names}."
         return "Sorry, I can only help with your interview, your rounds and your team."
-
-    # ------------------------------------------------------------ dialogue
 
     def dialogue(self) -> str:
         self.say(

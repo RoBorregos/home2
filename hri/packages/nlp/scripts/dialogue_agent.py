@@ -181,8 +181,6 @@ class DialogueAgent(Node):
         self.create_service(AgentTurn, service, self.turn)
         self.get_logger().info(f"DialogueAgent ready on {service}")
 
-    # ----------------------------------------------------------------- tools
-
     def _run_tool(self, name: str, args: dict, offline: bool) -> dict:
         schedule = self.sources[offline]
         if name == "search_candidate":
@@ -231,8 +229,6 @@ class DialogueAgent(Node):
         result["_source"] = schedule.last_source
         return result
 
-    # --------------------------------------------------------------- history
-
     def _history(self, session_id: str, reset: bool) -> list:
         if reset or session_id not in self.sessions:
             now = datetime.now(pytz.timezone(TIMEZONE)).strftime("%A, %B %d, %I:%M %p")
@@ -262,8 +258,6 @@ class DialogueAgent(Node):
         if allow_tools:
             kwargs["tools"] = TOOLS
         return self.client.chat.completions.create(**kwargs).choices[0].message
-
-    # ------------------------------------------------------------------ turn
 
     def turn(self, request, response):
         messages = self._history(request.session_id, request.reset)

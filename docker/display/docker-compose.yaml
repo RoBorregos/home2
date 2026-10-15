@@ -31,7 +31,7 @@ services:
       DISPLAY: ${DISPLAY:-:0}
       XAUTHORITY: /home/ros/.Xauthority
       QT_X11_NO_MITSHM: 1
-      # Qt5 + XInput2 touchscreens can deliver hover but no clicks; use synthesized mouse events
+      # Touchscreen taps as mouse clicks (Qt5 XInput2 only delivers hover)
       QT_XCB_NO_XI2_MOUSE: 1
       TERM: xterm-256color
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
