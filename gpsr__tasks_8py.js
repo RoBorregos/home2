@@ -2,6 +2,7 @@ var gpsr__tasks_8py =
 [
     [ "task_manager.subtask_managers.gpsr_tasks.GPSRTask", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask" ],
     [ "FIND_PERSON_MAX_ROUNDS", "gpsr__tasks_8py.html#a5978dbe75ad170cc98c4275b1b9b01d1", null ],
+    [ "FIND_PERSON_ROTATION_DEG", "gpsr__tasks_8py.html#a7e811caf9d46852cdfd352097679d71d", null ],
     [ "FIND_PERSON_VISITED_RADIUS", "gpsr__tasks_8py.html#a9392dacad3e278d14a0e01012db3e300", null ],
     [ "FOLLOW_ARRIVED_DISTANCE", "gpsr__tasks_8py.html#a94159d7c4656b2d4f7d7f7f15103f36a", null ],
     [ "FOLLOW_LISTEN_TIMEOUT", "gpsr__tasks_8py.html#a28dff6667d0ff324b67c79feb8810659", null ],
@@ -11,7 +12,7 @@ var gpsr__tasks_8py =
     [ "FOLLOW_RELOCK_ATTEMPTS", "gpsr__tasks_8py.html#a1d2e99da985d7aa2b1196f609031d191", null ],
     [ "FOLLOW_STOP_KEYWORDS", "gpsr__tasks_8py.html#afd88f9844a8420cc867007d831c1c3a7", null ],
     [ "FOLLOW_TRACK_ATTEMPTS", "gpsr__tasks_8py.html#a6734eaa11fdbeb696b8a73003436a6a4", null ],
-    [ "SEARCH_PAN_RANGE_DEG", "gpsr__tasks_8py.html#a8e208f40d04411f41dc4c9213c283e85", null ],
-    [ "SEARCH_POLL_PERIOD", "gpsr__tasks_8py.html#ac7082f33174d72344468e4cdf6e5e7be", null ],
-    [ "SEARCH_SWEEP_VELOCITY", "gpsr__tasks_8py.html#ab2b3e0c9ffeb90515a02b91c3797ae49", null ]
+    [ "SEARCH_PAN_RANGE_DEG", "gpsr__tasks_8py.html#ae5f517ec8f88a9197abc564babdb69ac", null ],
+    [ "SEARCH_POLL_PERIOD", "gpsr__tasks_8py.html#a5c4919f4eca299e07b8cd02a755a847b", null ],
+    [ "SEARCH_SWEEP_VELOCITY", "gpsr__tasks_8py.html#a1c606b204f2b7eee834978d2f12df73f", null ]
 ];

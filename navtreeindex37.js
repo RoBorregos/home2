@@ -1,5 +1,6 @@
 var NAVTREEINDEX37 =
 {
+"md_manipulation_packages_pick_and_place_README.html#autotoc_md5":[1,4],
 "md_manipulation_packages_pick_and_place_README.html#autotoc_md6":[1,4,0],
 "md_manipulation_packages_pick_and_place_README.html#autotoc_md7":[1,5],
 "md_manipulation_packages_pick_and_place_README.html#autotoc_md8":[1,6],
@@ -248,6 +249,5 @@ var NAVTREEINDEX37 =
 "namespace__storing__groceries.html#adc3b841dce9790c83b15a88ef9fb4340":[41,0,1,1],
 "namespaceadaptive__goal__publisher.html":[41,0,2],
 "namespaceadaptive__goal__publisher.html#acb33c8d4d3a1cc7881b498bd215f163d":[41,0,2,1],
-"namespaceadd__collision__object.html":[41,0,3],
-"namespaceadd__collision__object.html#a4d453f8d2e963ce0e4c23e30c0f9b0bd":[41,0,3,0]
+"namespaceadd__collision__object.html":[41,0,3]
 };
