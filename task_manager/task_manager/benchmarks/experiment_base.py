@@ -258,8 +258,6 @@ class ExperimentTM(Node):
             online = "online + backup" if self.schedule.online else "backup only"
             Logger.info(self, f"Schedule source: {online}")
 
-    # ----------------------------------------------------------------- helpers
-
     def _install_silent_say(self):
         def say(text, wait=True, speed=1.15):
             Logger.info(self, f"[no-speaker] ROBOT: {text}")
@@ -304,8 +302,6 @@ class ExperimentTM(Node):
     def dialogue(self) -> str:
         """Run the experiment's conversation. Returns the session outcome."""
         raise NotImplementedError
-
-    # ------------------------------------------------------------ state machine
 
     def run(self):
         s = self.States

@@ -1235,7 +1235,6 @@ class SurveyOverlay(QWidget):
         self.setAttribute(Qt.WA_AcceptTouchEvents, True)
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.setObjectName("surveyOverlay")
-        # Scoped to the overlay so the answer buttons keep the global button style
         self.setStyleSheet(
             f"#surveyOverlay {{ background-color: {BG_DARKER}; }}"
             "QLabel { background: transparent; }"

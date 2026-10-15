@@ -120,8 +120,6 @@ class RobotAPI:
         )
 
 
-# ------------------------------------------------------------------- matching
-
 _PARTICLES = {"de", "del", "la", "las", "los", "y", "team", "the"}
 
 
@@ -166,9 +164,6 @@ def rank(query: str, items: list[dict], key="name", limit=3) -> tuple[bool, list
         return True, [(1.0, containing[0][2])]
     kept = [(round(s, 2), item) for s, _, item in scored if s >= MIN_SCORE]
     return False, kept[: max(1, min(10, int(limit)))]
-
-
-# --------------------------------------------------------------------- backup
 
 
 class BackupAPI:
@@ -297,9 +292,6 @@ class BackupAPI:
                     "rounds": team.get("rounds", []),
                 }
         raise ApiError(404, "Team not found")
-
-
-# --------------------------------------------------------------------- source
 
 
 class ScheduleSource:

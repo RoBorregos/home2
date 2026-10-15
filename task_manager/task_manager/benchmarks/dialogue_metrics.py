@@ -86,8 +86,6 @@ class DialogueMetrics:
             if confidences:
                 self._confidences.extend(confidences.values())
 
-    # ------------------------------------------------------------ face following
-
     def start_face_window(self) -> None:
         """Start measuring face following (call right after follow_face(True))."""
         if self.session is not None:
@@ -116,8 +114,6 @@ class DialogueMetrics:
             ),
             "max_gap_s": round(max(gaps), 2) if gaps else None,
         }
-
-    # ------------------------------------------------------------------ session
 
     def start_session(self, **fields) -> None:
         self.session_count += 1
