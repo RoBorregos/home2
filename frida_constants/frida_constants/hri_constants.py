@@ -41,6 +41,8 @@ GPSR_COMMAND_INDEX_TOPIC = "/gpsr/display/command_index"
 TASK_STEP_TOPIC = "/hri/display/task_step"
 DISPLAY_CAPTURE_TOPIC = "/hri/display/capture"
 DISPLAY_KEYWORD_TOPIC = "/hri/display/keyword"
+DISPLAY_SURVEY_TOPIC = "/hri/display/survey"
+DISPLAY_SURVEY_ANSWERS_TOPIC = "/hri/display/survey_answers"
 
 GPSR_COMMANDS = {
     "go_to",

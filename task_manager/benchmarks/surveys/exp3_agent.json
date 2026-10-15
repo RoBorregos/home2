@@ -1,0 +1,72 @@
+{
+  "title": "FRIDA - Conversation",
+  "intro": "Please answer a short survey on my screen. It takes about one minute.",
+  "questions": [
+    {
+      "id": "got_info",
+      "text": "I got the information I was looking for.",
+      "type": "likert",
+      "min_label": "Strongly disagree",
+      "max_label": "Strongly agree"
+    },
+    {
+      "id": "understood_goal",
+      "text": "FRIDA understood what I wanted.",
+      "type": "likert",
+      "min_label": "Strongly disagree",
+      "max_label": "Strongly agree"
+    },
+    {
+      "id": "flow",
+      "text": "The conversation flowed naturally.",
+      "type": "likert",
+      "min_label": "Strongly disagree",
+      "max_label": "Strongly agree"
+    },
+    {
+      "id": "satisfied",
+      "text": "Overall, I am satisfied with this conversation.",
+      "type": "likert",
+      "min_label": "Strongly disagree",
+      "max_label": "Strongly agree"
+    },
+    {
+      "id": "likeable",
+      "text": "FRIDA was likeable.",
+      "type": "likert",
+      "min_label": "Strongly disagree",
+      "max_label": "Strongly agree"
+    },
+    {
+      "id": "intelligent",
+      "text": "FRIDA seemed intelligent.",
+      "type": "likert",
+      "min_label": "Strongly disagree",
+      "max_label": "Strongly agree"
+    },
+    {
+      "id": "natural",
+      "text": "Talking with FRIDA felt natural.",
+      "type": "likert",
+      "min_label": "Strongly disagree",
+      "max_label": "Strongly agree"
+    },
+    {
+      "id": "comfortable",
+      "text": "I felt comfortable and safe talking with FRIDA.",
+      "type": "likert",
+      "min_label": "Strongly disagree",
+      "max_label": "Strongly agree"
+    },
+    {
+      "id": "robot_experience",
+      "text": "Had you talked with a robot before today?",
+      "type": "choice",
+      "options": [
+        "Never",
+        "Once or twice",
+        "Many times"
+      ]
+    }
+  ]
+}
