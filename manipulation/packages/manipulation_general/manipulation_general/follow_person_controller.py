@@ -16,7 +16,7 @@ On centroid timeout the arm slowly recenters to joint1_neutral so the camera
 faces where the base (per person_goal_smoother's lost-person goal) is heading.
 
 Usage:
-    ros2 run task_manager follow_person_controller.py
+    ros2 run manipulation_general follow_person_controller.py
 
     # Enable following (after tracker is running and target is set):
     ros2 service call /follow_person frida_interfaces/srv/FollowFace "{follow_face: true}"
@@ -38,11 +38,12 @@ from frida_interfaces.srv import FollowFace
 from frida_pymoveit2.robots import xarm6
 from xarm_msgs.srv import SetInt16, MoveVelocity
 from frida_constants.vision_constants import CENTROID_TOPIC
+from frida_constants.manipulation_constants import FOLLOW_PERSON_ARM_SERVICE
 
 # Topic / service names
 CMD_VEL_TOPIC = "/cmd_vel"
 JOINT_STATES_TOPIC = "/joint_states"
-FOLLOW_SERVICE = "/follow_person"
+FOLLOW_SERVICE = FOLLOW_PERSON_ARM_SERVICE
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
 XARM_VELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
@@ -290,7 +291,9 @@ class FollowPersonController(Node):
 
         # PID controller (derivative computed at centroid rate in _centroid_cb)
         self.error_integral += error * self.dt
-        self.error_integral = max(-integral_clamp, min(integral_clamp, self.error_integral))
+        self.error_integral = max(
+            -integral_clamp, min(integral_clamp, self.error_integral)
+        )
 
         pid_output = kp * error + ki * self.error_integral + kd * self.error_deriv
 

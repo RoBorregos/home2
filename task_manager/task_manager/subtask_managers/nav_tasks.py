@@ -387,7 +387,6 @@ class NavigationTasks:
         CLog.nav(self.node, "ERROR", f"Pose goal failed: {err}")
         return (Status.EXECUTION_ERROR, err)
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
     def _resolve_map_xy(self, point):
         """Return map-frame (x, y) from a PointStamped (transformed to map via TF),
         a geometry_msgs/Point, or an (x, y) sequence. Returns None if a stamped point
@@ -511,6 +510,7 @@ class NavigationTasks:
 
     # ── Point/bearing helpers (managers must not touch tf2/atan2 directly) ──
 
+    @mockable(_mock_callback=lambda self, point_stamped: point_stamped)
     def to_map_point(self, point_stamped):
         """Transform a PointStamped to the map frame using the CURRENT TF.
         Must be called while the robot is still at the pose where the point
@@ -536,6 +536,7 @@ class NavigationTasks:
             )
             return None
 
+    @mockable(return_value=0.0)
     def bearing_to(self, point_stamped, frame: str = "base_link"):
         """Bearing (degrees) from `frame` to a PointStamped in any TF frame.
         +deg = target to the right, matching the arm's pan_to convention.

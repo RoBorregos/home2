@@ -45,6 +45,11 @@ SEARCH_PAN_RANGE_DEG = 65  # scan from -RANGE to +RANGE
 SEARCH_SWEEP_VELOCITY = 0.2  # MoveIt velocity scaling factor (0-1)
 SEARCH_POLL_PERIOD = 0.1  # s between person checks while the sweep is in flight
 
+# Continuous arm pan sweep used while searching, instead of discrete stops.
+SEARCH_PAN_RANGE_DEG = 65  # scan from -RANGE to +RANGE
+SEARCH_SWEEP_VELOCITY = 0.2  # MoveIt velocity scaling factor (0-1)
+SEARCH_POLL_PERIOD = 0.1  # s between person checks while the sweep is in flight
+
 
 class GPSRTask(GenericTask):
     """Class to manage the GPSR task"""
