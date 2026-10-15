@@ -14,13 +14,14 @@ from frida_constants.vision_constants import (
     ZERO_SHOT_DETECTIONS_TOPIC,
 )
 from frida_constants.manipulation_constants import (
+    GENERATE_GRASPS_SERVICE,
     MANIPULATION_ACTION_SERVER,
 )
 from xarm_utils.shelf_levels import (
     SHELF_SCAN_TOLERANCE,
     get_shelf_levels,
 )
-from frida_interfaces.srv import GetOptimalPositionForPlane
+from frida_interfaces.srv import GenerateGrasps, GetOptimalPositionForPlane
 from std_srvs.srv import Empty
 import json
 
@@ -53,6 +54,9 @@ class KeyboardInput(Node):
         )
         self._clear_octomap_client = self.create_client(
             Empty, "/clear_octomap", callback_group=callback_group
+        )
+        self._generate_grasps_client = self.create_client(
+            GenerateGrasps, GENERATE_GRASPS_SERVICE, callback_group=callback_group
         )
         self.objects = []  # Example list of objects
 
@@ -159,6 +163,35 @@ class KeyboardInput(Node):
             self._position_at_level(height)
             time.sleep(2.0)
         self.get_logger().info("Shelf scan done; now pick (-11) or place (-4).")
+
+    def preview_grasps(self, object_name):
+        if not self._generate_grasps_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().error("generate_grasps service unavailable")
+            return
+        request = GenerateGrasps.Request()
+        request.object_name = object_name
+        request.num_samples = 0
+        future = self._generate_grasps_client.call_async(request)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
+        response = future.result()
+        if response is None:
+            self.get_logger().error("generate_grasps timed out")
+            return
+        print(response.message)
+        if not response.success:
+            return
+        for i, (pose, score, approach) in enumerate(
+            zip(response.grasps, response.scores, response.approaches)
+        ):
+            p = pose.pose.position
+            print(
+                f"{i} {approach} score={score:.2f} tip=({p.x:.3f}, {p.y:.3f}, {p.z:.3f})"
+            )
+        obj, d = response.object, response.object.dimensions
+        print(
+            f"fitted {obj.type} {d.x:.3f} x {d.y:.3f} x {d.z:.3f}, "
+            f"class={response.grasp_class}, deformable={response.deformable}"
+        )
 
     def send_place_request(
         self,
@@ -286,6 +319,7 @@ def main(args=None):
             print("-10. Pour (object already grasped)")
             print("-11. Pick from shelf (keep octomap)")
             print("-12. Scan shelf levels (do before -4/-11)")
+            print("-13. Preview grasp candidates (no motion)")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -406,6 +440,13 @@ def main(args=None):
 
             elif choice == "-12":
                 node.scan_shelf_levels()
+
+            elif choice == "-13":
+                number = input("Object number: ")
+                if number.isdigit() and 0 < int(number) <= len(node.objects):
+                    node.preview_grasps(node.objects[int(number) - 1])
+                else:
+                    print("Invalid choice. Please try again.")
 
             elif choice.isdigit():
                 try:

@@ -9,12 +9,14 @@ working robot.
 """
 
 import inspect
+import numpy as np
 import pytest
 import yaml
+from scipy.spatial.transform import Rotation
 
 from fakes import (
     FakeArm,
-    FakeFlatResponse,
+    FakeGenerateGraspsResponse,
     FakeLogger,
     FakePerception,
     make_cluster,
@@ -23,7 +25,9 @@ from fakes import (
 )
 from frida_constants.manipulation_constants import (
     BOWL_NAME,
+    PRE_GRASP_DISTANCE,
     RIM_NAMES,
+    SAFETY_HEIGHT,
 )
 from frida_interfaces.msg import ManipulationTask, PlaceParams
 from pathlib import Path
@@ -36,6 +40,7 @@ from pick_and_place.pipelines import (
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_GPD,
+    SHAPE_STRATEGY_KEYS,
     resolve_pick_strategy,
 )
 from pick_and_place.pipelines.errors import (
@@ -45,11 +50,13 @@ from pick_and_place.pipelines.errors import (
 )
 from pick_and_place.pipelines.profiles import ProfileError, load_profiles
 from pick_and_place.pipelines.strategies import (
+    CartesianApproachPick,
     GraspCandidate,
     PickOutcome,
     build_strategies,
 )
 from pick_and_place.robot.arm import AttachResult, ContactResult, RobotArm
+from pick_and_place.robot.geometry import set_quaternion
 from pick_and_place.robot.perception import Perception
 
 PROFILES_PATH = Path(__file__).resolve().parents[1] / "config" / "pick_profiles.yaml"
@@ -108,6 +115,33 @@ def test_flat_retract_is_always_above_the_contact_point(strategies):
         assert arm.poses["move_to_pose"][1].pose.position.z > contact_z
 
 
+def test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis():
+    profile = load_profiles(PROFILES_PATH)["box"]
+    pose = set_quaternion(
+        make_pose(x=0.5, z=0.3), Rotation.from_euler("y", 135, degrees=True).as_quat()
+    )
+    grasp = GraspCandidate(pose=pose, score=0.9, pose_index=0, alternative_index=0)
+    arm = FakeArm()
+
+    CartesianApproachPick(profile).attempt(arm, grasp)
+
+    forward_and_down = np.array([np.sin(np.pi / 4), 0.0, -np.sin(np.pi / 4)])
+    pre_grasp = arm.poses["move_to_pregrasp"][0].pose.position
+    assert [pre_grasp.x, pre_grasp.y, pre_grasp.z] == pytest.approx(
+        np.array([0.5, 0.0, 0.3]) - profile.pre_grasp_height * forward_and_down
+    )
+    direction, distance, _ = arm.approaches[0]
+    assert direction == pytest.approx(forward_and_down)
+    assert distance == pytest.approx(profile.pre_grasp_height)
+    assert (
+        arm.calls.index("cartesian_approach")
+        < arm.calls.index("close_gripper")
+        < arm.calls.index("attach_pick_object")
+    )
+    assert arm.close_settles == [0.0]
+    assert "move_to_pose" not in arm.calls
+
+
 def test_gpd_still_reports_the_pick_when_attaching_fails(strategies):
     """The grasp succeeded; only the scene bookkeeping did not."""
     arm = FakeArm(attach_result=AttachResult(attached=False))
@@ -123,7 +157,7 @@ def test_gpd_still_reports_the_pick_when_attaching_fails(strategies):
 
 
 def flat_perception(z=0.5):
-    return FakePerception(flat_response=FakeFlatResponse(make_pose(z=z)))
+    return FakePerception(generated_grasps=FakeGenerateGraspsResponse(make_pose(z=z)))
 
 
 def run_pick(arm, perception, strategies, **kwargs):
@@ -148,6 +182,54 @@ def test_gpd_falls_back_to_the_next_config(strategies):
     success, _ = run_pick(arm, perception, strategies, object_name="cup")
     assert success
     assert perception.calls.count("detect_grasps") == 2
+
+
+def test_a_shape_pick_adds_the_fitted_object_and_retries_the_next_candidate(strategies):
+    fitted = FakeGenerateGraspsResponse(
+        make_pose(z=0.3), grasps=[make_pose(z=0.3), make_pose(z=0.3)]
+    )
+    fitted.object.pose.pose.position.z = 0.15
+    fitted.object.dimensions.z = 0.20
+    arm = FakeArm(descent_results=[False])
+
+    success, outcome = run_pick(
+        arm, FakePerception(generated_grasps=fitted), strategies, object_name="coke"
+    )
+
+    assert success
+    assert arm.calls.count("cartesian_approach") == 2
+    assert arm.calls.index("add_collision_object") < arm.calls.index("snapshot_scene")
+    assert outcome.object_height == pytest.approx(0.20)
+    assert outcome.object_pick_height == pytest.approx(0.13 - 0.05 + SAFETY_HEIGHT)
+
+
+@pytest.mark.parametrize("candidates_fail", [False, True])
+def test_a_failed_shape_pick_falls_back_to_gpd(strategies, candidates_fail):
+    generated, arm = None, FakeArm()
+    if candidates_fail:
+        generated = FakeGenerateGraspsResponse(make_pose(z=0.3))
+        generated.object.id = "fitted"
+        arm = FakeArm(pregrasp_results=[False] * 10)
+    perception = FakePerception(
+        located_point=make_point(),
+        cluster=make_cluster(),
+        grasps=[([make_pose()], [0.9])] * 3,
+        generated_grasps=generated,
+    )
+
+    success, _ = run_pick(arm, perception, strategies, object_name="coke")
+
+    assert success
+    assert perception.calls.index("generate_grasps") < perception.calls.index(
+        "detect_grasps"
+    )
+    if candidates_fail:
+        stare_moves = [
+            i for i, c in enumerate(arm.calls) if c == "move_to_named_position"
+        ]
+        assert arm.calls.index("remove_collision_object") < stare_moves[1]
+    else:
+        assert "remove_collision_object" not in arm.calls
 
 
 def test_tip_offset_uses_the_per_strategy_parameter(strategies):
@@ -220,6 +302,16 @@ def test_place_fails_when_no_rung_is_reachable():
     assert "detach_pick_objects" not in arm.calls
 
 
+def test_trash_place_goes_to_the_pose_from_the_grasp_generator():
+    arm = FakeArm()
+    perception = FakePerception(
+        generated_grasps=FakeGenerateGraspsResponse(make_pose(x=0.7, z=0.9))
+    )
+    assert run_place(arm, perception, params(is_trash=True))
+    assert perception.generate_timeouts == [place_pipeline.TRASH_TIMEOUT]
+    assert arm.poses["move_to_pose"][0].pose.position.x == pytest.approx(0.7)
+
+
 # ============================================================================
 # pour_pipeline
 # ============================================================================
@@ -230,6 +322,9 @@ def pour_perception(**overrides):
     overrides.setdefault("located_point", make_point(x=0.5, z=0.3))
     overrides.setdefault("cluster", make_cluster(z_low=0.30, z_high=0.40))
     overrides.setdefault("grasps", [([make_pose()], [0.9])])
+    overrides.setdefault(
+        "generated_grasps", FakeGenerateGraspsResponse(make_pose(z=0.3))
+    )
     return FakePerception(**overrides)
 
 
@@ -315,6 +410,14 @@ def test_the_nested_pick_does_not_return_to_a_carry_pose(strategies, monkeypatch
 
     assert captured["return_to_carry"] is False
     assert captured["in_configuration"] is True
+
+
+def test_the_pour_picks_a_shape_object_with_gpd(strategies):
+    perception = pour_perception()
+    run_pour(FakeArm(), perception, strategies)
+
+    assert "detect_grasps" in perception.calls
+    assert "generate_grasps" not in perception.calls
 
 
 # ============================================================================
@@ -430,6 +533,11 @@ def profiles():
     return load_profiles(PROFILES_PATH)
 
 
+def test_shape_profiles_back_off_by_the_distance_the_generator_checked(profiles):
+    for key in SHAPE_STRATEGY_KEYS:
+        assert profiles[key].pre_grasp_height == PRE_GRASP_DISTANCE
+
+
 def test_every_strategy_key_has_a_profile(profiles):
     from pick_and_place.pipelines.classification import PICK_STRATEGY_KEYS
 
@@ -496,7 +604,7 @@ def test_bowl_wins_over_rim():
     assert resolve_pick_strategy(BOWL_NAME) == PICK_STRATEGY_BOWL
 
 
-@pytest.mark.parametrize("name", ["", None, "unknown_object", "cereal", "milk"])
+@pytest.mark.parametrize("name", ["", None, "unknown_object", "cup"])
 def test_unknown_names_fall_back_to_gpd(name):
     assert resolve_pick_strategy(name) == PICK_STRATEGY_GPD
 
