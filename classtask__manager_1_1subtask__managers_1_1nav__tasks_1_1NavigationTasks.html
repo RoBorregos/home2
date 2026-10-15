@@ -126,8 +126,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aaf7596f84ae56e1471a2670e9d79d41f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a13764afe83bb2bd881ac4f7f153fa8b2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a13764afe83bb2bd881ac4f7f153fa8b2">move_to_pose</a> (self, pose, behavior_tree=&quot;&quot;)</td></tr>
 <tr class="separator:a13764afe83bb2bd881ac4f7f153fa8b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2789f229ade91ec4d554c8eec2b9e70"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af2789f229ade91ec4d554c8eec2b9e70">move_to_point</a> (self, point, standoff_distance=0.0)</td></tr>
-<tr class="separator:af2789f229ade91ec4d554c8eec2b9e70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ad8a0666219551db0baff734c01ad0d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a4ad8a0666219551db0baff734c01ad0d">approach_point</a> (self, point, float standoff=0.65)</td></tr>
 <tr class="separator:a4ad8a0666219551db0baff734c01ad0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8fac24fdc932fad1187f67a2c6377728"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a8fac24fdc932fad1187f67a2c6377728">return_to_origin</a> (self, inverse_orientation=False, yaw_offset_deg=None)</td></tr>
@@ -691,42 +689,6 @@ detections to a sector in front of a reference pose.</pre>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Move to areas json location</pre> 
-</div>
-</div>
-<a id="af2789f229ade91ec4d554c8eec2b9e70" name="af2789f229ade91ec4d554c8eec2b9e70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2789f229ade91ec4d554c8eec2b9e70">&#9670;&#160;</a></span>move_to_point()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.move_to_point </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>point</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>standoff_distance</em> = <code>0.0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Navigate to a point. `point` may be a PointStamped (any frame — transformed
-to map), a geometry_msgs/Point, or an (x, y) sequence in the map frame. With
-standoff_distance&gt;0, stop that far short of the point, facing it.</pre> 
 </div>
 </div>
 <a id="a13764afe83bb2bd881ac4f7f153fa8b2" name="a13764afe83bb2bd881ac4f7f153fa8b2"></a>

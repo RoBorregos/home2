@@ -1,7 +1,5 @@
 var NAVTREEINDEX54 =
 {
-"structvamp_1_1same__num__scalars.html":[42,0,102,9],
-"subtask__manager_8py.html":[43,0,6,2,2,8],
 "subtask__manager_8py.html#a06ed8dd88828ee3f08bc2d9ed6312c06":[43,0,6,2,2,8,1],
 "table__docker_8py.html":[43,0,4,0,2,2,6],
 "table__docker_8py.html#a240a5a65b21f69bebbc4d49c14738b4f":[43,0,4,0,2,2,6,6],
@@ -249,5 +247,7 @@ var NAVTREEINDEX54 =
 "test__vision__manager_8py.html#ac38c21bcd295cf4c174a1e9b53b7ec9c":[43,0,6,1,1,18,32],
 "test__vision__manager_8py.html#ac51258d79be4bd81bd27ffd453e0f767":[43,0,6,1,1,18,31],
 "test__vision__manager_8py.html#ac89eedfd2e67769fdae6d0b61636df2a":[43,0,6,1,1,18,22],
-"test__vision__manager_8py.html#acc917c63b8ad5f534fc3a6ed0f57d266":[43,0,6,1,1,18,6]
+"test__vision__manager_8py.html#acc917c63b8ad5f534fc3a6ed0f57d266":[43,0,6,1,1,18,6],
+"test__vision__manager_8py.html#ad094f13a85560e6fe2de1b8ca7308f93":[43,0,6,1,1,18,23],
+"test__vision__manager_8py.html#ad75e75c8402f819461da26e3619d4f2e":[43,0,6,1,1,18,33]
 };

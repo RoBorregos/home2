@@ -1,7 +1,5 @@
 var NAVTREEINDEX50 =
 {
-"structvamp_1_1VectorInterface.html#a6e46111878623264542734391441d142":[41,0,172,21,40],
-"structvamp_1_1VectorInterface.html#a74134d30526e279528b6b9571ecfef39":[41,0,172,21,38],
 "structvamp_1_1VectorInterface.html#a74134d30526e279528b6b9571ecfef39":[42,0,102,16,38],
 "structvamp_1_1VectorInterface.html#a7996f6579a7368c1b78c764db2bb32fc":[42,0,102,16,75],
 "structvamp_1_1VectorInterface.html#a7996f6579a7368c1b78c764db2bb32fc":[41,0,172,21,75],
@@ -249,5 +247,7 @@ var NAVTREEINDEX50 =
 "structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a68748ae55c73e94f2ceb3b866c3b83b1":[41,0,172,2,2,1,4],
 "structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a7f2bd0d08fbd51c9c4d9a6cb8e4d9359":[41,0,172,2,2,1,5],
 "structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a7f2bd0d08fbd51c9c4d9a6cb8e4d9359":[42,0,102,1,1,1,5],
-"structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a877476df930ad50ee4af99bc83a7205b":[41,0,172,2,2,1,1]
+"structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a877476df930ad50ee4af99bc83a7205b":[41,0,172,2,2,1,1],
+"structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a877476df930ad50ee4af99bc83a7205b":[42,0,102,1,1,1,1],
+"structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#ab9a76ebf256e132c4a43f93f0be04a64":[41,0,172,2,2,1,2]
 };

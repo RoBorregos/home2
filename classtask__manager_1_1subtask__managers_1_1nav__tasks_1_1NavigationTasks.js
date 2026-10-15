@@ -13,7 +13,6 @@ var classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks =
     [ "get_path_info", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a78c8ac7379204c5f803320efb743d2fc", null ],
     [ "is_ahead_of", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af4cb913b91ca688bc4b504f108414355", null ],
     [ "move_to_location", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af971c18c37a11bef89307e70ef8324f7", null ],
-    [ "move_to_point", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af2789f229ade91ec4d554c8eec2b9e70", null ],
     [ "move_to_pose", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a13764afe83bb2bd881ac4f7f153fa8b2", null ],
     [ "retrieve_areas", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a3741bd4168f432606adacf7f7709125d", null ],
     [ "return_to_origin", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a8fac24fdc932fad1187f67a2c6377728", null ],
