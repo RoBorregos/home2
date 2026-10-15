@@ -94,7 +94,15 @@ BOWL_NAME = "bowl"
 RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME, "cup"]
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
 BOX_NAMES = ["cornflakes", "cereal", "milk", "rubiks_cube"]
-CYLINDRICAL_NAMES = ["coke", "pepsi", "red_bull", "pringles", "soju", "bottle", "instant_noodles"]
+CYLINDRICAL_NAMES = [
+    "coke",
+    "pepsi",
+    "red_bull",
+    "pringles",
+    "soju",
+    "bottle",
+    "instant_noodles",
+]
 ROUND_NAMES = [
     "apple",
     "peach",
