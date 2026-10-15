@@ -1,5 +1,6 @@
 import time
 from dataclasses import dataclass, field
+from typing import Optional
 
 from frida_constants.manipulation_constants import (
     FACE_RECOGNITION_LIFETIME,
@@ -10,6 +11,29 @@ from frida_constants.manipulation_constants import (
 MAX_VELOCITY = 0.1
 STOP_TIMEOUT = 1.0
 TARGET_JOINT = "joint1"
+
+# Gains act on the normalized centroid error in [-1, 1], tuned for a walking person.
+PERSON_KP = 1.8
+PERSON_KI = 0.1
+PERSON_KD = 0.12
+PERSON_KFF = 1.0
+PERSON_DEAD_ZONE = 0.03
+PERSON_MAX_VELOCITY = 1.2
+# Wide pan range is safe because velocity tapers over the soft-limit margin.
+PERSON_JOINT1_MIN = -3.05
+PERSON_JOINT1_MAX = -0.2
+PERSON_SOFT_LIMIT_MARGIN = 0.35
+PERSON_DT = 1 / 20.0
+PERSON_CENTROID_TIMEOUT = 1.5
+PERSON_INTEGRAL_CLAMP = 0.3
+# On centroid timeout, pan back to neutral so the camera faces forward.
+PERSON_RECENTER_ENABLED = True
+PERSON_RECENTER_VELOCITY = 0.3
+# Base yaw unloads joint1 toward neutral; off because it oscillates (check the kp sign first).
+PERSON_BASE_YAW_ENABLED = False
+PERSON_BASE_YAW_KP = 0.5
+PERSON_JOINT1_NEUTRAL = -1.5707
+PERSON_BASE_YAW_MAX = 0.25
 
 
 # ======================================================================
@@ -142,33 +166,11 @@ class PersonState:
     centroid_x = 0.0
     centroid_time = 0.0
     base_omega_z = 0.0
-    joint_positions: dict = field(default_factory=dict)
     error_integral = 0.0
     # Centroid-rate derivative (filled by _centroid_cb, low-pass filtered).
     # Computing it in the 20 Hz control loop would alternate spike/zero
     # because the centroid arrives at its own rate.
     error_deriv = 0.0
-
-
-@dataclass(frozen=True)
-class PersonParams:
-    kp: float
-    ki: float
-    kd: float
-    kff: float
-    dead_zone: float
-    max_velocity: float
-    joint1_min: float
-    joint1_max: float
-    soft_limit_margin: float
-    centroid_timeout: float
-    integral_clamp: float
-    recenter_enabled: bool
-    recenter_velocity: float
-    base_yaw_enabled: bool
-    base_yaw_kp: float
-    joint1_neutral: float
-    base_yaw_max: float
 
 
 def person_centroid(arm, state: PersonState, msg):
@@ -211,21 +213,29 @@ def person_off(arm, state: PersonState):
 # ── Control loop ───────────────────────────────────────────
 
 
-def person_tick(arm, state: PersonState, params: PersonParams, dt) -> float:
+def _joint1(arm) -> Optional[float]:
+    msg = arm.joint_state
+    if msg is None or TARGET_JOINT not in msg.name:
+        return None
+    position = msg.position[msg.name.index(TARGET_JOINT)]
+    arm.logger.info(f"Joint states received (joint1={position:.3f})", once=True)
+    return position
+
+
+def person_tick(arm, state: PersonState) -> float:
     if not state.active:
         return 0.0
 
-    if TARGET_JOINT not in state.joint_positions:
+    current_j1 = _joint1(arm)
+    if current_j1 is None:
         return 0.0
-
-    current_j1 = state.joint_positions[TARGET_JOINT]
 
     age = time.time() - state.centroid_time
 
-    if state.centroid_time == 0.0 or age > params.centroid_timeout:
+    if state.centroid_time == 0.0 or age > PERSON_CENTROID_TIMEOUT:
         state.error_integral = 0.0
         state.error_deriv = 0.0
-        _recenter_or_stop(arm, params, current_j1)
+        _recenter_or_stop(arm, current_j1)
         return 0.0
 
     # Error: positive centroid_x = person right = positive error
@@ -233,32 +243,32 @@ def person_tick(arm, state: PersonState, params: PersonParams, dt) -> float:
     error = state.centroid_x
 
     # Dead zone (P/I only — the derivative keeps damping inside it)
-    if abs(error) < params.dead_zone:
+    if abs(error) < PERSON_DEAD_ZONE:
         error = 0.0
 
     # PID controller (derivative computed at centroid rate in _centroid_cb)
-    state.error_integral += error * dt
+    state.error_integral += error * PERSON_DT
     state.error_integral = max(
-        -params.integral_clamp, min(params.integral_clamp, state.error_integral)
+        -PERSON_INTEGRAL_CLAMP, min(PERSON_INTEGRAL_CLAMP, state.error_integral)
     )
 
     pid_output = (
-        params.kp * error
-        + params.ki * state.error_integral
-        + params.kd * state.error_deriv
+        PERSON_KP * error
+        + PERSON_KI * state.error_integral
+        + PERSON_KD * state.error_deriv
     )
 
     # Feedforward: compensate base rotation
-    feedforward = state.base_omega_z * params.kff
+    feedforward = state.base_omega_z * PERSON_KFF
 
     # Combined velocity
     joint1_vel = pid_output + feedforward
-    joint1_vel = max(-params.max_velocity, min(params.max_velocity, joint1_vel))
+    joint1_vel = max(-PERSON_MAX_VELOCITY, min(PERSON_MAX_VELOCITY, joint1_vel))
 
     # Soft limits: taper to zero across soft_limit_margin instead of a hard
     # cutoff, so the wide joint1 range never ends in a full-speed slam
     # (that slam was the old xArm fault mode).
-    joint1_vel, limited = _apply_soft_limit(params, current_j1, joint1_vel)
+    joint1_vel, limited = _apply_soft_limit(current_j1, joint1_vel)
     if limited:
         state.error_integral = 0.0
 
@@ -271,15 +281,15 @@ def person_tick(arm, state: PersonState, params: PersonParams, dt) -> float:
 
     # Reactive base yaw: rotate the base to bring joint1 back toward neutral
     # (unload the arm) so the person stays centred with unlimited pan range.
-    if params.base_yaw_enabled:
-        base_yaw = params.base_yaw_kp * (current_j1 - params.joint1_neutral)
-        base_yaw = max(-params.base_yaw_max, min(params.base_yaw_max, base_yaw))
+    if PERSON_BASE_YAW_ENABLED:
+        base_yaw = PERSON_BASE_YAW_KP * (current_j1 - PERSON_JOINT1_NEUTRAL)
+        base_yaw = max(-PERSON_BASE_YAW_MAX, min(PERSON_BASE_YAW_MAX, base_yaw))
     else:
         base_yaw = 0.0
     return base_yaw
 
 
-def _apply_soft_limit(params: PersonParams, current_j1: float, cmd_vel: float):
+def _apply_soft_limit(current_j1: float, cmd_vel: float):
     """Taper the commanded velocity to zero across soft_limit_margin before a
     joint1 limit. Returns (scaled_vel, was_limited). Sign note: the actual
     joint velocity is -cmd_vel (negated in _send_joint_velocity), so
@@ -287,31 +297,31 @@ def _apply_soft_limit(params: PersonParams, current_j1: float, cmd_vel: float):
     if cmd_vel == 0.0:
         return 0.0, False
     if cmd_vel > 0:  # actual motion toward j1_min
-        dist = current_j1 - params.joint1_min
+        dist = current_j1 - PERSON_JOINT1_MIN
     else:  # actual motion toward j1_max
-        dist = params.joint1_max - current_j1
-    if dist >= params.soft_limit_margin:
+        dist = PERSON_JOINT1_MAX - current_j1
+    if dist >= PERSON_SOFT_LIMIT_MARGIN:
         return cmd_vel, False
-    scale = max(0.0, dist / params.soft_limit_margin)
+    scale = max(0.0, dist / PERSON_SOFT_LIMIT_MARGIN)
     return cmd_vel * scale, True
 
 
-def _recenter_or_stop(arm, params: PersonParams, current_j1: float):
+def _recenter_or_stop(arm, current_j1: float):
     """No centroid: either hold still (legacy) or pan slowly back to
     joint1_neutral so the camera faces where the base is heading (the
     smoother drives to the person's last-known position on loss)."""
-    if not params.recenter_enabled:
+    if not PERSON_RECENTER_ENABLED:
         _send_joint_velocity(arm, 0.0)
         arm.logger.warn(
             "No centroid data — sending zero velocity", throttle_duration_sec=2.0
         )
         return
-    neutral = params.joint1_neutral
+    neutral = PERSON_JOINT1_NEUTRAL
     err = neutral - current_j1  # desired actual joint displacement
     if abs(err) < 0.05:
         _send_joint_velocity(arm, 0.0)
         return
-    actual_vel = max(-params.recenter_velocity, min(params.recenter_velocity, err))
+    actual_vel = max(-PERSON_RECENTER_VELOCITY, min(PERSON_RECENTER_VELOCITY, err))
     # command is negated by _send_joint_velocity => pass -actual_vel
     _send_joint_velocity(arm, -actual_vel)
     arm.logger.warn(

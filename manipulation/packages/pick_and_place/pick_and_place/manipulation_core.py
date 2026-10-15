@@ -12,7 +12,6 @@ and ``robot/perception.py``.
 import copy
 import threading
 import time
-from dataclasses import fields
 
 import numpy as np
 import rclpy
@@ -29,7 +28,6 @@ from frida_interfaces.action import GoToHand, ManipulationAction
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import FixedDistanceMove, FollowFace
 from frida_motion_planning.utils.tf_utils import transform_point
-from frida_pymoveit2.robots import xarm6
 from geometry_msgs.msg import Point, PoseStamped, Twist
 from rclpy.action import ActionServer, CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -345,7 +343,6 @@ class ManipulationCore(Node):
     # ==================================================================
 
     def _setup_follow(self):
-        self._declare_person_parameters()
         self._follow_lock = threading.Lock()
         self._face = follow_pipeline.FaceState()
         self._person = follow_pipeline.PersonState()
@@ -389,54 +386,10 @@ class ManipulationCore(Node):
         self.create_timer(
             FACE_LOOP_PERIOD, self._face_loop, callback_group=self.callback_group
         )
-        self._person_dt = 1.0 / self.get_parameter("follow_person.control_rate").value
         self.create_timer(
-            self._person_dt, self._person_loop, callback_group=self.callback_group
-        )
-
-    def _declare_person_parameters(self):
-        # Gains act on the normalized centroid error in [-1, 1]. Retuned for
-        # keeping up with a walking person (validate with follow_calibration.py):
-        # kp up 1.0->1.8, new kd (lead/damping), deadzone down, max_vel up.
-        self.declare_parameter("follow_person.kp", 1.8)
-        self.declare_parameter("follow_person.ki", 0.1)
-        self.declare_parameter("follow_person.kd", 0.12)
-        self.declare_parameter("follow_person.kff", 1.0)
-        self.declare_parameter("follow_person.dead_zone", 0.03)
-        self.declare_parameter("follow_person.max_velocity", 1.2)
-        # Wider pan range than the old -2.8..-0.5; safe because velocity now
-        # TAPERS over soft_limit_margin before a limit instead of cutting hard
-        # (it was the hard slam into the limit that faulted the xArm, not the
-        # range itself). Neutral (forward) is joint1_neutral = -1.5707.
-        self.declare_parameter("follow_person.joint1_min", -3.05)
-        self.declare_parameter("follow_person.joint1_max", -0.2)
-        self.declare_parameter("follow_person.soft_limit_margin", 0.35)
-        self.declare_parameter("follow_person.control_rate", 20.0)
-        self.declare_parameter("follow_person.centroid_timeout", 1.5)
-        self.declare_parameter("follow_person.integral_clamp", 0.3)
-        # On centroid timeout, slowly pan back to neutral so the camera faces
-        # forward (where the lost-person nav goal is taking the base).
-        self.declare_parameter("follow_person.recenter_enabled", True)
-        self.declare_parameter("follow_person.recenter_velocity", 0.3)
-        # Reactive "unload-the-arm" base yaw: when joint1 has panned off neutral
-        # (person to the side), rotate the BASE so joint1 returns toward neutral
-        # -> effectively unlimited pan and the person stays in the camera FOV.
-        # Verify the SIGN of base_yaw_kp on the robot (flip if the base
-        # turns the wrong way); joint1_neutral = forward-pointing joint1 value.
-        # OFF by default: the reactive base-yaw overshoots/oscillates with the
-        # current arm+base coupling — to be revisited (likely alongside re-acquisition).
-        # Tuned-down gains kept for when it's re-enabled.
-        self.declare_parameter("follow_person.base_yaw_enabled", False)
-        self.declare_parameter("follow_person.base_yaw_kp", 0.5)
-        self.declare_parameter("follow_person.joint1_neutral", -1.5707)
-        self.declare_parameter("follow_person.base_yaw_max", 0.25)
-
-    def _person_params(self):
-        return follow_pipeline.PersonParams(
-            **{
-                field.name: self.get_parameter(f"follow_person.{field.name}").value
-                for field in fields(follow_pipeline.PersonParams)
-            }
+            follow_pipeline.PERSON_DT,
+            self._person_loop,
+            callback_group=self.callback_group,
         )
 
     def _preempt_follow(self):
@@ -486,24 +439,7 @@ class ManipulationCore(Node):
         follow_pipeline.face_tick(self.arm, self._face)
 
     def _person_loop(self):
-        self._update_person_joints()
-        base_yaw = follow_pipeline.person_tick(
-            self.arm, self._person, self._person_params(), self._person_dt
-        )
-        self._publish_base_yaw(base_yaw)
-
-    def _update_person_joints(self):
-        msg = self.arm.joint_state
-        if msg is None:
-            return
-        for name, pos in zip(msg.name, msg.position):
-            if name in xarm6.joint_names():
-                self._person.joint_positions[name] = pos
-        if follow_pipeline.TARGET_JOINT in self._person.joint_positions:
-            self.get_logger().info(
-                f"Joint states received (joint1={self._person.joint_positions[follow_pipeline.TARGET_JOINT]:.3f})",
-                once=True,
-            )
+        self._publish_base_yaw(follow_pipeline.person_tick(self.arm, self._person))
 
     def _publish_base_yaw(self, value: float):
         msg = Float64()

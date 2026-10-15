@@ -181,7 +181,7 @@ Dead everywhere (safe to remove from launches / clean up):
 ## 7. Follow-person pipeline rework (2026-07-03)
 
 Applied across tracker / smoother / arm controller to stop losing the person
-(validate on robot with `ros2 run task_manager follow_calibration.py`):
+(validate on robot with `ros2 run task_manager test_follow_person.py`):
 
 - **tracker_node**: ALL SWIN ReID work (gallery embeds + re-acquisition matching)
   moved to a background worker thread with target-generation stamps — the 20 Hz
