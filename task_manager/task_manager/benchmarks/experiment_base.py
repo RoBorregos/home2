@@ -242,11 +242,7 @@ class ExperimentTM(Node):
             args.survey_timeout,
         )
 
-        self.current_state = (
-            self.States.WAIT_WAKE
-            if args.no_button or args.scripted
-            else self.States.WAITING_FOR_BUTTON
-        )
+        self.current_state = self.first_state()
         self.running_task = True
         self.sessions_done = 0
         self.announce_wake = True
@@ -257,6 +253,12 @@ class ExperimentTM(Node):
         if self.schedule is not None:
             online = "online + backup" if self.schedule.online else "backup only"
             Logger.info(self, f"Schedule source: {online}")
+
+    def first_state(self) -> int:
+        """Start button before every participant (also if the wake word fails)."""
+        if self.args.no_button or self.args.scripted:
+            return self.States.WAIT_WAKE
+        return self.States.WAITING_FOR_BUTTON
 
     def _install_silent_say(self):
         def say(text, wait=True, speed=1.15):
@@ -366,7 +368,7 @@ class ExperimentTM(Node):
             )
             self.sessions_done += 1
             self.announce_wake = True
-            self.current_state = s.WAIT_WAKE
+            self.current_state = self.first_state()
             if self.args.sessions and self.sessions_done >= self.args.sessions:
                 self.running_task = False
 
