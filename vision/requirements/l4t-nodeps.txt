@@ -1,0 +1,5 @@
+# Installed with `--no-deps` on the l4t image so they can't replace the torch,
+# numpy and opencv builds that come from l4t_base. Their dependencies are in l4t.txt.
+insightface==1.0.1
+ultralytics==8.4.19
+mediapipe==0.10.18
