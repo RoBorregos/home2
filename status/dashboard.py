@@ -8,7 +8,9 @@ Extra run.sh flags (--build, --recreate, ...) are ignored. Ctrl+C to exit.
 
 from __future__ import annotations
 
+import functools
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -40,6 +42,24 @@ def _parse_args(argv: list[str]) -> tuple[list[str], str]:
     areas = [a for a in argv if a in ALL_AREAS] or list(ALL_AREAS)
     task = next((a for a in argv if a in TASKS), "")
     return areas, task
+
+
+def _is_remote(area: str) -> bool:
+    return area in REMOTE_AREAS and not _has_local_containers(area)
+
+
+@functools.lru_cache(maxsize=None)
+def _has_local_containers(area: str) -> bool:
+    try:
+        names = subprocess.run(
+            ["docker", "ps", "-a", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        ).stdout.split()
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return any(n.startswith(f"home2-{area}") for n in names)
 
 
 def _icon(ok: bool) -> Text:
@@ -98,6 +118,7 @@ def _fetch_logs(container: str, lines: int) -> str:
 
 
 def _colorize_log_line(line: str) -> Text:
+    line = Text.from_ansi(line).plain
     if len(line) > LOG_LINE_MAX:
         line = line[: LOG_LINE_MAX - 1] + "…"
     upper = line.upper()
@@ -140,7 +161,7 @@ def _render_containers_panel(
     t.add_column(no_wrap=True, overflow="ellipsis", ratio=3, style="dim")
     for name, cs in sorted(infra.containers.items()):
         t.add_row(_icon(cs.ok), name, cs.detail)
-    for area in sorted(REMOTE_AREAS & set(areas)):
+    for area in sorted(a for a in areas if _is_remote(a)):
         t.add_row(
             Text("⇄", style="magenta"),
             f"home2-{area}-*",
@@ -237,6 +258,14 @@ def _render_hints(
             )
     if ros.error:
         lines.append(_hint(f" ⨯ {ros.error}", "red"))
+    if not ros.nodes and any(c.ok for c in infra.containers.values()):
+        lines.append(
+            _hint(
+                f" ⨯ containers up but the host sees no ROS nodes (host RMW={infra.dds.rmw_impl or 'default'}, "
+                "containers use CycloneDDS) → sudo bash scripts/setup_cyclonedds.sh",
+                "red",
+            )
+        )
     for top in ros.orphans_no_pub[:2]:
         lines.append(_hint(f" ⨯ {_shorten(top, 60)}: subs>0 but pubs=0", "red"))
     if not lines:
@@ -279,7 +308,7 @@ def _header(env_type: str, iface: str, task: str, areas: list[str]) -> Panel:
 def _load_area_states(areas: list[str], task: str) -> dict[str, dict]:
     states = {}
     for area in areas:
-        remote = area in REMOTE_AREAS
+        remote = _is_remote(area)
         states[area] = {
             "expected": area_config.load_area_nodes(area, task) if task else [],
             "containers": [] if remote else area_config.load_area_containers(area),
@@ -299,6 +328,12 @@ def main() -> int:
     container_names = list(
         dict.fromkeys(c for st in area_states.values() for c in st["containers"])
     )
+
+    def _stop(*_):
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, _stop)
+    signal.signal(signal.SIGHUP, _stop)
 
     console = Console()
     layout = _build_layout()
