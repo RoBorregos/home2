@@ -41,7 +41,7 @@ from frida_constants.vision_constants import (
 )
 
 from PyQt5.QtCore import Qt, QObject, QTimer, pyqtSignal
-from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPixmap
+from PyQt5.QtGui import QColor, QFont, QImage, QKeySequence, QPainter, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QDialog,
@@ -52,6 +52,7 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QPushButton,
     QScrollArea,
+    QShortcut,
     QStackedWidget,
     QTextEdit,
     QVBoxLayout,
@@ -1798,11 +1799,18 @@ def main():
         )
         factory = TASK_WINDOWS["default"]
     window = factory(ros_node)
-    # Maximized keeps the title bar buttons; DISPLAY_FULLSCREEN=1 hides them
-    if os.environ.get("DISPLAY_FULLSCREEN", "0") == "1":
-        window.showFullScreen()
-    else:
+    # Starts fullscreen; F11 toggles to a maximized window (DISPLAY_FULLSCREEN=0 starts windowed)
+    QShortcut(
+        QKeySequence("F11"),
+        window,
+        activated=lambda: (
+            window.showMaximized() if window.isFullScreen() else window.showFullScreen()
+        ),
+    )
+    if os.environ.get("DISPLAY_FULLSCREEN", "1") == "0":
         window.showMaximized()
+    else:
+        window.showFullScreen()
 
     ret = app.exec_()
     # Stop callbacks before closing the evidence files they write to.
