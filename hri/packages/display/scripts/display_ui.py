@@ -11,6 +11,7 @@ default (/), gpsr, hric, laundry, ppc, restaurant, storing_groceries.
 """
 
 import json
+import os
 import re
 import signal
 import sys
@@ -1797,7 +1798,11 @@ def main():
         )
         factory = TASK_WINDOWS["default"]
     window = factory(ros_node)
-    window.showMaximized()
+    # Maximized keeps the title bar buttons; DISPLAY_FULLSCREEN=1 hides them
+    if os.environ.get("DISPLAY_FULLSCREEN", "0") == "1":
+        window.showFullScreen()
+    else:
+        window.showMaximized()
 
     ret = app.exec_()
     # Stop callbacks before closing the evidence files they write to.
