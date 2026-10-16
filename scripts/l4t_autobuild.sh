@@ -33,6 +33,19 @@ fi
 
 cd "$REPO_DIR"
 
+# UID/GID of whoever runs this build, so files inside l4t_base match the
+# user containers actually run as (Dockerfile.ROS-l4t has no default for
+# these — it must be built with the real values). systemd runs this script
+# as User=orin, so $(id -u)/$(id -g) is correct; the docker/.env fallback
+# only matters if this is ever invoked as root (same LOCAL_USER_ID/
+# LOCAL_GROUP_ID convention lib.sh writes for every area's run.sh).
+BUILD_UID="$(id -u)"
+BUILD_GID="$(id -g)"
+if [ "$BUILD_UID" = "0" ] && [ -f "$REPO_DIR/docker/.env" ]; then
+  BUILD_UID="$(grep -oP '^LOCAL_USER_ID=\K.*' "$REPO_DIR/docker/.env" || echo "$BUILD_UID")"
+  BUILD_GID="$(grep -oP '^LOCAL_GROUP_ID=\K.*' "$REPO_DIR/docker/.env" || echo "$BUILD_GID")"
+fi
+
 echo "$LOG_PREFIX fetching origin/main..."
 git fetch origin main --quiet
 
@@ -92,8 +105,8 @@ if base_changed || ! docker image inspect roborregos/home2:l4t_base > /dev/null 
   build_image "$REPO_DIR/docker" "roborregos/home2:l4t_base" "docker/Dockerfile.ROS-l4t" \
     --build-arg BASE_IMAGE=ubuntu:24.04 \
     --build-arg ROS_DISTRO=jazzy \
-    --build-arg USER_UID=1000 \
-    --build-arg USER_GID=1000
+    --build-arg USER_UID="$BUILD_UID" \
+    --build-arg USER_GID="$BUILD_GID"
 fi
 
 if area_changed hri || [ "$REBUILD_BASE" = true ]; then
