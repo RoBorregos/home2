@@ -33,12 +33,6 @@ fi
 
 cd "$REPO_DIR"
 
-# UID/GID of whoever runs this build, so files inside l4t_base match the
-# user containers actually run as (Dockerfile.ROS-l4t has no default for
-# these — it must be built with the real values). systemd runs this script
-# as User=orin, so $(id -u)/$(id -g) is correct; the docker/.env fallback
-# only matters if this is ever invoked as root (same LOCAL_USER_ID/
-# LOCAL_GROUP_ID convention lib.sh writes for every area's run.sh).
 BUILD_UID="$(id -u)"
 BUILD_GID="$(id -g)"
 if [ "$BUILD_UID" = "0" ] && [ -f "$REPO_DIR/docker/.env" ]; then
