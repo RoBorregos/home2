@@ -53,6 +53,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QScrollArea,
     QShortcut,
+    QSizePolicy,
     QStackedWidget,
     QTextEdit,
     QVBoxLayout,
@@ -1022,6 +1023,8 @@ class MessagesPanel(QScrollArea):
             f"<br><span style='font-size:22px;'>{content}</span>"
         )
         entry.setWordWrap(True)
+        # Minimum keeps each entry at its full text height instead of being squeezed to fit
+        entry.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         entry.setStyleSheet(
             f"padding:10px; border:1px solid {BORDER_LIGHT}; border-radius:8px;"
             f"margin-bottom:6px; background-color:{BG_DARKER};"
