@@ -97,6 +97,7 @@ set(srv_files
   "hri/srv/AnswerQuestion.srv"
   "hri/srv/AddEntry.srv"
   "hri/srv/AudioText.srv"
+  "hri/srv/AgentTurn.srv"
   "hri/srv/BuildEmbeddings.srv"
   "hri/srv/CommandInterpreter.srv"
   "hri/srv/ExtractInfo.srv"

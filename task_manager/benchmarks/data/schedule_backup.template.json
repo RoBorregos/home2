@@ -1,0 +1,50 @@
+{
+  "_comment": "Offline backup of the Robot API (lang=en shape). Copy to schedule_backup.json (gitignored) or generate it with sync_backup.py. 'at' is UTC ISO, 'local' is the English text the robot reads. location: null or a string.",
+  "edition": 2026,
+  "timezone": "America/Monterrey",
+  "generated_at": "",
+  "teams": [
+    {
+      "id": "",
+      "name": "",
+      "track": "BEGINNER",
+      "challenge": null,
+      "members": [
+        {
+          "id": "",
+          "name": "",
+          "interview": {
+            "at": "2026-10-15T16:30:00.000Z",
+            "local": "Thursday, October 15 at 10:30 AM",
+            "area": "PROGRAMMING",
+            "areaLabel": "Programming",
+            "interviewer": "",
+            "location": null
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "round": 1,
+          "challenges": [
+            {
+              "track": "Track A",
+              "at": "2026-10-17T15:00:00.000Z",
+              "local": "Saturday, October 17 at 9:00 AM",
+              "location": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "candidates_without_team": [
+    {
+      "id": "",
+      "name": "",
+      "track": "BEGINNER",
+      "challenge": null,
+      "interview": null
+    }
+  ]
+}
