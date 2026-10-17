@@ -23,6 +23,7 @@ from pathlib import Path
 import rclpy
 from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from rclpy.signals import SignalHandlerOptions
 from rclpy.validate_topic_name import validate_topic_name
 from rcl_interfaces.msg import Log
@@ -462,7 +463,10 @@ class DisplayRosNode(Node):
     def _subscribe_video(self, topic: str):
         if self._video_sub is not None:
             self.destroy_subscription(self._video_sub)
-        self._video_sub = self.create_subscription(Image, topic, self._on_frame, 1)
+        # Best effort matches both the reliable oriented image and the ZED's sensor QoS
+        self._video_sub = self.create_subscription(
+            Image, topic, self._on_frame, qos_profile_sensor_data
+        )
         self.video_topic = topic
         self.signals.video_topic_changed.emit(topic)
 
