@@ -10,6 +10,7 @@ import argparse
 import difflib
 import json
 import os
+import time
 
 import rclpy
 from frida_constants.robot_api import make_schedule_source, normalize_name
@@ -34,6 +35,7 @@ BENCHMARK_DIR = os.getenv("BENCHMARK_DIR", "/workspace/src/task_manager/benchmar
 WAKE_WORD = "frida"
 WAKE_TIMEOUT = 60.0
 DETECT_PERSON_TIMEOUT = 5.0
+START_REMINDER_S = 20.0
 
 
 def experiment_args(argv=None) -> argparse.Namespace:
@@ -311,9 +313,11 @@ class ExperimentTM(Node):
         if self.current_state == s.WAITING_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
             self.hri.reset_task_status()
-            self.hri.say("Press start on my screen to begin the experiment.")
             while not self.hri.start_button_clicked:
-                rclpy.spin_once(self, timeout_sec=0.1)
+                self.hri.say("Hello, I am Frida. Press the start button on my screen to begin.")
+                deadline = time.monotonic() + START_REMINDER_S
+                while not self.hri.start_button_clicked and time.monotonic() < deadline:
+                    rclpy.spin_once(self, timeout_sec=0.1)
             self.current_state = s.WAIT_WAKE
 
         elif self.current_state == s.WAIT_WAKE:
