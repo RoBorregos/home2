@@ -38,6 +38,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD", "namespacefrida__constants_1_1hri__constants.html#a178c823b8cab8a3ba2131d5cb2c3594c", null ],
     [ "SKIP_CONFIRMATION_SIMILARITY_THRESHOLD", "namespacefrida__constants_1_1hri__constants.html#ad2a4e34cfd6c77f2d8848fe49c7e4a1e", null ],
     [ "SPEAK_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a1405902be9440099af248e891e6a796d", null ],
+    [ "SPEAKER_TEST_TOPIC", "namespacefrida__constants_1_1hri__constants.html#aa31ca485491b4dd1df0e7d583aaf18bb", null ],
     [ "START_BUTTON_CLIENT", "namespacefrida__constants_1_1hri__constants.html#ab1a983b5885fb90a459dc54c41cf94d0", null ],
     [ "STT_ACTION_SERVER_NAME", "namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29", null ],
     [ "STT_SERVICE_NAME", "namespacefrida__constants_1_1hri__constants.html#a05d8fa1eccd50686fbaff0e84170dcb9", null ],

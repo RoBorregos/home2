@@ -1,5 +1,7 @@
 var NAVTREEINDEX40 =
 {
+"namespacefrida__constants_1_1manipulation__constants.html#abc01e1600c8a6c791bc5edb33bbf2576":[41,0,53,2,13],
+"namespacefrida__constants_1_1manipulation__constants.html#ac2bfc14249e460c5ed0f5150ceda9e88":[41,0,53,2,8],
 "namespacefrida__constants_1_1manipulation__constants.html#ac3a0e78153e604056eb6b66a73f0f4f7":[41,0,53,2,23],
 "namespacefrida__constants_1_1manipulation__constants.html#ac5c569d6bae4713e9a97f1cfa14ca6d9":[41,0,53,2,15],
 "namespacefrida__constants_1_1manipulation__constants.html#ac9123d02a104c1579ddaeb0a9cf75238":[41,0,53,2,61],
@@ -247,7 +249,5 @@ var NAVTREEINDEX40 =
 "namespacehand__task__manager.html#a91d2488b83a8d7b6e91bb400d9ff6b17":[41,0,70,1],
 "namespacehand__task__manager.html#a99cf5ff5956cbf1fe5d95cd0d41ba15e":[41,0,70,2],
 "namespaceheatmapPlace__Server.html":[41,0,71],
-"namespaceheatmapPlace__Server.html#a10435d751d9f6423cad540218af8f216":[41,0,71,2],
-"namespaceheatmapPlace__Server.html#a722ba8c49613d837163c253b9d93d6a8":[41,0,71,1],
-"namespacehelp__me__carry.html":[41,0,72]
+"namespaceheatmapPlace__Server.html#a10435d751d9f6423cad540218af8f216":[41,0,71,2]
 };

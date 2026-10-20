@@ -1,5 +1,7 @@
 var NAVTREEINDEX47 =
 {
+"odrive__dashboard_8py.html#a6a785ceef3647ae926466696d493fa38":[43,0,4,0,3,0,1,23],
+"odrive__dashboard_8py.html#a6f60f3a3c2787dc9f4ee6d5b4fb1575e":[43,0,4,0,3,0,1,7],
 "odrive__dashboard_8py.html#a82476c2ef7b4153839aef0795c74769c":[43,0,4,0,3,0,1,13],
 "odrive__dashboard_8py.html#a8aba568a1ed458476dba43da58409824":[43,0,4,0,3,0,1,14],
 "odrive__dashboard_8py.html#a98ab3fab860c1c133a39f693684afad2":[43,0,4,0,3,0,1,12],
@@ -247,7 +249,5 @@ var NAVTREEINDEX47 =
 "problem__tar__to__pkl__json_8py.html#ab1d9fd37727ec32935f28b4397f2e731":[43,0,3,0,7,0,0,2],
 "problem__tar__to__pkl__json_8py.html#ad316be76687b4bbfb11d59e893cfedf0":[43,0,3,0,7,0,0,3],
 "problem__tar__to__pkl__json_8py.html#af7ad160e11b2b69c3f904adeb6a852b3":[43,0,3,0,7,0,0,4],
-"profiles_8py.html":[43,0,3,0,5,1,0,6],
-"profiles_8py.html#a03089d8c756527d74054ae81a8393136":[43,0,3,0,5,1,0,6,8],
-"profiles_8py.html#a05f5a2c0c832c44bc825adc130da6600":[43,0,3,0,5,1,0,6,5]
+"profiles_8py.html":[43,0,3,0,5,1,0,6]
 };

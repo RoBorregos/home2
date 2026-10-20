@@ -1,5 +1,6 @@
 var NAVTREEINDEX38 =
 {
+"namespaceadd__collision__object.html":[41,0,3],
 "namespaceadd__collision__object.html#a4d453f8d2e963ce0e4c23e30c0f9b0bd":[41,0,3,0],
 "namespacearm__pkg.html":[41,0,4],
 "namespacearm__pkg_1_1moveit__configs__builder.html":[41,0,4,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX38 =
 "namespaceex__orientation__path__constraint.html#a36a4bdef39d4f65cac132fb27dedf87c":[41,0,36,2],
 "namespaceex__orientation__path__constraint.html#a57b22356cd49cfb907d3856e0bd4e00f":[41,0,36,1],
 "namespaceex__pose__goal.html":[41,0,37],
-"namespaceex__pose__goal.html#a3c640a6e9488d4ac49c2a0e8328b589d":[41,0,37,0],
-"namespaceexample__launch.html":[41,0,38]
+"namespaceex__pose__goal.html#a3c640a6e9488d4ac49c2a0e8328b589d":[41,0,37,0]
 };
