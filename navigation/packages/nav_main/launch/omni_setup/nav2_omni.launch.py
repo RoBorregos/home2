@@ -28,7 +28,6 @@ def launch_setup(context, *args, **kwargs):
     # Default omnibase profile: full 4-wheel omni. Callers can still override
     # with nav2_config_file:= (e.g. the 3-wheel nav2_omni_limp.yaml).
     nav2_params_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni.yaml')
-    # nav2_params_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
     keepout_overlay_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_keepout.yaml')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 

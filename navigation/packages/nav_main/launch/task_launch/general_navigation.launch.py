@@ -17,7 +17,6 @@ def launch_function(context, *args, **kwargs):
     # nav2_omni_config_file:=/path.yaml (e.g. the 3-wheel nav2_omni_limp.yaml) —
     # the follow overlay pair switches with it.
     nav2_omni_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni.yaml')
-    # nav2_omni_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
 
     rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME'))
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
