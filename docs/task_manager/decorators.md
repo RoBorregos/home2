@@ -25,6 +25,29 @@ If true, the function will be mocked and the default value will be returned.
 
 Default is false.
 
+- `_mock_callback`:
+
+Function called instead of the real one, with the same arguments. Use it when the mocked value depends on the arguments or a callback must be fired.
+
+Default is None.
+
+### Rules
+- Every public method that uses a service, action, publisher, TF or spins the node must be `@mockable`. Callbacks, `setup_*`, pure helpers and methods that only call other mockable methods are not decorated.
+- `@mockable` is always the outermost decorator.
+- The mocked value has the same shape as the real success value: `Status.EXECUTION_SUCCESS` or `(Status.EXECUTION_SUCCESS, <value>)`, always a tuple and never a list.
+
+### Mocking an area
+Valid areas are `vision`, `navigation`, `manipulation` and `hri`. Any other name raises a `ValueError`.
+```python
+self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation", "vision"])
+```
+
+### Testing
+Checks that every public method is mockable or listed as exempt, and that mocked values are valid. A new non-mockable method must be added to `EXEMPT` in the test.
+```bash
+ros2 run task_manager test_mocks.py
+```
+
 ### Implementation
 ```python
 @mockable(return_value=<default_value>, delay=(int)<delay-seconds>, mock=(bool)<mock>)
@@ -47,7 +70,7 @@ Arguments:
 
 The name of the client to check. (It can be a service or a action client)
 
-- `default_value`:
+- `return_value`:
 
 The value to return when the service is not available.
 Default is None.
@@ -60,12 +83,12 @@ Default is 3 seconds.
 ### Implementation
 
 ```python
-@service_check(client="client_name", default_value=<default_value>, timeout=(int)<timeout-seconds>)
+@service_check(client="client_name", return_value=<default_value>, timeout=(int)<timeout-seconds>)
 ```
 
 Example
 ```python
-@service_check(client="client_name", default_value="Error", timeout=2)
+@service_check(client="client_name", return_value="Error", timeout=2)
 def do_something(self):
     """<docstring>"""
     # function implementation

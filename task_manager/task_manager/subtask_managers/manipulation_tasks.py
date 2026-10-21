@@ -163,13 +163,9 @@ class ManipulationTasks:
     def _set_gripper_state(self, state: str):
         """
         Controls the gripper state.
-        State: 'open' o 'close'
+        State: 'open' or 'close'
         """
         try:
-            # if not self.gripper_client.wait_for_service(timeout_sec=TIMEOUT):
-            #     Logger.error(self.node, "Gripper service not available")
-            #     return Status.ExecutionError
-
             req = SetBool.Request()
             req.data = state == "open"
 
@@ -201,16 +197,9 @@ class ManipulationTasks:
         Named position has priority over joint_positions.
         """
         if named_position:
-            # joint_positions = self.get_named_target(named_position)
-            # joint_positions = joint_positions["positions"].keys()
-
             joint_positions = self.get_named_target(named_position)
-
             degrees = joint_positions.get("degrees", False)
-
             joint_positions = joint_positions["joints"]
-
-            self.node.get_logger().info(f"dict: {joint_positions}")
 
         # Determine format of joint_positions and apply degree conversion if needed.
         if isinstance(joint_positions, dict):
@@ -262,6 +251,7 @@ class ManipulationTasks:
         print("Joint positions from service: ", result.joint_positions)
         return dict(zip(result.joint_names, result.joint_positions))
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check("_fixed_distance_move_client", Status.EXECUTION_ERROR, TIMEOUT)
     def move_arm_vertical(self, distance: float, descend: bool = False):
         """Move the TCP a fixed distance in Z (xArm mode 5 closed-loop).
@@ -287,8 +277,6 @@ class ManipulationTasks:
         acceleration=0.0,
         planner_id="",
     ):
-        print("Joint names: ", joint_names)
-        print("Joint positions: ", joint_positions)
         goal_msg = MoveJoints.Goal()
         goal_msg.joint_names = joint_names
         goal_msg.joint_positions = joint_positions
@@ -319,7 +307,7 @@ class ManipulationTasks:
             return False
         return True
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS, mock=False)
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(client="follow_face_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
     def follow_face(self, follow) -> int:
         """Activate or deactivate face following on the arm."""
@@ -392,6 +380,7 @@ class ManipulationTasks:
 
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def place(
         self,
         close_to: str = "",
@@ -510,6 +499,7 @@ class ManipulationTasks:
             Logger.warning(self.node, f"Error scanning {direction.value}: {e}")
             return True
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def place_on_floor(self, named_position: str = "pick_stare_at_table") -> int:
         try:
             Logger.info(self.node, f"Moving to {named_position}...")
@@ -556,6 +546,7 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error in place_on_floor: {e}")
             return Status.EXECUTION_ERROR
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def place_on_shelf(self, plane_height: int, tolerance: int):
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
         #     Logger.error(self.node, "Manipulation action server not available")
@@ -594,6 +585,7 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def pour(
         self, pour_object_name: str, pour_container_name: str, object_already_grasped: bool = False
     ):
@@ -623,6 +615,7 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def clear_collision_objects(self, include_attached: bool = True) -> int:
         """Remove all collision objects from the planning scene.
         Useful before movements that MoveIt would reject due to stale
@@ -672,6 +665,44 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         joint_positions["joint1"] = FORWARD_JOINT1_DEG - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
+
+    def pan_sweep_start(self, to_degrees: float, velocity: float = 0.3):
+        """Like pan_to() but non-blocking: returns the goal handle right away so
+        the caller can poll and cancel early. None if the goal wasn't accepted."""
+        joint_positions = self.get_joint_positions(degrees=True)
+        if not isinstance(joint_positions, dict):
+            Logger.error(
+                self.node, f"Failed to get joint positions in pan_sweep_start: {joint_positions}"
+            )
+            return None
+        joint_positions["joint1"] = FORWARD_JOINT1_DEG - to_degrees
+        joint_names = list(joint_positions.keys())
+        joint_vals = [v * DEG_TO_RAD for v in joint_positions.values()]
+
+        future = self._send_joint_goal(
+            joint_names=joint_names, joint_positions=joint_vals, velocity=velocity
+        )
+        if future is None or isinstance(future, int):
+            Logger.error(self.node, "Failed to send pan sweep goal")
+            return None
+
+        rclpy.spin_until_future_complete(self.node, future)
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            Logger.error(self.node, "Pan sweep goal was rejected")
+            return None
+        return goal_handle
+
+    def pan_sweep_poll(self, result_future) -> bool:
+        """Spins briefly; returns True once the sweep's result future is done."""
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=0.05)
+        return result_future.done()
+
+    def pan_sweep_cancel(self, goal_handle):
+        """Stop an in-flight pan_sweep_start() motion immediately, wherever
+        the arm currently is."""
+        future = goal_handle.cancel_goal_async()
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
 
     def point(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
@@ -768,6 +799,7 @@ class ManipulationTasks:
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
 
+    @mockable(return_value=lambda self: PoseStamped())
     def get_optimal_pose_for_plane(
         self,
         est_heigth: float,
@@ -794,7 +826,7 @@ class ManipulationTasks:
 
         return result.optimal_pose
 
-    @mockable(return_value=Status.MOCKED)
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
