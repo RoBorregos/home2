@@ -12,6 +12,7 @@ ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Re
 - [Cyclone DDS Setup](#cyclone-dds-setup)
 - [AI Agent Setup](#ai-agent-setup)
 - [Documentation](#documentation)
+- [Related Repositories](#related-repositories)
 - [Video Demonstrations](#video-demonstrations)
 - [Team Members](#team-members)
 - [Past Contributors](#past-contributors)
@@ -153,6 +154,11 @@ All agent context lives in `docs/ai/` (e.g. `docs/ai/orin.md` — how to connect
 - [RoboCup @Home Rule Book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoBorregos/home2)
+
+## Related Repositories
+
+- [home-custom-base](https://github.com/RoBorregos/home-custom-base): firmware (STM32, ODrive S1 over CAN, on-MCU EKF) and ROS 2 dashboard for FRIDA's omnidirectional base.
+- [home-pipelines](https://github.com/RoBorregos/home-pipelines): Jupyter notebook pipelines for the HRI command interpreter and the vision object detector.
 
 ## Video Demonstrations
 
