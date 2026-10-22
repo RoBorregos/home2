@@ -1,7 +1,12 @@
+import os
 from math import pi as PI
 
 EEF_LINK_NAME = "link_eef"
-EEF_CONTACT_LINKS = ["link_eef", "link_6", "gripper", "left_finger", "right_finger"]
+# Last arm link the gripper is bolted to: xArm6 link_6 or the A2 right link7
+_FLANGE_LINK = (
+    "openarm_right_link7" if os.environ.get("FRIDA_ARM") == "a2" else "link_6"
+)
+EEF_CONTACT_LINKS = ["link_eef", _FLANGE_LINK, "gripper", "left_finger", "right_finger"]
 
 DEG2RAD = PI / 180.0
 RAD2DEG = 180.0 / PI

@@ -4,7 +4,7 @@ from frida_interfaces.srv import GraspDetection
 from frida_constants.manipulation_constants import PICK_VELOCITY
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_motion_planning.utils.service_utils import move_joint_positions
-from frida_pymoveit2.robots.xarm6 import joint_names as xarm6_joint_names
+from frida_pymoveit2.robots.active import joint_names as arm_joint_names
 from pick_and_place.utils.self_collision_utils import compute_ik
 
 
@@ -100,7 +100,7 @@ def move_to_pregrasp_nearest_ik(
                 ik_resp.solution.joint_state.position,
             )
         )
-        arm_names = xarm6_joint_names()
+        arm_names = arm_joint_names()
         if all(n in sol for n in arm_names):
             # Pass the named-joint dict
             joints = {n: float(sol[n]) for n in arm_names}

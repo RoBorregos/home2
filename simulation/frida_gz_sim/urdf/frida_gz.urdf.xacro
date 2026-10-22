@@ -9,9 +9,18 @@
   <xacro:arg name="cmd_vel_topic" default="/sim/cmd_vel"/>
   <xacro:arg name="lidar_rate" default="10"/>
   <xacro:property name="mobile_base" value="$(arg mobile_base)"/>
+  <!-- Arm on the robot: xarm6 (current hardware) or a2 (Agility A2 / OpenArm dual arm) -->
+  <xacro:arg name="arm" default="xarm6"/>
+  <xacro:property name="arm" value="$(arg arm)"/>
 
   <!-- Real robot description; pass ros2_control_plugin:=gz_ros2_control/GazeboSimSystem -->
-  <xacro:include filename="$(find frida_description)/urdf/omnibase/FRIDA_Real.urdf.xacro"/>
+  <xacro:if value="${arm == 'xarm6'}">
+    <xacro:include filename="$(find frida_description)/urdf/omnibase/FRIDA_Real.urdf.xacro"/>
+  </xacro:if>
+  <xacro:if value="${arm == 'a2'}">
+    <xacro:include filename="$(find frida_description)/urdf/omnibase/FRIDA_A2.urdf.xacro"/>
+    <xacro:include filename="$(find frida_gz_sim)/urdf/a2_gz.xacro"/>
+  </xacro:if>
 
   <!-- Static base for the manipulation worlds; the nav worlds drive base_link instead -->
   <xacro:unless value="${mobile_base}">
@@ -111,12 +120,18 @@
       <gravity>false</gravity>
     </gazebo>
   </xacro:macro>
-  <xacro:no_gravity link="link1"/>
-  <xacro:no_gravity link="link2"/>
-  <xacro:no_gravity link="link3"/>
-  <xacro:no_gravity link="link4"/>
-  <xacro:no_gravity link="link5"/>
-  <xacro:no_gravity link="link6"/>
+  <xacro:if value="${arm == 'xarm6'}">
+    <xacro:no_gravity link="link1"/>
+    <xacro:no_gravity link="link2"/>
+    <xacro:no_gravity link="link3"/>
+    <xacro:no_gravity link="link4"/>
+    <xacro:no_gravity link="link5"/>
+    <xacro:no_gravity link="link6"/>
+  </xacro:if>
+  <xacro:if value="${arm == 'a2'}">
+    <xacro:a2_no_gravity side="right" index="1"/>
+    <xacro:a2_no_gravity side="left" index="1"/>
+  </xacro:if>
 
   <!-- Grippy finger pads -->
   <xacro:macro name="finger_pad" params="link">

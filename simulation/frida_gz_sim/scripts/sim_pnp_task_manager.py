@@ -5,6 +5,7 @@ Uses the real vision and manipulation subtask managers; navigation and HRI are n
 involved because the robot base is static in front of the table.
 """
 
+import os
 import time
 
 import rclpy
@@ -41,6 +42,11 @@ SIDE_TABLE_STARE = {
     "joint5": 50.0,
     "joint6": 45.0,
 }
+# The A2 world has the side table on the robot's right instead
+if os.environ.get("FRIDA_ARM") == "a2":
+    from frida_constants.a2_configurations import A2_CONFIGURATIONS
+
+    SIDE_TABLE_STARE = A2_CONFIGURATIONS["side_table_stare"]["joints"]
 
 
 class SimPickAndPlaceTM(Node):

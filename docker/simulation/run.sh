@@ -21,6 +21,8 @@ AREA=manip
 GUI=true
 RVIZ_VIEW=true
 MOVEIT_RVIZ=false
+# Arm on the robot: xarm6 (current hardware) or a2 (Agility A2 / OpenArm dual arm)
+FRIDA_ARM=${FRIDA_ARM:-xarm6}
 for arg in "${ARGS[@]}"; do
   case $arg in
     --manip) AREA=manip ;;
@@ -29,6 +31,7 @@ for arg in "${ARGS[@]}"; do
     --headless) GUI=false ;;
     --no-rviz) RVIZ_VIEW=false ;;
     --moveit-rviz) MOVEIT_RVIZ=true ;;
+    --a2) FRIDA_ARM=a2 ;;
   esac
 done
 
@@ -53,6 +56,7 @@ Flags:
   --headless       Do not open the Gazebo window
   --no-rviz        Do not open RViz
   --moveit-rviz    Also open MoveIt's own RViz
+  --a2             Swap the xArm6 for the Agility A2 dual arm (also for --tm)
   --recreate       Recreate the container
   --stop | --down  Stop / remove the container
   --clean          Delete build/, install/ and log/
@@ -62,6 +66,7 @@ Examples:
   ./run.sh simulation --nav
   ./run.sh simulation --nav-tm
   ./run.sh simulation --manip --headless --no-rviz
+  ./run.sh simulation --manip --a2 && ./run.sh simulation --tm --a2
 USAGE
 }
 
@@ -82,8 +87,8 @@ fi
 mkdir -p build install log cache/gz cache/ultralytics logs
 
 COMPOSE="docker compose -f $COMPOSE_FILE"
-SETUP="source /opt/ros/jazzy/setup.bash && source /usr/local/bin/cyclonedds_setup.sh && if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-PACKAGES="frida_interfaces frida_constants frida_gz_sim manipulation_general xarm6_ikfast_plugin nav_main map_context ira_laser_tools"
+SETUP="export FRIDA_ARM=$FRIDA_ARM && source /opt/ros/jazzy/setup.bash && source /usr/local/bin/cyclonedds_setup.sh && if [ -f install/setup.bash ]; then source install/setup.bash; fi"
+PACKAGES="frida_interfaces frida_constants openarm_description frida_gz_sim manipulation_general xarm6_ikfast_plugin nav_main map_context ira_laser_tools"
 IGNORE="realsense_gazebo_plugin xarm_gazebo mujoco_ros2_control mujoco_spawn vamp vamp_moveit_plugin omnidriver sllidar_ros2 p9n_node p9n_interface"
 
 ensure_container() {
@@ -128,7 +133,9 @@ wait_for_logs() {
 # Per-area world and spawn: nav drives the base around the arena built from the map
 sim_args() {
   case $AREA in
-    manip) echo "gui:=$GUI" ;;
+    manip)
+      # The A2 right arm cannot reach the left side table, so its world mirrors it to the right
+      if [ "$FRIDA_ARM" = a2 ]; then echo "gui:=$GUI world:=pnp_table_a2.sdf"; else echo "gui:=$GUI"; fi ;;
     nav)
       # Nothing consumes the ZED stream here, so render it slowly and leave the CPU to physics
       echo "gui:=$GUI world:=arena_robocup2026_1.sdf mobile_base:=true grasp_assist:=false" \
@@ -148,7 +155,9 @@ start_all() {
   fi
   rm -f logs/sim.log logs/manipulation.log logs/vision.log logs/rviz.log logs/navigation.log
   in_background sim "ros2 launch frida_gz_sim sim.launch.py $(sim_args)"
-  wait_for_logs "sim:activated xarm6_traj_controller"
+  local arm_controller=xarm6_traj_controller
+  [ "$FRIDA_ARM" = a2 ] && arm_controller=a2_traj_controller
+  wait_for_logs "sim:activated $arm_controller"
 
   if [ "$AREA" = manip ] || [ "$AREA" = all ]; then
     in_background manipulation "ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=$MOVEIT_RVIZ"

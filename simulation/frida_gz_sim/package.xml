@@ -24,6 +24,7 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>xarm_msgs</exec_depend>
   <exec_depend>frida_description</exec_depend>
+  <exec_depend>openarm_description</exec_depend>
   <exec_depend>frida_interfaces</exec_depend>
   <exec_depend>frida_constants</exec_depend>
   <exec_depend>arm_pkg</exec_depend>

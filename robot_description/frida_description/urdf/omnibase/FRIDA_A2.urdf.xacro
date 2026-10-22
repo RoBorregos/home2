@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- FRIDA with the Agility A2 (OpenArm v1.0) dual arm instead of the xArm6; the right arm carries the gripper and ZED -->
+  <xacro:arg name="shoulder_height" default="0.5"/>
+  <xacro:arg name="shoulder_y" default="0.06"/>
+  <xacro:arg name="flange_z" default="0.095"/>
+  <xacro:arg name="flange_yaw" default="-1.5708"/>
+
+  <xacro:property name="shoulder_height" value="$(arg shoulder_height)"/>
+  <xacro:property name="shoulder_y" value="$(arg shoulder_y)"/>
+  <xacro:property name="arm_cfg" value="$(find openarm_description)/assets/robot/openarm_v1.0/config/arm"/>
+
+  <!-- Base, wheels, lidars and the old arm mount point (xarm_base) -->
+  <xacro:include filename="$(find frida_description)/urdf/omnibase/robot.xacro"/>
+
+  <!-- Torso column from the old arm mount up to the shoulders -->
+  <link name="a2_torso">
+    <visual>
+      <origin xyz="0 0 ${shoulder_height / 2}" rpy="0 0 0"/>
+      <geometry><box size="0.1 0.08 ${shoulder_height}"/></geometry>
+      <material name="a2_torso_grey"><color rgba="0.3 0.3 0.3 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${shoulder_height / 2}" rpy="0 0 0"/>
+      <geometry><box size="0.1 0.08 ${shoulder_height}"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 ${shoulder_height / 2}" rpy="0 0 0"/>
+      <mass value="2.0"/>
+      <inertia ixx="0.04" ixy="0" ixz="0" iyy="0.04" iyz="0" izz="0.004"/>
+    </inertial>
+  </link>
+  <joint name="a2_torso_joint" type="fixed">
+    <parent link="xarm_base"/>
+    <child link="a2_torso"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Shoulder bar both arms hang from -->
+  <link name="a2_shoulder_mount"/>
+  <joint name="a2_shoulder_mount_joint" type="fixed">
+    <parent link="a2_torso"/>
+    <child link="a2_shoulder_mount"/>
+    <origin xyz="0 0 ${shoulder_height}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- OpenArm v1.0 arms, mounted sideways like the OpenArm bimanual body -->
+  <xacro:include filename="$(find openarm_description)/assets/robot/openarm_v1.0/urdf/arm/openarm_macro.xacro"/>
+  <xacro:include filename="$(find openarm_description)/assets/robot/openarm_v1.0/urdf/arm/openarm_arm.xacro"/>
+  <xacro:macro name="a2_arm" params="side y roll">
+    <xacro:openarm_arm
+      arm_type="v10"
+      arm_prefix="${side}_"
+      description_pkg="openarm_description"
+      connected_to="a2_shoulder_mount"
+      xyz="0 ${y} 0"
+      rpy="${roll} 0 0"
+      joint_limits="${xacro.load_yaml(arm_cfg + '/joint_limits.yaml')}"
+      inertials="${xacro.load_yaml(arm_cfg + '/inertials.yaml')}"
+      kinematics="${xacro.load_yaml(arm_cfg + '/kinematics.yaml')}"
+      kinematics_link="${xacro.load_yaml(arm_cfg + '/kinematics_link.yaml')}"
+      kinematics_offset="${xacro.load_yaml(arm_cfg + '/kinematics_offset.yaml')}"/>
+  </xacro:macro>
+  <xacro:a2_arm side="right" y="${-shoulder_y}" roll="${pi / 2}"/>
+  <xacro:a2_arm side="left" y="${shoulder_y}" roll="${-pi / 2}"/>
+
+  <!-- Right flange, named like the xArm one so grasp frames and TF users stay unchanged -->
+  <link name="link_eef"/>
+  <joint name="joint_eef" type="fixed">
+    <parent link="openarm_right_link7"/>
+    <child link="link_eef"/>
+    <origin xyz="0 0 $(arg flange_z)" rpy="0 0 $(arg flange_yaw)"/>
+  </joint>
+
+  <joint name="gripper_grasp_joint" type="fixed">
+    <parent link="link_eef"/>
+    <child link="gripper_grasp_frame"/>
+    <origin xyz="0 0 0" rpy="0 0 -0.7854"/>
+  </joint>
+  <link name="gripper_grasp_frame"/>
+
+  <!-- FRIDA custom gripper and wrist ZED, same mounting as on the xArm flange -->
+  <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper.xacro"/>
+  <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.046" rpy="0 0 3.926" fixed_joints="false" ros2_control_plugin="none"/>
+  <xacro:include filename="$(find frida_description)/urdf/zed/zed.xacro"/>
+  <xacro:load_zed attach_to="zed" xyz="0.0 0 0.0" rpy="0 0 0"/>
+</robot>

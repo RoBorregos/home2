@@ -16,7 +16,7 @@ from tf2_ros import TransformBroadcaster, TransformListener, Buffer
 from geometry_msgs.msg import TransformStamped, PointStamped, PoseStamped
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_motion_planning.utils.tf_utils import look_at
-from frida_pymoveit2.robots import xarm6
+from frida_pymoveit2.robots import active as robot
 import time
 from tf_transformations import quaternion_from_euler
 import math
@@ -214,7 +214,7 @@ class FixPositionToPlane(Node):
         p.point.y = 0.0
         p.point.z = acvasd
         self.get_logger().info(f"Point: {p}")
-        # cur_cam = xarm6.camera_frame_name()
+        # cur_cam = robot.camera_frame_name()
         # cur_cam_tf = self.tf_buffer.lookup_transform(
         #      "base_link",cur_cam, rclpy.time.Time(), timeout=rclpy.time.Duration(seconds=1)
         # )
@@ -250,7 +250,7 @@ class FixPositionToPlane(Node):
         # req_move.pose.position.z += 0.2
         req_move.pose = look_at_pose
         req_move.velocity = 0.75
-        req_move.target_link = xarm6.camera_frame_name()
+        req_move.target_link = robot.camera_frame_name()
         self.get_logger().info(f"Request: {req_move}")
         fut = self._action_client.send_goal_async(req_move)
 
@@ -372,7 +372,7 @@ class FixPositionToPlane(Node):
             req_move.pose = t
 
             req_move.velocity = 0.75
-            req_move.target_link = xarm6.camera_frame_name()
+            req_move.target_link = robot.camera_frame_name()
 
             # self.get_logger().info(f"Request: {req_move}")
             # self.get_logger().info(f"Request: {req_move}")

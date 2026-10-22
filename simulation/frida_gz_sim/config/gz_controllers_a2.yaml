@@ -1,0 +1,96 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 200
+    use_sim_time: true
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    a2_traj_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    a2_left_traj_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    xarm_gripper_traj_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+a2_traj_controller:
+  ros__parameters:
+    use_sim_time: true
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    joints:
+      - openarm_right_joint1
+      - openarm_right_joint2
+      - openarm_right_joint3
+      - openarm_right_joint4
+      - openarm_right_joint5
+      - openarm_right_joint6
+      - openarm_right_joint7
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+    allow_nonzero_velocity_at_trajectory_end: true
+    constraints:
+      goal_time: 2.0
+      stopped_velocity_tolerance: 0.0
+      openarm_right_joint1: {trajectory: 0.0, goal: 0.05}
+      openarm_right_joint2: {trajectory: 0.0, goal: 0.05}
+      openarm_right_joint3: {trajectory: 0.0, goal: 0.05}
+      openarm_right_joint4: {trajectory: 0.0, goal: 0.05}
+      openarm_right_joint5: {trajectory: 0.0, goal: 0.05}
+      openarm_right_joint6: {trajectory: 0.0, goal: 0.05}
+      openarm_right_joint7: {trajectory: 0.0, goal: 0.05}
+
+a2_left_traj_controller:
+  ros__parameters:
+    use_sim_time: true
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    joints:
+      - openarm_left_joint1
+      - openarm_left_joint2
+      - openarm_left_joint3
+      - openarm_left_joint4
+      - openarm_left_joint5
+      - openarm_left_joint6
+      - openarm_left_joint7
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+    allow_nonzero_velocity_at_trajectory_end: true
+    constraints:
+      goal_time: 2.0
+      stopped_velocity_tolerance: 0.0
+      openarm_left_joint1: {trajectory: 0.0, goal: 0.05}
+      openarm_left_joint2: {trajectory: 0.0, goal: 0.05}
+      openarm_left_joint3: {trajectory: 0.0, goal: 0.05}
+      openarm_left_joint4: {trajectory: 0.0, goal: 0.05}
+      openarm_left_joint5: {trajectory: 0.0, goal: 0.05}
+      openarm_left_joint6: {trajectory: 0.0, goal: 0.05}
+      openarm_left_joint7: {trajectory: 0.0, goal: 0.05}
+
+xarm_gripper_traj_controller:
+  ros__parameters:
+    use_sim_time: true
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    joints:
+      - rightfinger
+      - leftfinger
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+    allow_nonzero_velocity_at_trajectory_end: true
+    constraints:
+      goal_time: 0.0
+      stopped_velocity_tolerance: 0.0
+      rightfinger: {trajectory: 0.0, goal: 0.0}
+      leftfinger: {trajectory: 0.0, goal: 0.0}

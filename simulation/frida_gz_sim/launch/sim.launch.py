@@ -4,7 +4,7 @@
 import os
 
 from ament_index_python.packages import get_package_share_directory
-from frida_gz_sim.description import build_robot_description
+from frida_gz_sim.description import ARM, build_robot_description
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -120,17 +120,20 @@ def launch_setup(context, *args, **kwargs):
         parameters=[sim_time],
     )
 
-    def spawner(name):
+    def spawner(*names):
         return Node(
             package="controller_manager",
             executable="spawner",
             output="screen",
             arguments=[
-                name,
+                *names,
                 "--controller-manager",
                 "/controller_manager",
                 "--controller-manager-timeout",
                 "180",
+                # The first switch can stall while gz is still loading the world
+                "--switch-timeout",
+                "60",
             ],
             parameters=[sim_time],
         )
@@ -138,10 +141,17 @@ def launch_setup(context, *args, **kwargs):
     controllers = RegisterEventHandler(
         OnProcessExit(
             target_action=spawn,
+            # One spawner: concurrent switches time out the controller manager
             on_exit=[
-                spawner("joint_state_broadcaster"),
-                spawner("xarm6_traj_controller"),
-                spawner("xarm_gripper_traj_controller"),
+                spawner(
+                    "joint_state_broadcaster",
+                    "xarm_gripper_traj_controller",
+                    *(
+                        ["a2_traj_controller", "a2_left_traj_controller"]
+                        if ARM == "a2"
+                        else ["xarm6_traj_controller"]
+                    ),
+                )
             ],
         )
     )

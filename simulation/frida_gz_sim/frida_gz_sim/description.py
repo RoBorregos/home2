@@ -7,6 +7,9 @@ import xacro
 from ament_index_python.packages import get_package_share_directory
 
 GZ_PLUGIN = "gz_ros2_control/GazeboSimSystem"
+# Arm on the robot: xarm6 (default) or a2 (Agility A2 / OpenArm dual arm)
+ARM = os.environ.get("FRIDA_ARM", "xarm6")
+CONTROLLERS_FILE = "gz_controllers_a2.yaml" if ARM == "a2" else "gz_controllers.yaml"
 FINGER_JOINTS = ("rightfinger", "leftfinger")
 
 # Box collisions (size, center) fitted to the gripper meshes; mesh contacts let objects tunnel into the palm
@@ -59,7 +62,8 @@ def build_robot_description(
     mappings = dict(XARM_ARGS)
     mappings.update(
         {
-            "controllers_file": os.path.join(share, "config", "gz_controllers.yaml"),
+            "controllers_file": os.path.join(share, "config", CONTROLLERS_FILE),
+            "arm": ARM,
             "image_width": str(image_width),
             "image_height": str(image_height),
             "camera_rate": str(camera_rate),

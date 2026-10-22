@@ -26,3 +26,6 @@
 [submodule "navigation/packages/ira_laser_tools"]
 	path = navigation/packages/ira_laser_tools
 	url = https://github.com/ryanpennings/ira_laser_tools
+[submodule "robot_description/openarm_description"]
+	path = robot_description/openarm_description
+	url = https://github.com/enactic/openarm_description

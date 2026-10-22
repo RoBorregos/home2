@@ -29,7 +29,7 @@ from frida_interfaces.action import GoToHand, ManipulationAction
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import FixedDistanceMove, FollowFace
 from frida_motion_planning.utils.tf_utils import transform_point
-from frida_pymoveit2.robots import xarm6
+from frida_pymoveit2.robots import active as robot
 from geometry_msgs.msg import Point, PoseStamped, Twist
 from rclpy.action import ActionServer, CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -497,7 +497,7 @@ class ManipulationCore(Node):
         if msg is None:
             return
         for name, pos in zip(msg.name, msg.position):
-            if name in xarm6.joint_names():
+            if name in robot.joint_names():
                 self._person.joint_positions[name] = pos
         if follow_pipeline.TARGET_JOINT in self._person.joint_positions:
             self.get_logger().info(

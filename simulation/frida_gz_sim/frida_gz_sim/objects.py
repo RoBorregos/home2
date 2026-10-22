@@ -1,9 +1,13 @@
 """Graspable objects spawned in the sim worlds (model name -> (height, radius) in meters)."""
 
+import os
+
 WORLD_NAME = "pnp_table"
 ROBOT_MODEL = "frida"
-# The gripper body is lumped into link6 when the URDF becomes SDF
-ATTACH_PARENT_LINK = "link6"
+# The gripper body is lumped into the last arm link when the URDF becomes SDF
+ATTACH_PARENT_LINK = (
+    "openarm_right_link7" if os.environ.get("FRIDA_ARM") == "a2" else "link6"
+)
 
 GRASPABLE_OBJECTS = {
     "mustard_bottle": (0.19, 0.05),

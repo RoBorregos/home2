@@ -1,3 +1,5 @@
+import os
+
 FRONT_STARE = {
     "joints": {
         "joint1": -90.0,
@@ -225,3 +227,9 @@ XARM_CONFIGURATIONS = {
     "look_side_stare": LOOK_SIDE_STARE,
     "look_side_low_stare": LOOK_SIDE_LOW_STARE,
 }
+
+# The A2 arm uses its own joints under the same pose names
+if os.environ.get("FRIDA_ARM") == "a2":
+    from frida_constants.a2_configurations import A2_CONFIGURATIONS
+
+    XARM_CONFIGURATIONS = A2_CONFIGURATIONS

@@ -3,7 +3,7 @@ from moveit_msgs.srv import GetPositionIK, GetStateValidity
 from moveit_msgs.msg import ContactInformation
 from frida_constants.manipulation_constants import GRASP_LINK_FRAME
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_pymoveit2.robots.xarm6 import MOVE_GROUP_ARM
+from frida_pymoveit2.robots.active import MOVE_GROUP_ARM
 
 IK_TIMEOUT_SEC = 0.2
 

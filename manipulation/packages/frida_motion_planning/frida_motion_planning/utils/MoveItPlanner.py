@@ -4,7 +4,7 @@ from typing import List, Union
 
 import rclpy
 from frida_motion_planning.utils.Planner import Planner
-from frida_pymoveit2.robots import xarm6
+from frida_pymoveit2.robots import active as robot
 from geometry_msgs.msg import PoseStamped
 from pymoveit2 import GripperInterface, MoveIt2, MoveIt2State
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -36,10 +36,10 @@ class MoveItPlanner(Planner):
         # Create MoveIt 2 interface
         self.moveit2 = MoveIt2(
             node=node,
-            joint_names=xarm6.joint_names(),
-            base_link_name=xarm6.base_link_name(),
-            end_effector_name=xarm6.end_effector_name(),
-            group_name=xarm6.MOVE_GROUP_ARM,
+            joint_names=robot.joint_names(),
+            base_link_name=robot.base_link_name(),
+            end_effector_name=robot.end_effector_name(),
+            group_name=robot.MOVE_GROUP_ARM,
             callback_group=callback_group,
         )
         self.joint_states_topic = "/joint_states"
@@ -166,7 +166,7 @@ class MoveItPlanner(Planner):
     def plan_pose_goal(
         self,
         pose: PoseStamped,
-        target_link: str = xarm6.end_effector_name(),
+        target_link: str = robot.end_effector_name(),
         cartesian: bool = False,
         tolerance_position: float = 0.015,
         tolerance_orientation: float = 0.02,
@@ -198,7 +198,7 @@ class MoveItPlanner(Planner):
         self,
         pose: PoseStamped,
         cartesian: bool = False,
-        target_link: str = xarm6.end_effector_name(),
+        target_link: str = robot.end_effector_name(),
         tolerance_position: float = 0.01,
         tolerance_orientation: float = 0.05,
         weight_position: float = 1.0,
@@ -265,7 +265,7 @@ class MoveItPlanner(Planner):
     def joint_states_callback(self, msg: JointState):
         relevant_indices = []
         for i, joint_name in enumerate(msg.name):
-            if joint_name in xarm6.joint_names():
+            if joint_name in robot.joint_names():
                 relevant_indices.append(i)
         # Filtra solo los joints del brazo
         if len(relevant_indices) == 0:
@@ -436,10 +436,10 @@ class MoveItPlanner(Planner):
         # Create gripper interface
         gripper = GripperInterface(
             node=self.moveit2._node,
-            gripper_joint_names=xarm6.gripper_joint_names(),
-            open_gripper_joint_positions=xarm6.OPEN_GRIPPER_JOINT_POSITIONS,
-            closed_gripper_joint_positions=xarm6.CLOSED_GRIPPER_JOINT_POSITIONS,
-            gripper_group_name=xarm6.MOVE_GROUP_GRIPPER,
+            gripper_joint_names=robot.gripper_joint_names(),
+            open_gripper_joint_positions=robot.OPEN_GRIPPER_JOINT_POSITIONS,
+            closed_gripper_joint_positions=robot.CLOSED_GRIPPER_JOINT_POSITIONS,
+            gripper_group_name=robot.MOVE_GROUP_GRIPPER,
             callback_group=self.callback_group,
             gripper_command_action_name="gripper_action_controller/gripper_cmd",
         )
@@ -453,10 +453,10 @@ class MoveItPlanner(Planner):
         # Create gripper interface
         gripper = GripperInterface(
             node=self.moveit2._node,
-            gripper_joint_names=xarm6.gripper_joint_names(),
-            open_gripper_joint_positions=xarm6.OPEN_GRIPPER_JOINT_POSITIONS,
-            closed_gripper_joint_positions=xarm6.CLOSED_GRIPPER_JOINT_POSITIONS,
-            gripper_group_name=xarm6.MOVE_GROUP_GRIPPER,
+            gripper_joint_names=robot.gripper_joint_names(),
+            open_gripper_joint_positions=robot.OPEN_GRIPPER_JOINT_POSITIONS,
+            closed_gripper_joint_positions=robot.CLOSED_GRIPPER_JOINT_POSITIONS,
+            gripper_group_name=robot.MOVE_GROUP_GRIPPER,
             callback_group=self.callback_group,
             gripper_command_action_name="gripper_action_controller/gripper_cmd",
         )

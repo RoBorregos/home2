@@ -36,11 +36,11 @@ from frida_constants.manipulation_constants import (
 from frida_constants.xarm_configurations import NAV_POSE
 from frida_interfaces.action import MoveJoints
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_pymoveit2.robots import xarm6
+from frida_pymoveit2.robots import active as robot
 from xarm_msgs.srv import MoveVelocity, SetInt16
 
-BASE_FRAME = xarm6.base_link_name()  # "link_base"
-JOINT1_NAME = xarm6.joint_names()[0]  # "joint1"
+BASE_FRAME = robot.base_link_name()  # "link_base"
+JOINT1_NAME = robot.joint_names()[0]  # "joint1"
 JOINT1_LIMIT = math.pi * 0.99  # rad, matches xarm6 joint1 soft limit
 
 CONTROL_PERIOD = 0.1  # s (10 Hz)
