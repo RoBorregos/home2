@@ -24,10 +24,13 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 from frida_constants.manipulation_constants import (
     GENERATE_GRASPS_SERVICE,
+    GRASP_CLASS_CYLINDRICAL,
     GRASP_CLASS_GENERIC,
     GRASP_CLASS_PEAK,
     GRASP_CLASS_RIM,
+    GRASP_CLASS_ROUND,
     GRASP_LINK_FRAME,
+    MEASURED_SHAPE_NAMES,
     PICK_OBJECT_NAMESPACE,
     PRE_GRASP_DISTANCE,
 )
@@ -332,6 +335,12 @@ class GraspGenerator(Node):
             return self._known, classify(describe(scene))
         except GraspRejected:
             return self._known, None
+        if self._target in MEASURED_SHAPE_NAMES and measured in (
+            GRASP_CLASS_ROUND,
+            GRASP_CLASS_CYLINDRICAL,
+        ):
+            return GRASP_CLASS_CYLINDRICAL, measured
+        return self._known, measured
 
     def _scene(self, detection: ObjectDetection) -> Scene:
         depth = self._depth  # local copy: the callback may swap the frame

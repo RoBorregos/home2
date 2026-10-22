@@ -113,6 +113,10 @@ ROUND_NAMES = [
     "orange",
     "sports ball",
 ]
+# cornflakes box and cup are the same vision label, the generator
+# measures and returns as box or as cylinder, geometric grasps are still
+# classified using vision labels since spheres and cylinders get mixed in measured geometry
+MEASURED_SHAPE_NAMES = ["cornflakes"]
 
 GENERATE_GRASPS_SERVICE = "/manipulation/generate_grasps"
 GRASP_CLASS_FLAT = "flat"

@@ -83,6 +83,9 @@ SELF_MARGIN = 0.01
 GRIPPER_FINGER_THICKNESS = 0.03
 
 TABLE_CLEARANCE = 0.005
+CYLINDER_TOP_DEPTH = 0.09
+PALM_OFFSET = 0.073
+PALM_ABOVE_TIP = GRIPPER_REACH - PALM_OFFSET
 GRIPPER_BODY = np.array([[-0.091, -0.099, 0.0], [0.039, 0.099, 0.081]])
 
 FINGER_SWEEP = np.array(
@@ -489,15 +492,19 @@ def solid(scene: Scene, grasp_class: str) -> tuple:
     away = center / np.linalg.norm(center)
     middle = np.array([*center, (support_z + top_z) / 2])
     top_tip_z = max(top_z - 0.9 * GRIPPER_FINGER_LENGTH, support_z + TABLE_CLEARANCE)
+    above_tip = GRIPPER_FINGER_LENGTH
 
     height = top_z - support_z
     yaw = np.arctan2(long_axis[1], long_axis[0])
     if grasp_class == GRASP_CLASS_ROUND:
         fit = Fit("sphere", middle, yaw, (height / 2,) * 3)
         bottom, span = middle[2], 0.0
+        top_tip_z = max(top_tip_z, middle[2] - GRASP_PAST_CENTER)
     elif grasp_class == GRASP_CLASS_CYLINDRICAL:
         fit = Fit("cylinder", middle, yaw, (long / 2, long / 2, height))
         bottom, span = support_z, height
+        top_tip_z = max(top_z - CYLINDER_TOP_DEPTH, support_z + TABLE_CLEARANCE)
+        above_tip = PALM_ABOVE_TIP
     else:
         fit = Fit("box", middle, yaw, (long, short, height))
         bottom, span = support_z, height
@@ -551,7 +558,7 @@ def solid(scene: Scene, grasp_class: str) -> tuple:
                 )
         palm = (
             slab
-            & (local[:, 2] < -GRIPPER_FINGER_LENGTH)
+            & (local[:, 2] < -above_tip)
             & (np.abs(local[:, 1] - (low + high) / 2) <= GRIPPER_MAX_APERTURE / 2)
         )
         lowest = tip[2] - GRIPPER_HALF_THICKNESS * abs(rotation[2, 0])
