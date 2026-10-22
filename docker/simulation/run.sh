@@ -136,7 +136,7 @@ sim_args() {
     manip)
       # The A2 right arm cannot reach the left side table, so its world mirrors it to the right
       # and stands the robot where the right arm faces the dining table
-      if [ "$FRIDA_ARM" = a2 ]; then echo "gui:=$GUI world:=pnp_table_a2.sdf spawn_x:=0.08 spawn_y:=0.22"; else echo "gui:=$GUI"; fi ;;
+      if [ "$FRIDA_ARM" = a2 ]; then echo "gui:=$GUI world:=pnp_table_a2.sdf spawn_x:=0.08 spawn_y:=0.17"; else echo "gui:=$GUI"; fi ;;
     nav)
       # Nothing consumes the ZED stream here, so render it slowly and leave the CPU to physics
       echo "gui:=$GUI world:=arena_robocup2026_1.sdf mobile_base:=true grasp_assist:=false" \

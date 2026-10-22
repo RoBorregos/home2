@@ -29,8 +29,8 @@ from geometry_msgs.msg import PoseStamped
 from sensor_msgs_py import point_cloud2
 from transforms3d.quaternions import mat2quat, quat2mat
 
-from pick_and_place.pipelines.strategies import PickOutcome
-from pick_and_place.robot.geometry import set_quaternion
+from pick_and_place.pipelines.strategies import A2_APPROACH_BACKOFF, PickOutcome
+from pick_and_place.robot.geometry import offset_along_approach, set_quaternion
 
 # Shelf place: how far (m) to pull the place toward the front edge so the arm
 # and eye-in-hand camera do not jam against the short compartment ceiling.
@@ -89,6 +89,13 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
         with arm.phase("release"):
             arm.detach_pick_objects()
             arm.open_gripper(settle_s=1.0)
+        if os.environ.get("FRIDA_ARM") == "a2" and not place_params.is_shelf:
+            # Lift straight off the object so the return motion cannot drag it
+            with arm.phase("retreat"):
+                arm.move_to_pose(
+                    offset_along_approach(reached, -A2_APPROACH_BACKOFF),
+                    planner_id="cartesian",
+                )
 
     # The eye-in-hand octomap never sees the compartment ceiling, so add an
     # explicit slab there before planning the return.
@@ -106,7 +113,7 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
         if place_params.is_shelf:
             arm.remove_shelf_ceiling_guard()
 
-    return reached
+    return reached is not None
 
 
 # ======================================================================
@@ -114,8 +121,10 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
 # ======================================================================
 
 
-def _reach_place_pose(arm, place_pose: PoseStamped, is_shelf: bool) -> bool:
-    """Try a ladder of increasing heights until one is reachable.
+def _reach_place_pose(
+    arm, place_pose: PoseStamped, is_shelf: bool
+) -> Optional[PoseStamped]:
+    """Try a ladder of increasing heights; return the pose reached, or None.
 
     No retract afterwards (mirroring the shelf pick): the cartesian retract left
     the wrist wound and the following table_stare then aborted.
@@ -148,7 +157,7 @@ def _reach_place_pose(arm, place_pose: PoseStamped, is_shelf: bool) -> bool:
         with arm.phase("place"):
             if reach(final):
                 log.info(f"Place pose reached at rung {index}")
-                return True
+                return final
 
         if is_shelf and index == 0:
             # Halfway only on the first rung; higher rungs are already elevated
@@ -156,12 +165,12 @@ def _reach_place_pose(arm, place_pose: PoseStamped, is_shelf: bool) -> bool:
             with arm.phase("place_halfway"):
                 if reach(half):
                     log.info("Place halfway pose reached")
-                    return True
+                    return half
         elif is_shelf:
             log.info(f"Skipping halfway fallback at rung {index} (already elevated)")
 
     log.error("Failed to reach any place pose")
-    return False
+    return None
 
 
 def _place_pose_triple(
@@ -289,8 +298,11 @@ def _heatmap_pose(arm, perception, place_params) -> Optional[PoseStamped]:
     # High shelves are the exception to the exception: the arm can barely reach
     # the center, so prefer the nearest point. Low/mid shelves want the densest center area, not the
     # front edge, which causes edge drops.
+    # The A2 side table's closest free point is its edge, where tall objects topple off
     request.prefer_closest = (
-        place_params.table_height > 1.0 if place_params.is_shelf else True
+        place_params.table_height > 1.0
+        if place_params.is_shelf
+        else os.environ.get("FRIDA_ARM") != "a2"
     )
 
     if not perception.heatmap_place_client.wait_for_service(timeout_sec=5.0):

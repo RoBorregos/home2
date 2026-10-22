@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <!-- A2 arm joints on gz_ros2_control, position commanded like the xArm in sim; both start in the rest pose -->
+  <!-- A2 arm joints on gz_ros2_control, position commanded like the xArm in sim; the right arm starts in table_stare, out of the camera view -->
   <xacro:macro name="a2_joint" params="name initial">
     <joint name="${name}">
       <command_interface name="position"/>
@@ -14,9 +14,9 @@
       <plugin>gz_ros2_control/GazeboSimSystem</plugin>
     </hardware>
     <xacro:a2_joint name="openarm_right_joint1" initial="0.0"/>
-    <xacro:a2_joint name="openarm_right_joint2" initial="0.3"/>
+    <xacro:a2_joint name="openarm_right_joint2" initial="1.5708"/>
     <xacro:a2_joint name="openarm_right_joint3" initial="0.0"/>
-    <xacro:a2_joint name="openarm_right_joint4" initial="2.2"/>
+    <xacro:a2_joint name="openarm_right_joint4" initial="0.3"/>
     <xacro:a2_joint name="openarm_right_joint5" initial="0.0"/>
     <xacro:a2_joint name="openarm_right_joint6" initial="0.0"/>
     <xacro:a2_joint name="openarm_right_joint7" initial="0.0"/>

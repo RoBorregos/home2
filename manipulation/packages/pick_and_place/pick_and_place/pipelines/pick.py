@@ -31,7 +31,7 @@ from pick_and_place.pipelines.strategies import (
     GraspCandidate,
     PickOutcome,
 )
-from pick_and_place.robot.geometry import offset_along_approach
+from pick_and_place.robot.geometry import approach_axis, offset_along_approach
 from pick_and_place.utils.grasp_orientation import is_frontal_grasp
 
 # GPD configs, tried in order until one yields a graspable candidate. The bool
@@ -53,6 +53,9 @@ CFG_PATHS = [
 A2 = os.environ.get("FRIDA_ARM") == "a2"
 # Many GPD grasps fall outside the A2 wrist range, so it screens them all by IK and keeps this many
 A2_MAX_POSES = 5
+# Grasps closer to vertical than this (approach z component) get yaw variants, in degrees
+A2_VERTICAL_APPROACH = 0.9
+A2_GRASP_YAWS = (30, 60, 90, 120, 150)
 if A2:
     # With the ZED on the head the gripper is symmetric, so the 180 deg flip is a valid grasp too
     CFG_PATHS = [
@@ -336,6 +339,8 @@ def _grasp_sets(
         poses, scores = _select_candidates(poses, scores, request.is_shelf)
         if is_reversible:
             poses, scores = _add_reversed(poses, scores)
+        if A2:
+            poses, scores = _add_yaw_variants(poses, scores)
         if not poses:
             perception.logger.error("No grasp poses survived selection")
             continue
@@ -427,6 +432,18 @@ def _lift_camera_clear(poses) -> None:
                 pose.pose.orientation.z,
                 pose.pose.orientation.w,
             ) = flipped
+
+
+def _add_yaw_variants(poses, scores):
+    """Append near-vertical grasps spun about their approach; round tops allow any yaw, the A2 wrist does not."""
+    out_poses, out_scores = list(poses), list(scores)
+    for pose, score in zip(poses, scores):
+        if approach_axis(pose)[2] > -A2_VERTICAL_APPROACH:
+            continue
+        for degrees in A2_GRASP_YAWS:
+            out_poses.append(_rotate_about_approach(pose, degrees))
+            out_scores.append(score)
+    return out_poses, out_scores
 
 
 def _rotate_about_approach(pose, degrees: float):
