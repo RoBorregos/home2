@@ -158,6 +158,7 @@ All agent context lives in `docs/ai/` (e.g. `docs/ai/orin.md` — how to connect
 ## Related Repositories
 
 - [home-custom-base](https://github.com/RoBorregos/home-custom-base): firmware (STM32, ODrive S1 over CAN, on-MCU EKF) and ROS 2 dashboard for FRIDA's omnidirectional base.
+- [home-pipelines](https://github.com/RoBorregos/home-pipelines): Jupyter notebook pipelines used to develop and test the HRI command interpreter and the vision object detector.
 
 ## Video Demonstrations
 
