@@ -200,6 +200,9 @@ class DirectGraspPick(PickStrategy):
         with arm.phase("move_to_grasp"):
             planner = "cartesian" if side_approach else PICK_PLANNER
             if not arm.move_to_pose(candidate.pose, planner_id=planner):
+                if side_approach:
+                    # Back out of a jammed approach so the next candidate starts collision-free
+                    arm.move_to_pose(pre_grasp, planner_id="cartesian")
                 raise PickAttemptFailed("grasp pose unreachable")
 
         with arm.phase("attach_object"):

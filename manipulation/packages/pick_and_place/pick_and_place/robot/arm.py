@@ -446,9 +446,14 @@ class RobotArm:
         joints["joints"]["joint5"] += SCAN_ANGLE_VERTICAL
         self.move_joints(joints)
 
-    def ik_reachable(self, pose) -> bool:
-        """True if ``pose`` of the grasp frame has a collision-free IK solution."""
-        response = compute_ik(self._compute_ik_client, pose, avoid_collisions=True)
+    def ik_reachable(self, pose, avoid_collisions: bool = True) -> bool:
+        """True if ``pose`` of the grasp frame has an IK solution (collision-free by default)."""
+        response = compute_ik(
+            self._compute_ik_client,
+            pose,
+            avoid_collisions=avoid_collisions,
+            seed_joint_state=self._latest_joint_state,
+        )
         return response is not None and response.error_code.val == 1
 
     def endpoint_self_collides(self, pose) -> bool:

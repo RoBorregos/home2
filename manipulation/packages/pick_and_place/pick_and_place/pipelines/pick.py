@@ -356,7 +356,8 @@ def _select_candidates(poses, scores, is_shelf: bool):
         order = list(np.argsort(scores)[::-1][:8])
         return [poses[i] for i in order], [scores[i] for i in order]
     if A2:
-        order = list(np.argsort(scores)[::-1])
+        # Highest grasps first: caps and necks fit the opening and keep the ZED above the object
+        order = sorted(range(len(poses)), key=lambda i: -poses[i].pose.position.z)
         return [poses[i] for i in order], [scores[i] for i in order]
     if len(poses) > 5:
         indices = np.random.choice(len(poses), size=5, replace=False)
@@ -495,8 +496,9 @@ def _candidates(arm, profile, grasp_set: GraspSet) -> Iterator[GraspCandidate]:
             if reachable >= A2_MAX_POSES:
                 return
             grasp = offset_along_approach(pose, base_offset)
+            # The fingers straddle the object at the grasp, so only the pre-grasp must be collision-free
             if not (
-                arm.ik_reachable(grasp)
+                arm.ik_reachable(grasp, avoid_collisions=False)
                 and arm.ik_reachable(offset_along_approach(grasp, -A2_APPROACH_BACKOFF))
             ):
                 continue
