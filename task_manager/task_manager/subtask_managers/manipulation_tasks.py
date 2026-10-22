@@ -398,11 +398,17 @@ class ManipulationTasks:
         special_request: str = "",
         from_current: bool = False,
         is_trash: bool = False,
+        table_height: float = 0.0,
+        table_height_tolerance: float = 0.0,
     ):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
         if close_to:
             goal_msg.place_params.close_to = close_to
+        # Restrict the place surface to this height when other surfaces are in view
+        if table_height:
+            goal_msg.place_params.table_height = table_height
+            goal_msg.place_params.table_height_tolerance = table_height_tolerance
         if special_request:
             goal_msg.place_params.special_request = special_request
         # Skip the server's initial "table_stare" pose

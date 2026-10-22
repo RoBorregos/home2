@@ -32,6 +32,8 @@ TABLE_MIN_Z = 0.70
 
 # Object in the middle of the side table that placements are aimed next to
 PLACE_ANCHOR = "bowl"
+# Side table top (m), so the place does not pick the dining table also in view
+PLACE_TABLE_HEIGHT = 0.55
 
 # table_stare rotated to face the side table on the robot's left (degrees)
 SIDE_TABLE_STARE = {
@@ -152,7 +154,12 @@ class SimPickAndPlaceTM(Node):
         )
         self.wait(self.settle_time)
         if (
-            self.manipulation.place(close_to=PLACE_ANCHOR, from_current=True)
+            self.manipulation.place(
+                close_to=PLACE_ANCHOR,
+                from_current=True,
+                table_height=PLACE_TABLE_HEIGHT,
+                table_height_tolerance=0.1,
+            )
             != Status.EXECUTION_SUCCESS
         ):
             self.get_logger().error(f"Place failed for {name}; opening the gripper")

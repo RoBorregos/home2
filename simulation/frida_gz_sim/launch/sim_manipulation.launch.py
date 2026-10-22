@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Real manipulation stack (MoveIt + pick_and_place) on sim time."""
 
+import os
+
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -14,6 +16,10 @@ from launch_ros.actions import Node, SetParameter, SetRemap
 from launch_ros.substitutions import FindPackageShare
 
 OCTOMAP_CLOUD_TOPIC = "/sim/octomap_cloud"
+# The A2 only plans to a pre-grasp clear of the object, so its octomap keeps the objects to sweep around them
+OCTOMAP_SOURCE = (
+    "/point_cloud" if os.environ.get("FRIDA_ARM") == "a2" else OCTOMAP_CLOUD_TOPIC
+)
 
 
 def isolate_remaps(context, *args, **kwargs):
@@ -58,7 +64,7 @@ def generate_launch_description():
                 [
                     OpaqueFunction(function=isolate_remaps),
                     # Only MoveIt's octomap gets the filtered cloud; GPD keeps the full one
-                    SetRemap(src="/point_cloud", dst=OCTOMAP_CLOUD_TOPIC),
+                    SetRemap(src="/point_cloud", dst=OCTOMAP_SOURCE),
                     IncludeLaunchDescription(
                         PythonLaunchDescriptionSource(
                             PathJoinSubstitution(

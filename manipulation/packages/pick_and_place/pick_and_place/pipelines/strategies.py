@@ -173,7 +173,7 @@ class ForceGuardedDescentPick(PickStrategy):
 
 
 # Distance back along the approach axis the A2 pre-grasp starts from (m)
-A2_APPROACH_BACKOFF = 0.06
+A2_APPROACH_BACKOFF = 0.16
 # 7-DoF goal sampling needs more than the default 0.5 s planning budget
 A2_PLANNING_TIME = 2.0
 
@@ -189,7 +189,7 @@ class DirectGraspPick(PickStrategy):
     """
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
-        # The A2 grasps from the side, so it comes in straight along the gripper axis instead of sweeping the object
+        # The A2 comes in straight along the gripper axis from a pre-grasp instead of sweeping the object
         side_approach = os.environ.get("FRIDA_ARM") == "a2"
         if side_approach:
             pre_grasp = offset_along_approach(candidate.pose, -A2_APPROACH_BACKOFF)

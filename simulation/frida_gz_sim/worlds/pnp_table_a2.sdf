@@ -79,14 +79,14 @@
     <include>
       <name>side_table</name>
       <uri>model://pnp_side_table</uri>
-      <pose>-0.10 -0.83 0 0 0 0</pose>
+      <pose>-0.10 -0.73 0 0 0 0</pose>
     </include>
 
     <!-- Anchor for "place close to the bowl" on the side table -->
     <include>
       <name>bowl</name>
       <uri>model://sim_bowl</uri>
-      <pose>0.02 -0.50 0.551 0 0 0</pose>
+      <pose>0.23 -0.33 0.551 0 0 0</pose>
     </include>
 
     <include>

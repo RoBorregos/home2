@@ -134,6 +134,8 @@ def launch_setup(context, *args, **kwargs):
                 # The first switch can stall while gz is still loading the world
                 "--switch-timeout",
                 "60",
+                "--service-call-timeout",
+                "60",
             ],
             parameters=[sim_time],
         )

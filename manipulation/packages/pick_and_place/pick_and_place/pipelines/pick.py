@@ -49,15 +49,16 @@ CFG_PATHS = [
     ],
 ]
 
-# The A2 arm cannot reach top-down grasps, so it uses its own forward cone
+# The A2 grasps top-down through its angle bracket, with the top-down cfg only
 A2 = os.environ.get("FRIDA_ARM") == "a2"
-# Most GPD grasps fall outside the A2 wrist range, so it screens them all by IK and keeps this many
+# Many GPD grasps fall outside the A2 wrist range, so it screens them all by IK and keeps this many
 A2_MAX_POSES = 5
 if A2:
+    # With the ZED on the head the gripper is symmetric, so the 180 deg flip is a valid grasp too
     CFG_PATHS = [
         [
             "/workspace/src/manipulation/packages/arm_pkg/config/"
-            "frida_eigen_params_a2.cfg",
+            "frida_eigen_params_custom_gripper.cfg",
             True,
         ],
     ]
@@ -356,7 +357,7 @@ def _select_candidates(poses, scores, is_shelf: bool):
         order = list(np.argsort(scores)[::-1][:8])
         return [poses[i] for i in order], [scores[i] for i in order]
     if A2:
-        # Highest grasps first: caps and necks fit the opening and keep the ZED above the object
+        # Highest grasps first: caps and necks fit the gripper opening
         order = sorted(range(len(poses)), key=lambda i: -poses[i].pose.position.z)
         return [poses[i] for i in order], [scores[i] for i in order]
     if len(poses) > 5:

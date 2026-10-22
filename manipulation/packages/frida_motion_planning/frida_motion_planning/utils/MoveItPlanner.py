@@ -223,6 +223,7 @@ class MoveItPlanner(Planner):
             weight_orientation=weight_orientation,
             max_step=cartesian_max_step,
             cartesian_fraction_threshold=cartesian_fraction_threshold,
+            start_joint_state=self._clamped_start_state(),
         )
 
     def _plan_joint_goal(
@@ -237,7 +238,26 @@ class MoveItPlanner(Planner):
             joint_names=joint_names,
             tolerance_joint_position=tolerance,
             weight_joint_position=weight,
+            start_joint_state=self._clamped_start_state(),
         )
+
+    def _clamped_start_state(self) -> Union[List[float], None]:
+        """Current arm joints clamped to their limits when the sim settled a hair past one, else None."""
+        if self.joint_states is None:
+            return None
+        current = dict(zip(self.joint_states.name, self.joint_states.position))
+        if not all(name in current for name in robot.joint_names()):
+            return None
+        clamped = [
+            min(
+                max(current[name], robot.JOINT_POSITION_LIMITS[name][0]),
+                robot.JOINT_POSITION_LIMITS[name][1],
+            )
+            for name in robot.joint_names()
+        ]
+        if clamped == [current[name] for name in robot.joint_names()]:
+            return None
+        return clamped
 
     def reset_controller(self) -> None:
         """Reset the trajectory controller by sending a dummy trajectory from current joint state."""
