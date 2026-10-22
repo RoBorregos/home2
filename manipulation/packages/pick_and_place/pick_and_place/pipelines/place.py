@@ -7,6 +7,8 @@ choose where to put it -> build a ladder of candidate poses
 
 import copy
 import json
+import math
+import os
 from typing import List, Optional
 
 import numpy as np
@@ -23,9 +25,9 @@ from frida_constants.manipulation_constants import (
 from frida_interfaces.srv import HeatmapPlace, PlacePerceptionService
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_motion_planning.utils.tf_utils import transform_point, transform_pose
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 from sensor_msgs_py import point_cloud2
-from transforms3d.quaternions import quat2mat
+from transforms3d.quaternions import mat2quat, quat2mat
 
 from pick_and_place.pipelines.strategies import PickOutcome
 from pick_and_place.robot.geometry import set_quaternion
@@ -55,6 +57,9 @@ TRASH_TIMEOUT = 15.0
 
 # Orientation with Z aiming down, used when the pick pose is unusable.
 TOP_DOWN_QUAT = [0.0, 1.0, 0.0, 0.0]
+
+# A2 right shoulder: its wrist only reaches places it approaches from this link
+A2_SHOULDER_LINK = "openarm_right_link2"
 
 
 def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
@@ -472,7 +477,41 @@ def _apply_drop_height(
     # On a shelf the compartment ceiling, not the object, sets the clearance.
     pose.pose.position.z += 0.1 if place_params.is_shelf else drop
     pose.pose.orientation = orientation_source.pose.orientation
+    if os.environ.get("FRIDA_ARM") == "a2" and not place_params.is_shelf:
+        _face_from_shoulder(arm, pose)
     return pose
+
+
+def _face_from_shoulder(arm, pose: PoseStamped) -> None:
+    """Yaw ``pose`` about vertical so its approach points from the A2 shoulder to the spot."""
+    shoulder = PointStamped()
+    shoulder.header.frame_id = A2_SHOULDER_LINK
+    success, shoulder = transform_point(shoulder, pose.header.frame_id, arm.tf_buffer)
+    if not success:
+        arm.logger.warn("No shoulder transform; keeping the pick orientation")
+        return
+    q = pose.pose.orientation
+    rotation = quat2mat([q.w, q.x, q.y, q.z])
+    approach = rotation[:, 2]
+    # A near-vertical approach has no heading to correct
+    if math.hypot(approach[0], approach[1]) < 0.2:
+        return
+    target = math.atan2(
+        pose.pose.position.y - shoulder.point.y, pose.pose.position.x - shoulder.point.x
+    )
+    yaw = target - math.atan2(approach[1], approach[0])
+    yaw_rotation = np.array(
+        [
+            [math.cos(yaw), -math.sin(yaw), 0],
+            [math.sin(yaw), math.cos(yaw), 0],
+            [0, 0, 1],
+        ]
+    )
+    w, x, y, z = mat2quat(yaw_rotation @ rotation)
+    set_quaternion(pose, [x, y, z, w])
+    arm.logger.info(
+        f"Place orientation yawed {math.degrees(yaw):.0f} deg toward the spot"
+    )
 
 
 def _trash_pose(perception) -> Optional[PoseStamped]:

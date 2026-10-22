@@ -69,7 +69,10 @@ from xarm_utils.shelf_levels import get_compartment_height
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
-from pick_and_place.utils.self_collision_utils import endpoint_self_collides
+from pick_and_place.utils.self_collision_utils import (
+    compute_ik,
+    endpoint_self_collides,
+)
 
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
@@ -442,6 +445,11 @@ class RobotArm:
         joints["joints"]["joint1"] += SCAN_ANGLE_HORIZONTAL
         joints["joints"]["joint5"] += SCAN_ANGLE_VERTICAL
         self.move_joints(joints)
+
+    def ik_reachable(self, pose) -> bool:
+        """True if ``pose`` of the grasp frame has a collision-free IK solution."""
+        response = compute_ik(self._compute_ik_client, pose, avoid_collisions=True)
+        return response is not None and response.error_code.val == 1
 
     def endpoint_self_collides(self, pose) -> bool:
         """True if the robot would collide with itself at ``pose``.

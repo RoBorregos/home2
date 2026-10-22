@@ -35,7 +35,8 @@ std::future_status wait_for_future_with_timeout(
     typename rclcpp::Client<T>::FutureAndRequestId &future,
     rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node,
     std::chrono::milliseconds timeout = 500ms) {
-  auto status = future.wait_for(timeout);
+  // Spin from the start: the response is only delivered while the node spins
+  auto status = future.wait_for(0ms);
   auto start_time = std::chrono::steady_clock::now();
   while (status != std::future_status::ready) {
     rclcpp::spin_some(node);
@@ -198,7 +199,7 @@ public:
 
     auto status = wait_for_future_with_timeout<
         frida_interfaces::srv::ClusterObjectFromPoint>(
-        response, this->call_services_node->get_node_base_interface(), 500ms);
+        response, this->call_services_node->get_node_base_interface(), 5000ms);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -237,7 +238,7 @@ public:
     auto status2 =
         wait_for_future_with_timeout<frida_interfaces::srv::RemovePlane>(
             res2table, this->call_services_node->get_node_base_interface(),
-            500ms);
+            5000ms);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -271,7 +272,7 @@ public:
 
     auto status3 =
         wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
-            res3, this->call_services_node->get_node_base_interface(), 500ms);
+            res3, this->call_services_node->get_node_base_interface(), 5000ms);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -293,7 +294,7 @@ public:
 
     auto status4 =
         wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
-            res4, this->call_services_node->get_node_base_interface(), 500ms);
+            res4, this->call_services_node->get_node_base_interface(), 5000ms);
 
     RCLCPP_INFO(this->get_logger(), "Response: %d", res4.get()->status);
 
@@ -307,7 +308,12 @@ public:
     RCLCPP_INFO(this->get_logger(), "Waiting for response");
     auto status5 = wait_for_future_with_timeout<
         frida_interfaces::srv::ClusterObjectFromPoint>(
-        res5, this->call_services_node->get_node_base_interface(), 500ms);
+        res5, this->call_services_node->get_node_base_interface(), 5000ms);
+    // Other objects are optional; a blocking get() on a slow cluster deadlocks this node
+    if (status5 != std::future_status::ready) {
+      RCLCPP_ERROR(this->get_logger(), "Timed out clustering other objects");
+      return OK;
+    }
     RCLCPP_INFO(this->get_logger(), "Response received");
     auto result5 = res5.future.get();
     RCLCPP_INFO(this->get_logger(), "Response: %d", result5->status);
@@ -325,7 +331,11 @@ public:
       RCLCPP_INFO(this->get_logger(), "Waiting for response");
       auto status6 = wait_for_future_with_timeout<
           frida_interfaces::srv::AddPickPrimitives>(
-          res6, this->call_services_node->get_node_base_interface(), 500ms);
+          res6, this->call_services_node->get_node_base_interface(), 5000ms);
+      if (status6 != std::future_status::ready) {
+        RCLCPP_ERROR(this->get_logger(), "Timed out adding other objects");
+        return OK;
+      }
       RCLCPP_INFO(this->get_logger(), "Response received");
       RCLCPP_INFO(this->get_logger(), "Response: %d", res6.get()->status);
     } else {
@@ -364,7 +374,7 @@ public:
     auto status2 =
         wait_for_future_with_timeout<frida_interfaces::srv::RemovePlane>(
             res_extract_table,
-            this->call_services_node->get_node_base_interface(), 500ms);
+            this->call_services_node->get_node_base_interface(), 5000ms);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -398,7 +408,7 @@ public:
 
     auto status3 =
         wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
-            res3, this->call_services_node->get_node_base_interface(), 500ms);
+            res3, this->call_services_node->get_node_base_interface(), 5000ms);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 

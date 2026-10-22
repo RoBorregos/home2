@@ -9,8 +9,8 @@ def _pose(*deg):
     }
 
 
-# ZED at (0.25, -0.1, 1.2) in base_link looking at the dining table center, image upright
-TABLE_STARE = _pose(25.0, 155.6, 25.5, 99.3, -56.5, -5.9, 34.9)
+# ZED at (0.18, -0.15, 1.2) in base_link looking at the dining table objects, image upright
+TABLE_STARE = _pose(43.9, 150.6, 20.1, 101.3, -54.3, -13.5, 53.9)
 # ZED at (0.3, -0.3, 1.3) looking straight ahead
 FRONT_STARE = _pose(27.4, 153.3, -21.1, 88.7, -43.5, -3.8, -11.8)
 # ZED at (0.0, -0.35, 1.15) looking at the side table on the robot's right, image upright

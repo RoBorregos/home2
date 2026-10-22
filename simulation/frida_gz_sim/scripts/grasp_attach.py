@@ -61,6 +61,8 @@ class GraspAttach(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
         # object name -> (origin, unit up axis) in world frame
         self.poses: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+        # Robot model pose in the world (base_link), so grasps work for any spawn pose
+        self.robot_pose = (np.zeros(3), Rotation.identity())
         self.states: dict[str, str] = {}
         self.attached: str | None = None
         self.closed = False
@@ -149,6 +151,12 @@ class GraspAttach(Node):
     def _on_poses(self, msg: Pose_V):
         poses = {}
         for p in msg.pose:
+            if p.name == ROBOT_MODEL:
+                q = p.orientation
+                self.robot_pose = (
+                    np.array([p.position.x, p.position.y, p.position.z]),
+                    Rotation.from_quat([q.x, q.y, q.z, q.w]),
+                )
             if p.name not in GRASPABLE_OBJECTS:
                 continue
             q = p.orientation
@@ -185,7 +193,8 @@ class GraspAttach(Node):
                 [0.0, 0.0, PAD_OFFSET]
             )
             points.append(np.array([t.x, t.y, t.z]) + axis)
-        return (points[0] + points[1]) / 2.0
+        origin, rotation = self.robot_pose
+        return origin + rotation.apply((points[0] + points[1]) / 2.0)
 
     def _closest_object(self, grasp: np.ndarray) -> tuple[str | None, float]:
         best, best_dist = None, self.max_gap

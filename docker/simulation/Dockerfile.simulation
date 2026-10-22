@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y \
     ros-${ROS_DISTRO}-ros2-controllers \
     ros-${ROS_DISTRO}-moveit \
     ros-${ROS_DISTRO}-moveit-ros-perception \
+    ros-${ROS_DISTRO}-trac-ik-kinematics-plugin \
     ros-${ROS_DISTRO}-xacro \
     ros-${ROS_DISTRO}-rviz2 \
     ros-${ROS_DISTRO}-pcl-ros \

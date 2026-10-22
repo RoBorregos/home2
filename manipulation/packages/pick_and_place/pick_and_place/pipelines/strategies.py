@@ -6,9 +6,11 @@ bottom of this file; the numbers each one uses come from
 ``config/pick_profiles.yaml``.
 """
 
+import os
 from dataclasses import dataclass
 from typing import Optional
 
+from frida_constants.manipulation_constants import PICK_PLANNER
 from geometry_msgs.msg import PoseStamped
 
 from pick_and_place.pipelines.classification import (
@@ -20,7 +22,7 @@ from pick_and_place.pipelines.classification import (
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.profiles import PickProfile
-from pick_and_place.robot.geometry import offset_z
+from pick_and_place.robot.geometry import offset_along_approach, offset_z
 
 
 @dataclass(frozen=True)
@@ -170,6 +172,12 @@ class ForceGuardedDescentPick(PickStrategy):
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
 
 
+# Distance back along the approach axis the A2 pre-grasp starts from (m)
+A2_APPROACH_BACKOFF = 0.06
+# 7-DoF goal sampling needs more than the default 0.5 s planning budget
+A2_PLANNING_TIME = 2.0
+
+
 class DirectGraspPick(PickStrategy):
     """Plan straight to a GPD-generated grasp and close on it.
 
@@ -181,8 +189,17 @@ class DirectGraspPick(PickStrategy):
     """
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
+        # The A2 grasps from the side, so it comes in straight along the gripper axis instead of sweeping the object
+        side_approach = os.environ.get("FRIDA_ARM") == "a2"
+        if side_approach:
+            pre_grasp = offset_along_approach(candidate.pose, -A2_APPROACH_BACKOFF)
+            with arm.phase("approach_pre_grasp"):
+                if not arm.move_to_pose(pre_grasp, planning_time=A2_PLANNING_TIME):
+                    raise PickAttemptFailed("pre-grasp pose unreachable")
+
         with arm.phase("move_to_grasp"):
-            if not arm.move_to_pose(candidate.pose):
+            planner = "cartesian" if side_approach else PICK_PLANNER
+            if not arm.move_to_pose(candidate.pose, planner_id=planner):
                 raise PickAttemptFailed("grasp pose unreachable")
 
         with arm.phase("attach_object"):

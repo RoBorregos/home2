@@ -66,6 +66,8 @@ def build_a2_moveit_config() -> MoveItConfigs:
 
     ompl = _load(os.path.join(ompl_dir, "ompl_planning.yaml"))
     ompl.update(_load(os.path.join(ompl_dir, "ompl_defaults.yaml")))
+    # gz position control settles a hair past the A2's tight limits (j6 +-45 deg); clamp instead of failing
+    ompl["fix_start_state"] = True
     planner_ids = list(ompl["planner_configs"].keys())
     for group in ("a2_arm", "a2_left_arm"):
         ompl[group] = {

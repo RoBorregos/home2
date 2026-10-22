@@ -26,7 +26,11 @@ from pick_and_place.pipelines.classification import (
     resolve_pick_strategy,
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
-from pick_and_place.pipelines.strategies import GraspCandidate, PickOutcome
+from pick_and_place.pipelines.strategies import (
+    A2_APPROACH_BACKOFF,
+    GraspCandidate,
+    PickOutcome,
+)
 from pick_and_place.robot.geometry import offset_along_approach
 from pick_and_place.utils.grasp_orientation import is_frontal_grasp
 
@@ -46,7 +50,10 @@ CFG_PATHS = [
 ]
 
 # The A2 arm cannot reach top-down grasps, so it uses its own forward cone
-if os.environ.get("FRIDA_ARM") == "a2":
+A2 = os.environ.get("FRIDA_ARM") == "a2"
+# Most GPD grasps fall outside the A2 wrist range, so it screens them all by IK and keeps this many
+A2_MAX_POSES = 5
+if A2:
     CFG_PATHS = [
         [
             "/workspace/src/manipulation/packages/arm_pkg/config/"
@@ -348,6 +355,9 @@ def _select_candidates(poses, scores, is_shelf: bool):
         # them, so a reachable, higher-quality grasp wins over a marginal one.
         order = list(np.argsort(scores)[::-1][:8])
         return [poses[i] for i in order], [scores[i] for i in order]
+    if A2:
+        order = list(np.argsort(scores)[::-1])
+        return [poses[i] for i in order], [scores[i] for i in order]
     if len(poses) > 5:
         indices = np.random.choice(len(poses), size=5, replace=False)
         return [poses[i] for i in indices], [scores[i] for i in indices]
@@ -363,6 +373,8 @@ def _add_reversed(poses, scores):
         out_scores.append(score)
         out_poses.append(_rotate_about_approach(pose, 180))
         out_scores.append(score)
+    if A2:
+        return out_poses, out_scores
     return out_poses[:5], out_scores[:5]
 
 
@@ -477,7 +489,18 @@ def _candidates(arm, profile, grasp_set: GraspSet) -> Iterator[GraspCandidate]:
     attempts get them by stepping that offset.
     """
     base_offset = arm.tip_offset(profile.tip_offset_param)
+    reachable = 0
     for pose_index, pose in enumerate(grasp_set.poses):
+        if A2:
+            if reachable >= A2_MAX_POSES:
+                return
+            grasp = offset_along_approach(pose, base_offset)
+            if not (
+                arm.ik_reachable(grasp)
+                and arm.ik_reachable(offset_along_approach(grasp, -A2_APPROACH_BACKOFF))
+            ):
+                continue
+            reachable += 1
         score = (
             grasp_set.scores[pose_index] if pose_index < len(grasp_set.scores) else 0.0
         )
