@@ -9,12 +9,12 @@ def _pose(*deg):
     }
 
 
-# ZED at (0.25, -0.15, 1.2) in base_link looking at the dining table center
-TABLE_STARE = _pose(35.4, 154.0, 11.8, 105.4, -47.3, 5.2, 39.7)
+# ZED at (0.25, -0.1, 1.2) in base_link looking at the dining table center, image upright
+TABLE_STARE = _pose(25.0, 155.6, 25.5, 99.3, -56.5, -5.9, 34.9)
 # ZED at (0.3, -0.3, 1.3) looking straight ahead
 FRONT_STARE = _pose(27.4, 153.3, -21.1, 88.7, -43.5, -3.8, -11.8)
-# ZED at (0.1, -0.35, 1.2) looking at the side table on the robot's right
-SIDE_TABLE_STARE = _pose(45.3, 174.4, -18.5, 84.0, -70.2, -31.8, 69.9)
+# ZED at (0.0, -0.35, 1.15) looking at the side table on the robot's right, image upright
+SIDE_TABLE_STARE = _pose(77.9, 177.8, -18.9, 98.0, -77.1, -32.2, 76.1)
 # Forearm raised forward, clear of the base and the table (the sim spawn pose)
 HOME = _pose(0.0, 17.2, 0.0, 126.1, 0.0, 0.0, 0.0)
 

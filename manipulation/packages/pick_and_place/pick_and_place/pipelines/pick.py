@@ -7,6 +7,7 @@ Read this file top to bottom and you have the whole pick.
 """
 
 import copy
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Iterator, List, Optional, Tuple
@@ -43,6 +44,16 @@ CFG_PATHS = [
         False,
     ],
 ]
+
+# The A2 arm cannot reach top-down grasps, so it uses its own forward cone
+if os.environ.get("FRIDA_ARM") == "a2":
+    CFG_PATHS = [
+        [
+            "/workspace/src/manipulation/packages/arm_pkg/config/"
+            "frida_eigen_params_a2.cfg",
+            True,
+        ],
+    ]
 
 # Shelf picks use a frontal-biased cfg with a wider approach cone (the table
 # 30 deg cone over-prunes the oblique shelf view).
