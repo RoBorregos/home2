@@ -190,17 +190,24 @@ class DirectGraspPick(PickStrategy):
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
         # The A2 comes in straight along the gripper axis from a pre-grasp instead of sweeping the object
-        side_approach = os.environ.get("FRIDA_ARM") == "a2"
-        if side_approach:
+        a2_approach = os.environ.get("FRIDA_ARM") == "a2"
+        if a2_approach:
             pre_grasp = offset_along_approach(candidate.pose, -A2_APPROACH_BACKOFF)
             with arm.phase("approach_pre_grasp"):
                 if not arm.move_to_pose(pre_grasp, planning_time=A2_PLANNING_TIME):
                     raise PickAttemptFailed("pre-grasp pose unreachable")
 
         with arm.phase("move_to_grasp"):
-            planner = "cartesian" if side_approach else PICK_PLANNER
-            if not arm.move_to_pose(candidate.pose, planner_id=planner):
-                if side_approach:
+            planner = "cartesian" if a2_approach else PICK_PLANNER
+            reached = arm.move_to_pose(candidate.pose, planner_id=planner)
+            if not reached and a2_approach:
+                # The narrow wrist can leave the straight line; plan the short move once the object voxels are gone
+                arm.clear_octomap()
+                reached = arm.move_to_pose(
+                    candidate.pose, planning_time=A2_PLANNING_TIME
+                )
+            if not reached:
+                if a2_approach:
                     # Back out of a jammed approach so the next candidate starts collision-free
                     arm.move_to_pose(pre_grasp, planner_id="cartesian")
                 raise PickAttemptFailed("grasp pose unreachable")
