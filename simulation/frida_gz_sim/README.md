@@ -215,6 +215,26 @@ Navigation-only pieces:
 - `sim_nav_task_manager.py` uses the real `NavigationTasks.move_to_location()`
   and grades each goal against the robot's ground-truth Gazebo pose.
 
+## Agility A2 arm (`--a2`)
+
+`./run.sh simulation --manip --a2` and `./run.sh simulation --tm --a2` swap the xArm6
+for the Agility A2 dual arm (OpenArm v1.0 kinematics, `robot_description/openarm_description`
+submodule). Every process sees `FRIDA_ARM=a2`; without the flag nothing changes.
+
+| Piece | A2 setup |
+|---|---|
+| Description | `frida_description/urdf/omnibase/FRIDA_A2.urdf.xacro`: torso column on the old xArm mount, both arms on a shoulder bar, the FRIDA gripper on a -90 deg angle bracket on the right `link7` (`link_eef`) |
+| Camera | ZED fixed on a head bracket above the shoulders (`a2_head`), looking at the table in front of the right arm |
+| MoveIt | `config/a2_moveit/` (SRDF groups `a2_arm` / `a2_left_arm`, TRAC-IK), built in `frida_gz_sim/moveit_config.py` |
+| Controllers | `config/gz_controllers_a2.yaml`: `a2_traj_controller`, `a2_left_traj_controller`, the gripper |
+| Poses | `frida_constants/a2_configurations.py`; the stares only move the arm out of the head camera view |
+| World | `worlds/pnp_table_a2.sdf`: side table on the right, robot spawned at (0.08, 0.22) |
+
+A2-only behavior in the stack: IK-screened GPD candidates with a 16 cm pre-grasp and a
+straight final approach (`pick.py`, `strategies.py`), a place yaw search (`place.py`), and a
+self-filter in `cloud_frame_fix.py` that drops the robot's own points from the head camera
+cloud (the real robot will need a proper one).
+
 ## Debugging headless
 
 - `/sim/overview_camera/image` is a fixed camera watching the robot and tables.
