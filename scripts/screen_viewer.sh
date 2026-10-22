@@ -2,7 +2,7 @@
 
 SESSION_NAME="frida"
 # These must match the -t flags in lib.sh
-WINDOWS=("vision" "manipulation" "navigation" "integration" "hri" "zed" "display")
+WINDOWS=("vision" "manipulation" "navigation" "integration" "hri" "zed" "display" "status")
 
 # Check if session exists
 if ! screen -ls | grep -q "\.${SESSION_NAME}"; then
