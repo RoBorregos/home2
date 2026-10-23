@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 import rclpy
+import rclpy.executors
 from rclpy.node import Node
 import rclpy.qos
 from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
 
 # from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.srv import PointTransformation, ReturnLocation, LaserGet
+from frida_interfaces.srv import (
+    PointTransformation,
+    ReturnLocation,
+    LaserGet,
+    GetAreaForPoint,
+)
 import json
 import os
+import time
 from sensor_msgs.msg import LaserScan
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import TransformStamped
@@ -20,6 +27,8 @@ from frida_constants.integration_constants import (
     RETURN_LOCATION,
     RETURN_LASER_DATA,
 )
+from frida_constants.navigation_constants import GET_AREA_FOR_POINT_SERVICE
+from geometry_msgs.msg import PointStamped
 
 
 class PointTransformer(Node):
@@ -45,6 +54,12 @@ class PointTransformer(Node):
         )
 
         self.return_laser = self.create_service(LaserGet, RETURN_LASER_DATA, self.send_laser_data)
+
+        # nav_central owns the area polygons of the ACTIVE map; this node used to
+        # carry its own point-in-polygon over the static frida_constants copy,
+        # which belongs to a different arena. Ask nav, fall back to the local copy
+        # only when navigation is not running.
+        self.area_client = self.create_client(GetAreaForPoint, GET_AREA_FOR_POINT_SERVICE)
 
         self.scan_topic = self.create_subscription(
             LaserScan, "/scan", self.update_laser, qos_profile=qos
@@ -128,8 +143,46 @@ class PointTransformer(Node):
             return response
 
     def get_location_from_pose(self, posex, posey):
+        """Area and nearest sublocations for a map-frame point.
+
+        Prefers nav_central's `GetAreaForPoint`, which uses the polygons of the
+        map that is actually loaded. Falls back to the bundled areas.json when
+        navigation is down, so a standalone task_manager still answers.
         """
-        Callback to determine the location of the robot based on its pose.
+        if self.area_client.wait_for_service(timeout_sec=1.0):
+            request = GetAreaForPoint.Request()
+            request.point = PointStamped()
+            request.point.header.frame_id = "map"
+            request.point.point.x = float(posex)
+            request.point.point.y = float(posey)
+
+            # Never spin from inside a callback: the executor's other threads
+            # complete the future (see utils/area_check.py for the crash this
+            # caused in vision).
+            future = self.area_client.call_async(request)
+            deadline = time.time() + 3.0
+            while not future.done() and time.time() < deadline:
+                time.sleep(0.02)
+            result = future.result() if future.done() else None
+
+            if result is not None and result.success:
+                if not result.area:
+                    self.get_logger().warning("I don't know where I am")
+                    return None, None
+                self.get_logger().info(f"I AM IN: {result.area}")
+                return result.area, list(result.sublocations)
+            self.get_logger().warning("get_area_for_point failed; using the bundled areas.json")
+        else:
+            self.get_logger().warning(
+                f"{GET_AREA_FOR_POINT_SERVICE} unavailable; using the bundled areas.json"
+            )
+        return self._get_location_from_pose_local(posex, posey)
+
+    def _get_location_from_pose_local(self, posex, posey):
+        """Fallback: the static frida_constants copy of areas.json.
+
+        Kept only for running without navigation — it describes a different map
+        than the one nav_central serves, so the answer can disagree.
         """
 
         package_share_directory = get_package_share_directory("frida_constants")
@@ -143,7 +196,6 @@ class PointTransformer(Node):
         # Check which area the robot is in
         for area in areas:
             polygon = areas.get(area, {}).get("polygon", [])
-            print(f"polygon: {polygon}")
             # Skip if "polygon" does not exist or is empty
             if not polygon:
                 continue
@@ -238,15 +290,20 @@ def main(args=None):
     rclpy.init(args=args)
     node = PointTransformer()
 
-    # Use MultiThreadedExecutor to handle concurrent callback
-
+    # MultiThreadedExecutor is required, not cosmetic: get_current_location is a
+    # service callback that itself calls GetAreaForPoint, and a single-threaded
+    # executor can never deliver that response while it is blocked in the outer
+    # callback.
+    executor = rclpy.executors.MultiThreadedExecutor(4)
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,41 @@
+# Parameters for semantic_nav_node.py (the key must match the launch `name=`).
+semantic_nav:
+  ros__parameters:
+    # Which map's areas_<MAP_NAME>.json is authoritative. Empty -> the MAP_NAME
+    # environment variable, which is what general_navigation.launch.py passes.
+    map_name: ""
+
+    # nav_central may come up after this node: keep asking for the areas.
+    areas_retry_period: 10.0
+
+    # A surface counts as scanned when the base is this close to its tagged pose
+    # AND facing it within the yaw tolerance (the camera rides on the gripper, so
+    # heading matters as much as position). Only the closest match is marked:
+    # tagged poses in a kitchen sit well under a metre apart.
+    scan_radius: 1.0
+    scan_yaw_tolerance_deg: 35.0
+    scan_check_period: 1.0
+
+    # Scan bookkeeping survives a restart. "" -> auto-resolve, first writable of
+    # /workspace/log/semantic_nav then ~/.ros/semantic_nav. Never a share/ dir:
+    # colcon overwrites those on the next build.
+    snapshot_dir: ""
+    snapshot_period: 10.0
+
+    # RViz markers (only published when something subscribes).
+    marker_period: 2.0
+
+    # mode "quick": how many surfaces per area (the longest-dwell ones first).
+    quick_mode_per_area: 1
+
+    # Costmap check. A tagged pose that now sits inside the inflation makes Nav2
+    # reject the goal and stalls the patrol, so each viewpoint is verified and,
+    # when blocked, relocated around its furniture (same ring search as
+    # nav_central._find_free_approach). With no costmap yet, poses pass through
+    # unchecked rather than the patrol coming back empty.
+    validate_with_costmap: true
+    viewpoint_check_radius: 0.25    # m, inscribed radius of the 0.65x0.50 footprint
+    viewpoint_max_cost: 50          # same threshold as nav_central._grid_cell_free
+    viewpoint_max_shift: 0.6        # m the replacement pose may move outward
+    viewpoint_probe_distance: 0.8   # m ahead of a tagged pose where the furniture is
+                                    # assumed to be, when no centroid is tagged

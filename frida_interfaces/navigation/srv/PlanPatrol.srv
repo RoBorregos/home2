@@ -1,0 +1,25 @@
+# Request
+# Ordered patrol route over the tagged sublocation poses of the active map.
+#
+# The sublocation poses in areas_<MAP_NAME>.json are already robot poses in
+# front of each piece of furniture (map_area_tagger stores the operator's click
+# as the base position and the drag as the heading), so nav does not synthesise
+# standoff poses: it selects, orders and annotates the tagged ones.
+#
+# Nav plans, it does not drive: the caller iterates the response, navigates to
+# each pose, asks manipulation for `arm_poses[i]` and waits `dwell_s[i]` so
+# vision can confirm what is there.
+
+string[] areas            # empty = every area that has a polygon
+string mode               # "full" | "quick" | "revisit"   ("" -> "full")
+int32 max_viewpoints      # 0 = no limit
+---
+#Response
+bool success
+geometry_msgs/PoseStamped[] viewpoints   # map frame, in visit order
+string[] areas_out                       # area per viewpoint
+string[] sublocations                    # furniture name per viewpoint
+string[] arm_poses                       # xarm named pose to stare with
+float32[] dwell_s                        # seconds to hold at each viewpoint
+float64 total_distance                   # meters, straight-line estimate
+string error

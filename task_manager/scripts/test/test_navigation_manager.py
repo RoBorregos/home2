@@ -51,6 +51,16 @@ def _front_point(x: float = 1.2) -> PointStamped:
     return p
 
 
+def _here() -> PointStamped:
+    """The robot's own position, as a base_link-frame origin point.
+
+    nav_central transforms it to map, so this asks "which room am I standing in?"
+    """
+    p = PointStamped()
+    p.header.frame_id = "base_link"
+    return p
+
+
 # TUPLA DE REGRESO DE IDA ARGS
 class TestNavigationManager(Node):
     def __init__(self):
@@ -118,6 +128,24 @@ class TestNavigationManager(Node):
                 "func": self.navigation_manager.approach_point,
                 "point": _front_point(1.2),
                 "standoff": 0.5,
+            },
+            # Semantic navigation (issue #1268). Neither of these moves the robot:
+            # get_area_for_point is a lookup, plan_patrol only returns the route.
+            "Get Area For Point (robot's own spot)": {
+                "func": self.navigation_manager.get_area_for_point,
+                "point": _here(),
+            },
+            "Plan Patrol (full)": {
+                "func": self.navigation_manager.plan_patrol,
+                "mode": "full",
+            },
+            "Plan Patrol (quick)": {
+                "func": self.navigation_manager.plan_patrol,
+                "mode": "quick",
+            },
+            "Plan Patrol (revisit, stalest first)": {
+                "func": self.navigation_manager.plan_patrol,
+                "mode": "revisit",
             },
             "Explore Zone": {
                 "func": self.explore_zone,
@@ -284,6 +312,26 @@ class TestNavigationManager(Node):
 
     def check_nav_task(self, func, *args, **kwargs):
         result = func(**kwargs)
+
+        # The semantic-nav methods return payloads worth reading, not just a
+        # status: print what came back so a run is self-explanatory.
+        if func == self.navigation_manager.get_area_for_point and result[1]:
+            info = result[1]
+            Logger.info(
+                self,
+                f"area='{info.get('area') or 'unknown'}' "
+                f"sublocations={info.get('sublocations', [])[:3]} "
+                f"in_house={info.get('in_house')}",
+            )
+        elif func == self.navigation_manager.plan_patrol and result[1]:
+            route = result[1]
+            Logger.info(self, f"{len(route)} viewpoints:")
+            for step in route:
+                Logger.info(
+                    self,
+                    f"  {step['area']}/{step['sublocation']} "
+                    f"arm={step['arm_pose']} dwell={step['dwell_s']:.1f}s",
+                )
         # Check for map_service case
         if (
             result[0] == Status.EXECUTION_ERROR

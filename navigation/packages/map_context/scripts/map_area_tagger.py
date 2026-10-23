@@ -21,6 +21,24 @@ from PyQt5.QtWidgets import (
     QDoubleSpinBox, QSpinBox, QDialog, QDialogButtonBox, QFormLayout
 )
 from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QSize
+
+# Furniture metadata: an optional "<name>_meta" sibling of a location entry that
+# tells the semantic navigation node what kind of surface it is, so it can pick
+# the arm "stare" pose and the dwell time. Everything is optional — without it
+# nav_main.semantic.surfaces infers the type from the name.
+META_SUFFIX = "_meta"
+SURFACE_TYPES = ["(auto)", "surface", "low_surface", "shelf", "appliance", "floor", "waypoint"]
+ARM_POSES = ["(auto)", "table_stare", "front_stare", "flat_stare", "look_side_stare",
+             "scan_floor_carry_bag_pose"]
+
+
+def is_location(value):
+    """Whether an area entry is a tagged pose (and not a polygon or a _meta dict)."""
+    return isinstance(value, (list, tuple)) and len(value) >= 2
+
+
+def meta_key(name):
+    return f"{name}{META_SUFFIX}"
 from PyQt5.QtGui import (
     QPixmap, QPainter, QColor, QPen, QBrush, QFont, QIcon,
     QWheelEvent, QMouseEvent, QPainterPath, QPolygonF, QCursor,
@@ -374,7 +392,7 @@ class MapCanvas(QWidget):
 
             # Draw locations
             for loc_name, loc_data in area_data.items():
-                if loc_name == 'polygon':
+                if loc_name == 'polygon' or not is_location(loc_data):
                     continue
                 x, y = loc_data[0], loc_data[1]
                 qw = loc_data[6] if len(loc_data) >= 7 else 1.0
@@ -1244,18 +1262,21 @@ class MapAreaTagger(QMainWindow):
 
         # Locations
         for name, data in area.items():
-            if name == 'polygon':
+            if name == 'polygon' or not is_location(data):
                 continue
             yaw = 0.0
             if len(data) >= 7:
                 qz, qw = data[5], data[6]
                 yaw = math.degrees(math.atan2(2.0 * qw * qz, 1.0 - 2.0 * qz * qz))
+            meta = area.get(meta_key(name)) or {}
+            label = f"{name}  [{meta['type']}]" if meta.get('type') else name
             item = QTreeWidgetItem([
-                name,
+                label,
                 f"{data[0]:.2f}",
                 f"{data[1]:.2f}",
                 f"{yaw:.0f}"
             ])
+            item.setData(0, Qt.UserRole, name)
             self.tree.addTopLevelItem(item)
 
         # Polygon
@@ -1291,30 +1312,40 @@ class MapAreaTagger(QMainWindow):
         delete_action = menu.addAction("Delete")
         rename_action = menu.addAction("Rename")
         relocate_action = None
+        meta_action = None
         if item.text(0) != 'polygon' and item.parent() is None:
             relocate_action = menu.addAction("Relocate on Map")
-            
+            meta_action = menu.addAction("Edit Furniture Metadata...")
+
         action = menu.exec_(self.tree.viewport().mapToGlobal(pos))
         if action == delete_action:
             self.delete_tree_item(item)
         elif action == rename_action:
             self.rename_tree_item(item)
+        elif meta_action and action == meta_action:
+            self.edit_location_meta(item)
         elif relocate_action and action == relocate_action:
             self.relocating_location = item.text(0)
             self.status.showMessage(f"Click on map to relocate '{item.text(0)}'")
             self.set_mode('location')
 
+    def item_name(self, item):
+        """The location name behind a tree row (the label may carry its type)."""
+        return item.data(0, Qt.UserRole) or item.text(0)
+
     def delete_tree_item(self, item):
-        name = item.text(0)
+        name = self.item_name(item)
         if name in self.areas.get(self.current_area, {}):
             del self.areas[self.current_area][name]
+            # Metadata belongs to the location: it must not outlive it.
+            self.areas[self.current_area].pop(meta_key(name), None)
             self.canvas.areas = self.areas
             self.refresh_tree()
             self.refresh_area_list()
             self.canvas.update()
 
     def rename_tree_item(self, item):
-        old_name = item.text(0)
+        old_name = self.item_name(item)
         if old_name == 'polygon':
             return
         new_name, ok = QInputDialog.getText(self, "Rename", "New name:", text=old_name)
@@ -1322,10 +1353,132 @@ class MapAreaTagger(QMainWindow):
             new_name = new_name.strip().lower().replace(' ', '_')
             data = self.areas[self.current_area].pop(old_name)
             self.areas[self.current_area][new_name] = data
+            meta = self.areas[self.current_area].pop(meta_key(old_name), None)
+            if meta:
+                self.areas[self.current_area][meta_key(new_name)] = meta
             self.canvas.areas = self.areas
             self.refresh_tree()
             self.refresh_area_list()
             self.canvas.update()
+
+    def edit_location_meta(self, item):
+        """Edit the optional "<name>_meta" of a tagged location.
+
+        Only non-auto fields are written, so a map stays as small as it was and
+        the name heuristic keeps working for everything left on "(auto)".
+        """
+        name = self.item_name(item)
+        area = self.areas.get(self.current_area, {})
+        if not is_location(area.get(name)):
+            return
+        meta = dict(area.get(meta_key(name)) or {})
+        pose = area[name]
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Furniture metadata — {self.current_area}/{name}")
+        form = QFormLayout(dialog)
+
+        type_box = QComboBox()
+        type_box.addItems(SURFACE_TYPES)
+        type_box.setCurrentText(meta.get("type", "(auto)"))
+        form.addRow("Surface type:", type_box)
+
+        arm_box = QComboBox()
+        arm_box.addItems(ARM_POSES)
+        arm_box.setCurrentText(meta.get("arm_pose", "(auto)"))
+        form.addRow("Arm stare pose:", arm_box)
+
+        def spin(value, maximum, step, suffix):
+            box = QDoubleSpinBox()
+            box.setRange(0.0, maximum)
+            box.setSingleStep(step)
+            box.setDecimals(2)
+            box.setSuffix(suffix)
+            box.setValue(float(value))
+            return box
+
+        height_box = spin(meta.get("height", 0.0), 3.0, 0.05, " m")
+        height_box.setSpecialValueText("(auto)")
+        form.addRow("Surface height:", height_box)
+
+        dwell_box = spin(meta.get("dwell_s", 0.0), 30.0, 0.5, " s")
+        dwell_box.setSpecialValueText("(auto)")
+        form.addRow("Dwell:", dwell_box)
+
+        extent = meta.get("extent") or [0.0, 0.0]
+        extent_w = spin(extent[0], 5.0, 0.1, " m")
+        extent_w.setSpecialValueText("(auto)")
+        extent_d = spin(extent[1] if len(extent) > 1 else 0.0, 5.0, 0.1, " m")
+        extent_d.setSpecialValueText("(auto)")
+        extent_row = QHBoxLayout()
+        extent_row.addWidget(extent_w)
+        extent_row.addWidget(extent_d)
+        extent_widget = QWidget()
+        extent_widget.setLayout(extent_row)
+        form.addRow("Extent (w x d):", extent_widget)
+
+        # The tagged pose is where the ROBOT stands; the furniture is in front of
+        # it. Default the centre to 0.8 m along the heading so the field starts
+        # from something sane instead of the robot's own spot.
+        yaw = 0.0
+        if len(pose) >= 7:
+            yaw = math.atan2(2.0 * pose[6] * pose[5], 1.0 - 2.0 * pose[5] * pose[5])
+        center = meta.get("center") or [
+            round(pose[0] + 0.8 * math.cos(yaw), 3),
+            round(pose[1] + 0.8 * math.sin(yaw), 3),
+        ]
+        center_x = QDoubleSpinBox()
+        center_x.setRange(-1000.0, 1000.0)
+        center_x.setDecimals(3)
+        center_x.setValue(float(center[0]))
+        center_y = QDoubleSpinBox()
+        center_y.setRange(-1000.0, 1000.0)
+        center_y.setDecimals(3)
+        center_y.setValue(float(center[1]))
+        center_used = QComboBox()
+        center_used.addItems(["(auto: 0.8 m ahead)", "use the values below"])
+        center_used.setCurrentIndex(1 if meta.get("center") else 0)
+        center_row = QHBoxLayout()
+        center_row.addWidget(center_x)
+        center_row.addWidget(center_y)
+        center_widget = QWidget()
+        center_widget.setLayout(center_row)
+        form.addRow("Furniture centre:", center_used)
+        form.addRow("", center_widget)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        form.addRow(buttons)
+
+        if dialog.exec_() != QDialog.Accepted:
+            return
+
+        new_meta = {}
+        if type_box.currentText() != "(auto)":
+            new_meta["type"] = type_box.currentText()
+        if arm_box.currentText() != "(auto)":
+            new_meta["arm_pose"] = arm_box.currentText()
+        if height_box.value() > 0.0:
+            new_meta["height"] = round(height_box.value(), 2)
+        if dwell_box.value() > 0.0:
+            new_meta["dwell_s"] = round(dwell_box.value(), 1)
+        if extent_w.value() > 0.0 or extent_d.value() > 0.0:
+            new_meta["extent"] = [round(extent_w.value(), 2), round(extent_d.value(), 2)]
+        if center_used.currentIndex() == 1:
+            new_meta["center"] = [round(center_x.value(), 3), round(center_y.value(), 3)]
+
+        if new_meta:
+            self.areas[self.current_area][meta_key(name)] = new_meta
+        else:
+            self.areas[self.current_area].pop(meta_key(name), None)
+
+        self.canvas.areas = self.areas
+        self.refresh_tree()
+        self.canvas.update()
+        self.status.showMessage(
+            f"Metadata for '{name}': {new_meta if new_meta else 'cleared (auto)'}"
+        )
 
     def delete_selected_item(self):
         item = self.tree.currentItem()
