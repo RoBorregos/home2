@@ -21,6 +21,11 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 # which requires internet access we won't have at competition time.
 ENV YOLO_AUTOINSTALL=false
 
+# Keep the same CLIP implementation as the CPU/CUDA vision images. The base
+# image's pip constraints preserve its Jetson torch/torchvision versions.
+COPY vision/requirements/clip.txt /tmp/clip-requirements.txt
+RUN pip install -r /tmp/clip-requirements.txt
+
 RUN pip install \
     cmake==3.25.2 \
     lap \
@@ -37,8 +42,16 @@ RUN pip install \
     requests \
     scikit-image \
     onnx \
-    ultralytics-thop && \
-    pip install --no-deps insightface==1.0.1 ultralytics==8.4.19
+    ultralytics-thop \
+    absl-py \
+    attrs \
+    flatbuffers \
+    sounddevice \
+    sentencepiece && \
+    pip install --no-deps \
+    insightface==1.0.1 \
+    ultralytics==8.4.19 \
+    mediapipe==0.10.18
 
 WORKDIR /workspace
 
