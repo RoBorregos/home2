@@ -201,6 +201,9 @@ def person_on(arm, state: PersonState):
 
 
 def person_off(arm, state: PersonState):
+    if not state.active:
+        arm.logger.info("Person following already inactive, skipping mode switch")
+        return
     state.active = False
     _send_joint_velocity(arm, 0.0)
     time.sleep(0.3)
