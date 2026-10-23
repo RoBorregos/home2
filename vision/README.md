@@ -33,15 +33,17 @@ home2/
 │   ├── object_detector_2d/                # 2D detection + 3D deprojection backbone
 │   │   ├── config/
 │   │   │   ├── parameters.yaml            # ObjectDetect2D params
+│   │   │   ├── parameters_gallery.yaml    # GalleryDetect2D params
 │   │   │   └── parameters_zero_shot.yaml  # ZeroShotDetect2D params
 │   │   ├── launch/
-│   │   │   ├── object_detector_node.launch.py       # image_orienter + ObjectDetect2D
+│   │   │   ├── object_detector_node.launch.py       # image_orienter + ObjectDetect2D + GalleryDetect2D
 │   │   │   ├── zero_shot_object_detector_node.launch.py
 │   │   │   └── object_detector_combined.launch.py   # both detectors at once
 │   │   ├── models/                        # Custom weights (robocup2026_v1.pt, tmr2025.pt)
 │   │   └── scripts/
 │   │       ├── base_detector_node.py      # Shared base: params, TF, 3D projection, markers
 │   │       ├── object_detector_node.py    # Runs N YOLO models, IoU-dedupes across them
+│   │       ├── gallery_object_detector_node.py      # Few-shot embedding gallery, own rate
 │   │       ├── zero_shot_object_detector_node.py    # YOLOE open-vocabulary detector
 │   │       ├── vision_3D_utils.py         # Pixel -> 3D point helpers
 │   │       ├── detectors/                 # Pluggable model layer
@@ -128,8 +130,10 @@ must therefore never start two `image_orienter` instances — the per-task launc
 | `embedding_gallery` | DINOv2 ViT-B/14 + `gallery/` | `embedding` | per-object similarity floor |
 
 `ObjectDetect2D` runs the models listed under `models:` in `config/parameters.yaml`
-(currently `yolo_finetuned` and `embedding_gallery`). `embedding_box_proposer` is not a
-detector on its own: `embedding_gallery` calls it to get class-agnostic boxes.
+(currently `yolo_finetuned`). `embedding_gallery` runs in its own node, `GalleryDetect2D`,
+because it is ~45x slower than YOLO and would otherwise hold back `/vision/detections`.
+`embedding_box_proposer` is not a detector on its own: `embedding_gallery` calls it to get
+class-agnostic boxes.
 
 Adding a model with the same architecture is a two-step change: drop the `.pt` beside
 `registry.py` and add one dict entry. A model with conflicting dependencies, or one needing
@@ -163,11 +167,12 @@ with `--warmup` pre-builds every engine for *this* device. Run it before you go 
 flowchart LR
     ZED[home2-zed<br/>ZED wrapper] -->|rgb + depth + camera_info| IO[image_orienter]
     ROT(/vision/camera/rotation) -.->|Int16 0/90/180/270| IO
-    IO -->|/vision/camera/image_oriented| OD & TRK & HC & GC & FR
+    IO -->|/vision/camera/image_oriented| OD & GD & TRK & HC & GC & FR
 
     subgraph VIS["home2-vision (ROS 2)"]
         IO
-        OD["ObjectDetect2D<br/>yolo_finetuned + embedding_gallery"]
+        OD["ObjectDetect2D<br/>yolo_finetuned"]
+        GD["GalleryDetect2D<br/>embedding_gallery"]
         ZS["ZeroShotDetect2D<br/>yoloe-11l-seg"]
         TRK["tracker_node<br/>yolov8n + ByteTrack, yolo11m-pose"]
         FR["face_recognition<br/>InsightFace buffalo_sc"]
@@ -176,6 +181,7 @@ flowchart LR
         MD["moondream_node<br/>yolov8n person crop"]
     end
 
+    GD -->|/vision/gallery_detections| OD
     OD -->|/vision/detections + detections_3d| TM[task_manager<br/>vision_tasks.py]
     HC -->|srv YoloDetect| OD
     HC -->|srv MapAreas| NAV[nav_central]
@@ -192,24 +198,27 @@ flowchart LR
 
 ### `object_detector_2d`
 
-The detection backbone. Both nodes share `BaseDetectorNode`, which declares the camera
+The detection backbone. All three nodes share `BaseDetectorNode`, which declares the camera
 topics, `TARGET_FRAME`, `DEPTH_ACTIVE`, `FLIP_IMAGE` and `MAX_DEPTH_THRESH` parameters and
 handles projection and visualization. `vision_general` has the same pattern in
 `VisionRuntime` (see below).
 
 | Node | Purpose | Key interfaces |
 | --- | --- | --- |
-| `ObjectDetect2D` | Runs the models listed under `models:` in `config/parameters.yaml` continuously and IoU-dedupes across them | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory` |
+| `ObjectDetect2D` | Runs the models listed under `models:` in `config/parameters.yaml` continuously and IoU-dedupes across them; merges `GalleryDetect2D` results younger than `GALLERY_MAX_AGE` (YOLO wins on overlap) | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory` |
+| `GalleryDetect2D` | Few-shot `embedding_gallery` at its own rate (~1 Hz on the Orin) | pubs `/vision/gallery_detections*` |
 | `ZeroShotDetect2D` | YOLOE open-vocabulary detection for classes not in the finetuned model | pubs `/vision/zero_shot_detections*`; srv `SetDetectorClasses` |
 
 Each node has a fixed activation topic (`/vision/object_detector/active`,
-`/vision/zero_shot_detector/active`) so a task manager can idle the GPU between steps.
+`/vision/gallery_detector/active`, `/vision/zero_shot_detector/active`) so a task manager
+can idle the GPU between steps. Pausing the gallery leaves YOLO untouched; its results drop
+out of `/vision/detections` after `GALLERY_MAX_AGE`.
 
 #### Adding an object to the gallery (few-shot)
 
 `yolo_finetuned` only knows its training classes. Other objects can be added from photos, with
 no retraining: YOLOE proposes boxes and DINOv2 matches each crop against a per-object gallery.
-It runs alongside `yolo_finetuned` (both are listed in `config/parameters.yaml`).
+It runs in `GalleryDetect2D`, and its results are merged into `/vision/detections`.
 
 Put 10-30 photos in
 `vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/`,
@@ -217,7 +226,7 @@ then, inside `home2-vision`:
 
 ```bash
 cd /workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery
-./add_object.sh <object_name>    # then restart ObjectDetect2D
+./add_object.sh <object_name>    # then restart GalleryDetect2D
 ```
 
 Options, accuracy and troubleshooting: [`embedding_gallery/README.md`](packages/object_detector_2d/scripts/embedding_gallery/README.md).
@@ -297,7 +306,7 @@ What each launch file starts:
 | `gpsr_launch.py` | `hric_commands`, `gpsr_commands`, `face_recognition`, `tracker_node`, `moondream_node` + the detector launch |
 | `ppc_launch.py` | `hric_commands`, `moondream_node` + the detector launch |
 | `restaurant_launch.py` | `restaurant_commands`, `customer_node`, `moondream_node` + the detector launch |
-| `dlc_launch.py` | the detector launch only (`image_orienter` + `ObjectDetect2D`) |
+| `dlc_launch.py` | the detector launch only (`image_orienter` + `ObjectDetect2D` + `GalleryDetect2D`) |
 
 Modifier flags, combinable with any of the above:
 
@@ -395,6 +404,7 @@ until someone subscribes, so leaving them in costs nothing. Open one in `rqt_ima
 | Topic | From |
 | --- | --- |
 | `/vision/detections_image` | `ObjectDetect2D` |
+| `/vision/gallery_detections_image` | `GalleryDetect2D` |
 | `/vision/tracker_image` | `tracker_node` |
 | `/vision/face_recognition_image` | `face_recognition` |
 | `/vision/hric/img_person_detecion` | `hric_commands` |

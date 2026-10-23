@@ -15,6 +15,11 @@ def generate_launch_description():
         "config",
         "parameters_zero_shot.yaml",
     )
+    config_gallery = os.path.join(
+        get_package_share_directory("object_detector_2d"),
+        "config",
+        "parameters_gallery.yaml",
+    )
     return LaunchDescription(
         [
             Node(
@@ -32,6 +37,15 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 parameters=[config],
+            ),
+            Node(
+                package="object_detector_2d",
+                executable="gallery_object_detector_node.py",
+                name="GalleryDetect2D",
+                respawn=True,
+                output="screen",
+                emulate_tty=True,
+                parameters=[config_gallery],
             ),
             Node(
                 package="object_detector_2d",
