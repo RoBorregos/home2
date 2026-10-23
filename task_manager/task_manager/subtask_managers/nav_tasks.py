@@ -45,6 +45,8 @@ from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
 NAV_GOAL_TIMEOUT = 90.0
+# Planned dock = detect + plan + MPPI approach + final straight-in
+DOCK_TIMEOUT = 150.0
 
 
 def _mock_pose():
@@ -307,16 +309,28 @@ class NavigationTasks:
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def dock_table(self, offset=0.0):
-        """Perpendicular-approach (dock to) the table/shelf in front of the robot.
+    def dock_table(self, offset=0.0, surface_type: str = "", target=None):
+        """Plan + dock at the surface in front of the robot.
 
-        offset: desired front offset in meters; 0.0 uses the docker default.
+        surface_type: surface profile in nav_main/config/approach_profiles.yaml
+            (table, round_table, counter, dishwasher, cabinet, shelf). The base pose
+            is planned inside that surface's reach band — no hardcoded distance.
+        target: optional PointStamped (any frame) of the object to work on; the
+            robot stands in front of it instead of the face centre.
+        offset: DEPRECATED legacy front offset (m), only used without surface_type.
         """
-        CLog.nav(self.node, "MOVE", f"Requesting table docking (offset={offset})")
+        CLog.nav(
+            self.node,
+            "MOVE",
+            f"Requesting table docking (surface={surface_type or 'legacy'}, offset={offset})",
+        )
         request = DockTable.Request()
+        request.surface_type = surface_type
         request.offset = float(offset)
+        if target is not None:
+            request.target = target
         future = self.dock_table_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=DOCK_TIMEOUT)
         result = future.result()
         if result is not None:
             if result.success:

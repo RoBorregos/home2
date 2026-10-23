@@ -1,6 +1,14 @@
 # Request
 
-# Desired front offset for the approach (m). 0.0 -> use the docker default.
+# Surface type to dock at (a key of nav_main/config/approach_profiles.yaml:
+# table, round_table, counter, dishwasher, cabinet, shelf ...). Selects the arm's
+# reach band; the docker plans the base pose inside it. Empty -> legacy `offset`.
+string surface_type
+# Optional object to work on (any TF frame). The base stands in front of it
+# instead of the centre of the detected face. Empty frame_id -> no target.
+geometry_msgs/PointStamped target
+# DEPRECATED (kept for old callers): legacy front offset (m) when surface_type is
+# empty. 0.0 -> the 'default' surface profile.
 float32 offset
 ---
 #Response
