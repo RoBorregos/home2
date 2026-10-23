@@ -519,7 +519,6 @@ class NavigationTasks:
         CLog.nav(self.node, "ERROR", f"Pose goal failed: {err}")
         return (Status.EXECUTION_ERROR, err)
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
     def _resolve_map_xy(self, point):
         """Return map-frame (x, y) from a PointStamped (transformed to map via TF),
         a geometry_msgs/Point, or an (x, y) sequence. Returns None if a stamped point
@@ -537,37 +536,12 @@ class NavigationTasks:
                     )
                     ps = do_transform_point(ps, tf)
                 except Exception as e:
-                    CLog.nav(self.node, "ERROR", f"move_to_point: TF {frame}->map failed: {e}")
+                    CLog.nav(self.node, "ERROR", f"_resolve_map_xy: TF {frame}->map failed: {e}")
                     return None
             return float(ps.point.x), float(ps.point.y)
         if isinstance(point, Point):
             return float(point.x), float(point.y)
         return float(point[0]), float(point[1])
-
-    def move_to_point(self, point, standoff_distance=0.0):
-        """Navigate to a point. `point` may be a PointStamped (any frame — transformed
-        to map), a geometry_msgs/Point, or an (x, y) sequence in the map frame. With
-        standoff_distance>0, stop that far short of the point, facing it."""
-        xy = self._resolve_map_xy(point)
-        if xy is None:
-            return (Status.EXECUTION_ERROR, "could not transform point to map frame")
-        px, py = xy
-        yaw = 0.0
-        status, cur = self.get_current_pose()
-        if status == Status.EXECUTION_SUCCESS and cur is not None:
-            dx, dy = px - cur.pose.position.x, py - cur.pose.position.y
-            dist = math.hypot(dx, dy)
-            if dist > 1e-3:
-                yaw = math.atan2(dy, dx)
-                if 0.0 < standoff_distance < dist:
-                    px -= (dx / dist) * standoff_distance
-                    py -= (dy / dist) * standoff_distance
-        goal = PoseStamped()
-        goal.header.frame_id = "map"
-        goal.pose.position.x = px
-        goal.pose.position.y = py
-        goal.pose.orientation = self._yaw_to_quaternion(yaw)
-        return self.move_to_pose(goal)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=2)
     @service_check(
@@ -643,6 +617,7 @@ class NavigationTasks:
 
     # ── Point/bearing helpers (managers must not touch tf2/atan2 directly) ──
 
+    @mockable(_mock_callback=lambda self, point_stamped: point_stamped)
     def to_map_point(self, point_stamped):
         """Transform a PointStamped to the map frame using the CURRENT TF.
         Must be called while the robot is still at the pose where the point
@@ -668,6 +643,7 @@ class NavigationTasks:
             )
             return None
 
+    @mockable(return_value=0.0)
     def bearing_to(self, point_stamped, frame: str = "base_link"):
         """Bearing (degrees) from `frame` to a PointStamped in any TF frame.
         +deg = target to the right, matching the arm's pan_to convention.
