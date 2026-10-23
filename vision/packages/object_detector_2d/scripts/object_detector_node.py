@@ -90,9 +90,7 @@ class ObjectDetectorNode(BaseDetectorNode):
         gallery, stamp = self.gallery
         if time.monotonic() - stamp > self.gallery_max_age:
             return []
-        return [
-            g for g in gallery if not any(iou_msg(g, d) > 0.6 for d in detections)
-        ]
+        return [g for g in gallery if not any(iou_msg(g, d) > 0.6 for d in detections)]
 
     # ------------------------------------------------------------------ services
 
