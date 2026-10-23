@@ -32,6 +32,15 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["llm_utils"]["ros__parameters"]
 
+    dialogue_agent_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("nlp"),
+            "config",
+            "dialogue_agent.yaml",
+        ),
+        [ModuleNames.HRI.value],
+    )["dialogue_agent"]["ros__parameters"]
+
     nodes = [
         Node(
             package="nlp",
@@ -50,6 +59,15 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[llm_utils_config],
+        ),
+        Node(
+            package="nlp",
+            executable="dialogue_agent.py",
+            ros_arguments=["--log-level", f"dialogue_agent:={LOG_LEVEL}"],
+            name="dialogue_agent",
+            output="screen",
+            emulate_tty=True,
+            parameters=[dialogue_agent_config],
         ),
     ]
 

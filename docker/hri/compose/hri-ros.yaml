@@ -34,6 +34,8 @@ services:
       <<:
         - *speech-devices
       DISPLAY: ${DISPLAY:-:0}
+      # Touchscreen taps as mouse clicks (Qt5 XInput2 only delivers hover)
+      QT_XCB_NO_XI2_MOUSE: 1
       TERM: xterm-256color
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
       # Startup log noise. HRI_LOG_LEVEL=debug brings every node's init details back.

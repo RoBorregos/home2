@@ -1,0 +1,8 @@
+string session_id
+string user_text
+bool reset
+bool offline
+---
+string reply
+bool end_conversation
+string tool_calls_json

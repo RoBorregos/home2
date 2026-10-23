@@ -11,6 +11,7 @@ default (/), gpsr, hric, laundry, ppc, restaurant, storing_groceries.
 """
 
 import json
+import os
 import re
 import signal
 import sys
@@ -22,12 +23,17 @@ from pathlib import Path
 import rclpy
 from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from rclpy.signals import SignalHandlerOptions
 from rclpy.validate_topic_name import validate_topic_name
 from rcl_interfaces.msg import Log
 from std_msgs.msg import Empty, Float32, Int32, String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from frida_constants.hri_constants import (
+    DISPLAY_SURVEY_ANSWERS_TOPIC,
+    DISPLAY_SURVEY_TOPIC,
+)
 from frida_constants.vision_constants import (
     CHAIR_REMOVAL_IMAGE_TOPIC,
     IMAGE_TOPIC,
@@ -36,7 +42,7 @@ from frida_constants.vision_constants import (
 )
 
 from PyQt5.QtCore import Qt, QObject, QTimer, pyqtSignal
-from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPixmap
+from PyQt5.QtGui import QColor, QFont, QImage, QKeySequence, QPainter, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QDialog,
@@ -47,6 +53,8 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QPushButton,
     QScrollArea,
+    QShortcut,
+    QSizePolicy,
     QStackedWidget,
     QTextEdit,
     QVBoxLayout,
@@ -301,6 +309,8 @@ class DisplaySignals(QObject):
     command_index_changed = pyqtSignal(int)
     heard_buffered = pyqtSignal(str)  # "heard" text held back while listening
     capture_added = pyqtSignal(str, QImage)  # label, snapshot
+    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
+    survey_received = pyqtSignal(dict)  # empty dict closes the survey
 
 
 class EvidenceRecorder:
@@ -371,8 +381,6 @@ class EvidenceRecorder:
         for f in files.values():
             f.close()
 
-    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
-
 
 class DisplayRosNode(Node):
     def __init__(self, signals: DisplaySignals):
@@ -421,6 +429,7 @@ class DisplayRosNode(Node):
             String, "/hri/display/change_video", self._on_change_video, 10
         )
         self.create_subscription(String, CAPTURE_TOPIC, self._on_capture, 10)
+        self.create_subscription(String, DISPLAY_SURVEY_TOPIC, self._on_survey, 10)
         self._evidence_frames = {}  # topic -> (Image msg, monotonic receive time)
         for topic in self.declare_parameter(
             "evidence_image_topics", DEFAULT_EVIDENCE_IMAGE_TOPICS
@@ -448,13 +457,19 @@ class DisplayRosNode(Node):
             Empty, "/hri/display/speaker_test", 10
         )
         self.answer_pub = self.create_publisher(String, "/hri/display/answers", 10)
+        self.survey_answers_pub = self.create_publisher(
+            String, DISPLAY_SURVEY_ANSWERS_TOPIC, 10
+        )
 
         self._subscribe_video(self.video_topic)
 
     def _subscribe_video(self, topic: str):
         if self._video_sub is not None:
             self.destroy_subscription(self._video_sub)
-        self._video_sub = self.create_subscription(Image, topic, self._on_frame, 1)
+        # Best effort matches both the reliable oriented image and the ZED's sensor QoS
+        self._video_sub = self.create_subscription(
+            Image, topic, self._on_frame, qos_profile_sensor_data
+        )
         self.video_topic = topic
         self.signals.video_topic_changed.emit(topic)
 
@@ -518,6 +533,16 @@ class DisplayRosNode(Node):
         if msg.data.strip():
             self.evidence.log_message("question", msg.data)
         self.signals.question_received.emit(msg.data)
+
+    def _on_survey(self, msg: String):
+        try:
+            survey = json.loads(msg.data) if msg.data.strip() else {}
+        except json.JSONDecodeError as e:
+            self.get_logger().warn(f"Error parsing survey: {e}")
+            return
+        if survey:
+            self.evidence.log_message("survey", survey.get("title", "survey"))
+        self.signals.survey_received.emit(survey if isinstance(survey, dict) else {})
 
     def _on_task_status(self, msg: String):
         self.signals.task_status_changed.emit(msg.data == "active")
@@ -637,6 +662,10 @@ class DisplayRosNode(Node):
 
     def publish_answer(self, text: str):
         self.answer_pub.publish(String(data=text))
+
+    def publish_survey_answers(self, result: dict):
+        self.evidence.log_message("survey_answers", json.dumps(result))
+        self.survey_answers_pub.publish(String(data=json.dumps(result)))
 
 
 # Bases tried, in order, to resolve a relative `image_path` from /hri/display/map
@@ -1029,6 +1058,8 @@ class MessagesPanel(QScrollArea):
             f"<br><span style='font-size:22px;'>{content}</span>"
         )
         entry.setWordWrap(True)
+        # Minimum keeps each entry at its full text height instead of being squeezed to fit
+        entry.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         entry.setStyleSheet(
             f"padding:10px; border:1px solid {BORDER_LIGHT}; border-radius:8px;"
             f"margin-bottom:6px; background-color:{BG_DARKER};"
@@ -1228,6 +1259,160 @@ def horizontal_separator():
     return line
 
 
+class SurveyOverlay(QWidget):
+    """Full-window touch survey: one question per screen, big answer buttons.
+
+    Receives {"id", "title", "intro", "questions": [{"id", "text", "type":
+    "likert"|"choice", "options"?, "min_label"?, "max_label"?}]} and emits
+    {"id", "completed", "answers": {qid: value}, "skipped": [qid], "duration_s"}.
+    """
+
+    finished = pyqtSignal(dict)
+    LIKERT = ["1", "2", "3", "4", "5"]
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setObjectName("surveyOverlay")
+        self.setStyleSheet(
+            f"#surveyOverlay {{ background-color: {BG_DARKER}; }}"
+            "QLabel { background: transparent; }"
+        )
+        self._survey = {}
+        self._index = 0
+        self._answers = {}
+        self._started = 0.0
+
+        self._title = QLabel()
+        self._title.setStyleSheet("font-size: 22px; color: #b4b4b4;")
+        self._progress = QLabel()
+        self._progress.setStyleSheet("font-size: 20px; color: #b4b4b4;")
+        top = QHBoxLayout()
+        top.addWidget(self._title)
+        top.addStretch()
+        top.addWidget(self._progress)
+
+        self._question = QLabel()
+        self._question.setWordWrap(True)
+        self._question.setAlignment(Qt.AlignCenter)
+        self._question.setStyleSheet("font-size: 34px; font-weight: bold;")
+
+        self._buttons_row = QHBoxLayout()
+        self._buttons_row.setSpacing(18)
+        self._scale_labels = QHBoxLayout()
+        self._min_label = QLabel()
+        self._max_label = QLabel()
+        for label in (self._min_label, self._max_label):
+            label.setStyleSheet("font-size: 20px; color: #b4b4b4;")
+        self._scale_labels.addWidget(self._min_label)
+        self._scale_labels.addStretch()
+        self._scale_labels.addWidget(self._max_label)
+
+        back = QPushButton("← Back")
+        skip = QPushButton("Skip →")
+        for nav in (back, skip):
+            nav.setFixedHeight(70)
+            nav.setMinimumWidth(180)
+            nav.setStyleSheet(
+                f"background-color: {BORDER_LIGHT}; font-size: 22px; color: white;"
+            )
+        back.clicked.connect(self._back)
+        skip.clicked.connect(lambda: self._answer(None))
+        nav_row = QHBoxLayout()
+        nav_row.addWidget(back)
+        nav_row.addStretch()
+        nav_row.addWidget(skip)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(40, 24, 40, 24)
+        layout.addLayout(top)
+        layout.addStretch()
+        layout.addWidget(self._question)
+        layout.addSpacing(40)
+        layout.addLayout(self._buttons_row)
+        layout.addLayout(self._scale_labels)
+        layout.addStretch()
+        layout.addLayout(nav_row)
+        self.hide()
+
+    def start(self, survey: dict):
+        if self.isVisible() and survey.get("id") == self._survey.get("id"):
+            return  # re-sent by the task manager while it waits; keep the progress
+        self._survey = survey
+        self._index = 0
+        self._answers = {}
+        self._started = time.monotonic()
+        self._title.setText(survey.get("title", "Quick survey"))
+        self._render()
+        self.show()
+        self.raise_()
+
+    def _questions(self):
+        return self._survey.get("questions", [])
+
+    def _render(self):
+        questions = self._questions()
+        question = questions[self._index]
+        self._progress.setText(f"{self._index + 1} / {len(questions)}")
+        self._question.setText(question.get("text", ""))
+
+        while self._buttons_row.count():
+            item = self._buttons_row.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        likert = question.get("type", "likert") == "likert"
+        options = self.LIKERT if likert else question.get("options", [])
+        self._buttons_row.addStretch()
+        for i, option in enumerate(options):
+            button = QPushButton(option)
+            button.setFixedHeight(130)
+            button.setMinimumWidth(130 if likert else 220)
+            font = button.font()
+            font.setPointSize(30 if likert else 20)
+            font.setBold(True)
+            button.setFont(font)
+            value = i + 1 if likert else option
+            if self._answers.get(question["id"]) == value:
+                button.setStyleSheet("background-color: #4caf50;")
+            button.clicked.connect(lambda _, v=value: self._answer(v))
+            self._buttons_row.addWidget(button)
+        self._buttons_row.addStretch()
+
+        self._min_label.setText(question.get("min_label", "") if likert else "")
+        self._max_label.setText(question.get("max_label", "") if likert else "")
+
+    def _answer(self, value):
+        question = self._questions()[self._index]
+        if value is None:
+            self._answers.pop(question["id"], None)
+        else:
+            self._answers[question["id"]] = value
+        if self._index + 1 < len(self._questions()):
+            self._index += 1
+            self._render()
+        else:
+            self._finish()
+
+    def _back(self):
+        if self._index > 0:
+            self._index -= 1
+            self._render()
+
+    def _finish(self):
+        ids = [q["id"] for q in self._questions()]
+        self.finished.emit(
+            {
+                "id": self._survey.get("id"),
+                "completed": True,
+                "answers": self._answers,
+                "skipped": [qid for qid in ids if qid not in self._answers],
+                "duration_s": round(time.monotonic() - self._started, 1),
+            }
+        )
+        self.hide()
+
+
 class BaseWindow(QMainWindow):
     """Common wiring: audio overlay + timeout, optional map/question dialogs."""
 
@@ -1248,6 +1433,10 @@ class BaseWindow(QMainWindow):
         ros_node.signals.vad_level_changed.connect(self.audio_overlay.set_vad_level)
         ros_node.signals.heard_buffered.connect(self.audio_overlay.show_heard)
         ros_node.signals.keyword_detected.connect(self.audio_overlay.show_keyword)
+
+        self.survey_overlay = SurveyOverlay(self._central)
+        self.survey_overlay.finished.connect(ros_node.publish_survey_answers)
+        ros_node.signals.survey_received.connect(self._on_survey)
 
         self.gallery_dialog = GalleryDialog(
             ros_node.signals, ros_node.evidence.dir, self
@@ -1296,9 +1485,17 @@ class BaseWindow(QMainWindow):
         else:
             self.question_dialog.hide()
 
+    def _on_survey(self, survey: dict):
+        if survey.get("questions"):
+            self.survey_overlay.setGeometry(self._central.rect())
+            self.survey_overlay.start(survey)
+        else:
+            self.survey_overlay.hide()
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.audio_overlay.setGeometry(self._central.rect())
+        self.survey_overlay.setGeometry(self._central.rect())
 
 
 class SplitWindow(BaseWindow):
@@ -1640,7 +1837,18 @@ def main():
         )
         factory = TASK_WINDOWS["default"]
     window = factory(ros_node)
-    window.showMaximized()
+    # Starts fullscreen; F11 toggles to a maximized window (DISPLAY_FULLSCREEN=0 starts windowed)
+    QShortcut(
+        QKeySequence("F11"),
+        window,
+        activated=lambda: (
+            window.showMaximized() if window.isFullScreen() else window.showFullScreen()
+        ),
+    )
+    if os.environ.get("DISPLAY_FULLSCREEN", "1") == "0":
+        window.showMaximized()
+    else:
+        window.showFullScreen()
 
     ret = app.exec_()
     # Stop callbacks before closing the evidence files they write to.
