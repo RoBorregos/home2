@@ -80,10 +80,10 @@ peak:
   descent_speed: 20.0
   validate_endpoint: true
 
-# Boxes, cans and round objects: back off along the generator's approach axis,
+# Solids (boxes, cans, round objects): back off along the generator's approach axis,
 # then close straight in on it. pre_grasp_height is that back-off and the approach
 # distance, and must equal the generator's PRE_GRASP_DISTANCE.
-box: &shape
+geometric:
   <<: *defaults
   strategy: cartesian
   tip_offset_param: geometric_tip_offset
@@ -94,12 +94,6 @@ box: &shape
   lift_after_grasp: false
   attach_collision_object: true
   close_settle: 0.5
-
-cylindrical:
-  <<: *shape
-
-round:
-  <<: *shape
 
 # Default: plan straight to a GPD-generated grasp, no descent phase.
 gpd:

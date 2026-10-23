@@ -19,10 +19,10 @@ from sensor_msgs_py import point_cloud2
 
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_FLAT,
+    PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_RIM,
-    SHAPE_STRATEGY_KEYS,
     resolve_pick_strategy,
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
@@ -115,7 +115,9 @@ def execute(
 ) -> Tuple[bool, PickOutcome]:
     """Pick an object. Returns (success, outcome)."""
     strategy_key = resolve_pick_strategy(request.object_name)
-    if (request.is_shelf or request.use_gpd) and strategy_key in SHAPE_STRATEGY_KEYS:
+    if (
+        request.is_shelf or request.use_gpd
+    ) and strategy_key == PICK_STRATEGY_GEOMETRIC:
         strategy_key = PICK_STRATEGY_GPD
     return _pick(arm, perception, request, strategies, strategy_key)
 
@@ -136,14 +138,14 @@ def _pick(
 
     perceived = _perceive(perception, request, strategy_key)
     if perceived is None:
-        if strategy_key in SHAPE_STRATEGY_KEYS:
+        if strategy_key == PICK_STRATEGY_GEOMETRIC:
             return _fall_back_to_gpd(arm, perception, request, strategies)
         return False, PickOutcome()
 
     # Open after perceiving: the fingers are in the camera's view while it looks.
     arm.open_gripper()
 
-    if strategy_key in SHAPE_STRATEGY_KEYS:
+    if strategy_key == PICK_STRATEGY_GEOMETRIC:
         arm.add_collision_object(perceived.grasps.object)
 
     # Remember the perceived objects so a strategy can attach one.
@@ -157,7 +159,7 @@ def _pick(
         time.sleep(0.2)
 
     if outcome is None:
-        if strategy_key in SHAPE_STRATEGY_KEYS:
+        if strategy_key == PICK_STRATEGY_GEOMETRIC:
             return _fall_back_to_gpd(
                 arm, perception, request, strategies, perceived.grasps.object.id
             )
@@ -169,7 +171,7 @@ def _pick(
     arm.close_gripper(settle_s=0.0)
 
     outcome.object_name = request.object_name
-    if strategy_key in SHAPE_STRATEGY_KEYS:
+    if strategy_key == PICK_STRATEGY_GEOMETRIC:
         outcome.object_pick_height, outcome.object_height = _fitted_heights(
             perceived.grasps.object, outcome.pick_pose
         )
@@ -327,7 +329,7 @@ def _grasp_sets(
     one pose and its flip. GPD yields one set per config, so a config whose grasps
     are all unreachable falls back to the next.
     """
-    if strategy_key in SHAPE_STRATEGY_KEYS:
+    if strategy_key == PICK_STRATEGY_GEOMETRIC:
         response = perceived.grasps
         yield GraspSet(
             poses=list(response.grasps[:5]),

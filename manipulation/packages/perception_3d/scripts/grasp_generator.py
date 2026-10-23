@@ -24,13 +24,9 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 from frida_constants.manipulation_constants import (
     GENERATE_GRASPS_SERVICE,
-    GRASP_CLASS_CYLINDRICAL,
-    GRASP_CLASS_GENERIC,
     GRASP_CLASS_PEAK,
     GRASP_CLASS_RIM,
-    GRASP_CLASS_ROUND,
     GRASP_LINK_FRAME,
-    MEASURED_SHAPE_NAMES,
     PICK_OBJECT_NAMESPACE,
     PRE_GRASP_DISTANCE,
 )
@@ -51,8 +47,7 @@ from perception_3d.geometric_grasps import (
     GraspRejected,
     Intrinsics,
     Scene,
-    classify,
-    describe,
+    best_solid,
     grasp_for,
     parse_bbox,
 )
@@ -64,11 +59,10 @@ DEFAULT_SAMPLES = 10  # frames to collect when the caller passes <= 0
 COLLECT_TIMEOUT = 5.0  # s, give up collecting after this
 
 
-# One frame's result. measured_class is what geometry alone said (for logs).
+# One frame's result: the class used and its fitted object and grasps.
 @dataclass(frozen=True)
 class Sample:
     grasp_class: str
-    measured_class: Optional[str]
     fit: Optional[Fit]
     grasps: list
 
@@ -146,7 +140,7 @@ class GraspGenerator(Node):
         finally:
             self._busy.release()
 
-    # Reset the session; known is None for objects not in the lookup table.
+    # Reset the session; known is None for solids, whose shape is measured.
     def _start(self, target: str) -> None:
         self._target = target
         self._known = OBJECT_GRASP_CLASS.get(target)
@@ -161,7 +155,6 @@ class GraspGenerator(Node):
         samples = list(self._samples)
         grasp_class = Counter(s.grasp_class for s in samples).most_common(1)[0][0]
         voted = [s for s in samples if s.grasp_class == grasp_class]
-        measured = Counter(s.measured_class for s in samples)
         by_approach = defaultdict(list)
         for sample in voted:
             for grasp in sample.grasps:
@@ -193,7 +186,7 @@ class GraspGenerator(Node):
         response.message = (
             f"'{self._target}' as {grasp_class} ({ranked[0].approach}, score "
             f"{ranked[0].score:.2f}, {len(ranked)} candidates) from {len(voted)}/"
-            f"{len(samples)} samples, known={self._known}, measured={dict(measured)}"
+            f"{len(samples)} samples, known={self._known}"
         )
         self.get_logger().info(response.message)
         self._publish_markers(response)
@@ -311,36 +304,15 @@ class GraspGenerator(Node):
         return label == self._target
 
     # One detection in one frame -> one grasp sample (or GraspRejected).
-    # Unknown objects whose measured recipe fails get the generic solid grasp.
+    # Named classes use their recipe; anything else gets its best-fitting solid.
     def _sample(self, detection: ObjectDetection) -> Sample:
         scene = self._scene(detection)
-        grasp_class, measured = self._classify(scene)
-        try:
-            fit, grasps = grasp_for(scene, grasp_class)
-        except GraspRejected:
-            if self._known:
-                raise
-            grasp_class = GRASP_CLASS_GENERIC
-            fit, grasps = grasp_for(scene, grasp_class)
+        if self._known:
+            grasp_class, (fit, grasps) = self._known, grasp_for(scene, self._known)
+        else:
+            grasp_class, fit, grasps = best_solid(scene)
         self._debug_pub.publish(self._pose(grasps[0].position, grasps[0].orientation))
-        return Sample(grasp_class, measured, fit, grasps)
-
-    # Returns (class to use, class geometry measured). Known names always win;
-    # geometry is still measured so the logs show whether it would have agreed.
-    def _classify(self, scene: Scene) -> tuple:
-        if self._known is None:
-            measured = classify(describe(scene))
-            return measured, measured
-        try:
-            return self._known, classify(describe(scene))
-        except GraspRejected:
-            return self._known, None
-        if self._target in MEASURED_SHAPE_NAMES and measured in (
-            GRASP_CLASS_ROUND,
-            GRASP_CLASS_CYLINDRICAL,
-        ):
-            return GRASP_CLASS_CYLINDRICAL, measured
-        return self._known, measured
+        return Sample(grasp_class, fit, grasps)
 
     def _scene(self, detection: ObjectDetection) -> Scene:
         depth = self._depth  # local copy: the callback may swap the frame

@@ -13,13 +13,11 @@ from geometry_msgs.msg import PoseStamped
 
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
-    PICK_STRATEGY_BOX,
-    PICK_STRATEGY_CYLINDRICAL,
     PICK_STRATEGY_FLAT,
+    PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_RIM,
-    PICK_STRATEGY_ROUND,
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.profiles import PickProfile
@@ -278,9 +276,7 @@ STRATEGIES = {
     PICK_STRATEGY_RIM: FixedDistanceDescentPick,
     PICK_STRATEGY_BOWL: FixedDistanceDescentPick,
     PICK_STRATEGY_PEAK: FixedDistanceDescentPick,
-    PICK_STRATEGY_BOX: CartesianApproachPick,
-    PICK_STRATEGY_CYLINDRICAL: CartesianApproachPick,
-    PICK_STRATEGY_ROUND: CartesianApproachPick,
+    PICK_STRATEGY_GEOMETRIC: CartesianApproachPick,
     PICK_STRATEGY_GPD: DirectGraspPick,
 }
 

@@ -39,8 +39,8 @@ from pick_and_place.pipelines import (
 )
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
+    PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
-    SHAPE_STRATEGY_KEYS,
     resolve_pick_strategy,
 )
 from pick_and_place.pipelines.errors import (
@@ -116,7 +116,7 @@ def test_flat_retract_is_always_above_the_contact_point(strategies):
 
 
 def test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis():
-    profile = load_profiles(PROFILES_PATH)["box"]
+    profile = load_profiles(PROFILES_PATH)[PICK_STRATEGY_GEOMETRIC]
     pose = set_quaternion(
         make_pose(x=0.5, z=0.3), Rotation.from_euler("y", 135, degrees=True).as_quat()
     )
@@ -533,9 +533,8 @@ def profiles():
     return load_profiles(PROFILES_PATH)
 
 
-def test_shape_profiles_back_off_by_the_distance_the_generator_checked(profiles):
-    for key in SHAPE_STRATEGY_KEYS:
-        assert profiles[key].pre_grasp_height == PRE_GRASP_DISTANCE
+def test_geometric_profile_backs_off_by_the_distance_the_generator_checked(profiles):
+    assert profiles[PICK_STRATEGY_GEOMETRIC].pre_grasp_height == PRE_GRASP_DISTANCE
 
 
 def test_every_strategy_key_has_a_profile(profiles):
@@ -604,8 +603,13 @@ def test_bowl_wins_over_rim():
     assert resolve_pick_strategy(BOWL_NAME) == PICK_STRATEGY_BOWL
 
 
-@pytest.mark.parametrize("name", ["", None, "unknown_object", "cup"])
-def test_unknown_names_fall_back_to_gpd(name):
+@pytest.mark.parametrize("name", ["unknown_object", "coke", "Cornflakes"])
+def test_unknown_names_use_the_geometric_generator(name):
+    assert resolve_pick_strategy(name) == PICK_STRATEGY_GEOMETRIC
+
+
+@pytest.mark.parametrize("name", ["", None])
+def test_a_request_without_a_name_falls_back_to_gpd(name):
     assert resolve_pick_strategy(name) == PICK_STRATEGY_GPD
 
 
