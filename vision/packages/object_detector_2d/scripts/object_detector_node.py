@@ -4,6 +4,7 @@
 import copy
 import json
 import os
+import time
 
 import cv2 as cv
 import rclpy
@@ -15,6 +16,7 @@ from frida_constants.vision_constants import (
     DETECTIONS_IMAGE_TOPIC,
     DETECTIONS_POSES_TOPIC,
     DETECTIONS_TOPIC,
+    GALLERY_DETECTIONS_TOPIC,
     TRASH_SERVICE_CATEGORY,
     YOLO_DETECTION_TOPIC,
     YOLO_DETECTIONS_PUBLISHER_TOPIC,
@@ -23,7 +25,7 @@ from frida_interfaces.msg import Detection, ObjectDetectionArray
 from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
 from sensor_msgs.msg import Image
 from detectors.registry import ModelRegistry
-from detectors.utils import iou_deduplicate
+from detectors.utils import iou_deduplicate, iou_msg
 from base_detector_node import BaseDetectorNode
 
 
@@ -46,6 +48,13 @@ class ObjectDetectorNode(BaseDetectorNode):
         self.models = [ModelRegistry.get(name) for name in model_names if name]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
         self.yolo_service_model = ModelRegistry.get("yolo_generic")
+
+        # Latest GalleryDetect2D output, merged into our detections while fresh
+        self.gallery_max_age = self.declare_param("GALLERY_MAX_AGE", 1.5).double_value
+        self.gallery = ([], 0.0)
+        self.create_subscription(
+            ObjectDetectionArray, GALLERY_DETECTIONS_TOPIC, self.gallery_cb, 5
+        )
 
         self.category = None
         try:
@@ -72,6 +81,18 @@ class ObjectDetectorNode(BaseDetectorNode):
 
     def box_color(self, det):
         return (0, 0, 255) if det.label_text.startswith("trash/") else (0, 255, 0)
+
+    def gallery_cb(self, msg):
+        self.gallery = (msg.detections, time.monotonic())
+
+    def fresh_gallery(self, detections):
+        """Gallery detections younger than GALLERY_MAX_AGE that don't overlap ours."""
+        gallery, stamp = self.gallery
+        if time.monotonic() - stamp > self.gallery_max_age:
+            return []
+        return [
+            g for g in gallery if not any(iou_msg(g, d) > 0.6 for d in detections)
+        ]
 
     # ------------------------------------------------------------------ services
 
@@ -178,6 +199,7 @@ class ObjectDetectorNode(BaseDetectorNode):
         ros_detections = self.to_ros(all_detections)
         for det in ros_detections:
             det.point3d.header.stamp = self.curr_clock
+        ros_detections += self.fresh_gallery(ros_detections)
 
         self.latest_detections = ros_detections
 

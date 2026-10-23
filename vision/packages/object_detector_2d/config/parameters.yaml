@@ -11,7 +11,7 @@ ObjectDetect2D:
     TARGET_FRAME: base_link
     models:
       - yolo_finetuned
-      - embedding_gallery
+    GALLERY_MAX_AGE: 1.5
     USE_ACTIVE_FLAG: False
     DEPTH_ACTIVE: True
     VERBOSE: False

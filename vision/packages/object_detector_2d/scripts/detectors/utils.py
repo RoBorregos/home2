@@ -12,6 +12,18 @@ def iou(det1, det2) -> float:
     return inter / (a1 + a2 - inter + 1e-6)
 
 
+def iou_msg(det1, det2) -> float:
+    """IoU between two ObjectDetection messages (normalized xmin/ymin/xmax/ymax)."""
+    xA = max(det1.xmin, det2.xmin)
+    yA = max(det1.ymin, det2.ymin)
+    xB = min(det1.xmax, det2.xmax)
+    yB = min(det1.ymax, det2.ymax)
+    inter = max(0.0, xB - xA) * max(0.0, yB - yA)
+    a1 = (det1.xmax - det1.xmin) * (det1.ymax - det1.ymin)
+    a2 = (det2.xmax - det2.xmin) * (det2.ymax - det2.ymin)
+    return inter / (a1 + a2 - inter + 1e-6)
+
+
 def iou_deduplicate(detections: list, threshold: float = 0.6) -> list:
     """Remove detections that overlap an already-kept detection above `threshold`."""
     kept = []
