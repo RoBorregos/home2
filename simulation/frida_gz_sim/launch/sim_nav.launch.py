@@ -125,6 +125,9 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             os.path.join(nav_main, "config", "semantic_nav.yaml"),
             {"map_name": map_name},
+        ],
+    )
+
     # dock_table goes through table_docker, as in general_navigation.launch.py. The sim
     # has no /point_cloud and publishes odometry on /odom, so it docks off the merged scan
     table_docker = Node(
