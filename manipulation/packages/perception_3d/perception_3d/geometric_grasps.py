@@ -1,19 +1,16 @@
 from collections import Counter
 from dataclasses import dataclass, replace
-from typing import Callable, Optional
+from typing import Callable
 
 import numpy as np
 import scipy.ndimage as ndi
 from scipy.spatial.transform import Rotation
 
 from frida_constants.manipulation_constants import (
-    BOX_NAMES,
-    CYLINDRICAL_NAMES,
     FLAT_OBJECT_NAMES,
     GRASP_CLASS_BOX,
     GRASP_CLASS_CYLINDRICAL,
     GRASP_CLASS_FLAT,
-    GRASP_CLASS_GENERIC,
     GRASP_CLASS_PEAK,
     GRASP_CLASS_RIM,
     GRASP_CLASS_ROUND,
@@ -24,7 +21,6 @@ from frida_constants.manipulation_constants import (
     PLACE_TRASH_HEIGHT_OFFSET,
     PRE_GRASP_DISTANCE,
     RIM_NAMES,
-    ROUND_NAMES,
     TRASH_BIN_NAME,
 )
 
@@ -32,9 +28,6 @@ GRASP_CLASS_OBJECTS = {
     GRASP_CLASS_FLAT: FLAT_OBJECT_NAMES,
     GRASP_CLASS_RIM: RIM_NAMES,
     GRASP_CLASS_PEAK: PEAK_NAMES,
-    GRASP_CLASS_BOX: BOX_NAMES,
-    GRASP_CLASS_CYLINDRICAL: CYLINDRICAL_NAMES,
-    GRASP_CLASS_ROUND: ROUND_NAMES,
     GRASP_CLASS_TRASH: [TRASH_BIN_NAME],
 }
 OBJECT_GRASP_CLASS = {
@@ -60,7 +53,6 @@ FLAT_SURFACE_OFFSET = 0.003
 
 FLOOR_PERCENTILE = 5
 FLOOR_MARGIN = 0.05
-SUPPORT_MARGIN = 0.005
 TOP_PERCENTILE = 90
 
 RIM_TOP_BAND = 0.03
@@ -112,16 +104,11 @@ MOVE_SCALE = 0.55
 PEAK_GRID_RES = 0.05
 PEAK_NBR = 3
 
-HOLLOW_GRID_RES = 0.02
-HOLLOW_MIN_DEPTH = 0.03
-FLAT_MAX_HEIGHT = 0.03
-AXISYMMETRIC_MAX_ELONGATION = 1.5
-BALL_ASPECT = (0.7, 1.4)
-
 TOP_DOWN = np.array([0.0, 0.0, -1.0])
 DEFAULT_CLOSING_AXIS = np.array([0.0, -1.0, 0.0])
 
 TILT_NAMES = {0: "top", 45: "diagonal", 90: "front"}
+SOLID_SHAPES = (GRASP_CLASS_BOX, GRASP_CLASS_CYLINDRICAL, GRASP_CLASS_ROUND)
 
 
 class GraspRejected(Exception):
@@ -174,19 +161,6 @@ class Scene:
         points = points[np.isfinite(points).all(axis=1)]
         require(len(points) >= MIN_POINTS_FOR_PCA, f"only {len(points)} valid points")
         return points
-
-
-@dataclass(frozen=True)
-class ObjectGeometry:
-    support_z: float
-    top_z: float
-    width: float
-    elongation: float
-    is_hollow: bool
-
-    @property
-    def height(self) -> float:
-        return self.top_z - self.support_z
 
 
 @dataclass(frozen=True)
@@ -296,49 +270,7 @@ def grasp_frame(approach: np.ndarray, closing_hint: np.ndarray) -> np.ndarray:
     return Rotation.from_matrix(np.column_stack((np.cross(y, z), y, z))).as_quat()
 
 
-def is_hollow(points: np.ndarray) -> bool:
-    grid, _ = elevation_grid(points, HOLLOW_GRID_RES)
-    if min(grid.shape) < 3:
-        return False
-    border = np.ones(grid.shape, dtype=bool)
-    border[1:-1, 1:-1] = False
-    filled = np.isfinite(grid)
-    edge, inner = grid[border & filled], grid[~border & filled]
-    return (
-        len(edge) > 0
-        and len(inner) > 0
-        and np.median(edge) - np.median(inner) > HOLLOW_MIN_DEPTH
-    )
-
-
-def describe(scene: Scene) -> ObjectGeometry:
-    support_z, points, _ = segment(scene, SUPPORT_MARGIN)
-    xy = points[:, :2]
-    eigenvalues, eigenvectors = principal_axes(xy)
-    low, high = np.percentile((xy - xy.mean(axis=0)) @ eigenvectors[:, 0], [5, 95])
-    return ObjectGeometry(
-        support_z=support_z,
-        top_z=np.percentile(points[:, 2], TOP_PERCENTILE),
-        width=high - low,
-        elongation=eigenvalues[1] / max(eigenvalues[0], 1e-9),
-        is_hollow=is_hollow(points),
-    )
-
-
-def classify(geometry: ObjectGeometry) -> str:
-    if geometry.height < FLAT_MAX_HEIGHT:
-        return GRASP_CLASS_FLAT
-    if geometry.is_hollow:
-        return GRASP_CLASS_RIM
-    if geometry.elongation < AXISYMMETRIC_MAX_ELONGATION:
-        low, high = BALL_ASPECT
-        if low * geometry.width <= geometry.height <= high * geometry.width:
-            return GRASP_CLASS_ROUND
-        return GRASP_CLASS_CYLINDRICAL
-    return GRASP_CLASS_BOX
-
-
-def flat(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
+def flat(scene: Scene) -> tuple:
     roi, valid = scene.roi, scene.valid
     require(np.count_nonzero(valid) >= MIN_POINTS_FOR_PCA, "too few depth pixels")
     table_depth = np.percentile(roi[valid], FLAT_TABLE_PERCENTILE)
@@ -377,7 +309,7 @@ def flat(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
     ]
 
 
-def rim(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
+def rim(scene: Scene) -> tuple:
     _, points = above_support(scene.points(scene.valid), FLOOR_MARGIN)
     top_z = np.percentile(points[:, 2], TOP_PERCENTILE)
     ring = points[points[:, 2] > top_z - RIM_TOP_BAND]
@@ -392,7 +324,7 @@ def rim(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
     return None, [Grasp(near_rim, grasp_frame(TOP_DOWN, radial))]
 
 
-def peak(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
+def peak(scene: Scene) -> tuple:
     floor_z, points = above_support(scene.points(scene.valid), FLOOR_MARGIN)
     grid, origin = elevation_grid(points, PEAK_GRID_RES)
     require(min(grid.shape) >= PEAK_NBR, "container too small to search for peaks")
@@ -419,7 +351,7 @@ def peak(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
     ]
 
 
-def trash_bin(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
+def trash_bin(scene: Scene) -> tuple:
     top_half = scene.valid
     top_half[int(len(top_half) * TRASH_TOP_BBOX_FRACTION) :] = False
     _, points = above_support(scene.points(top_half), FLOOR_MARGIN)
@@ -455,7 +387,6 @@ def approaches(grasp_class, away, short_axis, long_axis) -> list:
     tops = [(f"top {t}", 0, away, turn(tangent, t)) for t in (0, 45, 90, 135)]
     if grasp_class in (GRASP_CLASS_ROUND, GRASP_CLASS_CYLINDRICAL):
         return tops
-    tilts = (0, 45, 90) if grasp_class == GRASP_CLASS_BOX else range(0, 91, 15)
     found = []
     for name, closing, other in (
         ("short", short_axis, long_axis),
@@ -463,8 +394,8 @@ def approaches(grasp_class, away, short_axis, long_axis) -> list:
     ):
         side = other if other @ away >= 0 else -other
         found += [
-            (f"{TILT_NAMES.get(t, f'tilt {t}')} {name}", t, side, closing)
-            for t in tilts
+            (f"{tilt_name} {name}", t, side, closing)
+            for t, tilt_name in TILT_NAMES.items()
         ]
     return found
 
@@ -614,6 +545,18 @@ def solid(scene: Scene, grasp_class: str) -> tuple:
     return fit, sorted(grasps, key=lambda grasp: grasp.score, reverse=True)
 
 
+# Fits every solid shape and keeps the one whose best grasp scores highest.
+def best_solid(scene: Scene) -> tuple:
+    results, reasons = [], []
+    for shape in SOLID_SHAPES:
+        try:
+            results.append((shape, *solid(scene, shape)))
+        except GraspRejected as error:
+            reasons.append(f"{shape}: {error}")
+    require(results, " | ".join(reasons))
+    return max(results, key=lambda result: result[2][0].score)
+
+
 def count_inside(points: np.ndarray, box: np.ndarray) -> int:
     return np.count_nonzero(np.all((points >= box[0]) & (points <= box[1]), axis=1))
 
@@ -632,19 +575,15 @@ def move_cost(scene: Scene, rotation: np.ndarray, flange: np.ndarray) -> float:
     return np.linalg.norm(flange - current[:3, 3]) + GRIPPER_REACH * turned
 
 
-RECIPES: dict[str, Callable[[Scene, str], tuple]] = {
+RECIPES: dict[str, Callable[[Scene], tuple]] = {
     GRASP_CLASS_FLAT: flat,
     GRASP_CLASS_RIM: rim,
     GRASP_CLASS_PEAK: peak,
     GRASP_CLASS_TRASH: trash_bin,
-    GRASP_CLASS_BOX: solid,
-    GRASP_CLASS_CYLINDRICAL: solid,
-    GRASP_CLASS_ROUND: solid,
-    GRASP_CLASS_GENERIC: solid,
 }
 
 
 def grasp_for(scene: Scene, grasp_class: str) -> tuple:
     recipe = RECIPES.get(grasp_class)
-    require(recipe is not None, f"no grasp recipe for '{grasp_class}' yet")
-    return recipe(scene, grasp_class)
+    require(recipe is not None, f"no grasp recipe for '{grasp_class}'")
+    return recipe(scene)
