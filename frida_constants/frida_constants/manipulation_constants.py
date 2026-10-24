@@ -94,30 +94,6 @@ GRASP_LINK_FRAME = "gripper_grasp_frame"
 BOWL_NAME = "bowl"
 RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME, "cup"]
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
-BOX_NAMES = ["cornflakes", "cereal", "milk", "rubiks_cube"]
-CYLINDRICAL_NAMES = [
-    "coke",
-    "pepsi",
-    "red_bull",
-    "pringles",
-    "soju",
-    "bottle",
-    "instant_noodles",
-]
-ROUND_NAMES = [
-    "apple",
-    "peach",
-    "lemon",
-    "mangostane",
-    "yellow_bellpepper",
-    "red_bellpepper",
-    "orange",
-    "sports ball",
-]
-# cornflakes box and cup are the same vision label, the generator
-# measures and returns as box or as cylinder, geometric grasps are still
-# classified using vision labels since spheres and cylinders get mixed in measured geometry
-MEASURED_SHAPE_NAMES = ["cornflakes"]
 
 GENERATE_GRASPS_SERVICE = "/manipulation/generate_grasps"
 GRASP_CLASS_FLAT = "flat"
@@ -127,7 +103,6 @@ GRASP_CLASS_ROUND = "round"
 GRASP_CLASS_RIM = "rim"
 GRASP_CLASS_PEAK = "peak"
 GRASP_CLASS_TRASH = "trash"
-GRASP_CLASS_GENERIC = "generic"
 
 # Default speed for the generic /manipulation/fixed_distance_move service,
 RIM_DESCENT_SPEED = 20.0  # mm/s

@@ -39,8 +39,8 @@ from pick_and_place.pipelines import (
 )
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
+    PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
-    SHAPE_STRATEGY_KEYS,
     resolve_pick_strategy,
 )
 from pick_and_place.pipelines.errors import (
@@ -116,7 +116,7 @@ def test_flat_retract_is_always_above_the_contact_point(strategies):
 
 
 def test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis():
-    profile = load_profiles(PROFILES_PATH)["box"]
+    profile = load_profiles(PROFILES_PATH)[PICK_STRATEGY_GEOMETRIC]
     pose = set_quaternion(
         make_pose(x=0.5, z=0.3), Rotation.from_euler("y", 135, degrees=True).as_quat()
     )
@@ -230,6 +230,23 @@ def test_a_failed_shape_pick_falls_back_to_gpd(strategies, candidates_fail):
         assert arm.calls.index("remove_collision_object") < stare_moves[1]
     else:
         assert "remove_collision_object" not in arm.calls
+
+
+def test_an_unlisted_name_tries_the_geometric_generator_before_gpd(strategies):
+    perception = FakePerception(
+        located_point=make_point(),
+        cluster=make_cluster(),
+        grasps=[([make_pose()], [0.9])] * 3,
+    )
+
+    success, _ = run_pick(
+        FakeArm(), perception, strategies, object_name="unknown_object"
+    )
+
+    assert success
+    assert perception.calls.index("generate_grasps") < perception.calls.index(
+        "detect_grasps"
+    )
 
 
 def test_tip_offset_uses_the_per_strategy_parameter(strategies):
@@ -534,8 +551,7 @@ def profiles():
 
 
 def test_shape_profiles_back_off_by_the_distance_the_generator_checked(profiles):
-    for key in SHAPE_STRATEGY_KEYS:
-        assert profiles[key].pre_grasp_height == PRE_GRASP_DISTANCE
+    assert profiles[PICK_STRATEGY_GEOMETRIC].pre_grasp_height == PRE_GRASP_DISTANCE
 
 
 def test_every_strategy_key_has_a_profile(profiles):
@@ -604,7 +620,7 @@ def test_bowl_wins_over_rim():
     assert resolve_pick_strategy(BOWL_NAME) == PICK_STRATEGY_BOWL
 
 
-@pytest.mark.parametrize("name", ["", None, "unknown_object", "cup"])
+@pytest.mark.parametrize("name", ["", None, "cup"])
 def test_unknown_names_fall_back_to_gpd(name):
     assert resolve_pick_strategy(name) == PICK_STRATEGY_GPD
 
