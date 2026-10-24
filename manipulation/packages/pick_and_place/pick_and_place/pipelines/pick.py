@@ -12,7 +12,7 @@ from dataclasses import dataclass, field, replace
 from typing import Iterator, List, Optional, Tuple
 
 import numpy as np
-from frida_constants.manipulation_constants import PICK_MAX_DISTANCE, SAFETY_HEIGHT
+from frida_constants.manipulation_constants import PICK_MAX_DISTANCE, SAFETY_HEIGHT_GEOMETRIC
 from geometry_msgs.msg import PointStamped
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
@@ -534,7 +534,7 @@ def _fitted_heights(fitted, grasp_pose) -> Tuple[float, float]:
     """The place pipeline's (pick height, object height) for the fitted object."""
     height = 2 * fitted.dimensions.x if fitted.type == "sphere" else fitted.dimensions.z
     bottom = fitted.pose.pose.position.z - height / 2
-    return grasp_pose.pose.position.z - bottom + SAFETY_HEIGHT, height
+    return grasp_pose.pose.position.z - bottom + SAFETY_HEIGHT_GEOMETRIC, height
 
 
 # ======================================================================

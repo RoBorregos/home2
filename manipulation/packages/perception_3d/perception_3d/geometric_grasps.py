@@ -71,6 +71,9 @@ TRASH_TOP_BBOX_FRACTION = 0.5
 SOLID_SUPPORT_MARGIN = 0.01
 SOLID_TOP_PERCENTILE = 99
 SOLID_MAX_POINTS = 1000
+SHAPE_TOLERANCE = {"sphere": 0.003, "cylinder": 0.004, "box": 0.0045}
+SHAPE_ITERATIONS = 300
+SHAPE_RADIUS = (0.02, 0.08)
 FIT_STEP_DEG = 5
 APERTURE_TOLERANCE = 0.005
 GRASP_PAST_CENTER = 0.015
@@ -442,6 +445,55 @@ def fit_box(points: np.ndarray) -> tuple:
     j = (k + len(angles) // 2) % len(angles)
     center = axes[k] * (low[k] + high[k]) / 2 + axes[j] * (low[j] + high[j]) / 2
     return center, axes[k], axes[j], high[k] - low[k], high[j] - low[j]
+
+
+def circumsphere(sample: np.ndarray) -> tuple:
+    a = 2 * (sample[:, 1:] - sample[:, :1])
+    b = (sample[:, 1:] ** 2).sum(axis=2) - (sample[:, :1] ** 2).sum(axis=2)
+    ok = np.abs(np.linalg.det(a)) > 1e-12
+    centers = np.linalg.solve(a[ok], b[ok][..., None])[..., 0]
+    radii = np.linalg.norm(sample[ok, 0] - centers, axis=1)
+    fits = (radii >= SHAPE_RADIUS[0]) & (radii <= SHAPE_RADIUS[1])
+    return centers[fits], radii[fits]
+
+
+def shape_fractions(points: np.ndarray) -> dict:
+    rng = np.random.default_rng(0)
+    points = points - points.mean(axis=0)
+    xy, z = points[:, :2], points[:, 2]
+    from_top = np.abs(z - np.percentile(z, SOLID_TOP_PERCENTILE))
+
+    def draw(k):
+        return points[:, :k][rng.integers(len(points), size=(SHAPE_ITERATIONS, k + 1))]
+
+    centers, radii = circumsphere(draw(3))
+    away = np.linalg.norm(points[None] - centers[:, None], axis=2)
+    sphere = (np.abs(away - radii[:, None]) < SHAPE_TOLERANCE["sphere"]).mean(axis=1)
+
+    centers, radii = circumsphere(draw(2))
+    away = np.linalg.norm(xy[None] - centers[:, None], axis=2)
+    tolerance = SHAPE_TOLERANCE["cylinder"]
+    side = np.abs(away - radii[:, None]) < tolerance
+    cap = (from_top < tolerance) & (away <= radii[:, None])
+    cylinder = (side | cap).mean(axis=1)
+
+    center, axis_a, axis_b, size_a, size_b = fit_box(points)
+    out = np.maximum(
+        np.abs((xy - center) @ axis_a) - size_a / 2,
+        np.abs((xy - center) @ axis_b) - size_b / 2,
+    )
+    tolerance = SHAPE_TOLERANCE["box"]
+    box = (np.abs(out) < tolerance) | ((from_top < tolerance) & (out <= 0))
+    return {
+        "sphere": max(sphere, default=0.0),
+        "cylinder": max(cylinder, default=0.0),
+        "box": box.mean(),
+    }
+
+
+def estimate_shape(points: np.ndarray) -> str:
+    fractions = shape_fractions(points)
+    return max(fractions, key=fractions.get)
 
 
 def turn(vector: np.ndarray, degrees: float) -> np.ndarray:

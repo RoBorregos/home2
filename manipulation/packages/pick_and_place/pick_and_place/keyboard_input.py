@@ -15,7 +15,13 @@ from frida_constants.vision_constants import (
 )
 from frida_constants.manipulation_constants import (
     GENERATE_GRASPS_SERVICE,
+    GRASP_CLASS_RIM,
     MANIPULATION_ACTION_SERVER,
+)
+from pick_and_place.pipelines.classification import (
+    PICK_STRATEGY_BOWL,
+    PICK_STRATEGY_GPD,
+    resolve_pick_strategy,
 )
 from xarm_utils.shelf_levels import (
     SHELF_SCAN_TOLERANCE,
@@ -178,7 +184,9 @@ class KeyboardInput(Node):
             self.get_logger().error("generate_grasps timed out")
             return
         print(response.message)
+        strategy = resolve_pick_strategy(object_name)
         if not response.success:
+            print(f"pick strategy: {strategy} (the generator found no grasp)")
             return
         for i, (pose, score, approach) in enumerate(
             zip(response.grasps, response.scores, response.approaches)
@@ -192,6 +200,15 @@ class KeyboardInput(Node):
             f"fitted {obj.type} {d.x:.3f} x {d.y:.3f} x {d.z:.3f}, "
             f"class={response.grasp_class}, deformable={response.deformable}"
         )
+
+        expected = GRASP_CLASS_RIM if strategy == PICK_STRATEGY_BOWL else strategy
+        if strategy == PICK_STRATEGY_GPD:
+            verdict = "these candidates are not used"
+        elif response.grasp_class == expected:
+            verdict = "OK, same class as the generator"
+        else:
+            verdict = f"MISMATCH, the generator measured '{response.grasp_class}'"
+        print(f"pick strategy: {strategy} ({verdict}; shelf or use_gpd force gpd)")
 
     def send_place_request(
         self,
