@@ -14,13 +14,18 @@ from geometry_msgs.msg import PoseStamped
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_FLAT,
+    PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_RIM,
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.profiles import PickProfile
-from pick_and_place.robot.geometry import offset_z
+from pick_and_place.robot.geometry import (
+    approach_axis,
+    offset_along_approach,
+    offset_z,
+)
 
 
 @dataclass(frozen=True)
@@ -117,6 +122,57 @@ class FixedDistanceDescentPick(PickStrategy):
             arm.close_gripper(settle_s=profile.close_settle)
 
         # No lift: the pick pipeline chooses the return pose.
+        return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
+
+
+class CartesianApproachPick(PickStrategy):
+    """Back off along the grasp's approach axis, then close straight in on it.
+
+    The rim strategy, tilted: the arm moves to a pre-grasp behind the grasp, drives
+    straight forward along the approach axis, attaches the fitted object, closes and saves
+    the PickOutcome data like height.
+    """
+
+    def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
+        profile = self.profile
+
+        if profile.validate_endpoint:
+            with arm.phase("validate_endpoint"):
+                if arm.endpoint_self_collides(candidate.pose):
+                    raise PickAttemptFailed("grasp pose self-collides with robot")
+
+        with arm.phase("open_gripper"):
+            arm.open_gripper()
+
+        pre_grasp = offset_along_approach(candidate.pose, -profile.pre_grasp_height)
+        with arm.phase("approach_pre_grasp"):
+            arm.clear_octomap()
+            if not arm.move_to_pregrasp(pre_grasp, profile.pre_grasp_velocity):
+                raise PickAttemptFailed("pre-grasp unreachable")
+
+        with arm.phase("cartesian_approach"):
+            arm.check_abort()
+            distance = profile.effective_descent_distance
+            if not arm.cartesian_approach(
+                approach_axis(candidate.pose),
+                distance,
+                profile.descent_speed,
+                close_on_reach=True,
+            ):
+                raise PickAttemptFailed(
+                    f"approach of {distance * 1000:.0f} mm did not complete"
+                )
+
+        with arm.phase("attach_object"):
+            arm.attach_pick_object()
+
+        if profile.lift_after_grasp:
+            with arm.phase("lift"):
+                arm.clear_octomap()
+                arm.move_to_pose(
+                    offset_z(candidate.pose, profile.post_grasp_height), velocity=0.6
+                )
+
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
 
 
@@ -220,6 +276,7 @@ STRATEGIES = {
     PICK_STRATEGY_RIM: FixedDistanceDescentPick,
     PICK_STRATEGY_BOWL: FixedDistanceDescentPick,
     PICK_STRATEGY_PEAK: FixedDistanceDescentPick,
+    PICK_STRATEGY_GEOMETRIC: CartesianApproachPick,
     PICK_STRATEGY_GPD: DirectGraspPick,
 }
 

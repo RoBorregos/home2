@@ -477,7 +477,7 @@ def _apply_drop_height(
 
 def _trash_pose(perception) -> Optional[PoseStamped]:
     """Detect the trash bin; the estimator already offsets above it, top-down."""
-    response = perception.estimate_flat_grasp(TRASH_BIN_NAME, timeout=TRASH_TIMEOUT)
+    response = perception.generate_grasps(TRASH_BIN_NAME, timeout=TRASH_TIMEOUT)
     if response is None:
         perception.logger.error("Trash bin detection failed")
         return None

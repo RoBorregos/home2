@@ -20,6 +20,7 @@ PICK_STRATEGY_FLAT = "flat"
 PICK_STRATEGY_RIM = "rim"
 PICK_STRATEGY_BOWL = "bowl"
 PICK_STRATEGY_PEAK = "peak"
+PICK_STRATEGY_GEOMETRIC = "geometric"
 
 PICK_STRATEGY_KEYS = (
     PICK_STRATEGY_FLAT,
@@ -27,6 +28,7 @@ PICK_STRATEGY_KEYS = (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_GPD,
+    PICK_STRATEGY_GEOMETRIC,
 )
 
 # Order matters: BOWL_NAME is a member of RIM_NAMES, so bowl must be tested
@@ -43,8 +45,9 @@ _STRATEGY_BY_OBJECT_NAME = (
 def resolve_pick_strategy(object_name: str) -> str:
     """Map an object name to the pick strategy that should handle it.
 
-    Unknown objects fall back to the GPD strategy, which is the historical
-    default.
+    Any other object is a solid picked with the geometric grasp generator, which
+    measures its shape the other use a specific strategy by name classification,
+    GPD is solid fallback + handles a request without name.
     """
     if not object_name:
         return PICK_STRATEGY_GPD
@@ -52,4 +55,4 @@ def resolve_pick_strategy(object_name: str) -> str:
     for strategy, names in _STRATEGY_BY_OBJECT_NAME:
         if key in names:
             return strategy
-    return PICK_STRATEGY_GPD
+    return PICK_STRATEGY_GEOMETRIC
