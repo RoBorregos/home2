@@ -313,7 +313,7 @@ class NavigationTasks:
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def get_path_matrix(self, areas, from_robot=True):
+    def get_path_matrix(self, areas):
         """Real path distances (m) between every ordered pair of ``areas``
         ((location, sublocation) tuples) in one call, without moving the robot.
         Returns (Status, {(start, goal): meters}); start is None for the robot's
@@ -327,7 +327,6 @@ class NavigationTasks:
         request = NavQueryMatrix.Request()
         request.locations = [loc for loc, _ in areas]
         request.sublocations = [sub for _, sub in areas]
-        request.from_robot = from_robot
         future = self.nav_query_matrix_srv.call_async(request)
         rclpy.spin_until_future_complete(
             self.node, future, timeout_sec=SUBTASK_MANAGER.NAV_QUERY_MATRIX_TIMEOUT.value
@@ -339,7 +338,7 @@ class NavigationTasks:
         if not result.success:
             CLog.nav(self.node, "ERROR", f"Path matrix query failed: {result.error}")
             return (Status.EXECUTION_ERROR, result.error)
-        starts = ([None] if from_robot else []) + areas
+        starts = [None] + areas
         if len(result.distances) != len(starts) * n:
             return (Status.EXECUTION_ERROR, "Malformed path matrix")
         matrix = {}

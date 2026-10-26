@@ -268,7 +268,7 @@ class GPSRTM(Node):
         if not areas:
             return
         try:
-            status, matrix = self.subtask_manager.nav.get_path_matrix(areas, from_robot=True)
+            status, matrix = self.subtask_manager.nav.get_path_matrix(areas)
         except Exception as e:  # noqa: BLE001
             self.get_logger().warning(f"path matrix failed: {e}; using straight-line distances")
             return

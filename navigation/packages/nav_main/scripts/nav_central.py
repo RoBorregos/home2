@@ -1146,11 +1146,11 @@ class Nav_Central(Node):
 
     def query_path_matrix(self, request, response):
         """Callback: path lengths between every ordered pair of areas (plus the
-        robot's pose as an extra first start when from_robot), with a single
+        robot's pose as an extra first start), with a single
         nav2 resume/pause. Pairs that are unsolvable or past the
         TIMEOUT_NAV_QUERY_MATRIX budget are reported as -1.0."""
         n = len(request.locations)
-        self.nav_logger("info", f"Query_Path_Matrix -> Service called ({n} areas, from_robot={request.from_robot})")
+        self.nav_logger("info", f"Query_Path_Matrix -> Service called ({n} areas)")
         response.success = False
         response.distances = []
         response.error = ""
@@ -1186,7 +1186,7 @@ class Nav_Central(Node):
             return response
 
         # None start = robot's current pose
-        starts = ([None] if request.from_robot else []) + list(range(n))
+        starts = [None] + list(range(n))
         distances = []
         deadline = t.monotonic() + TIMEOUT_NAV_QUERY_MATRIX
         try:
