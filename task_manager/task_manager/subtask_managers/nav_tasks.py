@@ -317,7 +317,8 @@ class NavigationTasks:
         """Real path distances (m) between every ordered pair of ``areas``
         ((location, sublocation) tuples) in one call, without moving the robot.
         Returns (Status, {(start, goal): meters}); start is None for the robot's
-        current pose. Pairs the planner could not solve are omitted."""
+        current pose. Pairs the planner could not solve (or that ran past
+        nav_central's planning budget) are omitted."""
         areas = [(loc, sub or "safe_place") for loc, sub in areas]
         n = len(areas)
         if n == 0:
@@ -327,13 +328,9 @@ class NavigationTasks:
         request.locations = [loc for loc, _ in areas]
         request.sublocations = [sub for _, sub in areas]
         request.from_robot = from_robot
-        n_paths = n * (n - 1) + (n if from_robot else 0)
         future = self.nav_query_matrix_srv.call_async(request)
         rclpy.spin_until_future_complete(
-            self.node,
-            future,
-            timeout_sec=SUBTASK_MANAGER.NAV_QUERY_TIMEOUT.value
-            + n_paths * SUBTASK_MANAGER.NAV_QUERY_MATRIX_PER_PATH.value,
+            self.node, future, timeout_sec=SUBTASK_MANAGER.NAV_QUERY_MATRIX_TIMEOUT.value
         )
         result = future.result()
         if result is None:

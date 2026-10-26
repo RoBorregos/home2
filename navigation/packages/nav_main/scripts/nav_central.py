@@ -58,6 +58,7 @@ from frida_constants.navigation_constants import(
         GET_ROBOT_POSE_SERVICE,
         COMPUTE_PATH_ACTION_SERVER,
         TIMEOUT_NAV_QUERY,
+        TIMEOUT_NAV_QUERY_MATRIX,
         UNDOCK_SERVICE,
         DOCK_SERVICE,
         DOCK_TABLE_SERVICE,
@@ -1031,9 +1032,13 @@ class Nav_Central(Node):
             total += math.hypot(p1.x - p0.x, p1.y - p0.y)
         return total
 
-    def _compute_path(self, goal_pose, start_pose=None):
+    def _compute_path(self, goal_pose, start_pose=None, deadline=None):
         """Call nav2 ComputePathToPose action. Returns nav_msgs/Path or None.
-        If start_pose is None the planner uses the robot's current pose."""
+        If start_pose is None the planner uses the robot's current pose.
+        deadline (time.monotonic) cuts every wait short, on top of TIMEOUT_NAV_QUERY."""
+        def expired():
+            return deadline is not None and t.monotonic() >= deadline
+
         goal_msg = ComputePathToPose.Goal()
         goal_msg.goal = goal_pose
         goal_msg.planner_id = "GridBased"
@@ -1042,7 +1047,7 @@ class Nav_Central(Node):
             goal_msg.use_start = True
 
         elapsed = 0.0
-        while not self.compute_path_client.server_is_ready() and elapsed < TIMEOUT_NAV_QUERY:
+        while not self.compute_path_client.server_is_ready() and elapsed < TIMEOUT_NAV_QUERY and not expired():
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.2))
             elapsed += 0.2
         if not self.compute_path_client.server_is_ready():
@@ -1051,7 +1056,7 @@ class Nav_Central(Node):
 
         send_future = self.compute_path_client.send_goal_async(goal_msg)
         elapsed = 0.0
-        while not send_future.done() and elapsed < TIMEOUT_NAV_QUERY:
+        while not send_future.done() and elapsed < TIMEOUT_NAV_QUERY and not expired():
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
             elapsed += 0.1
         if not send_future.done():
@@ -1065,7 +1070,7 @@ class Nav_Central(Node):
 
         result_future = goal_handle.get_result_async()
         elapsed = 0.0
-        while not result_future.done() and elapsed < TIMEOUT_NAV_QUERY:
+        while not result_future.done() and elapsed < TIMEOUT_NAV_QUERY and not expired():
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
             elapsed += 0.1
         if not result_future.done():
@@ -1142,7 +1147,8 @@ class Nav_Central(Node):
     def query_path_matrix(self, request, response):
         """Callback: path lengths between every ordered pair of areas (plus the
         robot's pose as an extra first start when from_robot), with a single
-        nav2 resume/pause. Unsolvable pairs are reported as -1.0."""
+        nav2 resume/pause. Pairs that are unsolvable or past the
+        TIMEOUT_NAV_QUERY_MATRIX budget are reported as -1.0."""
         n = len(request.locations)
         self.nav_logger("info", f"Query_Path_Matrix -> Service called ({n} areas, from_robot={request.from_robot})")
         response.success = False
@@ -1182,21 +1188,23 @@ class Nav_Central(Node):
         # None start = robot's current pose
         starts = ([None] if request.from_robot else []) + list(range(n))
         distances = []
+        deadline = t.monotonic() + TIMEOUT_NAV_QUERY_MATRIX
         try:
             for i in starts:
                 for j in range(n):
                     if i == j:
                         distances.append(0.0)
                         continue
-                    if poses[j] is None or (i is not None and poses[i] is None):
+                    if poses[j] is None or (i is not None and poses[i] is None) or t.monotonic() >= deadline:
                         distances.append(-1.0)
                         continue
-                    path = self._compute_path(poses[j], None if i is None else poses[i])
+                    path = self._compute_path(poses[j], None if i is None else poses[i], deadline)
                     distances.append(-1.0 if path is None else self._path_length(path))
             response.success = True
             response.distances = distances
             solved = sum(1 for d in distances if d >= 0.0)
-            self.nav_logger("info", f"Query_Path_Matrix -> {solved}/{len(distances)} pairs solved")
+            budget_note = " (planning budget exhausted)" if t.monotonic() >= deadline else ""
+            self.nav_logger("info", f"Query_Path_Matrix -> {solved}/{len(distances)} pairs solved{budget_note}")
         finally:
             if was_paused:
                 self.pause_slam()

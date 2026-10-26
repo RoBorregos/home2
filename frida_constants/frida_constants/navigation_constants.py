@@ -48,6 +48,8 @@ NAV_QUERY_SERVICE = "/navigation/query_path"
 NAV_QUERY_MATRIX_SERVICE = "/navigation/query_path_matrix"
 COMPUTE_PATH_ACTION_SERVER = "/compute_path_to_pose"
 TIMEOUT_NAV_QUERY = 10.0  # seconds to wait for ComputePathToPose result
+# Total planning budget for one matrix query; pairs left unplanned return -1.0
+TIMEOUT_NAV_QUERY_MATRIX = 20.0
 
 ### Table/shelf docking (perpendicular approach) — see table_docker.py
 DOCK_SERVICE = "/navigation/dock_to_surface"  # std_srvs/Trigger: align + approach
@@ -86,8 +88,13 @@ class SUBTASK_MANAGER(Enum):
     # Path query may resume nav2 (up to TIMEOUT_NAV2_LIFECYCLE), plan
     # (up to TIMEOUT_NAV_QUERY) and re-pause, so give it ample room
     NAV_QUERY_TIMEOUT = 30.0
-    # Matrix query adds this per planned path on top of NAV_QUERY_TIMEOUT
-    NAV_QUERY_MATRIX_PER_PATH = 1.0
+    # Matrix planning budget plus worst-case SLAM + nav2 resume and pause,
+    # so the service always answers before the client gives up
+    NAV_QUERY_MATRIX_TIMEOUT = (
+        TIMEOUT_NAV_QUERY_MATRIX
+        + 2 * (3 * TIMEOUT_RTAB_SERVICE + TIMEOUT_NAV2_LIFECYCLE)
+        + 5.0
+    )
 
 
 # Follow person node constants
