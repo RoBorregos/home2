@@ -7,7 +7,9 @@ order that:
 
   * preserves intra-command sequencing,
   * keeps the gripper invariant (one item at a time, drop before pick),
-  * minimizes 2-D travel between locations using a precedence-constrained
+  * minimizes travel between locations (straight-line by default, or any
+    ``distance`` callable such as the nav2 planner's path length) using a
+    precedence-constrained
     Held-Karp DP at the *segment* granularity, allowing gripper-neutral
     segments of any command to interleave inside another command's atomic
     block,
@@ -68,6 +70,8 @@ class InterleavedPlan:
 
 
 Locator = Callable[[str], Optional[Tuple[float, float]]]
+# (from_location or None for the robot origin, to_location) -> meters, or None if unknown.
+DistanceFn = Callable[[Optional[str], str], Optional[float]]
 
 
 @dataclass
@@ -129,10 +133,39 @@ def _euclidean(a: Optional[Tuple[float, float]], b: Optional[Tuple[float, float]
     return (dx * dx + dy * dy) ** 0.5
 
 
-def _segment_xy(seg: _Segment, locator: Locator) -> Optional[Tuple[float, float]]:
-    if seg.location is None:
-        return None
-    return locator(seg.location)
+def _euclidean_distance(locator: Locator, origin: Optional[Tuple[float, float]]) -> DistanceFn:
+    def dist(a: Optional[str], b: str) -> float:
+        return _euclidean(origin if a is None else locator(a), locator(b))
+
+    return dist
+
+
+def _cost_matrix(
+    segments: Sequence[_Segment],
+    distance: DistanceFn,
+    has_origin: bool,
+) -> Tuple[List[float], List[List[float]]]:
+    """Seed costs and segment-to-segment costs, querying ``distance`` once per
+    distinct location pair. Unresolved locations cost LARGE_M."""
+    memo: dict = {}
+
+    def cost(a: Optional[str], b: Optional[str]) -> float:
+        if b is None:
+            return LARGE_M
+        if a == b:
+            return 0.0
+        if (a, b) not in memo:
+            d = distance(a, b)
+            memo[(a, b)] = LARGE_M if d is None else d
+        return memo[(a, b)]
+
+    M = len(segments)
+    locs = [seg.location for seg in segments]
+    seed = [cost(None, locs[u]) if has_origin else 0.0 for u in range(M)]
+    edge = [
+        [LARGE_M if locs[a] is None else cost(locs[a], locs[b]) for b in range(M)] for a in range(M)
+    ]
+    return seed, edge
 
 
 def _build_holding_after(
@@ -181,8 +214,8 @@ def _optimal_schedule(
     cmd_seg_mask: Sequence[int],
     holding_after: Sequence[Sequence[bool]],
     n_cmds: int,
-    locator: Locator,
-    origin: Optional[Tuple[float, float]],
+    distance: DistanceFn,
+    has_origin: bool,
 ) -> List[int]:
     """Held-Karp DP at segment granularity.
 
@@ -197,9 +230,9 @@ def _optimal_schedule(
          c' != seg_cmd[u], then segment u must be gripper-neutral
          (segments[u].ends_holding is None).
 
-    Cost: f(S|{u}, u) = f(S, last) + dist(seg_xy[last], seg_xy[u])
+    Cost: f(S|{u}, u) = f(S, last) + edge[last][u]
                        + epsilon * (seg_cmd[u] != seg_cmd[last]).
-    Seed: f({u}, u) = dist(origin, seg_xy[u]) + epsilon * seg_cmd[u].
+    Seed: f({u}, u) = seed[u] + epsilon * seg_cmd[u].
 
     The epsilon term breaks ties (e.g. all-unknown locations where every
     edge costs LARGE_M) toward per-command sequential order. It is small
@@ -211,7 +244,7 @@ def _optimal_schedule(
     if M == 0:
         return []
 
-    seg_xy = [_segment_xy(segments[u], locator) for u in range(M)]
+    seed, edge = _cost_matrix(segments, distance, has_origin)
 
     INF = float("inf")
     full = (1 << M) - 1
@@ -222,8 +255,7 @@ def _optimal_schedule(
     for u in range(M):
         if seg_pos[u] != 0:
             continue
-        seed = 0.0 if origin is None else _euclidean(origin, seg_xy[u])
-        f[1 << u][u] = seed + _TIEBREAK_EPSILON * seg_cmd[u]
+        f[1 << u][u] = seed[u] + _TIEBREAK_EPSILON * seg_cmd[u]
         parent[1 << u][u] = -1
 
     for S in range(1, 1 << M):
@@ -245,7 +277,7 @@ def _optimal_schedule(
                         continue
                 cand = (
                     cur_cost
-                    + _euclidean(seg_xy[last], seg_xy[u])
+                    + edge[last][u]
                     + (_TIEBREAK_EPSILON if seg_cmd[u] != seg_cmd[last] else 0.0)
                 )
                 new_S = S | (1 << u)
@@ -287,6 +319,7 @@ def merge(
     commands: Sequence[Any],
     locator: Optional[Locator] = None,
     origin: Optional[Tuple[float, float]] = None,
+    distance: Optional[DistanceFn] = None,
 ) -> InterleavedPlan:
     """Merge N parsed commands into one interleaved plan.
 
@@ -296,8 +329,12 @@ def merge(
     ``origin`` is the robot's current ``(x, y)`` at planning time; pass
     ``None`` to seed the DP with no origin edge (avoids the misleading
     bias toward the SLAM map origin when the real pose is unavailable).
+    ``distance`` overrides the straight-line cost (e.g. nav2 path length);
+    it is only asked about the origin when ``origin`` is not None.
     """
-    loc_fn: Locator = locator if locator is not None else (lambda _: None)
+    if distance is None:
+        loc_fn: Locator = locator if locator is not None else (lambda _: None)
+        distance = _euclidean_distance(loc_fn, origin)
 
     if not commands:
         return InterleavedPlan(actions=[], fallback=[])
@@ -336,8 +373,8 @@ def merge(
             cmd_seg_mask,
             holding_after,
             n_cmds,
-            loc_fn,
-            origin,
+            distance,
+            origin is not None,
         )
 
     actions: List[PlanAction] = []

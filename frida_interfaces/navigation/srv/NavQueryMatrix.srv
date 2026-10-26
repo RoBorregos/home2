@@ -1,0 +1,15 @@
+# Request
+# Computes real path lengths (via nav2 ComputePathToPose) between every ordered
+# pair of map areas in a single nav2 resume/pause cycle, without moving the robot.
+# from_robot adds a first row with the paths from the robot's current pose.
+
+string[] locations
+string[] sublocations
+bool from_robot
+---
+#Response
+# Row-major, one row per start (robot row first when from_robot), one column
+# per destination. -1.0 marks a pair the planner could not solve.
+bool success
+float64[] distances
+string error

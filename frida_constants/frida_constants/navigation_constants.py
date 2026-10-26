@@ -45,6 +45,7 @@ RESUME_NAV_SERVICE = "/navigation/resume_nav"
 
 ### Path query service (distance between two map areas without moving)
 NAV_QUERY_SERVICE = "/navigation/query_path"
+NAV_QUERY_MATRIX_SERVICE = "/navigation/query_path_matrix"
 COMPUTE_PATH_ACTION_SERVER = "/compute_path_to_pose"
 TIMEOUT_NAV_QUERY = 10.0  # seconds to wait for ComputePathToPose result
 
@@ -85,6 +86,8 @@ class SUBTASK_MANAGER(Enum):
     # Path query may resume nav2 (up to TIMEOUT_NAV2_LIFECYCLE), plan
     # (up to TIMEOUT_NAV_QUERY) and re-pause, so give it ample room
     NAV_QUERY_TIMEOUT = 30.0
+    # Matrix query adds this per planned path on top of NAV_QUERY_TIMEOUT
+    NAV_QUERY_MATRIX_PER_PATH = 1.0
 
 
 # Follow person node constants

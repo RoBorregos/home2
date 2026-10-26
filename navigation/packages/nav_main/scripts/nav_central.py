@@ -53,6 +53,7 @@ from frida_constants.navigation_constants import(
         FOLLOW_GOAL_UPDATE_TIMEOUT,
         FOLLOW_ACTION_SERVER_TIMEOUT,
         NAV_QUERY_SERVICE,
+        NAV_QUERY_MATRIX_SERVICE,
         GO_TO_POSE_SERVICE,
         GET_ROBOT_POSE_SERVICE,
         COMPUTE_PATH_ACTION_SERVER,
@@ -70,6 +71,7 @@ from frida_interfaces.srv import (
         MapAreas,
         MoveLocation,
         NavQuery,
+        NavQueryMatrix,
         DockTable,
         GoToPose,
         GetRobotPose,
@@ -202,6 +204,7 @@ class Nav_Central(Node):
 
         # Path query service — distance/time between two areas without navigating
         self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
+        self.nav_query_matrix_srv = self.create_service(NavQueryMatrix, NAV_QUERY_MATRIX_SERVICE, self.query_path_matrix, callback_group=self.service_group)
         self.compute_path_client = ActionClient(self, ComputePathToPose, COMPUTE_PATH_ACTION_SERVER)
 
         # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
@@ -1130,6 +1133,70 @@ class Nav_Central(Node):
             response.success = True
             response.distance_meters = distance
             self.nav_logger("info", f"Query_Path -> Path found: {distance:.2f} m")
+        finally:
+            if was_paused:
+                self.pause_slam()
+                self.pause_nav2()
+        return response
+
+    def query_path_matrix(self, request, response):
+        """Callback: path lengths between every ordered pair of areas (plus the
+        robot's pose as an extra first start when from_robot), with a single
+        nav2 resume/pause. Unsolvable pairs are reported as -1.0."""
+        n = len(request.locations)
+        self.nav_logger("info", f"Query_Path_Matrix -> Service called ({n} areas, from_robot={request.from_robot})")
+        response.success = False
+        response.distances = []
+        response.error = ""
+
+        if self.mapping:
+            response.error = "Not available in mapping mode"
+            return response
+        if self.areas_data is None:
+            self.nav_logger("error", "Query_Path_Matrix -> Areas not loaded")
+            response.error = "Areas not loaded"
+            return response
+        if len(request.sublocations) != n:
+            response.error = "locations and sublocations differ in length"
+            return response
+
+        poses = []
+        for loc, sub in zip(request.locations, request.sublocations):
+            coords = self._fetch_area_coords(loc, sub or "safe_place")
+            poses.append(self._pose_from_coords(coords) if coords is not None else None)
+
+        if not self.rtabmap_loaded:
+            self.nav_logger("error", "Query_Path_Matrix -> Navigation not initialized")
+            response.error = "Navigation not initialized"
+            return response
+
+        # Planner needs nav2 active; remember prior state to restore it after
+        was_paused = self.nav2_paused
+        self.resume_slam()
+        self.resume_nav2()
+        if self.nav2_paused:
+            self.nav_logger("error", "Query_Path_Matrix -> Could not resume nav2")
+            response.error = "Could not resume nav2"
+            return response
+
+        # None start = robot's current pose
+        starts = ([None] if request.from_robot else []) + list(range(n))
+        distances = []
+        try:
+            for i in starts:
+                for j in range(n):
+                    if i == j:
+                        distances.append(0.0)
+                        continue
+                    if poses[j] is None or (i is not None and poses[i] is None):
+                        distances.append(-1.0)
+                        continue
+                    path = self._compute_path(poses[j], None if i is None else poses[i])
+                    distances.append(-1.0 if path is None else self._path_length(path))
+            response.success = True
+            response.distances = distances
+            solved = sum(1 for d in distances if d >= 0.0)
+            self.nav_logger("info", f"Query_Path_Matrix -> {solved}/{len(distances)} pairs solved")
         finally:
             if was_paused:
                 self.pause_slam()
