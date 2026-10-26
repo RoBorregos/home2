@@ -4,6 +4,7 @@
 Task Manager for GPSR task of Robocup @Home 2026
 """
 
+import math
 import time
 from datetime import datetime
 
@@ -35,6 +36,9 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
 BATCH_SIZE = 3
+# Paths are never shorter than the straight line; scaling the Euclidean
+# fallback keeps it comparable with planner distances.
+DETOUR_FACTOR = 1.4
 
 PLAN_REWRITE_INSTRUCTION = (
     "Rewrite this robot plan as one short spoken announcement, first person, "
@@ -126,6 +130,10 @@ class GPSRTM(Node):
 
         self.batched_commands: list = []
         self._location_cache: dict[str, tuple[float, float] | None] = {}
+        self._area_cache: dict[str, tuple[str, str] | None] = {}
+        # nav2 path lengths keyed by ((area, subarea) | None for robot, (area, subarea)).
+        self._path_cache: dict[tuple, float] = {}
+        self._plan_origin: tuple[float, float] | None = None
         # Live areas table (poses) fetched once per planning session via the
         # retrieve_areas service; falls back to nav.areas_backup when the
         # service is unavailable. Reset alongside _location_cache.
@@ -213,26 +221,80 @@ class GPSRTM(Node):
         self._areas = areas
         return areas
 
+    def _resolve_area(self, location_name: str):
+        """Resolve a free-text location to (area, subarea) via query_location.
+        Memoized per planning session."""
+        if not location_name:
+            return None
+        if location_name in self._area_cache:
+            return self._area_cache[location_name]
+        area = None
+        try:
+            hits = self.subtask_manager.hri.query_location(location_name, top_k=1)
+            if hits:
+                area = (hits[0].area, hits[0].subarea or "safe_place")
+        except Exception as e:  # noqa: BLE001
+            self.get_logger().warning(f"Location resolve failed for '{location_name}': {e}")
+        self._area_cache[location_name] = area
+        return area
+
     def _resolve_xy(self, location_name: str):
-        """Resolve a free-text location to (x, y) using query_location +
-        the live areas table (see _get_areas). Memoized per planning session."""
+        """Resolve a free-text location to (x, y) using _resolve_area + the
+        live areas table (see _get_areas). Memoized per planning session."""
         if not location_name:
             return None
         if location_name in self._location_cache:
             return self._location_cache[location_name]
         xy = None
-        try:
-            hits = self.subtask_manager.hri.query_location(location_name, top_k=1)
-            if hits:
-                hit = hits[0]
-                areas = self._get_areas()
-                pose = areas.get(hit.area, {}).get(hit.subarea or "safe_place")
-                if pose and len(pose) >= 2:
-                    xy = (float(pose[0]), float(pose[1]))
-        except Exception as e:  # noqa: BLE001
-            self.get_logger().warning(f"Location resolve failed for '{location_name}': {e}")
+        area = self._resolve_area(location_name)
+        if area is not None:
+            pose = self._get_areas().get(area[0], {}).get(area[1])
+            if pose and len(pose) >= 2:
+                xy = (float(pose[0]), float(pose[1]))
         self._location_cache[location_name] = xy
         return xy
+
+    def _prefetch_paths(self, commands) -> None:
+        """Fill _path_cache with nav2 path lengths between every go_to target of
+        the batch (and from the robot) in a single matrix query."""
+        areas = []
+        for cmd in commands:
+            for action in getattr(cmd, "commands", []):
+                if getattr(action, "action", "") != "go_to":
+                    continue
+                area = self._resolve_area(getattr(action, "location_to_go", None))
+                if area is not None and area not in areas:
+                    areas.append(area)
+        if not areas:
+            return
+        try:
+            status, matrix = self.subtask_manager.nav.get_path_matrix(areas)
+        except Exception as e:  # noqa: BLE001
+            self.get_logger().warning(f"path matrix failed: {e}; using straight-line distances")
+            return
+        if status != Status.EXECUTION_SUCCESS or not isinstance(matrix, dict):
+            self.get_logger().warning(
+                f"path matrix returned status={status}; using straight-line distances"
+            )
+            return
+        self._path_cache.update(matrix)
+
+    def _path_cost(self, from_name, to_name):
+        """Merger distance: nav2 path length from _path_cache, else the scaled
+        straight-line distance. from_name None means the robot's pose."""
+        dst = self._resolve_area(to_name)
+        src = None if from_name is None else self._resolve_area(from_name)
+        if dst is None or (from_name is not None and src is None):
+            return None
+        if src == dst:
+            return 0.0
+        if (src, dst) in self._path_cache:
+            return self._path_cache[(src, dst)]
+        a = self._plan_origin if from_name is None else self._resolve_xy(from_name)
+        b = self._resolve_xy(to_name)
+        if a is None or b is None:
+            return None
+        return DETOUR_FACTOR * math.hypot(a[0] - b[0], a[1] - b[1])
 
     def _current_robot_xy(self):
         """Look up the robot's (x, y) in the map frame, or None on failure."""
@@ -305,10 +367,12 @@ class GPSRTM(Node):
     def _execute_interleaved_batch(self):
         """Plan + tick the py_trees tree for the current batch."""
         self._completed.clear()
+        self._plan_origin = self._current_robot_xy()
+        self._prefetch_paths(self.batched_commands)
         plan = merge(
             self.batched_commands,
-            locator=self._resolve_xy,
-            origin=self._current_robot_xy(),
+            origin=self._plan_origin,
+            distance=self._path_cost,
         )
         self.get_logger().info(
             f"Merged {len(self.batched_commands)} commands → "
@@ -366,6 +430,8 @@ class GPSRTM(Node):
 
         self.get_logger().info(f"Batch tree finished with status={root.status}")
         self._location_cache.clear()
+        self._area_cache.clear()
+        self._path_cache.clear()
         self._areas = None
 
     def _execute_sequential_fallback(self, batched_commands):

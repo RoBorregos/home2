@@ -21,6 +21,7 @@ from frida_constants.navigation_constants import (
     MOVE_LOCATION_SERVICE,
     FOLLOW_PERSON_NAV_SERVICE,
     NAV_QUERY_SERVICE,
+    NAV_QUERY_MATRIX_SERVICE,
     DOCK_TABLE_SERVICE,
     GO_TO_POSE_SERVICE,
     GET_ROBOT_POSE_SERVICE,
@@ -32,6 +33,7 @@ from frida_interfaces.srv import (
     MapAreas,
     MoveLocation,
     NavQuery,
+    NavQueryMatrix,
     DockTable,
     GoToPose,
     GetRobotPose,
@@ -85,6 +87,9 @@ class NavigationTasks:
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
         self.follow_person_srv = self.node.create_client(SetBool, FOLLOW_PERSON_NAV_SERVICE)
         self.nav_query_srv = self.node.create_client(NavQuery, NAV_QUERY_SERVICE)
+        self.nav_query_matrix_srv = self.node.create_client(
+            NavQueryMatrix, NAV_QUERY_MATRIX_SERVICE
+        )
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
@@ -104,6 +109,7 @@ class NavigationTasks:
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
                 "follow_person_srv": {"client": self.follow_person_srv, "type": "service"},
                 "nav_query_srv": {"client": self.nav_query_srv, "type": "service"},
+                "nav_query_matrix_srv": {"client": self.nav_query_matrix_srv, "type": "service"},
                 "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
             },
             Task.RESTAURANT: {
@@ -300,6 +306,49 @@ class NavigationTasks:
             f"Path to {location_b}: {result.distance_meters:.2f} m",
         )
         return (Status.EXECUTION_SUCCESS, {"distance": result.distance_meters})
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, {}), delay=1)
+    @service_check(
+        "nav_query_matrix_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def get_path_matrix(self, areas):
+        """Real path distances (m) between every ordered pair of ``areas``
+        ((location, sublocation) tuples) in one call, without moving the robot.
+        Returns (Status, {(start, goal): meters}); start is None for the robot's
+        current pose. Pairs the planner could not solve (or that ran past
+        nav_central's planning budget) are omitted."""
+        areas = [(loc, sub or "safe_place") for loc, sub in areas]
+        n = len(areas)
+        if n == 0:
+            return (Status.EXECUTION_SUCCESS, {})
+        CLog.nav(self.node, "INFO", f"Querying path matrix for {n} areas")
+        request = NavQueryMatrix.Request()
+        request.locations = [loc for loc, _ in areas]
+        request.sublocations = [sub for _, sub in areas]
+        future = self.nav_query_matrix_srv.call_async(request)
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.NAV_QUERY_MATRIX_TIMEOUT.value
+        )
+        result = future.result()
+        if result is None:
+            CLog.nav(self.node, "ERROR", "Path matrix query failed (None result)")
+            return (Status.EXECUTION_ERROR, "Error with request")
+        if not result.success:
+            CLog.nav(self.node, "ERROR", f"Path matrix query failed: {result.error}")
+            return (Status.EXECUTION_ERROR, result.error)
+        starts = [None] + areas
+        if len(result.distances) != len(starts) * n:
+            return (Status.EXECUTION_ERROR, "Malformed path matrix")
+        matrix = {}
+        for r, start in enumerate(starts):
+            for c, goal in enumerate(areas):
+                d = result.distances[r * n + c]
+                if d >= 0.0:
+                    matrix[(start, goal)] = d
+        CLog.nav(self.node, "SUCCESS", f"Path matrix: {len(matrix)} pairs solved")
+        return (Status.EXECUTION_SUCCESS, matrix)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
     @service_check(

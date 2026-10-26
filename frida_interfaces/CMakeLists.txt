@@ -171,6 +171,7 @@ set(srv_files
   "navigation/srv/MapAreas.srv"
   "navigation/srv/MoveLocation.srv"
   "navigation/srv/NavQuery.srv"
+  "navigation/srv/NavQueryMatrix.srv"
   "navigation/srv/DockTable.srv"
   "navigation/srv/GetRobotPose.srv"
   "navigation/srv/GoToPose.srv"

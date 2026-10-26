@@ -1603,5 +1603,106 @@
         }
       ]
     }
+  },
+  {
+    "name": "wall_straight_line_control",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "bedroom"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Angel"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "office"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Morgan"
+        }
+      ]
+    ],
+    "coords": {
+      "bedroom": [
+        2,
+        0
+      ],
+      "office": [
+        5,
+        0
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "expect": {
+      "first_go_to_location": "bedroom",
+      "per_command_order": true,
+      "non_goto_preserved": true
+    }
+  },
+  {
+    "name": "wall_path_distance_overrides_straight_line",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "bedroom"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Angel"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "office"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Morgan"
+        }
+      ]
+    ],
+    "coords": {
+      "bedroom": [
+        2,
+        0
+      ],
+      "office": [
+        5,
+        0
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "distances": {
+      "origin": {
+        "bedroom": 12.0,
+        "office": 5.0
+      },
+      "office": {
+        "bedroom": 9.0
+      }
+    },
+    "expect": {
+      "first_go_to_location": "office",
+      "go_to_order": [
+        "office",
+        "bedroom"
+      ],
+      "per_command_order": true,
+      "non_goto_preserved": true
+    }
   }
 ]
