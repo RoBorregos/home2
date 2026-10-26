@@ -27,6 +27,7 @@
   <exec_depend>frida_interfaces</exec_depend>
   <exec_depend>frida_constants</exec_depend>
   <exec_depend>arm_pkg</exec_depend>
+  <exec_depend>vamp_moveit_plugin</exec_depend>
   <exec_depend>pick_and_place</exec_depend>
   <exec_depend>object_detector_2d</exec_depend>
   <exec_depend>vision_general</exec_depend>

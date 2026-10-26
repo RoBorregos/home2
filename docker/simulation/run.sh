@@ -21,6 +21,7 @@ AREA=manip
 GUI=true
 RVIZ_VIEW=true
 MOVEIT_RVIZ=false
+PLANNER=ompl
 for arg in "${ARGS[@]}"; do
   case $arg in
     --manip) AREA=manip ;;
@@ -29,6 +30,7 @@ for arg in "${ARGS[@]}"; do
     --headless) GUI=false ;;
     --no-rviz) RVIZ_VIEW=false ;;
     --moveit-rviz) MOVEIT_RVIZ=true ;;
+    --vamp) PLANNER=vamp ;;
   esac
 done
 
@@ -53,6 +55,7 @@ Flags:
   --headless       Do not open the Gazebo window
   --no-rviz        Do not open RViz
   --moveit-rviz    Also open MoveIt's own RViz
+  --vamp           Plan with VAMP (OMPL fallback) instead of OMPL
   --recreate       Recreate the container
   --stop | --down  Stop / remove the container
   --clean          Delete build/, install/ and log/
@@ -62,6 +65,7 @@ Examples:
   ./run.sh simulation --nav
   ./run.sh simulation --nav-tm
   ./run.sh simulation --manip --headless --no-rviz
+  ./run.sh simulation --manip --vamp
 USAGE
 }
 
@@ -84,7 +88,7 @@ mkdir -p build install log cache/gz cache/ultralytics logs
 COMPOSE="docker compose -f $COMPOSE_FILE"
 SETUP="source /opt/ros/jazzy/setup.bash && source /usr/local/bin/cyclonedds_setup.sh && if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 PACKAGES="frida_interfaces frida_constants frida_gz_sim manipulation_general xarm6_ikfast_plugin nav_main map_context ira_laser_tools"
-IGNORE="realsense_gazebo_plugin xarm_gazebo mujoco_ros2_control mujoco_spawn vamp vamp_moveit_plugin omnidriver sllidar_ros2 p9n_node p9n_interface"
+IGNORE="realsense_gazebo_plugin xarm_gazebo mujoco_ros2_control mujoco_spawn vamp omnidriver sllidar_ros2 p9n_node p9n_interface"
 
 ensure_container() {
   if [ -n "$BUILD_IMAGE" ] || [ -z "$(docker ps -q -f name=^home2-simulation$)" ]; then
@@ -108,6 +112,8 @@ in_background() {
 build_ws() {
   # Capped parallelism: PCL/MoveIt translation units need ~2 GB each
   in_container "bash /workspace/src/simulation/frida_gz_sim/scripts/fetch_models.sh && MAKEFLAGS=-j${BUILD_JOBS:-4} colcon build --symlink-install --parallel-workers ${BUILD_WORKERS:-2} --packages-up-to $PACKAGES --packages-ignore $IGNORE --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF"
+  # VAMP's Python bindings are built apart from the workspace; only --vamp needs them
+  in_container "bash /workspace/src/docker/manipulation/setup_vamp.sh" || echo "VAMP setup failed: --vamp will not plan" >&2
 }
 
 # Blocks until every pattern appears in its log, or fails after a timeout
@@ -151,7 +157,7 @@ start_all() {
   wait_for_logs "sim:activated xarm6_traj_controller"
 
   if [ "$AREA" = manip ] || [ "$AREA" = all ]; then
-    in_background manipulation "ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=$MOVEIT_RVIZ"
+    in_background manipulation "ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=$MOVEIT_RVIZ planner:=$PLANNER"
     in_background vision "ros2 launch frida_gz_sim sim_vision.launch.py"
   fi
   if [ "$AREA" = nav ] || [ "$AREA" = all ]; then

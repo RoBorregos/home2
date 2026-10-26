@@ -1,168 +1,235 @@
 #!/usr/bin/env python3
-"""
-VAMP vs OMPL Benchmark for FRIDA (xArm 6)
-==========================================
-Runs N planning requests through both VAMP and OMPL pipelines,
-measures time, success rate, and path quality.
+"""Compares the "vamp" and "ompl" MoveIt pipelines on the same joint goals and scenes, planning only.
 
-Usage:
-  ros2 run vamp_moveit_plugin benchmark_vamp.py
-
-Prerequisites:
-  - move_group running with both ompl and vamp pipelines
-  - vamp_server.py running
+Needs move_group with both pipelines and the VAMP server running, e.g. the sim started with --vamp:
+    ros2 run vamp_moveit_plugin benchmark_vamp.py --ros-args -p trials:=5 -p csv:=/tmp/vamp_benchmark.csv
+Fallbacks are the plugin's "Falling back to OMPL" warnings read from /rosout.
 """
 
-import time
+import csv
+import math
 import statistics
+import time
+from dataclasses import dataclass, field
+
+import numpy as np
 import rclpy
+from geometry_msgs.msg import Pose
+from moveit_msgs.msg import (
+    CollisionObject,
+    Constraints,
+    JointConstraint,
+    MotionPlanRequest,
+    PlanningScene,
+)
+from moveit_msgs.srv import ApplyPlanningScene, GetMotionPlan
+from rcl_interfaces.msg import Log
 from rclpy.node import Node
-from rclpy.callback_groups import ReentrantCallbackGroup
-from threading import Thread
+from shape_msgs.msg import SolidPrimitive
 
-# Adjust these imports to your setup
-try:
-    from frida_pymoveit2.robots import xarm6
-    from pymoveit2 import MoveIt2
+GROUP = "xarm6"
+JOINT_NAMES = [f"joint{i}" for i in range(1, 7)]
+PIPELINES = ("ompl", "vamp")
+OBSTACLE_ID = "benchmark_obstacle"
 
-    HAS_PYMOVEIT = True
-except ImportError:
-    HAS_PYMOVEIT = False
-    print("WARNING: pymoveit2 not found. Install it for full benchmark.")
+# Each goal starts from the previous one, so the arm never has to move
+GOALS_DEG = {
+    "front": [0.0, -30.0, -60.0, 0.0, 90.0, 0.0],
+    "left": [90.0, -45.0, -45.0, 0.0, 60.0, 0.0],
+    "right": [-90.0, -45.0, -45.0, 0.0, 60.0, 0.0],
+    "up": [0.0, -70.0, -20.0, 0.0, 30.0, 0.0],
+    "tucked": [0.0, -10.0, -100.0, 0.0, 110.0, 0.0],
+    "extended": [45.0, -60.0, -30.0, 0.0, 45.0, 45.0],
+}
 
-
-# Test configurations: (name, joint_positions_degrees)
-TEST_CASES = [
-    ("home_to_front", [0.0, -30.0, -60.0, 0.0, 90.0, 0.0]),
-    ("front_to_left", [90.0, -45.0, -45.0, 0.0, 60.0, 0.0]),
-    ("left_to_right", [-90.0, -45.0, -45.0, 0.0, 60.0, 0.0]),
-    ("right_to_up", [0.0, -70.0, -20.0, 0.0, 30.0, 0.0]),
-    ("up_to_tucked", [0.0, -10.0, -100.0, 0.0, 110.0, 0.0]),
-    ("tucked_to_extended", [45.0, -60.0, -30.0, 0.0, 45.0, 45.0]),
-]
-
-DEG2RAD = 3.14159265358979 / 180.0
+# Extra obstacle per scene in base_link: box size, position and yaw (rad); None keeps the sim scene as is
+SCENES = {
+    "open": None,
+    "wall": ([0.05, 0.5, 0.4], [0.35, 0.25, 0.85], math.pi / 4),
+}
 
 
-class BenchmarkNode(Node):
+@dataclass
+class PipelineStats:
+    planning_ms: list[float] = field(default_factory=list)
+    path_rad: list[float] = field(default_factory=list)
+    failures: int = 0
+    fallbacks: int = 0
+
+    @property
+    def total(self) -> int:
+        return len(self.planning_ms) + self.failures
+
+
+class VampBenchmark(Node):
+    """Sends the same motion plan requests to each pipeline in each scene and summarizes the answers."""
+
     def __init__(self):
         super().__init__("vamp_benchmark")
-        self.callback_group = ReentrantCallbackGroup()
+        self.trials = self.declare_parameter("trials", 5).value
+        self.planning_time = self.declare_parameter("planning_time", 1.0).value
+        self.csv_path = self.declare_parameter("csv", "").value
+        self.plan_client = self.create_client(GetMotionPlan, "/plan_kinematic_path")
+        self.scene_client = self.create_client(
+            ApplyPlanningScene, "/apply_planning_scene"
+        )
+        self.rows = []
+        self.fallback_warnings = 0
+        self.create_subscription(Log, "/rosout", self.count_fallback, 100)
 
-        if not HAS_PYMOVEIT:
-            self.get_logger().error("pymoveit2 required for benchmark")
-            return
+    def count_fallback(self, log: Log):
+        self.fallback_warnings += log.msg == "Falling back to OMPL"
 
-        self.moveit2 = MoveIt2(
-            node=self,
-            joint_names=xarm6.joint_names(),
-            base_link_name=xarm6.base_link_name(),
-            end_effector_name=xarm6.end_effector_name(),
-            group_name=xarm6.MOVE_GROUP_ARM,
-            callback_group=self.callback_group,
+    def run(self) -> dict[tuple[str, str], PipelineStats]:
+        for client in (self.plan_client, self.scene_client):
+            if not client.wait_for_service(timeout_sec=10.0):
+                raise RuntimeError(f"move_group's {client.srv_name} is not available")
+        goals = [[math.radians(v) for v in goal] for goal in GOALS_DEG.values()]
+        stats = {}
+        for scene, obstacle in SCENES.items():
+            self.set_obstacle(obstacle)
+            for pipeline in PIPELINES:
+                stats[(scene, pipeline)] = PipelineStats()
+            for trial in range(self.trials):
+                for name, start, goal in zip(GOALS_DEG, goals[-1:] + goals[:-1], goals):
+                    for pipeline in PIPELINES:
+                        self.record(
+                            stats[(scene, pipeline)],
+                            scene,
+                            pipeline,
+                            trial,
+                            name,
+                            self.plan(pipeline, start, goal),
+                        )
+        self.set_obstacle(None)
+        return stats
+
+    def set_obstacle(self, obstacle):
+        collision_object = CollisionObject(id=OBSTACLE_ID)
+        collision_object.header.frame_id = "base_link"
+        collision_object.operation = CollisionObject.REMOVE
+        if obstacle:
+            size, position, yaw = obstacle
+            pose = Pose()
+            pose.position.x, pose.position.y, pose.position.z = position
+            pose.orientation.z, pose.orientation.w = (
+                math.sin(yaw / 2),
+                math.cos(yaw / 2),
+            )
+            collision_object.operation = CollisionObject.ADD
+            collision_object.primitives = [
+                SolidPrimitive(type=SolidPrimitive.BOX, dimensions=size)
+            ]
+            collision_object.primitive_poses = [pose]
+        scene = PlanningScene(is_diff=True)
+        scene.world.collision_objects = [collision_object]
+        future = self.scene_client.call_async(ApplyPlanningScene.Request(scene=scene))
+        rclpy.spin_until_future_complete(self, future)
+
+    def plan(self, pipeline: str, start: list[float], goal: list[float]):
+        request = MotionPlanRequest()
+        request.pipeline_id = pipeline
+        request.group_name = GROUP
+        request.allowed_planning_time = self.planning_time
+        request.num_planning_attempts = 1
+        request.max_velocity_scaling_factor = 0.5
+        request.max_acceleration_scaling_factor = 0.5
+        request.start_state.is_diff = True
+        request.start_state.joint_state.name = JOINT_NAMES
+        request.start_state.joint_state.position = start
+        request.goal_constraints = [
+            Constraints(
+                joint_constraints=[
+                    JointConstraint(
+                        joint_name=name,
+                        position=position,
+                        tolerance_above=1e-3,
+                        tolerance_below=1e-3,
+                        weight=1.0,
+                    )
+                    for name, position in zip(JOINT_NAMES, goal)
+                ]
+            )
+        ]
+        warnings = self.fallback_warnings
+        future = self.plan_client.call_async(
+            GetMotionPlan.Request(motion_plan_request=request)
+        )
+        rclpy.spin_until_future_complete(self, future)
+        # Gives the plugin's warning time to arrive through /rosout
+        rclpy.spin_once(self, timeout_sec=0.05)
+        return future.result().motion_plan_response, self.fallback_warnings > warnings
+
+    def record(self, stats: PipelineStats, scene, pipeline, trial, goal, result):
+        response, fallback = result
+        success = response.error_code.val == response.error_code.SUCCESS
+        planning_ms = response.planning_time * 1000.0
+        path_rad = math.nan
+        if success:
+            points = response.trajectory.joint_trajectory.points
+            positions = np.array([point.positions for point in points])
+            path_rad = float(np.linalg.norm(np.diff(positions, axis=0), axis=1).sum())
+            stats.planning_ms.append(planning_ms)
+            stats.path_rad.append(path_rad)
+            stats.fallbacks += fallback
+        else:
+            stats.failures += 1
+        self.rows.append(
+            [
+                scene,
+                pipeline,
+                trial,
+                goal,
+                success,
+                fallback,
+                f"{planning_ms:.2f}",
+                f"{path_rad:.3f}",
+            ]
         )
 
-    def run_benchmark(self, n_trials=5):
-        """Run benchmark comparing VAMP vs OMPL."""
-        planners = {
-            "VAMP": "vamp",  # Uses vamp pipeline
-            "OMPL": "RRTConnect",  # Uses ompl pipeline
-        }
-
-        results = {
-            name: {"times": [], "successes": 0, "failures": 0} for name in planners
-        }
-
-        self.get_logger().info(f"Starting benchmark: {n_trials} trials per test case")
-        self.get_logger().info(f"Test cases: {len(TEST_CASES)}")
-        self.get_logger().info("=" * 70)
-
-        for planner_name, planner_id in planners.items():
-            self.get_logger().info(f"\n--- Planner: {planner_name} ({planner_id}) ---")
-            self.moveit2.planner_id = planner_id
-
-            for trial in range(n_trials):
-                for case_name, joints_deg in TEST_CASES:
-                    joints_rad = [j * DEG2RAD for j in joints_deg]
-
-                    t_start = time.perf_counter()
-                    self.moveit2.move_to_configuration(joints_rad)
-
-                    # Wait for result (simplified — in real code use futures)
-                    time.sleep(0.1)
-                    from pymoveit2 import MoveIt2State
-
-                    while self.moveit2.query_state() != MoveIt2State.IDLE:
-                        time.sleep(0.05)
-
-                    t_elapsed = (time.perf_counter() - t_start) * 1000.0
-
-                    # Check if planning was successful
-                    # (In practice, check the action result)
-                    results[planner_name]["times"].append(t_elapsed)
-                    results[planner_name]["successes"] += 1
-
-                    self.get_logger().info(
-                        f"  [{planner_name}] {case_name} trial {trial + 1}: "
-                        f"{t_elapsed:.1f} ms"
-                    )
-
-        # ── Print summary ───────────────────────────────────────
-        self.get_logger().info("\n" + "=" * 70)
-        self.get_logger().info("BENCHMARK RESULTS")
-        self.get_logger().info("=" * 70)
-
-        for name, data in results.items():
-            times = data["times"]
-            if times:
-                self.get_logger().info(f"\n{name}:")
-                self.get_logger().info(
-                    f"  Success rate: {data['successes']}/{data['successes'] + data['failures']}"
+    def report(self, stats: dict[tuple[str, str], PipelineStats]):
+        for (scene, pipeline), result in stats.items():
+            times = sorted(result.planning_ms) or [math.nan]
+            paths = result.path_rad or [math.nan]
+            self.get_logger().info(
+                f"{scene:5} {pipeline:4}: {len(result.planning_ms)}/{result.total} solved, "
+                f"{result.fallbacks} fallbacks, "
+                f"median {statistics.median(times):.1f} ms, "
+                f"p95 {times[int(0.95 * (len(times) - 1))]:.1f} ms, "
+                f"max {times[-1]:.1f} ms, "
+                f"path {statistics.median(paths):.2f} rad"
+            )
+        if self.csv_path:
+            with open(self.csv_path, "w", newline="") as csv_file:
+                writer = csv.writer(csv_file)
+                writer.writerow(
+                    [
+                        "scene",
+                        "pipeline",
+                        "trial",
+                        "goal",
+                        "success",
+                        "fallback",
+                        "planning_ms",
+                        "path_rad",
+                    ]
                 )
-                self.get_logger().info(
-                    f"  Mean time:   {statistics.mean(times):.1f} ms"
-                )
-                self.get_logger().info(
-                    f"  Median time: {statistics.median(times):.1f} ms"
-                )
-                self.get_logger().info(
-                    f"  Std dev:     {statistics.stdev(times):.1f} ms"
-                    if len(times) > 1
-                    else ""
-                )
-                self.get_logger().info(f"  Min time:    {min(times):.1f} ms")
-                self.get_logger().info(f"  Max time:    {max(times):.1f} ms")
-                self.get_logger().info(
-                    f"  P95 time:    {sorted(times)[int(len(times) * 0.95)]:.1f} ms"
-                    if len(times) > 1
-                    else ""
-                )
-
-        # Speedup
-        if results["VAMP"]["times"] and results["OMPL"]["times"]:
-            vamp_med = statistics.median(results["VAMP"]["times"])
-            ompl_med = statistics.median(results["OMPL"]["times"])
-            if vamp_med > 0:
-                self.get_logger().info(
-                    f"\nSpeedup (median): {ompl_med / vamp_med:.1f}x"
-                )
+                writer.writerows(self.rows)
+            self.get_logger().info(
+                f"Wrote {len(self.rows)} requests to {self.csv_path}"
+            )
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = BenchmarkNode()
-
-    executor = rclpy.executors.MultiThreadedExecutor(2)
-    executor.add_node(node)
-    spin_thread = Thread(target=executor.spin, daemon=True)
-    spin_thread.start()
-
-    # Wait for MoveIt to initialize
-    time.sleep(2.0)
-
-    node.run_benchmark(n_trials=3)
-
-    rclpy.shutdown()
+    node = VampBenchmark()
+    try:
+        start = time.perf_counter()
+        node.report(node.run())
+        node.get_logger().info(f"Benchmark took {time.perf_counter() - start:.1f} s")
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

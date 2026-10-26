@@ -1,90 +1,71 @@
 cmake_minimum_required(VERSION 3.8)
 project(vamp_moveit_plugin)
 
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(moveit_core REQUIRED)
-find_package(moveit_ros_planning REQUIRED)
-find_package(pluginlib REQUIRED)
-find_package(geometric_shapes REQUIRED)
-find_package(tf2_eigen REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(octomap REQUIRED)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
+find_package(ament_cmake REQUIRED)
+find_package(geometric_shapes REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(moveit_core REQUIRED)
+find_package(octomap REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(rclcpp REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(trajectory_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/VampPlan.srv"
+  DEPENDENCIES geometry_msgs trajectory_msgs
 )
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
-add_library(vamp_moveit_plugin_lib
+add_library(${PROJECT_NAME}_lib SHARED
+  src/scene_conversion.cpp
+  src/vamp_client.cpp
   src/vamp_planner_manager.cpp
   src/vamp_planning_context.cpp
 )
-
-target_compile_features(vamp_moveit_plugin_lib PUBLIC cxx_std_17)
-
-target_include_directories(vamp_moveit_plugin_lib PUBLIC
+target_compile_features(${PROJECT_NAME}_lib PUBLIC cxx_std_17)
+target_include_directories(${PROJECT_NAME}_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
-  ${OCTOMAP_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
 )
-
-ament_target_dependencies(vamp_moveit_plugin_lib
-  rclcpp
-  moveit_core
-  moveit_ros_planning
-  pluginlib
-  geometric_shapes
-  tf2_eigen
-)
-
-rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
-target_link_libraries(vamp_moveit_plugin_lib 
-  ${OCTOMAP_LIBRARIES}
+target_link_libraries(${PROJECT_NAME}_lib
   ${cpp_typesupport_target}
+  ${OCTOMAP_LIBRARIES}
+  geometric_shapes::geometric_shapes
+  moveit_core::moveit_constraint_samplers
+  moveit_core::moveit_kinematic_constraints
+  moveit_core::moveit_planning_interface
+  moveit_core::moveit_planning_scene
+  moveit_core::moveit_robot_state
+  moveit_core::moveit_robot_trajectory
+  moveit_core::moveit_trajectory_processing
+  moveit_core::moveit_utils
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  tf2_eigen::tf2_eigen
 )
 
 pluginlib_export_plugin_description_file(moveit_core vamp_moveit_plugin.xml)
 
-install(TARGETS vamp_moveit_plugin_lib
-  EXPORT export_vamp_moveit_plugin_lib
+install(TARGETS ${PROJECT_NAME}_lib
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
-
 install(PROGRAMS
-  scripts/vamp_server.py
   scripts/benchmark_vamp.py
+  scripts/check_collision_model.py
+  scripts/export_robot_model.py
+  scripts/vamp_server.py
   DESTINATION lib/${PROJECT_NAME}
 )
-
-install(DIRECTORY launch/
-  DESTINATION share/${PROJECT_NAME}/launch
-)
-
-
-install(DIRECTORY config/
-  DESTINATION share/${PROJECT_NAME}/config
-)
-
-install(DIRECTORY resources/
-  DESTINATION share/${PROJECT_NAME}/resources
-)
-
-install(DIRECTORY include/ DESTINATION include)
-
-ament_export_targets(export_vamp_moveit_plugin_lib HAS_LIBRARY_TARGET)
-ament_export_dependencies(
-  rclcpp
-  moveit_core
-  moveit_ros_planning
-  pluginlib
-  geometric_shapes
-  tf2_eigen
-  octomap
+install(DIRECTORY config launch resources
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_package()

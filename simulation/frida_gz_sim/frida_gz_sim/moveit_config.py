@@ -4,16 +4,21 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from arm_pkg.moveit_configs_builder import MoveItConfigsBuilder
+from arm_pkg.vamp_pipeline import add_vamp_pipeline
 
 from frida_gz_sim.description import GZ_PLUGIN, XARM_ARGS
 
+PLANNERS = ("ompl", "vamp")
 
-def build_moveit_config(context):
-    """MoveIt configs for the xArm on gz_ros2_control."""
+
+def build_moveit_config(context, planner: str = "ompl"):
+    """MoveIt configs for the xArm on gz_ros2_control, with `planner` as the default pipeline."""
+    if planner not in PLANNERS:
+        raise ValueError(f"planner must be one of {PLANNERS}, got '{planner}'")
     controllers_file = os.path.join(
         get_package_share_directory("frida_gz_sim"), "config", "gz_controllers.yaml"
     )
-    return (
+    moveit_config = (
         MoveItConfigsBuilder(
             context=context,
             controllers_name="controllers",
@@ -32,3 +37,5 @@ def build_moveit_config(context):
         .planning_pipelines(pipelines=["ompl"], default_planning_pipeline="ompl")
         .to_moveit_configs()
     )
+    add_vamp_pipeline(moveit_config, default=planner == "vamp")
+    return moveit_config

@@ -7,10 +7,10 @@
 # copies the .so to the correct location, and exports PYTHONPATH.
 #
 # Prerequisites (run on HOST before building container):
-#   bash docker/manipulation/generate_frida_collisions.sh
+#   bash manipulation/packages/vamp_moveit_plugin/model/generate_frida_real.sh
 #
 # What this does:
-#   1. Installs frida_real.hh from vamp_moveit_plugin/resources/ if missing
+#   1. Installs frida_real.hh from vamp_moveit_plugin/resources/ when it changed
 #   2. Registers frida_real in vamp/cmake/Python.cmake if not already there
 #   3. Builds VAMP via colcon (skips if already built with frida_real)
 #   4. Copies the compiled .so to vamp/src/vamp/_core/
@@ -33,17 +33,17 @@ echo "[VAMP Setup]  FRIDA VAMP Setup"
 echo "[VAMP Setup] ════════════════════════════════════════════"
 
 # ── 1. Install frida_real.hh if missing ────────────────────────
-if [ ! -f "$FRIDA_HH_DST" ]; then
-    if [ -f "$FRIDA_HH_SRC" ]; then
-        echo "[VAMP Setup] Installing frida_real.hh from resources..."
-        mkdir -p "$VAMP_ROBOTS"
-        cp "$FRIDA_HH_SRC" "$FRIDA_HH_DST"
-        echo "[VAMP Setup] ✓ frida_real.hh installed (82 spheres)"
-    else
-        echo "[VAMP Setup] ✗ frida_real.hh not found in resources!"
-        echo "[VAMP Setup]   Run generate_frida_collisions.sh on the HOST first."
-        echo "[VAMP Setup]   VAMP will compile WITHOUT FRIDA support."
-    fi
+MODEL_CHANGED=false
+if [ ! -f "$FRIDA_HH_SRC" ]; then
+    echo "[VAMP Setup] ✗ frida_real.hh not found in resources!"
+    echo "[VAMP Setup]   Run vamp_moveit_plugin/model/generate_frida_real.sh on the HOST first."
+    echo "[VAMP Setup]   VAMP will compile WITHOUT FRIDA support."
+elif ! cmp -s "$FRIDA_HH_SRC" "$FRIDA_HH_DST"; then
+    echo "[VAMP Setup] Installing frida_real.hh from resources..."
+    mkdir -p "$VAMP_ROBOTS"
+    cp "$FRIDA_HH_SRC" "$FRIDA_HH_DST"
+    MODEL_CHANGED=true
+    echo "[VAMP Setup] ✓ frida_real.hh installed"
 else
     echo "[VAMP Setup] ✓ frida_real.hh already in place"
 fi
@@ -61,9 +61,9 @@ if [ -f "$VAMP_CMAKE" ]; then
 fi
 
 # ── 3. Check if rebuild is needed ──────────────────────────────
-NEEDS_BUILD=false
+NEEDS_BUILD=$MODEL_CHANGED
 
-SO_FILE=$(find "$VAMP_CORE" -name "_core_ext.cpython-*.so" 2>/dev/null | head -1)
+SO_FILE=$(find "$VAMP_CORE" -name "_core_ext*.so" 2>/dev/null | head -1)
 if [ -z "$SO_FILE" ]; then
     NEEDS_BUILD=true
     echo "[VAMP Setup] No compiled .so found. Will build..."
@@ -91,7 +91,7 @@ if [ "$NEEDS_BUILD" = true ]; then
     fi
     echo "[VAMP Setup] ✓ VAMP built successfully"
 
-    NEW_SO=$(find "$WORKSPACE/build/vamp" -name "_core_ext.cpython-*.so" 2>/dev/null | head -1)
+    NEW_SO=$(find "$WORKSPACE/build/vamp" -name "_core_ext*.so" 2>/dev/null | head -1)
     if [ -n "$NEW_SO" ]; then
         mkdir -p "$VAMP_CORE"
         cp "$NEW_SO" "$VAMP_CORE/"
