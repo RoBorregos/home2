@@ -6,13 +6,16 @@ available seats. Tasks for HRIC
 commands.
 """
 
+import json
 import math
 import time
 import random
 
 import rclpy
+from frida_constants.hri_constants import DISPLAY_CAPTURE_TOPIC
 from frida_constants.vision_classes import BBOX
 from frida_constants.vision_constants import (
+    CHAIR_REMOVAL_IMAGE_TOPIC,
     CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
@@ -21,6 +24,12 @@ from frida_constants.vision_constants import (
     COUNT_BY_POSE_TOPIC,
     CROP_QUERY_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
+    DETECTIONS_IMAGE_TOPIC,
+    FACE_RECOGNITION_IMAGE,
+    IMAGE_TOPIC,
+    IMAGE_TOPIC_HRIC,
+    RESTAURANT_TABLES_TOPIC,
+    TRACKER_IMAGE_TOPIC,
     FIND_SEAT_TOPIC,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
@@ -67,6 +76,7 @@ from task_manager.utils.task import Task
 TIMEOUT = 8.0
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
 IS_TRACKING_TOPIC = "/vision/is_tracking"
+CAPTURE_THROTTLE_S = 2.0
 
 
 class VisionTasks:
@@ -86,6 +96,9 @@ class VisionTasks:
         self.flag_active_face = False
         self.person_list = []
         self.person_name = ""
+
+        self._capture_pub = self.node.create_publisher(String, DISPLAY_CAPTURE_TOPIC, 10)
+        self._last_capture_ts = {}
 
         self.rotate_camera_publisher = self.node.create_publisher(Int16, CAMERA_ROTATION_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
@@ -251,6 +264,21 @@ class VisionTasks:
         msg.data = active
         publisher.publish(msg)
 
+    def _capture(self, key: str, label: str, topic: str = "", data: dict = None):
+        """Ask the display to save a snapshot as evidence after a successful detection.
+
+        Throttled per `key` (one per detection kind) so calls from polling
+        loops don't flood the evidence folder with near-duplicate frames.
+        """
+        now = time.time()
+        if now - self._last_capture_ts.get(key, 0.0) < CAPTURE_THROTTLE_S:
+            return
+        self._last_capture_ts[key] = now
+        self._capture_pub.publish(
+            String(data=json.dumps({"label": label, "topic": topic, "data": data}))
+        )
+
+    @mockable()
     def activate_face_recognition(self):
         """Activate face recognition node."""
         if not self._face_rec_active:
@@ -258,6 +286,7 @@ class VisionTasks:
             self._face_rec_active = True
             Logger.info(self.node, "Face recognition activated")
 
+    @mockable()
     def deactivate_face_recognition(self):
         """Deactivate face recognition node."""
         if self._face_rec_active:
@@ -275,6 +304,7 @@ class VisionTasks:
         """Callback for the face list subscriber"""
         self.person_list = msg.list
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def get_track_person(self):
         """Get the track person status"""
         Logger.info(self.node, "Getting track person status")
@@ -322,6 +352,7 @@ class VisionTasks:
         else:
             return None, None
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_name"))
     def get_person_name(self, fresh_timeout: float = 0.0):
         """Get the name of the person detected.
 
@@ -353,6 +384,7 @@ class VisionTasks:
         if not result.success:
             return Status.TARGET_NOT_FOUND
 
+        self._capture("save_face", f"Saved face: {name}", FACE_RECOGNITION_IMAGE, {"name": name})
         Logger.success(self.node, f"Name saved: {name}")
         return Status.EXECUTION_SUCCESS
 
@@ -372,6 +404,7 @@ class VisionTasks:
             Logger.warn(self.node, "No seat found")
             return Status.TARGET_NOT_FOUND, 0.0
 
+        self._capture("find_seat", "Seat found", IMAGE_TOPIC_HRIC, {"angle": result.angle})
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
 
@@ -421,10 +454,18 @@ class VisionTasks:
             object_detection.point3d = detection.point3d
             detections.append(object_detection)
 
+        if detections:
+            labels = [d.classname for d in detections]
+            self._capture(
+                "detect_objects",
+                f"Detected {len(detections)} objects",
+                DETECTIONS_IMAGE_TOPIC,
+                {"count": len(detections), "labels": labels},
+            )
         Logger.success(self.node, "Objects detected")
         return Status.EXECUTION_SUCCESS, detections
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2, mock=False)
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("detect_person_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_person(self, timeout: float = TIMEOUT) -> int:
         """Returns true when a person is detected"""
@@ -445,6 +486,7 @@ class VisionTasks:
             Logger.warn(self.node, "No person detected")
             return Status.TARGET_NOT_FOUND
 
+        self._capture("detect_person", "Person detected", IMAGE_TOPIC_HRIC)
         Logger.success(self.node, "Person detected")
         return Status.EXECUTION_SUCCESS
 
@@ -454,9 +496,7 @@ class VisionTasks:
                 return True
         return False
 
-    @mockable(
-        return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False
-    )
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2)
     @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_query(self, prompt: str, query_person: bool = False) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -472,12 +512,15 @@ class VisionTasks:
             Logger.warn(self.node, "No result generated")
             return Status.EXECUTION_ERROR, ""
 
+        self._capture(
+            "moondream_query",
+            f"Visual query: {result.result}",
+            data={"prompt": prompt, "result": result.result},
+        )
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    @mockable(
-        return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False
-    )
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2)
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=60.0) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -501,7 +544,7 @@ class VisionTasks:
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    def _mock_moondream_async(self, callback=None, **kwargs):
+    def _mock_moondream_async(self, prompt: str = "", query_person: bool = False, callback=None):
         """Mock for moondream_query_async: fire the callback like the real path."""
         if callback:
             callback(Status.EXECUTION_SUCCESS, "a mocked person description")
@@ -531,6 +574,12 @@ class VisionTasks:
             return Status.EXECUTION_ERROR, []
 
         chairs = [(d.x1, d.y1, d.x2, d.y2) for d in result.chairs]
+        self._capture(
+            "chairs_to_remove",
+            f"{len(chairs)}/{result.total_chairs} chair(s) to remove",
+            CHAIR_REMOVAL_IMAGE_TOPIC,
+            {"to_remove": len(chairs), "total": result.total_chairs},
+        )
         Logger.success(self.node, f"{len(chairs)}/{result.total_chairs} chair(s) to remove")
         return Status.EXECUTION_SUCCESS, chairs
 
@@ -620,13 +669,14 @@ class VisionTasks:
             Logger.warn(self.node, "No person found")
             return Status.TARGET_NOT_FOUND, PointStamped()
 
+        self._capture("get_customer", "Customer detected calling", TRACKER_IMAGE_TOPIC)
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS, result.people.list[0].point3d if len(
             result.people.list
         ) > 0 else PointStamped()
 
-    @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
-    @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
+    @service_check("count_by_pose_client", (Status.EXECUTION_ERROR, 300), TIMEOUT)
     def count_by_pose(self, pose: str) -> tuple[int, int]:
         """Count the number of people with the requested pose or gesture"""
 
@@ -643,11 +693,17 @@ class VisionTasks:
             return Status.TARGET_NOT_FOUND, 300
 
         self.last_person_points = list(getattr(result, "points", []))
+        self._capture(
+            "count_by_pose",
+            f"Counted {result.count} people (pose: {pose})",
+            IMAGE_TOPIC,
+            {"count": result.count, "pose": pose},
+        )
         Logger.success(self.node, f"People with pose {pose}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
-    @service_check("count_person_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @service_check("count_person_client", (Status.EXECUTION_ERROR, 300), TIMEOUT)
     def count_person(self) -> tuple[int, int]:
         """Count ALL people currently in frame (no pose/gesture/clothes filter)."""
 
@@ -664,11 +720,14 @@ class VisionTasks:
             return Status.TARGET_NOT_FOUND, 300
 
         self.last_person_points = list(getattr(result, "points", []))
+        self._capture(
+            "count_person", f"Counted {result.count} people", IMAGE_TOPIC, {"count": result.count}
+        )
         Logger.success(self.node, f"People counted: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
-    @service_check("count_by_gesture_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @service_check("count_by_gesture_client", (Status.EXECUTION_ERROR, 300), TIMEOUT)
     def count_by_gesture(self, gesture: str) -> tuple[int, int]:
         """Count the number of people with the requested gesture"""
 
@@ -686,11 +745,17 @@ class VisionTasks:
             return Status.TARGET_NOT_FOUND, 300
 
         self.last_person_points = list(getattr(result, "points", []))
+        self._capture(
+            "count_by_gesture",
+            f"Counted {result.count} people (gesture: {gesture})",
+            IMAGE_TOPIC,
+            {"count": result.count, "gesture": gesture},
+        )
         Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
-    @service_check("count_by_color_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @service_check("count_by_color_client", (Status.EXECUTION_ERROR, 300), TIMEOUT)
     def count_by_color(self, color: str, clothing: str) -> tuple[int, int]:
         """Count the number of people with the requested color and clothing"""
 
@@ -709,11 +774,17 @@ class VisionTasks:
             return Status.TARGET_NOT_FOUND, 300
 
         self.last_person_points = list(getattr(result, "points", []))
+        self._capture(
+            "count_by_color",
+            f"Counted {result.count} people ({color} {clothing})",
+            IMAGE_TOPIC,
+            {"count": result.count, "color": color, "clothing": clothing},
+        )
         Logger.success(self.node, f"People with {color} {clothing}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""))
-    @service_check("find_person_info_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @service_check("find_person_info_client", (Status.EXECUTION_ERROR, ""), TIMEOUT)
     def find_person_info(self, type_requested: str) -> tuple[int, str]:
         """Get the pose or gesture of the person in the image"""
 
@@ -729,6 +800,12 @@ class VisionTasks:
             Logger.warn(self.node, f"No {type_requested} detected.")
             return Status.TARGET_NOT_FOUND, ""
 
+        self._capture(
+            "find_person_info",
+            f"Person {type_requested}: {result.result}",
+            IMAGE_TOPIC,
+            {"type": type_requested, "result": result.result},
+        )
         Logger.success(self.node, f"The person is: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
@@ -841,8 +918,15 @@ class VisionTasks:
         if not result.success:
             Logger.warn(self.node, "customer_tables service call failed or returned no tables")
             return Status.EXECUTION_ERROR, []
+        self._capture(
+            "customer_tables",
+            f"Detected {len(result.customer_tables)} table(s)",
+            RESTAURANT_TABLES_TOPIC,
+            {"tables": len(result.customer_tables)},
+        )
         return Status.EXECUTION_SUCCESS, result.customer_tables
 
+    @mockable()
     def camera_upside_down(self, flip):
         """Publish the camera rotation on CAMERA_ROTATION_TOPIC.
 

@@ -18,7 +18,10 @@ def launch_setup(context, *args, **kwargs):
         name='sllidar_rear',
         parameters=[{
             'channel_type': 'serial',
-            'serial_port': '/dev/ttyOmniLidar2',
+            # Ports swapped: the USB adapters are crossed between the two lidars
+            # (udev binds ttyOmniLidar* to the adapter serial, not the lidar).
+            # Swap back if the adapters are re-wired.
+            'serial_port': '/dev/ttyOmniLidar1',
             'serial_baudrate': 460800,
             'frame_id': 'lidar_rear',
             'inverted': False,
@@ -41,7 +44,7 @@ def launch_setup(context, *args, **kwargs):
         name='sllidar_front',
         parameters=[{
             'channel_type': 'serial',
-            'serial_port': '/dev/ttyOmniLidar1',
+            'serial_port': '/dev/ttyOmniLidar2',
             'serial_baudrate': 460800,
             'frame_id': 'lidar_front',
             'inverted': False,

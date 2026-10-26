@@ -21,6 +21,11 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 # which requires internet access we won't have at competition time.
 ENV YOLO_AUTOINSTALL=false
 
+# Keep the same CLIP implementation as the CPU/CUDA vision images. The base
+# image's pip constraints preserve its Jetson torch/torchvision versions.
+COPY vision/requirements/clip.txt /tmp/clip-requirements.txt
+RUN pip install -r /tmp/clip-requirements.txt
+
 RUN pip install \
     cmake==3.25.2 \
     lap \
