@@ -70,7 +70,8 @@ class InterleavedPlan:
 
 
 Locator = Callable[[str], Optional[Tuple[float, float]]]
-# (from_location or None for the robot origin, to_location) -> meters, or None if unknown.
+# (from_location or None for the robot origin, to_location) -> meters, or None
+# if unknown. A non-finite return (unreachable) also costs LARGE_M.
 DistanceFn = Callable[[Optional[str], str], Optional[float]]
 
 
@@ -146,7 +147,7 @@ def _cost_matrix(
     has_origin: bool,
 ) -> Tuple[List[float], List[List[float]]]:
     """Seed costs and segment-to-segment costs, querying ``distance`` once per
-    distinct location pair. Unresolved locations cost LARGE_M."""
+    distinct location pair. Unresolved or unreachable locations cost LARGE_M."""
     memo: dict = {}
 
     def cost(a: Optional[str], b: Optional[str]) -> float:
@@ -156,7 +157,7 @@ def _cost_matrix(
             return 0.0
         if (a, b) not in memo:
             d = distance(a, b)
-            memo[(a, b)] = LARGE_M if d is None else d
+            memo[(a, b)] = LARGE_M if d is None or not d < LARGE_M else d
         return memo[(a, b)]
 
     M = len(segments)
