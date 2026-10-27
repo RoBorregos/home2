@@ -1,0 +1,33 @@
+door_event_detection:
+  ros__parameters:
+    audio_topic: /hri/rawAudioChunk
+    KEYWORD_TOPIC: /hri/speech/ei_detection
+    sample_rate: 16000
+    # --- Gating: only listens while the task manager arms it at the door, and
+    # never while the robot speaks. Set require_arm False to debug standalone. ---
+    arm_topic: /hri/doorbell/armed
+    saying_topic: /saying
+    require_arm: true
+    mute_while_speaking: true
+    # --- Model: EfficientAT mn10_as (AudioSet), fetched by download-model.sh. ---
+    weights_path: assets/downloads/efficientat/mn10_as_mAP_471.pt
+    device: ""  # "" = cuda if available, else cpu
+    # --- Detection: every hop_s, tag the last window_s of audio. Each keyword's
+    # score is the sum of its classes' probabilities; a window hits when it
+    # reaches threshold, min_consecutive hits confirm, or one window at
+    # strong_threshold. Tune with debug/door_event_eval.py. window_s must stay
+    # >= ~3.2 s: the model's output is garbage on shorter input. ---
+    window_s: 5.0
+    hop_s: 0.5
+    threshold: 0.15
+    strong_threshold: 0.5
+    min_consecutive: 2
+    cooldown_s: 2.0
+    min_db: -55.0  # skip inference on windows quieter than this dBFS
+    # AudioSet class names (speech/audioset_labels.py) mapped to each keyword.
+    doorbell_classes: ["Doorbell", "Ding-dong", "Ding", "Bell", "Chime", "Buzzer", "Ringtone",
+                       "Tubular bells", "Alarm clock", "Bicycle bell", "Telephone bell ringing",
+                       "Jingle bell", "Wind chime", "Glockenspiel"]
+    knock_classes: ["Knock", "Tap"]
+    doorbell_keyword: doorbell
+    knock_keyword: knock
