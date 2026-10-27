@@ -36,7 +36,7 @@ URL_MODELS = {
 
 # Custom weights that cannot be downloaded — verify presence, warn if missing.
 CUSTOM_MODELS = [
-    "robocup2026_v1.pt",
+    "tmr2026.pt",
     "tmr2025.pt",
     "dishwasher_layout.pt",
     "dishwasher_rack.pt",
@@ -48,7 +48,7 @@ DETECTOR_MODELS = [
     "yolo26n.pt",
     "yoloe-11l-seg.pt",
     "yoloe-11l-seg-pf.pt",
-    "robocup2026_v1.pt",
+    "tmr2026.pt",
 ]
 
 # HF-hub models (the DINOv2 embedder). Multi-file artifacts, so they are checked
