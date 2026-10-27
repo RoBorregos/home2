@@ -39,7 +39,6 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     if [ -n "$TORCH_INDEX" ]; then set -- --extra-index-url "$TORCH_INDEX"; fi; \
     pip install --upgrade pip \
     && pip install "$@" -r /tmp/requirements/tts.txt click \
-    && pip install --upgrade protobuf \
     && pip install /tmp/proto_interfaces \
     && python3 -m spacy download en_core_web_sm \
     && rm -rf /tmp/requirements /tmp/proto_interfaces

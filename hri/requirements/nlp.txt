@@ -1,10 +1,8 @@
 # NLP scripts
 openai==1.62.0
-python-dotenv==1.0.1
 pytz==2025.1
 
 # Command generator
-pillow==10.3.0
 baml-py==0.86.1
 
 # Data validation and type checking

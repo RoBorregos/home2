@@ -38,12 +38,10 @@ RUN git clone https://github.com/PyAV-Org/PyAV.git && \
     cd /tmp && rm -rf PyAV && \
     python3 -c "import av; print('av', av.__version__, av.library_versions['libavcodec'])"
 
-# Install additional Python dependencies
 WORKDIR /app
-COPY hri/requirements/stt.txt requirements.txt
+COPY hri/requirements/stt.txt /tmp/requirements/stt.txt
 COPY hri/proto_interfaces /tmp/proto_interfaces
-RUN pip-install-reqs /app/requirements.txt && \
-    pip install --upgrade protobuf && \
-    pip install /tmp/proto_interfaces && \
-    rm -rf /tmp/proto_interfaces && \
-    python3 -c "import ctranslate2, faster_whisper; print('ctranslate2', ctranslate2.__version__)"
+RUN pip-install-reqs /tmp/requirements/stt.txt \
+    && pip install /tmp/proto_interfaces \
+    && rm -rf /tmp/requirements /tmp/proto_interfaces \
+    && python3 -c "import ctranslate2, faster_whisper; print('ctranslate2', ctranslate2.__version__)"
