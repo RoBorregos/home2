@@ -49,10 +49,6 @@ The contract with the rest of the robot is exactly one action:
 A `place` is only meaningful after a `pick` or `pour` **in the same process**: the node remembers the
 last pick outcome and uses its measured object height to decide the drop height.
 
-Besides the action, `task_manager` uses a few direct services: move joints / fixed-distance moves,
-the gripper, and the face / person follow toggles (§6, §7). All of them are typed with
-`frida_interfaces` or `std_srvs`, never with xArm types.
-
 ---
 
 ## 2. The packages
@@ -68,7 +64,7 @@ Only what the pick-and-place path uses.
 | **`perception_3d`** | `test_only_orchestrator`, `pick_primitives`, `plane_service`, `flat_grasp_estimator`, `downsample_pc` | Segments objects and surfaces from the point cloud |
 | **`place`** | `heatmapPlace_Server` | Scores a surface and returns the best free spot |
 | **`arm_pkg`** | `gpd_service` | Wraps the GPD library; also owns the MoveIt launch files |
-| **`manipulation_general`** | `manipulation_safeguard`, `follow_face_node`, `follow_person_controller` | Task launch files (`ppc`, `gpsr`, …); watches the xArm state and clears errors / re-enables motion; face and person following |
+| **`manipulation_general`** | `manipulation_safeguard` | Task launch files (`ppc`, `gpsr`, …); watches the xArm state and clears errors / re-enables motion |
 | **`frida_pymoveit2`** | *(library)* | xArm6 joint names and `JOINT_POSITION_LIMITS` |
 | **`xarm_utils`** | *(library)* | Shelf level geometry |
 | **`vamp_moveit_plugin`** | *(MoveIt plugin)* | VAMP planner, with OMPL fallback |
@@ -238,6 +234,7 @@ plus two lines. Only a genuinely new motion needs a new class.
 | Name | Provider | Used for |
 |---|---|---|
 | `/manipulation/manipulation_action_server` | `manipulation_core` | **The** entry point |
+| `/manipulation/go_to_hand_action_server`, `/manipulation/fixed_distance_move`, `/follow_face`, `/follow_person` | `manipulation_core` | Hand-over, vertical move, follow toggles |
 | `/manipulation/move_to_pose_action_server` | `motion_planning_server` | Any cartesian goal |
 | `/manipulation/move_joints_action_server` | `motion_planning_server` | Named poses and joint goals |
 | `/manipulation/pick_perception_service` | `test_only_orchestrator` | Object cluster |
@@ -254,8 +251,8 @@ hardcode them.
 
 ## 7. Face / person following
 
-`follow_face_node` (`/follow_face`) and `follow_person_controller` (`/follow_person`) live in `manipulation_general`; they were moved here from `task_manager`.
-While either one is active, the xArm is in velocity mode (4), so turn it off before sending MoveIt goals.
+`manipulation_core` serves `/follow_face` and `/follow_person` (logic in `pick_and_place/pipelines/follow.py`), so it must be running.
+While either one is active, the xArm is in velocity mode (4); any manipulation goal turns it off first and it is not resumed.
 Face following also needs `face_recognition` enabled (it starts paused). If the arm doesn't move, check `ros2 topic hz /vision/follow_face`.
 
 ---
@@ -271,7 +268,7 @@ Face following also needs `face_recognition` enabled (it starts paused). If the 
 | Change where a place lands | `place/scripts/heatmapPlace_Server.py` |
 | Change object/surface segmentation | `perception_3d/` |
 | Add a named arm pose | `frida_constants/xarm_configurations.py` |
-| Tune face / person following | `manipulation_general/manipulation_general/follow_*.py`; face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |
+| Tune face / person following | `pick_and_place/pipelines/follow.py` (person gains: `follow_person.*` parameters); face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |
 | Add a message, service or action | `frida_interfaces/manipulation/` |
 
 ---

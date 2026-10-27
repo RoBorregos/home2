@@ -16,13 +16,13 @@ class FakeLogger:
         self.warn_messages: List[str] = []
         self.error_messages: List[str] = []
 
-    def info(self, message):
+    def info(self, message, **kwargs):
         self.info_messages.append(str(message))
 
-    def warn(self, message):
+    def warn(self, message, **kwargs):
         self.warn_messages.append(str(message))
 
-    def warning(self, message):
+    def warning(self, message, **kwargs):
         self.warn_messages.append(str(message))
 
     def error(self, message, *args, **kwargs):
@@ -99,6 +99,8 @@ class FakeArm:
         self.guards: List[Any] = []
         self.published_place_poses: List[PoseStamped] = []
         self.published_points: List[PointStamped] = []
+        self.joint_velocities: List[list] = []
+        self.joint_velocity_busy = False
         self._logger = FakeLogger()
 
         self.tf_buffer = FakeTFBuffer()
@@ -171,6 +173,22 @@ class FakeArm:
     def cartesian_velocity_mode(self, label):
         self.calls.append("cartesian_velocity_mode")
         yield
+
+    def disable_tgpio_reset(self):
+        self.calls.append("disable_tgpio_reset")
+
+    def enter_joint_velocity_mode(self):
+        self.calls.append("enter_joint_velocity_mode")
+        return True
+
+    def leave_joint_velocity_mode(self):
+        self.calls.append("leave_joint_velocity_mode")
+        return True
+
+    def send_joint_velocity(self, speeds):
+        self.calls.append("send_joint_velocity")
+        self.joint_velocities.append(speeds)
+        self.joint_velocity_busy = False
 
     def endpoint_self_collides(self, pose):
         self.calls.append("endpoint_self_collides")
