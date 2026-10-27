@@ -9,49 +9,23 @@ ENV CMAKE_CUDA_ARCHITECTURES=87
 ENV TORCH_CUDA_ARCH_LIST="8.7"
 ENV OPENBLAS_CORETYPE=ARMV8
 
-# numpy, torch, torchvision, OpenCV (CUDA), cv_bridge, onnxruntime-gpu (TensorRT EP),
-# TensorRT python and CycloneDDS/iceoryx come from l4t_base.
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
-    curl libjpeg-dev \
+    curl libjpeg-dev libportaudio2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Disable Ultralytics' runtime auto-install of missing packages (e.g. tensorrt,
-# onnx). It bypasses our pinned versions and pulls unpinned ones at runtime,
-# which requires internet access we won't have at competition time.
+# Disable Ultralytics' runtime auto-install of missing packages  It bypasses our pinned versions and pulls unpinned ones at runtime
 ENV YOLO_AUTOINSTALL=false
 
-# Keep the same CLIP implementation as the CPU/CUDA vision images. The base
-# image's pip constraints preserve its Jetson torch/torchvision versions.
+# Keep the same CLIP implementation as the CPU/CUDA vision images.
 COPY vision/requirements/clip.txt /tmp/clip-requirements.txt
 RUN pip install -r /tmp/clip-requirements.txt
 
-RUN pip install \
-    cmake==3.25.2 \
-    lap \
-    tqdm \
-    pillow \
-    timm \
-    pyyaml \
-    "onnxslim>=0.1.71" \
-    grpcio==1.71.0 \
-    protobuf==5.29.1 \
-    matplotlib \
-    polars \
-    psutil \
-    requests \
-    scikit-image \
-    onnx \
-    ultralytics-thop \
-    absl-py \
-    attrs \
-    flatbuffers \
-    sounddevice \
-    sentencepiece && \
-    pip install --no-deps \
-    insightface==1.0.1 \
-    ultralytics==8.4.19 \
-    mediapipe==0.10.18
+# Python requirements
+COPY vision/requirements /tmp/requirements
+RUN pip-install-reqs /tmp/requirements/l4t.txt && \
+    pip-install-reqs /tmp/requirements/l4t-nodeps.txt -- --no-deps && \
+    rm -rf /tmp/requirements
 
 WORKDIR /workspace
 
