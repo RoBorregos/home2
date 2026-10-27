@@ -1,4 +1,3 @@
-# Vision dependencies for the l4t (Jetson) image. Installed with pip-install-reqs, | which skips what l4t_base already provides (numpy, torch, onnxruntime, opencv...).| ultralytics, insightface and mediapipe are installed without their dependencies |(see l4t-nodeps.txt), so what they need at runtime is listed here.
 cmake==3.25.2
 lap
 tqdm
