@@ -133,7 +133,6 @@ $(document).ready(function(){initNavTree('md_manipulation_README.html',''); init
 <td class="markdownTableBodyNone"><code>POUR</code>   </td><td class="markdownTableBodyNone">3   </td><td class="markdownTableBodyNone">Pour a held/grasped container into another   </td></tr>
 </table>
 <p>A <code>place</code> is only meaningful after a <code>pick</code> or <code>pour</code> <b>in the same process</b>: the node remembers the last pick outcome and uses its measured object height to decide the drop height.</p>
-<p>Besides the action, <code><a class="el" href="namespacetask__manager.html">task_manager</a></code> uses a few direct services: move joints / fixed-distance moves, the gripper, and the face / person follow toggles (§6, §7). All of them are typed with <code>frida_interfaces</code> or <code>std_srvs</code>, never with xArm types.</p>
 <hr  />
 <h1><a class="anchor" id="autotoc_md109"></a>
 2. The packages</h1>
@@ -154,7 +153,7 @@ Ours (&lt;tt&gt;manipulation/packages/&lt;/tt&gt;)</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">**<code><a class="el" href="namespacearm__pkg.html">arm_pkg</a></code>**   </td><td class="markdownTableBodyNone"><code>gpd_service</code>   </td><td class="markdownTableBodyNone">Wraps the GPD library; also owns the MoveIt launch files    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">**<code><a class="el" href="namespacemanipulation__general.html">manipulation_general</a></code>**   </td><td class="markdownTableBodyNone"><code>manipulation_safeguard</code>, <code>follow_face_node</code>, <code>follow_person_controller</code>   </td><td class="markdownTableBodyNone">Task launch files (<code>ppc</code>, <code>gpsr</code>, …); watches the xArm state and clears errors / re-enables motion; face and person following    </td></tr>
+<td class="markdownTableBodyNone">**<code><a class="el" href="namespacemanipulation__general.html">manipulation_general</a></code>**   </td><td class="markdownTableBodyNone"><code>manipulation_safeguard</code>   </td><td class="markdownTableBodyNone">Task launch files (<code>ppc</code>, <code>gpsr</code>, …); watches the xArm state and clears errors / re-enables motion    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">**<code>frida_pymoveit2</code>**   </td><td class="markdownTableBodyNone">*(library)*   </td><td class="markdownTableBodyNone">xArm6 joint names and <code>JOINT_POSITION_LIMITS</code>    </td></tr>
 <tr class="markdownTableRowEven">
@@ -318,27 +317,29 @@ The five pick strategies</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>/manipulation/manipulation_action_server</code>   </td><td class="markdownTableBodyNone"><code>manipulation_core</code>   </td><td class="markdownTableBodyNone"><b>The</b> entry point    </td></tr>
 <tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/manipulation/go_to_hand_action_server</code>, <code>/manipulation/fixed_distance_move</code>, <code>/follow_face</code>, <code>/follow_person</code>   </td><td class="markdownTableBodyNone"><code>manipulation_core</code>   </td><td class="markdownTableBodyNone">Hand-over, vertical move, follow toggles    </td></tr>
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>/manipulation/move_to_pose_action_server</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacemotion__planning__server.html">motion_planning_server</a></code>   </td><td class="markdownTableBodyNone">Any cartesian goal    </td></tr>
-<tr class="markdownTableRowOdd">
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/manipulation/move_joints_action_server</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacemotion__planning__server.html">motion_planning_server</a></code>   </td><td class="markdownTableBodyNone">Named poses and joint goals    </td></tr>
-<tr class="markdownTableRowEven">
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>/manipulation/pick_perception_service</code>   </td><td class="markdownTableBodyNone"><code>test_only_orchestrator</code>   </td><td class="markdownTableBodyNone">Object cluster    </td></tr>
-<tr class="markdownTableRowOdd">
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/manipulation/place_perception_service</code>   </td><td class="markdownTableBodyNone"><code>test_only_orchestrator</code>   </td><td class="markdownTableBodyNone">Place surface cloud    </td></tr>
-<tr class="markdownTableRowEven">
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>/manipulation/estimate_flat_grasp</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespaceflat__grasp__estimator.html">flat_grasp_estimator</a></code>   </td><td class="markdownTableBodyNone">Top-down pose for flat objects    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>/manipulation/detect_grasps</code>   </td><td class="markdownTableBodyNone"><code>gpd_service</code>   </td><td class="markdownTableBodyNone">GPD grasp candidates    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>/manipulation/heatmap_place_service</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespaceheatmapPlace__Server.html">heatmapPlace_Server</a></code>   </td><td class="markdownTableBodyNone">Best free spot on a surface    </td></tr>
+<td class="markdownTableBodyNone"><code>/manipulation/detect_grasps</code>   </td><td class="markdownTableBodyNone"><code>gpd_service</code>   </td><td class="markdownTableBodyNone">GPD grasp candidates    </td></tr>
 <tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/manipulation/heatmap_place_service</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespaceheatmapPlace__Server.html">heatmapPlace_Server</a></code>   </td><td class="markdownTableBodyNone">Best free spot on a surface    </td></tr>
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/manipulation/estop</code>   </td><td class="markdownTableBodyNone">*(topic)*   </td><td class="markdownTableBodyNone">Aborts any motion in progress   </td></tr>
 </table>
 <p>Names are constants in <code><a class="el" href="namespacefrida__constants.html">frida_constants</a></code> (<code><a class="el" href="manipulation__constants_8py.html">manipulation_constants.py</a></code> / <code>..._cpp.hpp</code>) — never hardcode them.</p>
 <hr  />
 <h1><a class="anchor" id="autotoc_md124"></a>
 7. Face / person following</h1>
-<p><code>follow_face_node</code> (<code>/follow_face</code>) and <code>follow_person_controller</code> (<code>/follow_person</code>) live in <code><a class="el" href="namespacemanipulation__general.html">manipulation_general</a></code>; they were moved here from <code><a class="el" href="namespacetask__manager.html">task_manager</a></code>. While either one is active, the xArm is in velocity mode (4), so turn it off before sending MoveIt goals. Face following also needs <code>face_recognition</code> enabled (it starts paused). If the arm doesn't move, check <code>ros2 topic hz /vision/follow_face</code>.</p>
+<p><code>manipulation_core</code> serves <code>/follow_face</code> and <code>/follow_person</code> (logic in <code><a class="el" href="follow_8py.html">pick_and_place/pipelines/follow.py</a></code>), so it must be running. While either one is active, the xArm is in velocity mode (4); any manipulation goal turns it off first and it is not resumed. Face following also needs <code>face_recognition</code> enabled (it starts paused). If the arm doesn't move, check <code>ros2 topic hz /vision/follow_face</code>.</p>
 <hr  />
 <h1><a class="anchor" id="autotoc_md126"></a>
 8. Where to change what</h1>
@@ -360,7 +361,7 @@ The five pick strategies</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Add a named arm pose   </td><td class="markdownTableBodyNone"><code><a class="el" href="xarm__configurations_8py.html">frida_constants/xarm_configurations.py</a></code>    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">Tune face / person following   </td><td class="markdownTableBodyNone"><code>manipulation_general/manipulation_general/follow_*.py</code>; face speed and tolerance are <code>FOLLOW_FACE_*</code> in <code><a class="el" href="manipulation__constants_8py.html">manipulation_constants.py</a></code>    </td></tr>
+<td class="markdownTableBodyNone">Tune face / person following   </td><td class="markdownTableBodyNone"><code><a class="el" href="follow_8py.html">pick_and_place/pipelines/follow.py</a></code> (person gains: <code>follow_person.*</code> parameters); face speed and tolerance are <code>FOLLOW_FACE_*</code> in <code><a class="el" href="manipulation__constants_8py.html">manipulation_constants.py</a></code>    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Add a message, service or action   </td><td class="markdownTableBodyNone"><code>frida_interfaces/manipulation/</code>   </td></tr>
 </table>

@@ -11,6 +11,7 @@ var namespacepick__and__place_1_1pipelines =
       [ "PICK_STRATEGY_RIM", "namespacepick__and__place_1_1pipelines_1_1classification.html#a155381714eff6e142df43925bd233e29", null ]
     ] ],
     [ "errors", "namespacepick__and__place_1_1pipelines_1_1errors.html", "namespacepick__and__place_1_1pipelines_1_1errors" ],
+    [ "follow", "namespacepick__and__place_1_1pipelines_1_1follow.html", "namespacepick__and__place_1_1pipelines_1_1follow" ],
     [ "pick", "namespacepick__and__place_1_1pipelines_1_1pick.html", "namespacepick__and__place_1_1pipelines_1_1pick" ],
     [ "place", "namespacepick__and__place_1_1pipelines_1_1place.html", [
       [ "_apply_drop_height", "namespacepick__and__place_1_1pipelines_1_1place.html#a9e57b2aa3db47a6fdf302074b5d2d256", null ],

@@ -16,7 +16,7 @@ var searchData=
   ['hard_5fnegative_5fclasses_13',['HARD_NEGATIVE_CLASSES',['../namespacecore_1_1dataset.html#aec61a969fce19b7d18831cf1a01801fa',1,'core::dataset']]],
   ['hard_5fnegative_5fper_5fclass_14',['HARD_NEGATIVE_PER_CLASS',['../namespacecore_1_1prepare__dataset.html#af053f7ce3c0fe135c17d8de91b5f466a',1,'core::prepare_dataset']]],
   ['has_5fjtop_15',['HAS_JTOP',['../namespacenode__monitor.html#a2bb38b40561dcd37c996dd2ed10eaa03',1,'node_monitor']]],
-  ['has_5fnew_5fface_5fdata_16',['has_new_face_data',['../classmanipulation__general_1_1follow__face__node_1_1FollowFaceNode.html#a54921aa3f4247b93027728f24d50599d',1,'manipulation_general::follow_face_node::FollowFaceNode']]],
+  ['has_5fnew_5fface_5fdata_16',['has_new_face_data',['../classpick__and__place_1_1pipelines_1_1follow_1_1FaceState.html#a1c1f21db68e8601c3bae2641aaa18d10',1,'pick_and_place::pipelines::follow::FaceState']]],
   ['has_5fpymoveit_17',['HAS_PYMOVEIT',['../namespacebenchmark__vamp.html#ad3eea89269da5fba69502eb1830b20e2',1,'benchmark_vamp']]],
   ['has_5fpynvml_18',['HAS_PYNVML',['../namespacenode__monitor.html#a93e6479c92c3fb367e3769e802f06383',1,'node_monitor']]],
   ['header_19',['HEADER',['../namespacelaunch__nav.html#ace16b89971ec24d4c2a83bfb2423d2fa',1,'launch_nav']]],

@@ -123,10 +123,6 @@ var annotated_dup =
     [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", [
       [ "FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", "classflat__grasp__estimator_1_1FlatGraspEstimator" ]
     ] ],
-    [ "follow_calibration", "namespacefollow__calibration.html", [
-      [ "FollowCalibration", "classfollow__calibration_1_1FollowCalibration.html", "classfollow__calibration_1_1FollowCalibration" ],
-      [ "TopicStat", "classfollow__calibration_1_1TopicStat.html", "classfollow__calibration_1_1TopicStat" ]
-    ] ],
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", [
       [ "FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", "classfollow__face__node__copt_1_1FollowFaceNode" ]
     ] ],
@@ -211,12 +207,6 @@ var annotated_dup =
       [ "LookAt", "classlook__at__example_1_1LookAt.html", "classlook__at__example_1_1LookAt" ]
     ] ],
     [ "manipulation_general", "namespacemanipulation__general.html", [
-      [ "follow_face_node", "namespacemanipulation__general_1_1follow__face__node.html", [
-        [ "FollowFaceNode", "classmanipulation__general_1_1follow__face__node_1_1FollowFaceNode.html", "classmanipulation__general_1_1follow__face__node_1_1FollowFaceNode" ]
-      ] ],
-      [ "follow_person_controller", "namespacemanipulation__general_1_1follow__person__controller.html", [
-        [ "FollowPersonController", "classmanipulation__general_1_1follow__person__controller_1_1FollowPersonController.html", "classmanipulation__general_1_1follow__person__controller_1_1FollowPersonController" ]
-      ] ],
       [ "manipulation_safeguard", "namespacemanipulation__general_1_1manipulation__safeguard.html", [
         [ "ManipulationSafeguard", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard" ]
       ] ]
@@ -310,6 +300,10 @@ var annotated_dup =
           [ "PickAborted", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAborted.html", null ],
           [ "PickAttemptFailed", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAttemptFailed.html", null ],
           [ "PickHardwareError", "classpick__and__place_1_1pipelines_1_1errors_1_1PickHardwareError.html", null ]
+        ] ],
+        [ "follow", "namespacepick__and__place_1_1pipelines_1_1follow.html", [
+          [ "FaceState", "classpick__and__place_1_1pipelines_1_1follow_1_1FaceState.html", null ],
+          [ "PersonState", "classpick__and__place_1_1pipelines_1_1follow_1_1PersonState.html", null ]
         ] ],
         [ "pick", "namespacepick__and__place_1_1pipelines_1_1pick.html", [
           [ "GraspSet", "classpick__and__place_1_1pipelines_1_1pick_1_1GraspSet.html", null ],
@@ -517,6 +511,7 @@ var annotated_dup =
       [ "TestNavigationManager", "classtest__navigation__manager_1_1TestNavigationManager.html", "classtest__navigation__manager_1_1TestNavigationManager" ]
     ] ],
     [ "test_pick_and_place", "namespacetest__pick__and__place.html", [
+      [ "_GoalHandle", "classtest__pick__and__place_1_1__GoalHandle.html", "classtest__pick__and__place_1_1__GoalHandle" ],
       [ "_Request", "classtest__pick__and__place_1_1__Request.html", "classtest__pick__and__place_1_1__Request" ]
     ] ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", [

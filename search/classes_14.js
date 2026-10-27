@@ -21,6 +21,5 @@ var searchData=
   ['testtaskmanager_18',['TestTaskManager',['../classtest__manager_1_1TestTaskManager.html',1,'test_manager']]],
   ['testvisionmanager_19',['TestVisionManager',['../classtest__vision__manager_1_1TestVisionManager.html',1,'test_vision_manager']]],
   ['timer_20',['Timer',['../classvamp__server_1_1VampServer_1_1Timer.html',1,'vamp_server::VampServer']]],
-  ['topicstat_21',['TopicStat',['../classfollow__calibration_1_1TopicStat.html',1,'follow_calibration']]],
-  ['trackermodel_22',['TrackerModel',['../classmodels_1_1tracker_1_1TrackerModel.html',1,'models::tracker']]]
+  ['trackermodel_21',['TrackerModel',['../classmodels_1_1tracker_1_1TrackerModel.html',1,'models::tracker']]]
 ];

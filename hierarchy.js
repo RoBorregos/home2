@@ -1,6 +1,7 @@
 var hierarchy =
 [
     [ "fakes._DoneFuture", "classfakes_1_1__DoneFuture.html", null ],
+    [ "test_pick_and_place._GoalHandle", "classtest__pick__and__place_1_1__GoalHandle.html", null ],
     [ "test_pick_and_place._Request", "classtest__pick__and__place_1_1__Request.html", null ],
     [ "task_manager.gpsr.merger._Segment", "classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html", null ],
     [ "detectors.yolo_e._SuppressStderr", "classdetectors_1_1yolo__e_1_1__SuppressStderr.html", null ],
@@ -54,6 +55,7 @@ var hierarchy =
     ] ],
     [ "task_manager.utils.exploration_planner.ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
     [ "models.face_recognition.FaceModel", "classmodels_1_1face__recognition_1_1FaceModel.html", null ],
+    [ "pick_and_place.pipelines.follow.FaceState", "classpick__and__place_1_1pipelines_1_1follow_1_1FaceState.html", null ],
     [ "fakes.FakeArm", "classfakes_1_1FakeArm.html", null ],
     [ "fakes.FakeFlatResponse", "classfakes_1_1FakeFlatResponse.html", null ],
     [ "fakes.FakeLogger", "classfakes_1_1FakeLogger.html", null ],
@@ -172,6 +174,7 @@ var hierarchy =
     [ "pick_and_place.pipelines.pick.Perceived", "classpick__and__place_1_1pipelines_1_1pick_1_1Perceived.html", null ],
     [ "vamp::planning::Percents< n >", "structvamp_1_1planning_1_1Percents.html", null ],
     [ "pick_and_place.robot.perception.Perception", "classpick__and__place_1_1robot_1_1perception_1_1Perception.html", null ],
+    [ "pick_and_place.pipelines.follow.PersonState", "classpick__and__place_1_1pipelines_1_1follow_1_1PersonState.html", null ],
     [ "vamp::planning::PerturbSettings", "structvamp_1_1planning_1_1PerturbSettings.html", null ],
     [ "PickAndPlaceTM", null, [
       [ "test_ppc_cabinet_place.PPCTestCabinetPlace", "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html", null ]
@@ -256,7 +259,6 @@ var hierarchy =
     [ "restaurant_task_manager.RestaurantTaskManager.TaskStates", "classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html", null ],
     [ "test_clean_table_task_manager.CleanTableTM.TaskStates", "classtest__clean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
     [ "vamp_server.VampServer.Timer", "classvamp__server_1_1VampServer_1_1Timer.html", null ],
-    [ "follow_calibration.TopicStat", "classfollow__calibration_1_1TopicStat.html", null ],
     [ "models.tracker.TrackerModel", "classmodels_1_1tracker_1_1TrackerModel.html", null ],
     [ "vamp::robots::UR5", "structvamp_1_1robots_1_1UR5.html", null ],
     [ "ValueError", null, [
@@ -335,7 +337,6 @@ var hierarchy =
       [ "ex_orientation_path_constraint.MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", null ],
       [ "example_node.ExampleNode", "classexample__node_1_1ExampleNode.html", null ],
       [ "flat_grasp_estimator.FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", null ],
-      [ "follow_calibration.FollowCalibration", "classfollow__calibration_1_1FollowCalibration.html", null ],
       [ "follow_face_node_copt.FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", null ],
       [ "follow_person_node copy.FollowPersonNode", "classfollow__person__node_01copy_1_1FollowPersonNode.html", null ],
       [ "follow_person_node.FollowPersonNode", "classfollow__person__node_1_1FollowPersonNode.html", null ],
@@ -350,8 +351,6 @@ var hierarchy =
       [ "hric_task_manager.HRIC_TM", "classhric__task__manager_1_1HRIC__TM.html", null ],
       [ "image_orienter.ImageOrienter", "classimage__orienter_1_1ImageOrienter.html", null ],
       [ "look_at_example.LookAt", "classlook__at__example_1_1LookAt.html", null ],
-      [ "manipulation_general.follow_face_node.FollowFaceNode", "classmanipulation__general_1_1follow__face__node_1_1FollowFaceNode.html", null ],
-      [ "manipulation_general.follow_person_controller.FollowPersonController", "classmanipulation__general_1_1follow__person__controller_1_1FollowPersonController.html", null ],
       [ "manipulation_general.manipulation_safeguard.ManipulationSafeguard", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html", null ],
       [ "moondream_node.MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", null ],
       [ "nav_central.Nav_Central", "classnav__central_1_1Nav__Central.html", null ],

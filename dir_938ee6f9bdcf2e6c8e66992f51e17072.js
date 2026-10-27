@@ -1,7 +1,6 @@
 var dir_938ee6f9bdcf2e6c8e66992f51e17072 =
 [
     [ "_merger_helpers.py", "__merger__helpers_8py.html", "__merger__helpers_8py" ],
-    [ "follow_calibration.py", "follow__calibration_8py.html", "follow__calibration_8py" ],
     [ "test_basket_pick.py", "test__basket__pick_8py.html", "test__basket__pick_8py" ],
     [ "test_clean_table_task_manager.py", "test__clean__table__task__manager_8py.html", "test__clean__table__task__manager_8py" ],
     [ "test_describe_person.py", "test__describe__person_8py.html", "test__describe__person_8py" ],

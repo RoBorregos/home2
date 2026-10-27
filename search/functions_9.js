@@ -27,7 +27,7 @@ var searchData=
   ['in_5fcollision_24',['in_collision',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#a99e5a4c307050a6811248b0abace1ca8',1,'vamp::pybullet_interface::PyBulletSimulator']]],
   ['individual_5ffunctions_25',['individual_functions',['../classtest__hri__manager_1_1TestHriManager.html#a71aa05a56df14e610a5a43647e27180c',1,'test_hri_manager::TestHriManager']]],
   ['inflate_26',['inflate',['../namespaceinflate__body__spheres.html#a616cda5cdffc4a2453f7755c4717ac4b',1,'inflate_body_spheres']]],
-  ['info_27',['info',['../classtask__manager_1_1utils_1_1logger_1_1Logger.html#a64f3f08ed02ecfe5d85c9c7dd07b4218',1,'task_manager.utils.logger.Logger.info()'],['../classfakes_1_1FakeLogger.html#ab1f8db99b97ba3b6fe427f8dbc0c6643',1,'fakes.FakeLogger.info()']]],
+  ['info_27',['info',['../classtask__manager_1_1utils_1_1logger_1_1Logger.html#a64f3f08ed02ecfe5d85c9c7dd07b4218',1,'task_manager.utils.logger.Logger.info()'],['../classfakes_1_1FakeLogger.html#ad6a65273f53a5d8c533994df0c8d172b',1,'fakes.FakeLogger.info()']]],
   ['info_5fcb_28',['info_cb',['../classbase__detector__node_1_1BaseDetectorNode.html#a893539e2fa3d4e8e741ddfb323c66730',1,'base_detector_node::BaseDetectorNode']]],
   ['init_5frng_29',['init_rng',['../classvamp__server_1_1VampServer.html#a9e1e8b5cf42ee16e9082b20dadec4ca0',1,'vamp_server::VampServer']]],
   ['init_5frobot_30',['init_robot',['../namespacevamp_1_1binding.html#af065f1890b22c3500cf3e648cff22ea6',1,'vamp::binding']]],

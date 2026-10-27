@@ -96,7 +96,7 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_pick_and_plac
 <div class="textblock"><p>The manipulation task layer. One node, <code>manipulation_core</code>, accepts a task (pick, place, pour), runs it start to finish, and reports success. It owns no motion planning and no perception of its own &ndash; it drives the nodes that do.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
 External contract</h1>
-<p>Everything outside this package talks to it through exactly three interfaces. They are stable; nothing else here is public.</p>
+<p>Everything outside this package talks to it through exactly five interfaces. They are stable; nothing else here is public.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Interface   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Used by    </th></tr>
@@ -105,7 +105,9 @@ External contract</h1>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/manipulation/go_to_hand_action_server</code>   </td><td class="markdownTableBodyNone"><code>GoToHand</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacetask__manager.html">task_manager</a></code> (handover)    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>/manipulation/fixed_distance_move</code>   </td><td class="markdownTableBodyNone"><code>FixedDistanceMove</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacetask__manager.html">task_manager</a></code> (<code>move_arm_vertical</code>)   </td></tr>
+<td class="markdownTableBodyNone"><code>/manipulation/fixed_distance_move</code>   </td><td class="markdownTableBodyNone"><code>FixedDistanceMove</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacetask__manager.html">task_manager</a></code> (<code>move_arm_vertical</code>)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/follow_face</code>, <code>/follow_person</code>   </td><td class="markdownTableBodyNone"><code>FollowFace</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacetask__manager.html">task_manager</a></code> (<code>follow_face</code>, <code>follow_person</code>)   </td></tr>
 </table>
 <h1><a class="anchor" id="autotoc_md2"></a>
 System context</h1>
@@ -176,6 +178,7 @@ Tree structure</h1>
 <div class="line">│   │   ├── pick.py              stare -&gt; perceive -&gt; strategy -&gt; return</div>
 <div class="line">│   │   ├── place.py             choose a pose -&gt; reach it -&gt; release -&gt; return</div>
 <div class="line">│   │   ├── pour.py              find container -&gt; grasp source -&gt; tilt -&gt; return</div>
+<div class="line">│   │   ├── follow.py            face / person tracking velocity commands</div>
 <div class="line">│   │   ├── strategies.py        the 3 grasp motions + the STRATEGIES table</div>
 <div class="line">│   │   ├── classification.py    object_name -&gt; strategy key</div>
 <div class="line">│   │   ├── profiles.py          YAML loading and validation</div>
@@ -274,7 +277,7 @@ Testing</h1>
 <div class="fragment"><div class="line">colcon build --symlink-install --packages-select frida_constants frida_interfaces pick_and_place</div>
 <div class="line">colcon test --packages-select pick_and_place &amp;&amp; colcon test-result --verbose</div>
 </div><!-- fragment --><p>Or directly, inside the container (pytest ships as a module, not a binary):</p>
-<div class="fragment"><div class="line">python3 -m pytest test/ -q      # 30 tests, 39 cases</div>
+<div class="fragment"><div class="line">python3 -m pytest test/ -q      # 32 tests, 41 cases</div>
 </div><!-- fragment --><p>No ROS graph and no hardware: the pipelines run against <code>FakeArm</code> / <code>FakePerception</code>.</p>
 <p><code><a class="el" href="conftest_8py.html">test/conftest.py</a></code> stubs sibling ROS packages <em>only</em> when they are not built, so a full workspace tests against the real ones. Because <code>RobotArm</code> is a plain class rather than an ABC, the suite asserts by introspection that <code>FakeArm</code> still covers its public surface &ndash; that is what stops the fakes drifting and the rest of the tests quietly becoming meaningless.</p>
 <p>These pin decisions, not geometry. A green run means the logic still makes the same choices; it says nothing about whether the arm reaches anything. </p>
