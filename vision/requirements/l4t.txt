@@ -1,4 +1,3 @@
-# Python requirements (pins that l4t_base already provides are skipped). (Second file is instlled with --no deps)
 cmake==3.25.2
 lap
 tqdm
