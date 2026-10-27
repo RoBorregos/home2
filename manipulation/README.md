@@ -49,10 +49,6 @@ The contract with the rest of the robot is exactly one action:
 A `place` is only meaningful after a `pick` or `pour` **in the same process**: the node remembers the
 last pick outcome and uses its measured object height to decide the drop height.
 
-Besides the action, `task_manager` uses a few direct services: move joints / fixed-distance moves,
-the gripper, and the face / person follow toggles (§6, §7). All of them are typed with
-`frida_interfaces` or `std_srvs`, never with xArm types.
-
 ---
 
 ## 2. The packages
@@ -238,6 +234,7 @@ plus two lines. Only a genuinely new motion needs a new class.
 | Name | Provider | Used for |
 |---|---|---|
 | `/manipulation/manipulation_action_server` | `manipulation_core` | **The** entry point |
+| `/manipulation/go_to_hand_action_server`, `/manipulation/fixed_distance_move`, `/follow_face`, `/follow_person` | `manipulation_core` | Hand-over, vertical move, follow toggles |
 | `/manipulation/move_to_pose_action_server` | `motion_planning_server` | Any cartesian goal |
 | `/manipulation/move_joints_action_server` | `motion_planning_server` | Named poses and joint goals |
 | `/manipulation/pick_perception_service` | `test_only_orchestrator` | Object cluster |
