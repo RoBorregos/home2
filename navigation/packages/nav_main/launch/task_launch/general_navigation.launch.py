@@ -175,8 +175,7 @@ def launch_function(context, *args, **kwargs):
         parameters=[smoother_params],
     )
 
-    # Semantic navigation: patrol routes over the tagged sublocation poses and
-    # scan bookkeeping for revisits (issue #1268, navigation's half).
+    # Semantic navigation: patrol routes over the tagged sublocation poses
     semantic_nav_node = Node(
         package='nav_main',
         executable='semantic_nav_node.py',

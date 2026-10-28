@@ -1,12 +1,4 @@
-"""Point -> room / furniture lookup over the active map's areas JSON.
-
-The single implementation behind the ``GetAreaForPoint`` service. It lives here,
-outside the node, so it can be tested offline against the real
-``areas_<MAP_NAME>.json`` and reused by the tagger — the repo already carries
-three divergent copies of point-in-polygon (`area_check.py:60`,
-`point_transformer.py:182`, and this one), and only one of them reads the map
-that is actually loaded.
-"""
+"""Point -> room / furniture lookup over the active map's areas JSON."""
 
 from __future__ import annotations
 
@@ -14,7 +6,6 @@ import math
 
 # Not placement sublocations: the room outline and nav's own standoff pose.
 NON_SUBLOCATION_KEYS = ("polygon", "safe_place")
-META_SUFFIX = "_meta"
 DEFAULT_SUBLOCATION_DISTANCE = 1.5
 
 
@@ -62,7 +53,7 @@ def nearest_sublocations(
     """(names, distances) of `area`'s sublocations, nearest first, within range."""
     ranked = []
     for name, pose in (areas_data or {}).get(area, {}).items():
-        if name in NON_SUBLOCATION_KEYS or name.endswith(META_SUFFIX):
+        if name in NON_SUBLOCATION_KEYS:
             continue
         if not isinstance(pose, (list, tuple)) or len(pose) < 2:
             continue

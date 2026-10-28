@@ -1,30 +1,15 @@
 """Tagged viewpoints derived from the active map's areas JSON.
 
-The sublocation poses in ``areas_<MAP_NAME>.json`` are **robot** poses, not
-furniture centroids: ``map_area_tagger.py:947-951`` stores the operator's click
-as the base position and the drag direction as the heading, and
-``nav_central.go_to_area`` sends them straight to Nav2 as goals. So a tagged
-sublocation already *is* a viewpoint in front of its furniture, and patrol
-planning reuses them instead of sampling a standoff ring around a centroid.
-
-What the JSON does not carry is what kind of surface it is, which drives the arm
-"stare" pose (the camera is mounted on the gripper, ``FRIDA.urdf.xacro:81``) and
-how long to dwell there so vision can confirm an object. That is inferred from
-the sublocation name, and can be overridden per entry with a ``<name>_meta``
-key:
-
-    "kitchen": {
-      "dinner_table": [x, y, z, qx, qy, qz, qw],
-      "dinner_table_meta": {"type": "surface", "arm_pose": "table_stare",
-                            "dwell_s": 3.0, "height": 0.75}
-    }
+The sublocation poses in ``areas_<MAP_NAME>.json`` are robot poses (base position
+plus heading facing the furniture), so each one is used directly as the
+viewpoint. Surface type, arm pose and dwell are inferred from the name.
 """
 
 from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # Arm poses come from frida_constants.xarm_configurations (XARM_CONFIGURATIONS).
 # The mapping type -> pose is provisional until manipulation confirms what each
@@ -91,7 +76,6 @@ NAME_TYPE_RULES: tuple[tuple[str, str], ...] = (
 
 # Not placement sublocations: the room outline and nav's own standoff pose.
 NON_SUBLOCATION_KEYS = frozenset({"polygon", "safe_place"})
-META_SUFFIX = "_meta"
 
 
 def classify(name: str) -> str:
@@ -123,7 +107,6 @@ class Viewpoint:
     arm_pose: str = DEFAULT_ARM_POSE
     dwell_s: float = DEFAULT_DWELL_S
     target_height: float = 0.75
-    meta: dict = field(default_factory=dict)
 
     @property
     def yaw(self) -> float:
@@ -165,7 +148,7 @@ def load_viewpoints(
             continue
 
         for name, pose in data.items():
-            if name in NON_SUBLOCATION_KEYS or name.endswith(META_SUFFIX):
+            if name in NON_SUBLOCATION_KEYS:
                 continue
             if not isinstance(pose, (list, tuple)) or len(pose) < 7:
                 continue
@@ -175,8 +158,7 @@ def load_viewpoints(
             except (TypeError, ValueError):
                 continue
 
-            meta = data.get(f"{name}{META_SUFFIX}") or {}
-            surface_type = str(meta.get("type") or classify(name))
+            surface_type = classify(name)
             if surface_type == "waypoint" and not include_waypoints:
                 continue
             height, arm_pose, dwell = SURFACE_TYPES.get(
@@ -191,10 +173,9 @@ def load_viewpoints(
                     qz=qz,
                     qw=qw,
                     surface_type=surface_type,
-                    arm_pose=str(meta.get("arm_pose") or arm_pose),
-                    dwell_s=float(meta.get("dwell_s") or dwell),
-                    target_height=float(meta.get("height") or height),
-                    meta=dict(meta) if isinstance(meta, dict) else {},
+                    arm_pose=arm_pose,
+                    dwell_s=dwell,
+                    target_height=height,
                 )
             )
     return out

@@ -51,7 +51,7 @@ home2/
 │   │   │   └── semantic/               # Semantic nav core (no ROS, unit-testable)
 │   │   │       ├── areas.py            # Point -> room / furniture
 │   │   │       ├── surfaces.py         # Furniture typing, arm pose and dwell
-│   │   │       ├── route.py            # Patrol ordering (NN + 2-opt per room)
+│   │   │       ├── route.py            # Patrol ordering (exact per room)
 │   │   │       ├── viewpoints.py       # Costmap check and relocation
 │   │   │       └── staleness.py        # When each surface was last scanned
 │   │   └── scripts/                    # ROS nodes (Python)
@@ -269,7 +269,6 @@ ros2 service call /navigation/follow_person std_srvs/srv/SetBool "{data: true}"
 ros2 service call /navigation/follow_person std_srvs/srv/SetBool "{data: false}"
 ```
 
-<<<<<<< HEAD
 ```bash
 # Which room / furniture is this point in? (the point may be in any TF frame)
 ros2 service call /navigation/get_area_for_point frida_interfaces/srv/GetAreaForPoint \
@@ -293,7 +292,7 @@ area's `safe_place`, i.e. the middle of the room, where nothing on a tabletop is
 pose: the tagger stores the operator's click as the base position and the drag as the heading, and
 `nav_central.go_to_area` sends it straight to Nav2. The node selects those poses, checks each one
 against the global costmap (relocating it around its furniture when something now blocks it), orders
-them nearest-first with 2-opt grouped by room, and annotates each with an arm "stare" pose and a dwell
+them in the shortest order (exact, grouped by room), and annotates each with an arm "stare" pose and a dwell
 time.
 
 **Nav plans, the caller drives.** `PlanPatrol` returns a list; task_manager iterates it, navigates to
@@ -303,22 +302,9 @@ there. The node has no `cmd_vel` publisher and no action client — it cannot mo
 Modes: `full` (every surface), `quick` (one per room), `revisit` (stalest first — what the robot has
 not looked at in a while, for Finals).
 
-### Furniture metadata (optional)
-
-Each sublocation may carry a `<name>_meta` sibling that overrides what is otherwise inferred from the
-name. Edit it in the tagger: right-click a location → *Edit Furniture Metadata…*
-
-```json
-"kitchen": {
-  "dinner_table": [x, y, z, qx, qy, qz, qw],
-  "dinner_table_meta": {"type": "surface", "height": 0.75, "extent": [0.9, 1.4],
-                        "arm_pose": "table_stare", "dwell_s": 3.0, "center": [-0.37, -13.63]}
-}
-```
-
-Without it the type comes from the name (`table` → surface, `shelf`/`cabinet` → shelf,
-`refrigerator`/`sink` → appliance, `trash`/`basket` → floor, `bed`/`sofa` → low surface), which is
-correct for every furniture name currently tagged in `map_context/maps/areas/`.
+Surface type, arm pose and dwell are inferred from the sublocation name (`table` → surface,
+`shelf`/`cabinet` → shelf, `refrigerator`/`sink` → appliance, `trash`/`basket` → floor,
+`bed`/`sofa` → low surface), and the sublocation pose is used as the viewpoint.
 
 ### Topics
 
@@ -327,19 +313,6 @@ correct for every furniture name currently tagged in `map_context/maps/areas/`.
 | `/navigation/patrol/markers` | `MarkerArray` | Viewpoints in RViz, coloured by how recently each was scanned |
 | `/navigation/patrol/staleness` | `String` (JSON) | Age of the last scan per surface |
 
-### Self-test
-
-Runs the whole core offline — no ROS, no robot, no simulation — against the real maps:
-
-```bash
-python3 navigation/packages/nav_main/scripts/semantic_nav_selftest.py
-python3 navigation/packages/nav_main/scripts/semantic_nav_selftest.py --map robocup_c1
-ros2 run nav_main semantic_nav_selftest.py        # from the installed tree
-```
-
-`WARN` lines are map-data problems the code absorbs but that should be fixed with the tagger: a
-furniture pose that now sits inside an obstacle, or two pieces tagged at the same spot.
-=======
 ## Testing
 
 [`task_manager/scripts/test/test_navigation_manager.py`](../task_manager/scripts/test/test_navigation_manager.py)
@@ -382,7 +355,6 @@ ros2 run task_manager test_navigation_manager.py --ros-args -p sim:=true
 | `mocked` | `false` | Use the subtask manager mocks, skips the basics |
 | `clear_logs` | `true` | Hide the ROS logs while each test runs |
 | `cmd_vel_topic` / `stamped_cmd_vel` | `/cmd_vel` / `true` | Where the base listens and whether it expects `TwistStamped` |
->>>>>>> origin/main
 
 ## Nav_ui — live monitor & control panel
 

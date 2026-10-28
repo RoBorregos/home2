@@ -310,6 +310,15 @@ class TestNavigationManager(Node):
     def check_basic(self, func, *args, **kwargs):
         func(**kwargs)
 
+    def check_patrol_route(self, route):
+        """Every step is a real sublocation with an arm pose and a positive dwell."""
+        keys = [f"{step['area']}/{step['sublocation']}" for step in route]
+        assert len(set(keys)) == len(keys), "Patrol route repeats a sublocation"
+        for step in route:
+            assert not step["sublocation"].endswith("_meta"), f"{step['sublocation']} is not a place"
+            assert step["arm_pose"], f"{step['sublocation']} has no arm pose"
+            assert step["dwell_s"] > 0, f"{step['sublocation']} has no dwell time"
+
     def check_nav_task(self, func, *args, **kwargs):
         result = func(**kwargs)
 
@@ -325,6 +334,7 @@ class TestNavigationManager(Node):
             )
         elif func == self.navigation_manager.plan_patrol and result[1]:
             route = result[1]
+            self.check_patrol_route(route)
             Logger.info(self, f"{len(route)} viewpoints:")
             for step in route:
                 Logger.info(

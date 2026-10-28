@@ -111,18 +111,10 @@ def is_area_free(
 
 
 def target_of(vp: Viewpoint, probe_distance: float = DEFAULT_PROBE_DISTANCE) -> tuple[float, float]:
-    """Where the furniture is, as far as we can tell.
+    """Where the furniture is: `probe_distance` along the tagged heading.
 
-    Prefers an explicit centroid in the sublocation's ``_meta`` (``center``);
-    otherwise projects `probe_distance` along the tagged heading, since the
-    operator tags the robot *facing* the furniture.
+    The operator tags the robot facing the furniture.
     """
-    center = vp.meta.get("center") if isinstance(vp.meta, dict) else None
-    if isinstance(center, (list, tuple)) and len(center) >= 2:
-        try:
-            return float(center[0]), float(center[1])
-        except (TypeError, ValueError):
-            pass
     yaw = vp.yaw
     return vp.x + probe_distance * math.cos(yaw), vp.y + probe_distance * math.sin(yaw)
 

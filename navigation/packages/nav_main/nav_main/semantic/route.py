@@ -1,20 +1,13 @@
-"""Patrol route ordering over tagged viewpoints.
-
-Nearest-neighbour seed plus 2-opt refinement on Euclidean distances, grouped by
-area so the robot finishes a room before crossing a doorway (door crossings are
-the expensive part, and Euclidean distance under-counts them).
-
-Euclidean is deliberate: an arena has ~20 viewpoints, and `NavQuery`
-(`ComputePathToPose`, `TIMEOUT_NAV_QUERY = 10 s`) is far too slow to rank that
-many candidates. Validate the chosen route with `NavQuery` if an exact length is
-needed.
-"""
+"""Patrol route ordering over tagged viewpoints (Euclidean, grouped by area)."""
 
 from __future__ import annotations
 
 import math
 
 from .surfaces import Viewpoint
+
+# Held-Karp memory/time grows as 2^n, so larger groups fall back to nearest-neighbour
+MAX_EXACT_POINTS = 16
 
 
 def _distance(a: Viewpoint, b: Viewpoint) -> float:
@@ -33,33 +26,41 @@ def _nearest_neighbour(points: list[Viewpoint], start: tuple[float, float]) -> l
     return order
 
 
-def _two_opt(order: list[Viewpoint], start: tuple[float, float], max_passes: int = 20) -> list[Viewpoint]:
-    """Classic 2-opt on an open path that begins at `start`."""
-    if len(order) < 4:
-        return order
+def _held_karp(points: list[Viewpoint], start: tuple[float, float]) -> list[Viewpoint]:
+    """Shortest open path from `start` through every point, exact (O(2^n * n^2))."""
+    n = len(points)
+    if n < 2:
+        return list(points)
+    dist = [[_distance(a, b) for b in points] for a in points]
+    # best[mask][last] = (length, previous) of the shortest path visiting `mask` ending at `last`
+    best = [[(math.inf, -1)] * n for _ in range(1 << n)]
+    for i, p in enumerate(points):
+        best[1 << i][i] = (p.distance_to(*start), -1)
+    for mask in range(1, 1 << n):
+        for last in range(n):
+            length = best[mask][last][0]
+            if length == math.inf:
+                continue
+            for nxt in range(n):
+                if mask & (1 << nxt):
+                    continue
+                cand = length + dist[last][nxt]
+                nmask = mask | (1 << nxt)
+                if cand < best[nmask][nxt][0]:
+                    best[nmask][nxt] = (cand, last)
+    mask = (1 << n) - 1
+    last = min(range(n), key=lambda i: best[mask][i][0])
+    order = []
+    while last != -1:
+        order.append(points[last])
+        mask, last = mask ^ (1 << last), best[mask][last][1]
+    return order[::-1]
 
-    def leg(i: int, j: int) -> float:
-        """Distance between consecutive stops, where index -1 is `start`."""
-        a = order[i] if i >= 0 else None
-        b = order[j]
-        return _distance(a, b) if a is not None else b.distance_to(*start)
 
-    for _ in range(max_passes):
-        improved = False
-        for i in range(len(order) - 1):
-            for j in range(i + 1, len(order)):
-                before = leg(i - 1, i) + (
-                    _distance(order[j], order[j + 1]) if j + 1 < len(order) else 0.0
-                )
-                after = leg(i - 1, j) + (
-                    _distance(order[i], order[j + 1]) if j + 1 < len(order) else 0.0
-                )
-                if after + 1e-9 < before:
-                    order[i : j + 1] = reversed(order[i : j + 1])
-                    improved = True
-        if not improved:
-            break
-    return order
+def _order_group(points: list[Viewpoint], start: tuple[float, float]) -> list[Viewpoint]:
+    if len(points) <= MAX_EXACT_POINTS:
+        return _held_karp(points, start)
+    return _nearest_neighbour(points, start)
 
 
 def route_length(order: list[Viewpoint], start: tuple[float, float]) -> float:
@@ -87,7 +88,7 @@ def order_route(
         return [], 0.0
 
     if not group_by_area:
-        order = _two_opt(_nearest_neighbour(viewpoints, start), start)
+        order = _order_group(viewpoints, start)
         return order, route_length(order, start)
 
     by_area: dict[str, list[Viewpoint]] = {}
@@ -102,7 +103,7 @@ def order_route(
             pending,
             key=lambda a: min(v.distance_to(*cursor) for v in pending[a]),
         )
-        group = _two_opt(_nearest_neighbour(pending.pop(area), cursor), cursor)
+        group = _order_group(pending.pop(area), cursor)
         ordered.extend(group)
         cursor = (group[-1].x, group[-1].y)
 
