@@ -57,7 +57,6 @@ home2/
 │   │   └── scripts/                    # ROS nodes (Python)
 │   │       ├── nav_central.py          # Central navigation orchestrator
 │   │       ├── semantic_nav_node.py    # Patrol routes + scan bookkeeping
-│   │       ├── semantic_nav_selftest.py # Offline self-test of the core
 │   │       ├── table_docker.py         # Perpendicular table/shelf docking
 │   │       ├── person_goal_smoother.py # Person-following goal bridge
 │   │       ├── adaptive_goal_publisher.py
