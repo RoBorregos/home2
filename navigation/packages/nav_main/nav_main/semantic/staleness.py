@@ -1,10 +1,4 @@
-"""Per-viewpoint scan bookkeeping: when did the robot last look at each surface.
-
-This is navigation's own state, not vision's: it records that the base stood at a
-viewpoint facing its furniture, which is what makes a revisit route possible even
-before the object map exists. Persisted as JSON so a restart mid-task does not
-forget the whole arena.
-"""
+"""Per-viewpoint scan bookkeeping: when the robot last looked at each surface."""
 
 from __future__ import annotations
 
@@ -52,14 +46,8 @@ class ScanLog:
     ) -> list[str]:
         """Mark the viewpoint the robot is currently standing at and facing.
 
-        A viewpoint counts as scanned when the base is within `radius` of the
-        tagged pose and its heading is within `yaw_tolerance_rad` of the tagged
-        heading — the camera rides on the gripper, so pose *and* heading matter.
-
-        `closest_only` (the default) marks just the nearest match. Tagged poses in
-        a kitchen sit well under a metre apart, so marking every pose in range
-        would claim surfaces the arm never stared at and then skip them on the
-        next revisit round. One stop, one surface. Returns the keys marked.
+        Scanned = within `radius` of the tagged pose and `yaw_tolerance_rad` of its heading.
+        `closest_only` marks just the nearest match.
         """
         candidates = [
             vp
@@ -92,10 +80,7 @@ class ScanLog:
     def to_dict(self, now: float, wall_now: float | None = None) -> dict:
         """Ages relative to the save, plus the wall clock at save time.
 
-        Ages (not absolute stamps) because a ROS clock restarts at 0 on a bag
-        replay, so stored stamps would come back from the future. The wall clock
-        is what makes a restart honest: on reload the gap since the save is added
-        back, otherwise everything would look freshly scanned.
+        Ages, not stamps: a ROS clock restarts at 0 on a bag replay.
         """
         return {
             "version": SCHEMA_VERSION,
@@ -116,8 +101,7 @@ class ScanLog:
         if not isinstance(ages, dict):
             return 0, "'ages' is not an object"
 
-        # Add back the time the robot spent switched off, so a surface scanned
-        # ten minutes before the restart reads as ten minutes stale, not fresh.
+        # Add back the time the robot was off
         try:
             saved_at_wall = float(data.get("saved_at_wall"))
             elapsed = max(0.0, (wall_now if wall_now is not None else time.time()) - saved_at_wall)
@@ -138,8 +122,7 @@ class ScanLog:
         return restored, ""
 
     def save(self, now: float, path: str | None = None, wall_now: float | None = None) -> str:
-        """Atomic write (tmp + fsync + replace): this file is read at startup
-        during a competition run, so a half-written JSON is not acceptable."""
+        """Atomic write (tmp + fsync + replace)."""
         target = path or self.path
         if not target:
             raise ValueError("no path configured for the scan log")

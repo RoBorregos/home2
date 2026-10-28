@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-# Not placement sublocations: the room outline and nav's own standoff pose.
+# Not sublocations
 NON_SUBLOCATION_KEYS = ("polygon", "safe_place")
 DEFAULT_SUBLOCATION_DISTANCE = 1.5
 
@@ -30,9 +30,7 @@ def point_in_polygon(x: float, y: float, polygon) -> bool:
 def areas_containing(areas_data: dict, x: float, y: float) -> list[str]:
     """Every area whose polygon contains (x, y).
 
-    Areas without a polygon — ``start_area``, ``start_location``, ``entrance``,
-    ``exit``, ``inspection_point`` — are referee waypoints, not rooms, and can
-    never match.
+    Areas without a polygon (waypoints) never match.
     """
     hits = []
     for name, data in (areas_data or {}).items():
@@ -75,9 +73,7 @@ def area_for_point(
 ) -> tuple[str, list[str], list[float], bool]:
     """(area, sublocations, distances, in_house) for a map-frame point.
 
-    `area` is ``""`` when the point falls in no polygon, which is a normal answer:
-    the polygons do not tile the map. Overlapping polygons are broken by the
-    nearest sublocation.
+    `area` is ``""`` when no polygon contains the point. Overlaps go to the nearest sublocation.
     """
     hits = areas_containing(areas_data, x, y)
     in_house = bool(hits)

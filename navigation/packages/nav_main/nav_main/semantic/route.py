@@ -6,7 +6,7 @@ import math
 
 from .surfaces import Viewpoint
 
-# Held-Karp memory/time grows as 2^n, so larger groups fall back to nearest-neighbour
+# Larger groups fall back to nearest-neighbour (Held-Karp is 2^n)
 MAX_EXACT_POINTS = 16
 
 
@@ -32,7 +32,7 @@ def _held_karp(points: list[Viewpoint], start: tuple[float, float]) -> list[View
     if n < 2:
         return list(points)
     dist = [[_distance(a, b) for b in points] for a in points]
-    # best[mask][last] = (length, previous) of the shortest path visiting `mask` ending at `last`
+    # best[mask][last] = (length, previous)
     best = [[(math.inf, -1)] * n for _ in range(1 << n)]
     for i, p in enumerate(points):
         best[1 << i][i] = (p.distance_to(*start), -1)
@@ -80,9 +80,8 @@ def order_route(
 ) -> tuple[list[Viewpoint], float]:
     """Order `viewpoints` into a patrol route starting at `start`.
 
-    With `group_by_area` every area is finished before moving to the next one;
-    the areas themselves are visited nearest-first from `start`.
-    Returns ``(ordered, total_euclidean_length)``.
+    With `group_by_area` each area is finished before the next (nearest first).
+    Returns ``(ordered, total_length)``.
     """
     if not viewpoints:
         return [], 0.0
@@ -119,8 +118,7 @@ def order_by_staleness(
 ) -> tuple[list[Viewpoint], float]:
     """Revisit order: stalest first, ties broken by distance from `start`.
 
-    `last_scanned` maps ``"area/name"`` to the timestamp of the last scan; a
-    missing key means never scanned, which sorts first.
+    `last_scanned` maps ``"area/name"`` to its last scan time; missing = never scanned.
     """
     def age(vp: Viewpoint) -> float:
         stamp = last_scanned.get(vp.key)

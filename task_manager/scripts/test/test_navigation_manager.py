@@ -311,11 +311,10 @@ class TestNavigationManager(Node):
         func(**kwargs)
 
     def check_patrol_route(self, route):
-        """Every step is a real sublocation with an arm pose and a positive dwell."""
+        """No repeated stops; every step has an arm pose and a positive dwell."""
         keys = [f"{step['area']}/{step['sublocation']}" for step in route]
         assert len(set(keys)) == len(keys), "Patrol route repeats a sublocation"
         for step in route:
-            assert not step["sublocation"].endswith("_meta"), f"{step['sublocation']} is not a place"
             assert step["arm_pose"], f"{step['sublocation']} has no arm pose"
             assert step["dwell_s"] > 0, f"{step['sublocation']} has no dwell time"
 

@@ -2,7 +2,7 @@
 
 The sublocation poses in ``areas_<MAP_NAME>.json`` are robot poses (base position
 plus heading facing the furniture), so each one is used directly as the
-viewpoint. Surface type, arm pose and dwell are inferred from the name.
+viewpoint. Surface type and dwell are inferred from the name.
 """
 
 from __future__ import annotations
@@ -11,30 +11,26 @@ import json
 import math
 from dataclasses import dataclass
 
-# Arm poses come from frida_constants.xarm_configurations (XARM_CONFIGURATIONS).
-# The mapping type -> pose is provisional until manipulation confirms what each
-# stare pose actually looks at (request M1 in the plan).
-DEFAULT_ARM_POSE = "front_stare"
+# Fixed arm pose for every viewpoint (XARM_CONFIGURATIONS)
+ARM_POSE = "nav_pose"
 DEFAULT_DWELL_S = 2.5
 
-# type -> (target height in m, arm pose, dwell seconds)
-SURFACE_TYPES: dict[str, tuple[float, str, float]] = {
-    "surface": (0.75, "table_stare", 2.5),
-    "low_surface": (0.45, "table_stare", 2.5),
-    "shelf": (1.10, "front_stare", 3.0),
-    "appliance": (0.90, "front_stare", 2.5),
-    "floor": (0.20, "flat_stare", 2.5),
-    "unknown": (0.75, DEFAULT_ARM_POSE, DEFAULT_DWELL_S),
+# type -> (target height in m, dwell seconds)
+SURFACE_TYPES: dict[str, tuple[float, float]] = {
+    "surface": (0.75, 2.5),
+    "low_surface": (0.45, 2.5),
+    "shelf": (1.10, 3.0),
+    "appliance": (0.90, 2.5),
+    "floor": (0.20, 2.5),
+    "unknown": (0.75, DEFAULT_DWELL_S),
 }
 
-# Sublocations that are navigation waypoints, not furniture: a door or an entry
-# has no surface to stare at, so patrolling it only burns time.
+# Waypoints, not furniture: nothing to look at
 NON_SURFACE_NAMES = frozenset(
     {"house_entry", "entry", "entrance", "exit", "door", "start", "start_point"}
 )
 
-# Substring -> type. Order matters: the first match wins, so put the specific
-# names before the generic ones ("bedside_table" before "table").
+# Substring -> type, first match wins ("bedside_table" before "table")
 NAME_TYPE_RULES: tuple[tuple[str, str], ...] = (
     ("washing_machine", "appliance"),
     ("dishwasher", "appliance"),
@@ -74,7 +70,7 @@ NAME_TYPE_RULES: tuple[tuple[str, str], ...] = (
     ("items", "surface"),
 )
 
-# Not placement sublocations: the room outline and nav's own standoff pose.
+# Not sublocations: the room outline and nav's standoff pose
 NON_SUBLOCATION_KEYS = frozenset({"polygon", "safe_place"})
 
 
@@ -104,7 +100,7 @@ class Viewpoint:
     qz: float
     qw: float
     surface_type: str = "unknown"
-    arm_pose: str = DEFAULT_ARM_POSE
+    arm_pose: str = ARM_POSE
     dwell_s: float = DEFAULT_DWELL_S
     target_height: float = 0.75
 
@@ -161,7 +157,7 @@ def load_viewpoints(
             surface_type = classify(name)
             if surface_type == "waypoint" and not include_waypoints:
                 continue
-            height, arm_pose, dwell = SURFACE_TYPES.get(
+            height, dwell = SURFACE_TYPES.get(
                 surface_type, SURFACE_TYPES["unknown"]
             )
             out.append(
@@ -173,7 +169,6 @@ def load_viewpoints(
                     qz=qz,
                     qw=qw,
                     surface_type=surface_type,
-                    arm_pose=arm_pose,
                     dwell_s=dwell,
                     target_height=height,
                 )
