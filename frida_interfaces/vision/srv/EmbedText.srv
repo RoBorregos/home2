@@ -1,5 +1,5 @@
 string[] texts
 ---
-float32[] embedddings
+float32[] embeddings
 int32 dim
 bool success
