@@ -236,6 +236,7 @@ plus two lines. Only a genuinely new motion needs a new class.
 | Name | Provider | Used for |
 |---|---|---|
 | `/manipulation/manipulation_action_server` | `manipulation_core` | **The** entry point |
+| `/manipulation/go_to_hand_action_server`, `/manipulation/fixed_distance_move`, `/follow_face`, `/follow_person` | `manipulation_core` | Hand-over, vertical move, follow toggles |
 | `/manipulation/move_to_pose_action_server` | `motion_planning_server` | Any cartesian goal |
 | `/manipulation/move_joints_action_server` | `motion_planning_server` | Named poses and joint goals |
 | `/manipulation/pick_perception_service` | `test_only_orchestrator` | Object cluster |
@@ -250,7 +251,15 @@ hardcode them.
 
 ---
 
-## 7. Where to change what
+## 7. Face / person following
+
+`manipulation_core` serves `/follow_face` and `/follow_person` (logic in `pick_and_place/pipelines/follow.py`), so it must be running.
+While either one is active, the xArm is in velocity mode (4); any manipulation goal turns it off first and it is not resumed.
+Face following also needs `face_recognition` enabled (it starts paused). If the arm doesn't move, check `ros2 topic hz /vision/follow_face`.
+
+---
+
+## 8. Where to change what
 
 | I want to… | Touch |
 |---|---|
@@ -263,11 +272,12 @@ hardcode them.
 | Change how flat objects and solids are grasped (geometry) | `perception_3d/perception_3d/geometric_grasps.py` |
 | Change the gripper dimensions | `frida_constants/manipulation_constants.py` |
 | Add a named arm pose | `frida_constants/xarm_configurations.py` |
+| Tune face / person following | `pick_and_place/pipelines/follow.py` (person gains: `follow_person.*` parameters); face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |
 | Add a message, service or action | `frida_interfaces/manipulation/` |
 
 ---
 
-## 8. Running it
+## 9. Running it
 
 ### Build
 
@@ -308,7 +318,7 @@ logic still makes the same choices, **not** that the robot works.
 
 ---
 
-## 9. Docker setup
+## 10. Docker setup
 
 **Requirements:** Docker Engine, and the NVIDIA Container Toolkit for CUDA/L4T images.
 

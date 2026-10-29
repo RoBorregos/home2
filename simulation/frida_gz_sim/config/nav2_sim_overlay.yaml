@@ -1,0 +1,66 @@
+# Sim deltas deep-merged onto nav2_omni_limp.yaml by nav2_omni.launch.py.
+# Everything runs on /clock, odometry comes from the gz odometry publisher, and the
+# RGBD voxel layers are dropped: the sim has no /point_cloud and the 2D lidar is
+# what navigate_to is being tested against.
+bt_navigator:
+  ros__parameters:
+    use_sim_time: True
+    odom_topic: /odom
+
+bt_navigator_navigate_through_poses_rclcpp_node:
+  ros__parameters:
+    use_sim_time: True
+
+bt_navigator_navigate_to_pose_rclcpp_node:
+  ros__parameters:
+    use_sim_time: True
+
+controller_server:
+  ros__parameters:
+    use_sim_time: True
+    odom_topic: /odom
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      use_sim_time: True
+      plugins: ["obstacle_layer", "inflation_layer"]
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: True
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+
+planner_server:
+  ros__parameters:
+    use_sim_time: True
+
+smoother_server:
+  ros__parameters:
+    use_sim_time: True
+
+behavior_server:
+  ros__parameters:
+    use_sim_time: True
+
+waypoint_follower:
+  ros__parameters:
+    use_sim_time: True
+
+velocity_smoother:
+  ros__parameters:
+    use_sim_time: True
+    odom_topic: /odom
+
+map_server:
+  ros__parameters:
+    use_sim_time: True
+
+filter_mask_server:
+  ros__parameters:
+    use_sim_time: True
+
+costmap_filter_info_server:
+  ros__parameters:
+    use_sim_time: True

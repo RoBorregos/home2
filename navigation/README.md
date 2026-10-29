@@ -25,8 +25,9 @@ home2/
 │   ├── msg/
 │   │   ├── MonitorReport.msg
 │   │   └── NodeStatus.msg
-│   └── srv/                            # ApproachPoint, DockTable, GetRobotPose,
-│                                       # GoToPose, MapAreas, MoveLocation, NavQuery
+│   └── srv/                            # ApproachPoint, DockTable, GetAreaForPoint,
+│                                       # GetRobotPose, GoToPose, MapAreas, MoveLocation,
+│                                       # NavQuery, PlanPatrol
 │
 │navigation/
 ├── packages/                           # ROS 2 packages for the area
@@ -46,8 +47,16 @@ home2/
 │   │   │       ├── restaurant.launch.py
 │   │   │       ├── hric.launch.py
 │   │   │       └── gpsr_hric.launch.py
+│   │   ├── nav_main/                   # Importable Python package
+│   │   │   └── semantic/               # Semantic nav core (no ROS, unit-testable)
+│   │   │       ├── areas.py            # Point -> room / furniture
+│   │   │       ├── surfaces.py         # Furniture typing, arm pose and dwell
+│   │   │       ├── route.py            # Patrol ordering (exact per room)
+│   │   │       ├── viewpoints.py       # Costmap check and relocation
+│   │   │       └── staleness.py        # When each surface was last scanned
 │   │   └── scripts/                    # ROS nodes (Python)
 │   │       ├── nav_central.py          # Central navigation orchestrator
+│   │       ├── semantic_nav_node.py    # Patrol routes + scan bookkeeping
 │   │       ├── table_docker.py         # Perpendicular table/shelf docking
 │   │       ├── person_goal_smoother.py # Person-following goal bridge
 │   │       ├── adaptive_goal_publisher.py
@@ -240,6 +249,8 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 | `/navigation/areas_json` | `MapAreas` | Return `areas.json` as a string |
 | `/navigation/follow_person` | `SetBool` | Start/stop person following |
 | `/navigation/resume_nav` | `Empty` | Resume paused Nav2 |
+| `/navigation/get_area_for_point` | `GetAreaForPoint` | Which room and furniture a map point belongs to |
+| `/navigation/plan_patrol` | `PlanPatrol` | Ordered route over the tagged furniture poses (no motion) |
 
 ### Example service calls
 
@@ -256,6 +267,93 @@ ros2 service call /navigation/query_path frida_interfaces/srv/NavQuery \
 ros2 service call /navigation/follow_person std_srvs/srv/SetBool "{data: true}"
 ros2 service call /navigation/follow_person std_srvs/srv/SetBool "{data: false}"
 ```
+
+```bash
+# Which room / furniture is this point in? (the point may be in any TF frame)
+ros2 service call /navigation/get_area_for_point frida_interfaces/srv/GetAreaForPoint \
+  "{point: {header: {frame_id: map}, point: {x: -0.4, y: -12.8, z: 0.75}}}"
+
+# Patrol route over every tagged piece of furniture (plans only, never drives)
+ros2 service call /navigation/plan_patrol frida_interfaces/srv/PlanPatrol "{mode: full}"
+```
+
+## Semantic navigation (patrol routes and area lookup)
+
+`semantic_nav_node.py` turns the furniture already tagged in `areas_<MAP_NAME>.json` into a patrol
+route, and keeps track of when each surface was last looked at. It is the navigation half of the
+semantic map (issue #1268): vision owns the objects, navigation owns *where to stand to see them*.
+
+**Why it exists.** The object detector only reaches **2.0 m**, so patrolling is not visiting rooms —
+it is parking in front of each piece of furniture. The exploration used until now drives to each
+area's `safe_place`, i.e. the middle of the room, where nothing on a tabletop is in range.
+
+**The poses are not invented.** A sublocation entry in `areas_<MAP_NAME>.json` is already a *robot*
+pose: the tagger stores the operator's click as the base position and the drag as the heading, and
+`nav_central.go_to_area` sends it straight to Nav2. The node selects those poses, checks each one
+against the global costmap (relocating it around its furniture when something now blocks it), orders
+them in the shortest order (exact, grouped by room), and annotates each with an arm "stare" pose and a dwell
+time.
+
+**Nav plans, the caller drives.** `PlanPatrol` returns a list; task_manager iterates it, navigates to
+each pose, asks manipulation for `arm_poses[i]` and waits `dwell_s[i]` so vision can confirm what is
+there. The node has no `cmd_vel` publisher and no action client — it cannot move the robot.
+
+Modes: `full` (every surface), `quick` (one per room), `revisit` (stalest first — what the robot has
+not looked at in a while, for Finals).
+
+Surface type, arm pose and dwell are inferred from the sublocation name (`table` → surface,
+`shelf`/`cabinet` → shelf, `refrigerator`/`sink` → appliance, `trash`/`basket` → floor,
+`bed`/`sofa` → low surface), and the sublocation pose is used as the viewpoint.
+
+### Topics
+
+| Topic | Type | Purpose |
+| --- | --- | --- |
+| `/navigation/patrol/markers` | `MarkerArray` | Viewpoints in RViz, coloured by how recently each was scanned |
+| `/navigation/patrol/staleness` | `String` (JSON) | Age of the last scan per surface |
+
+## Testing
+
+[`task_manager/scripts/test/test_navigation_manager.py`](../task_manager/scripts/test/test_navigation_manager.py)
+first checks the basics — ODrive axis errors and states, bus voltage, the merged
+`/scan`, the `map -> base_link` TF and the `nav_central` services — and then runs
+the `NavigationTasks` functions, which do move the robot.
+
+```bash
+ros2 run task_manager test_navigation_manager.py
+```
+
+Failures print the reason, and the values read (voltages, axis states, scan
+quality, how far `Explore Zone` moved and how close `Return to Origin` stopped)
+are listed at the end. `Explore Zone` fails if the robot reports the goal reached
+without advancing at least 0.5 m of its 1 m step.
+
+`wheels:=true` spins the base in place while reading `/odrive/vel_est`, so it
+reports any wheel that does not turn or that turns the wrong way. It needs a
+clear floor and only `omni_basics.launch.py`:
+
+```bash
+ros2 run task_manager test_navigation_manager.py --ros-args -p wheels:=true
+```
+
+In the Gazebo sim (`./run.sh simulation --nav`, see
+[`simulation/frida_gz_sim`](../simulation/frida_gz_sim/README.md)) there is no
+ODrive, so `sim:=true` skips the motor, voltage and wheel checks:
+
+```bash
+./run.sh simulation   # shell in the sim container
+ros2 run task_manager test_navigation_manager.py --ros-args -p sim:=true
+```
+
+| Parameter | Default | |
+| --- | --- | --- |
+| `basics` | `true` | Run the base/lidar/TF/service checks |
+| `sim` | `false` | Gazebo sim: skip the ODrive motor, voltage and wheel checks |
+| `wheels` | `false` | Spin the base to test each wheel |
+| `dock` | `false` | Include `dock_table` |
+| `mocked` | `false` | Use the subtask manager mocks, skips the basics |
+| `clear_logs` | `true` | Hide the ROS logs while each test runs |
+| `cmd_vel_topic` / `stamped_cmd_vel` | `/cmd_vel` / `true` | Where the base listens and whether it expects `TwistStamped` |
 
 ## Nav_ui — live monitor & control panel
 

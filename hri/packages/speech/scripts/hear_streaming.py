@@ -52,7 +52,7 @@ class HearStreaming(Node):
         )
 
         self.default_hotwords = (
-            self.declare_parameter("DEFAULT_HOTWORDS", "Frida RoBorregos")
+            self.declare_parameter("DEFAULT_HOTWORDS", "Frida, RoBorregos")
             .get_parameter_value()
             .string_value
         )
@@ -176,7 +176,7 @@ class HearStreaming(Node):
                     grpc_audio = local_audio.tobytes()
                     yield speech_pb2.AudioRequest(
                         audio_data=grpc_audio,
-                        hotwords=hotwords,
+                        hotwords=hotwords if first_chunk else "",
                         initial_prompt=initial_prompt if first_chunk else "",
                     )
                     first_chunk = False

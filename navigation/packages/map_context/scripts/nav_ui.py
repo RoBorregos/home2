@@ -1213,6 +1213,9 @@ class NavUI(QMainWindow):
         signals.local_costmap_updated.connect(self.on_local_costmap_update)
         signals.global_costmap_updated.connect(self.on_global_costmap_update)
         signals.robot_pose_updated.connect(self.on_robot_pose)
+        # ROS spins before the window exists; a latched /map that arrived during a
+        # slow window build (e.g. X11 over ssh) emitted with no slot connected.
+        self.on_map_update()
 
     def on_map_update(self):
         if self.ros_node.map_data:

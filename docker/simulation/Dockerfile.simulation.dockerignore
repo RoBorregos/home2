@@ -1,0 +1,12 @@
+**
+!frida_interfaces
+!frida_constants
+!robot_description
+!manipulation/packages
+!vision/packages/object_detector_2d/package.xml
+!task_manager/package.xml
+!docker/cyclonedds_setup.sh
+**/build
+**/install
+**/log
+**/.git

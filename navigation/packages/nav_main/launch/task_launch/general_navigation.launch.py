@@ -13,12 +13,10 @@ def launch_function(context, *args, **kwargs):
 
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
-    # Omnibase Nav2 profile: 3-WHEEL LIMP params (base running degraded, one
-    # wheel out — see nav2_omni_limp.yaml header). Once the base is back to a
-    # healthy 4-wheel omni, point this at omni_config/nav2_omni.yaml (runtime
-    # override: nav2_omni_config_file:=/path.yaml) — the follow overlay pair
-    # switches with it.
-    nav2_omni_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
+    # Omnibase Nav2 profile: full 4-wheel omni params. Runtime override:
+    # nav2_omni_config_file:=/path.yaml (e.g. the 3-wheel nav2_omni_limp.yaml) —
+    # the follow overlay pair switches with it.
+    nav2_omni_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni.yaml')
 
     rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME'))
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
@@ -177,10 +175,25 @@ def launch_function(context, *args, **kwargs):
         parameters=[smoother_params],
     )
 
+    # Semantic navigation: patrol routes over the tagged sublocation poses
+    semantic_nav_node = Node(
+        package='nav_main',
+        executable='semantic_nav_node.py',
+        name='semantic_nav',
+        output='screen',
+        emulate_tty=True,
+        parameters=[
+            os.path.join(
+                get_package_share_directory('nav_main'), 'config', 'semantic_nav.yaml'),
+            {'map_name': areas_map_name},
+        ],
+    )
+
     launch_actions = [
         nav_central_node,
         nav_ui_node,
         person_goal_smoother_node,
+        semantic_nav_node,
         omni_basics,
     ]
 

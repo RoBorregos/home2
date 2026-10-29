@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 
 SPEAK_SERVICE = "/hri/speech/speak"
@@ -34,10 +35,13 @@ RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
 STT_ACTION_SERVER_NAME = "/hri/speech/STT_action_server"
 START_BUTTON_CLIENT = "/hri/display/button_press"
+SPEAKER_TEST_TOPIC = "/hri/display/speaker_test"
 TASK_STATUS_TOPIC = "/hri/display/task_status"
 GPSR_TASK_STEP_TOPIC = "/gpsr/display/task_step"
 GPSR_COMMAND_INDEX_TOPIC = "/gpsr/display/command_index"
 TASK_STEP_TOPIC = "/hri/display/task_step"
+DISPLAY_CAPTURE_TOPIC = "/hri/display/capture"
+DISPLAY_KEYWORD_TOPIC = "/hri/display/keyword"
 
 GPSR_COMMANDS = {
     "go_to",
@@ -58,16 +62,21 @@ GPSR_COMMANDS = {
 }
 
 
+# Alias llama-server publishes for the general-purpose LLM, not a model version.
+# Swapping models means changing LLAMA_MODEL_FILE, not this.
+LLM_ALIAS = os.getenv("FRIDA_LLM_ALIAS", "frida-llm")
+
+
 class MODEL(Enum):
-    GRAMMAR = "qwen3"
-    LLM_WRAPPER = "qwen3"
-    IS_POSITIVE = "qwen3"
-    IS_NEGATIVE = "qwen3"
-    GENERIC_STRUCTURED_OUTPUT = "qwen3"
-    GENERATE_RESPONSE = "qwen3"
-    STRUCTURED_RESPONSE = "qwen3"
-    EXTRACT_INFO_REQUESTED = "qwen3"
-    GET_COMMANDS = "qwen3"
+    GRAMMAR = LLM_ALIAS
+    LLM_WRAPPER = LLM_ALIAS
+    IS_POSITIVE = LLM_ALIAS
+    IS_NEGATIVE = LLM_ALIAS
+    GENERIC_STRUCTURED_OUTPUT = LLM_ALIAS
+    GENERATE_RESPONSE = LLM_ALIAS
+    STRUCTURED_RESPONSE = LLM_ALIAS
+    EXTRACT_INFO_REQUESTED = LLM_ALIAS
+    GET_COMMANDS = LLM_ALIAS
 
 
 class KNOWLEDGE_TYPE(Enum):
@@ -86,7 +95,7 @@ CATEGORIZE_IDK_THRESHOLD = 0.01
 
 # STT
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
-DEFAULT_HOTWORDS = "Frida RoBorregos"
+DEFAULT_HOTWORDS = "Frida, RoBorregos"
 
 
 # Fundamental frequency range for human voice (Hz)

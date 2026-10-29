@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
     QListWidgetItem, QComboBox, QGroupBox, QSplitter, QMessageBox,
     QInputDialog, QScrollArea, QToolBar, QAction, QStatusBar,
     QFrame, QStyle, QMenu, QTreeWidget, QTreeWidgetItem, QHeaderView,
-    QDoubleSpinBox, QSpinBox, QDialog, QDialogButtonBox, QFormLayout
+    QSpinBox
 )
 from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QSize
 from PyQt5.QtGui import (
@@ -26,6 +26,11 @@ from PyQt5.QtGui import (
     QWheelEvent, QMouseEvent, QPainterPath, QPolygonF, QCursor,
     QImage
 )
+
+
+def is_location(value):
+    """Whether an area entry is a tagged pose (and not a polygon)."""
+    return isinstance(value, (list, tuple)) and len(value) >= 2
 
 
 AREA_COLORS = [
@@ -374,7 +379,7 @@ class MapCanvas(QWidget):
 
             # Draw locations
             for loc_name, loc_data in area_data.items():
-                if loc_name == 'polygon':
+                if loc_name == 'polygon' or not is_location(loc_data):
                     continue
                 x, y = loc_data[0], loc_data[1]
                 qw = loc_data[6] if len(loc_data) >= 7 else 1.0
@@ -1244,7 +1249,7 @@ class MapAreaTagger(QMainWindow):
 
         # Locations
         for name, data in area.items():
-            if name == 'polygon':
+            if name == 'polygon' or not is_location(data):
                 continue
             yaw = 0.0
             if len(data) >= 7:
@@ -1256,6 +1261,7 @@ class MapAreaTagger(QMainWindow):
                 f"{data[1]:.2f}",
                 f"{yaw:.0f}"
             ])
+            item.setData(0, Qt.UserRole, name)
             self.tree.addTopLevelItem(item)
 
         # Polygon
@@ -1293,7 +1299,7 @@ class MapAreaTagger(QMainWindow):
         relocate_action = None
         if item.text(0) != 'polygon' and item.parent() is None:
             relocate_action = menu.addAction("Relocate on Map")
-            
+
         action = menu.exec_(self.tree.viewport().mapToGlobal(pos))
         if action == delete_action:
             self.delete_tree_item(item)
@@ -1304,8 +1310,12 @@ class MapAreaTagger(QMainWindow):
             self.status.showMessage(f"Click on map to relocate '{item.text(0)}'")
             self.set_mode('location')
 
+    def item_name(self, item):
+        """The location name behind a tree row."""
+        return item.data(0, Qt.UserRole) or item.text(0)
+
     def delete_tree_item(self, item):
-        name = item.text(0)
+        name = self.item_name(item)
         if name in self.areas.get(self.current_area, {}):
             del self.areas[self.current_area][name]
             self.canvas.areas = self.areas
@@ -1314,7 +1324,7 @@ class MapAreaTagger(QMainWindow):
             self.canvas.update()
 
     def rename_tree_item(self, item):
-        old_name = item.text(0)
+        old_name = self.item_name(item)
         if old_name == 'polygon':
             return
         new_name, ok = QInputDialog.getText(self, "Rename", "New name:", text=old_name)

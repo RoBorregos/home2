@@ -71,7 +71,7 @@ class EGPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("egpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[""])
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 

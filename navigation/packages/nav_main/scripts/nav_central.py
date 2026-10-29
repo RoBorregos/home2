@@ -17,7 +17,6 @@ from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
 from nav_msgs.msg import OccupancyGrid
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
-from std_msgs.msg import Bool
 from rclpy.qos import QoSProfile, DurabilityPolicy
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
@@ -27,6 +26,8 @@ from frida_constants.navigation_constants import(
         CHECK_DOOR_SERVICE,
         DOOR_CHECK,
         AREAS_SERVICE,
+        GET_AREA_FOR_POINT_SERVICE,
+        SUBLOCATION_MAX_DISTANCE,
         TIMEOUT_REQUIREMENTS,
         CAMERA_RGB_TOPIC,
         CAMERA_INFO_TOPIC,
@@ -75,8 +76,10 @@ from frida_interfaces.srv import (
         GoToPose,
         GetRobotPose,
         ApproachPoint,
+        GetAreaForPoint,
         )
 from ament_index_python.packages import get_package_share_directory
+from nav_main.semantic.areas import area_for_point
 import tf2_ros
 import json
 import time as t
@@ -89,9 +92,6 @@ import re
 # aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
 # the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
 NAV_GOAL_RETRY_DELAY = 2.0
-# Max time to wait for the arm pointer to home back to its normal pose before
-# returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
-ARM_HOME_TIMEOUT = 10.0
 
 
 def make_param(name, value):
@@ -193,6 +193,9 @@ class Nav_Central(Node):
         self.lidar_reciever = None
         self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
         self.map_areas_srv = self.create_service(MapAreas, AREAS_SERVICE, self.map_areas_callback, callback_group=self.service_group)
+        self.get_area_for_point_srv = self.create_service(
+            GetAreaForPoint, GET_AREA_FOR_POINT_SERVICE, self.get_area_for_point_callback,
+            callback_group=self.service_group)
         self.range_min = DOOR_CHECK.LIDAR_RANGE_MIN.value  
         self.range_max = DOOR_CHECK.LIDAR_RANGE_MAX.value
         self.door_rate = DOOR_CHECK.CHECKING_RATE.value
@@ -203,21 +206,6 @@ class Nav_Central(Node):
         self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group)
         self.dock_table_srv = self.create_service(DockTable, DOCK_TABLE_SERVICE, self.dock_table_callback, callback_group=self.service_group)
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
-
-        # Expose the current nav goal + active flag so the arm pointer (manipulation)
-        # can aim the camera at the destination. transient_local so a late-joining
-        # subscriber still gets the last goal. ponytail: plain topics, no constants
-        # file — two strings, one consumer.
-        _latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        self.current_goal_pub = self.create_publisher(PoseStamped, "/nav/current_goal", _latched)
-        self.goal_active_pub = self.create_publisher(Bool, "/nav/goal_active", _latched)
-        # Arm pointer reports when it's back to its normal pose after the goal ends.
-        # Default True so nav never blocks when the arm pointer node isn't running.
-        self.arm_ready = True
-        self.create_subscription(
-            Bool, "/nav/arm_ready",
-            lambda m: setattr(self, "arm_ready", m.data),
-            _latched, callback_group=self.lidar_group)
 
         # Path query service — distance/time between two areas without navigating
         self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
@@ -667,6 +655,63 @@ class Nav_Central(Node):
             self.nav_logger("info", "Map_areas -> Map Areas Sent")
         return response
 
+    # ---------------------------------------------------------------- area lookup
+    # The polygon maths lives in nav_main.semantic.areas so it can be tested
+    # offline and reused (the repo already had three divergent copies).
+
+    def get_area_for_point_callback(self, request, response):
+        """Point (any TF frame) -> containing area + its nearest sublocations.
+
+        Single source of truth for "where is this?": vision and task_manager call
+        this instead of running point-in-polygon against their own copy of
+        areas.json. Only the active map's areas_<MAP_NAME>.json is authoritative.
+        """
+        response.success = False
+        response.area = ""
+        response.sublocations = []
+        response.distances = []
+        response.in_house = False
+        response.error = ""
+
+        if self.areas_data is None:
+            response.error = "no areas data loaded"
+            self.nav_logger("error", "Get_area_for_point -> no areas data loaded")
+            return response
+
+        point = request.point
+        frame = point.header.frame_id or "map"
+        if frame != "map":
+            try:
+                tf = self.tf_buffer.lookup_transform(
+                    "map", frame, rclpy.time.Time(), timeout=Duration(seconds=1.0))
+                point = do_transform_point(point, tf)
+            except Exception as e:
+                response.error = f"TF {frame}->map failed: {e}"
+                self.nav_logger("error", f"Get_area_for_point -> {response.error}")
+                return response
+
+        x, y = point.point.x, point.point.y
+        max_distance = (request.max_sublocation_distance
+                        if request.max_sublocation_distance > 0.0
+                        else SUBLOCATION_MAX_DISTANCE)
+
+        area, names, distances, in_house = area_for_point(
+            self.areas_data, x, y, max_distance)
+        response.area = area
+        response.sublocations = names
+        response.distances = distances
+        response.in_house = in_house
+
+        # Success means the lookup ran, not that the point landed in a room:
+        # the polygons do not tile the map, so "in no area" is a valid answer.
+        response.success = True
+        self.nav_logger(
+            "info",
+            f"Get_area_for_point -> ({x:.2f}, {y:.2f}) -> "
+            f"area='{response.area or 'unknown'}' "
+            f"sublocations={list(response.sublocations)[:3]}")
+        return response
+
     def goal_feedback(self, feedback_msg):
         """Feedback function for nav goals"""
 
@@ -688,59 +733,43 @@ class Nav_Central(Node):
         if behaivor_tree is not None:
             goal_msg.behaivor_tree = behaivor_tree
 
-        # Publish destination + active flag for the arm pointer; finally clears the
-        # flag on any exit (success, failure, or exception).
-        self.current_goal_pub.publish(pose)
-        self.goal_active_pub.publish(Bool(data=True))
-
         attempt = 0
-        try:
-            while True:
-                attempt += 1
+        while True:
+            attempt += 1
 
-                # Action server may not be back yet right after a lifecycle resume.
-                if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
-                    self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
-                    if max_attempts is not None and attempt >= max_attempts:
-                        return (False, "Action server unavailable")
-                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
-                    continue
-
-                _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
-                while not _goal_future.done():
-                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-                goal_handle = _goal_future.result()
-
-                if not goal_handle.accepted:
-                    self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
-                    if max_attempts is not None and attempt >= max_attempts:
-                        return (False, "Goal Rejected")
-                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
-                    continue
-
-                result_future = goal_handle.get_result_async()
-                while not result_future.done():
-                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-                result = result_future.result()
-
-                if result.status == GoalStatus.STATUS_SUCCEEDED:
-                    self.nav_logger("info", "Goal_Handler -> Goal Reached")
-                    return (True, "Goal Finished")
-
-                self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
+            # Action server may not be back yet right after a lifecycle resume.
+            if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
+                self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
                 if max_attempts is not None and attempt >= max_attempts:
-                    return (False, f"Goal failed (status {result.status})")
+                    return (False, "Action server unavailable")
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
-        finally:
-            self.goal_active_pub.publish(Bool(data=False))
-            # Hold the result until the arm has homed back to its normal pose
-            # (arm_ready True), so callers don't act while the arm is still moving.
-            waited = 0.0
-            while not self.arm_ready and waited < ARM_HOME_TIMEOUT:
+                continue
+
+            _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+            while not _goal_future.done():
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-                waited += 0.1
-            if not self.arm_ready:
-                self.nav_logger("warn", "Goal_Handler -> arm did not report ready before timeout")
+            goal_handle = _goal_future.result()
+
+            if not goal_handle.accepted:
+                self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
+                if max_attempts is not None and attempt >= max_attempts:
+                    return (False, "Goal Rejected")
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                continue
+
+            result_future = goal_handle.get_result_async()
+            while not result_future.done():
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            result = result_future.result()
+
+            if result.status == GoalStatus.STATUS_SUCCEEDED:
+                self.nav_logger("info", "Goal_Handler -> Goal Reached")
+                return (True, "Goal Finished")
+
+            self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
+            if max_attempts is not None and attempt >= max_attempts:
+                return (False, f"Goal failed (status {result.status})")
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
 
     def _retreat_if_docked(self):
         """Best-effort: ask the table_docker to back off if it's parked at a

@@ -6,7 +6,7 @@ own -- it drives the nodes that do.
 
 ## External contract
 
-Everything outside this package talks to it through exactly three interfaces. They are stable;
+Everything outside this package talks to it through exactly five interfaces. They are stable;
 nothing else here is public.
 
 | Interface | Type | Used by |
@@ -14,6 +14,7 @@ nothing else here is public.
 | `/manipulation/manipulation_action_server` | `ManipulationAction` | `task_manager` (pick / place / pour / place_on_shelf / place_in_point), `keyboard_input.py`, `pick_benchmark.py`, `manipulation_client.py` |
 | `/manipulation/go_to_hand_action_server` | `GoToHand` | `task_manager` (handover) |
 | `/manipulation/fixed_distance_move` | `FixedDistanceMove` | `task_manager` (`move_arm_vertical`) |
+| `/follow_face`, `/follow_person` | `FollowFace` | `task_manager` (`follow_face`, `follow_person`) |
 
 ## System context
 
@@ -96,6 +97,7 @@ pick_and_place/
 │   │   ├── place.py             choose a pose -> reach it -> release -> return
 │   │   ├── pour.py              find container -> grasp source -> tilt -> return
 │   │   ├── strategies.py        the 4 grasp motions + the STRATEGIES table
+│   │   ├── follow.py            face / person tracking velocity commands
 │   │   ├── classification.py    object_name -> strategy key
 │   │   ├── profiles.py          YAML loading and validation
 │   │   └── errors.py            PickAttemptFailed / PickAborted / PickHardwareError
