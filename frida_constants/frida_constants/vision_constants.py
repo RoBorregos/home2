@@ -179,3 +179,9 @@ DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
 DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"
 DISHWASHER_TABLET_DETECTION_TOPIC = "/vision/dishwasher/tablet_detection"
 DISHWASHER_DEBUG_IMAGE_TOPIC = "/vision/dishwasher/debug_image"
+
+# Semantic mapping
+EMBED_TEXT_TOPIC = "/vision/embed_text"
+EMBED_CROPS_TOPIC = "/vision/embed_crops"
+
+CLIP_EMBEDDING_MODEL="clip:ViT-B/32"
