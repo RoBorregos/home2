@@ -37,6 +37,7 @@ class ReachProfile:
     gap_min: float
     gap_max: float
     shape: str = "line"  # 'line' | 'circle' | 'auto'
+    grasp: str = "top"  # 'top' | 'front': gripper approach for the reach (IK) check
 
     def clamp(self, gap):
         return min(max(gap, self.gap_min), self.gap_max)
@@ -174,6 +175,45 @@ def footprint_cost(grid, x, y, yaw, samples, ignore=None, unknown_cost=0):
     vals = grid.lookup(world[:, 0], world[:, 1]).astype(np.int32)
     vals = np.where((vals < 0) | (vals == NO_INFORMATION), unknown_cost, vals)
     return int(vals.max()) if len(vals) else 0
+
+
+def footprint_hits(grid, x, y, yaw, samples, ignore=None, lethal=LETHAL):
+    """World points of the footprint at (x, y, yaw) that land on obstacle cells
+    (unknown cells excluded): what blocks a candidate pose, e.g. a chair."""
+    world = transform_points(samples, x, y, yaw)
+    if ignore is not None:
+        world = world[~ignore(world)]
+    if len(world) == 0:
+        return np.empty((0, 2))
+    vals = grid.lookup(world[:, 0], world[:, 1]).astype(np.int32)
+    return world[(vals >= lethal) & (vals != NO_INFORMATION)]
+
+
+def to_base_frame(point, x, y, yaw):
+    """(px, py) of a world point in the frame of a base standing at (x, y, yaw)."""
+    dx, dy = point[0] - x, point[1] - y
+    c, s = math.cos(yaw), math.sin(yaw)
+    return c * dx + s * dy, -s * dx + c * dy
+
+
+def side_of(points, x, y, yaw, center_band=0.10):
+    """'left' | 'right' | 'center' of `points` (Nx2 world) seen from a base at
+    (x, y, yaw), by their mean lateral offset."""
+    pts = np.asarray(points, dtype=float).reshape(-1, 2)
+    if len(pts) == 0:
+        return ""
+    lateral = float(np.mean([to_base_frame(p, x, y, yaw)[1] for p in pts]))
+    if abs(lateral) <= center_band:
+        return "center"
+    return "left" if lateral > 0 else "right"
+
+
+def ideal_candidate(candidates, profile):
+    """The pose the planner would pick with nothing in the way: smallest lateral
+    error, then closest to the preferred gap."""
+    if not candidates:
+        return None
+    return min(candidates, key=lambda c: (round(c.lateral, 3), abs(c.gap - profile.gap)))
 
 
 def footprint_clearance(points, footprint):
@@ -404,5 +444,6 @@ def load_profiles(data):
     out = {}
     for name, p in (data or {}).items():
         out[name] = ReachProfile(float(p["gap"]), float(p["gap_min"]),
-                                 float(p["gap_max"]), str(p.get("shape", "line")))
+                                 float(p["gap_max"]), str(p.get("shape", "line")),
+                                 str(p.get("grasp", "top")))
     return out

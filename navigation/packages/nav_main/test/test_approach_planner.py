@@ -176,3 +176,52 @@ def test_astar_none_when_goal_blocked():
     samples = ap.footprint_samples(FOOTPRINT, grid.resolution / 2)
     fill_box(grid, -0.05, 1.15, 0.05, 1.25)
     assert ap.footprint_astar(grid, (0.0, 0.0), (0.0, 1.2), 0.0, samples) is None
+
+
+def test_load_profiles_grasp_defaults_to_top():
+    profs = ap.load_profiles({
+        "table": {"gap": 0.03, "gap_min": 0.02, "gap_max": 0.15},
+        "shelf": {"gap": 0.17, "gap_min": 0.10, "gap_max": 0.25, "grasp": "front"},
+    })
+    assert profs["table"].grasp == "top" and profs["shelf"].grasp == "front"
+
+
+def test_to_base_frame():
+    # Base at (1, 1) facing +y: the point 1 m ahead of it is x=1, y=0 in base frame.
+    assert ap.to_base_frame((1.0, 2.0), 1.0, 1.0, math.pi / 2) == pytest.approx((1.0, 0.0))
+    # A point to the base's left (world -x when facing +y).
+    assert ap.to_base_frame((0.0, 1.0), 1.0, 1.0, math.pi / 2) == pytest.approx((0.0, 1.0))
+
+
+def test_side_of():
+    assert ap.side_of([(1.0, 0.5), (1.2, 0.4)], 0.0, 0.0, 0.0) == "left"
+    assert ap.side_of([(1.0, -0.5)], 0.0, 0.0, 0.0) == "right"
+    assert ap.side_of([(1.0, 0.05)], 0.0, 0.0, 0.0) == "center"
+    assert ap.side_of([], 0.0, 0.0, 0.0) == ""
+
+
+def test_chair_in_front_of_target_is_reported_as_blocker():
+    grid = empty_grid()
+    samples = ap.footprint_samples(FOOTPRINT, grid.resolution / 2)
+    p1, p2, n = (1.0, -1.0), (1.0, 1.0), (1.0, 0.0)
+    fill_box(grid, 1.0, -1.0, 1.8, 1.0)  # the table
+    fill_box(grid, 0.45, 0.05, 0.60, 0.20)  # a chair, slightly to the target's left
+    ignore = ap.halfplane_ignore(p1, n, margin=0.03)
+    cands = ap.line_face_candidates(p1, p2, n, FRONT, HALF_W, TABLE, target=(1.2, 0.0))
+    ap.rank(cands, TABLE, grid=grid, samples=samples, robot=(0.0, 0.0), ignore=ignore)
+    ideal = ap.ideal_candidate(cands, TABLE)
+    assert not ideal.valid and ideal.lateral < 0.03
+    hits = ap.footprint_hits(grid, ideal.x, ideal.y, ideal.yaw, samples, ignore)
+    assert len(hits) > 0
+    # The blocker is the chair, not the table, and sits on the robot's left.
+    assert np.all(hits[:, 0] < 1.0)
+    assert ap.side_of(hits, ideal.x, ideal.y, ideal.yaw) == "left"
+
+
+def test_free_ideal_pose_has_no_hits():
+    grid = empty_grid()
+    samples = ap.footprint_samples(FOOTPRINT, grid.resolution / 2)
+    fill_box(grid, 1.0, -1.0, 1.8, 1.0)
+    ignore = ap.halfplane_ignore((1.0, 0.0), (1.0, 0.0), margin=0.03)
+    x = 1.0 - FRONT - TABLE.gap
+    assert len(ap.footprint_hits(grid, x, 0.0, 0.0, samples, ignore)) == 0

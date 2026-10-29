@@ -251,13 +251,14 @@ Distances live **per surface type** in
 | `dishwasher` | 0.19 m | 0.12 to 0.25 m |
 | `serving_table` | 0.19 m | 0.12 to 0.25 m |
 
-The same file holds three more settings:
+The same file holds four more settings:
 
 - the band for `approach_point`, which is the distance from the base centre to
   the person or object,
 - the scoring weights, separate for docking and for `approach_point`,
 - `footprint_padding`, the margin that candidate poses keep from every obstacle
-  other than the surface being docked at.
+  other than the surface being docked at,
+- `reach_check`, the IK verification of candidate poses described below.
 
 You can activate docking in three ways:
 
@@ -283,6 +284,55 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 
 The old `offset` field still works when `surface_type` is empty: it is converted
 to the gap it used to produce.
+
+#### Reach check (the arm can actually reach the object)
+
+The reach band says how far the robot stands from the surface. It does not
+say whether the arm reaches *this* object from *this* pose. With
+`check_reach: true` and a 3D `target` (the object to grasp), the docker checks
+the best-ranked candidate poses with MoveIt's `/compute_ik` before moving:
+
+- The object is expressed in the `base_link` the robot *would* have at each
+  candidate, so nothing moves while checking.
+- Both the grasp and the pre-grasp must have IK. The gripper approach
+  (`grasp: top | front`) comes from the surface profile. Quaternions and
+  pre-grasp distances are in `reach_check.grasps`, matching manipulation's place
+  pipeline.
+- The first candidate that passes wins, so the usual cost is one or two IK
+  calls. If none passes, the ranking is kept and the response says
+  `reach: unreachable`. Manipulation may still manage, since the check is
+  kinematics only.
+- Without `moveit_msgs`, without `/compute_ik`, or without a target `z`, the dock
+  runs as before and reports `reach: unchecked`.
+
+Use it only when `target` is the object to grasp, not for the centre of a
+table.
+
+#### Dock diagnostics (what blocked the robot)
+
+Besides `success`, the `DockTable` response reports:
+
+| Field | Meaning |
+| --- | --- |
+| `lateral_error` | Target position relative to the docked base, in m (+ = left) |
+| `reach` | `ok`, `unreachable` or `unchecked` |
+| `target_blocked` | The pose straight in front of the target (or of the staging pose) was blocked |
+| `blocker`, `blocker_side` | Centre of what blocks it (map frame) and where it sits: `left`, `center` or `right` |
+
+`nav_tasks.dock_table` keeps these in `nav.last_dock_result`. Use them to decide
+which chairs must be moved for the robot to fit.
+
+To collect data across runs, set `table_docker`'s `result_log` parameter to a
+file path. Every dock then appends one JSON line with the surface, the target,
+the planned and measured gap, the lateral error, the reach verdict and the
+blocker. Use this data to tune the bands in `approach_profiles.yaml`.
+
+```bash
+ros2 param set /table_docker result_log /workspace/log/dock_results.jsonl
+ros2 service call /navigation/dock_table frida_interfaces/srv/DockTable \
+  "{surface_type: table, check_reach: true,
+    target: {header: {frame_id: base_link}, point: {x: 0.8, y: 0.2, z: 0.78}}}"
+```
 
 ## Navigation services
 

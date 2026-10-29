@@ -9,6 +9,8 @@
 #   gap_min  closest the planner/docker may put the robot
 #   gap_max  farthest the arm still reaches the surface
 #   shape    face model for table_docker: line | circle | auto
+#   grasp    how the gripper approaches objects there (top | front), used by the
+#            reach check below; default top. Confirm per surface with manipulation.
 #
 # Initial values reproduce the distances the robot docked at before this change
 # (old offset + min_safe 0.19 - footprint front 0.325), so behaviour on the real
@@ -22,8 +24,8 @@ surfaces:
   # Front sits close / overhangs above the lidar plane: stand further back.
   dishwasher:   {gap: 0.19, gap_min: 0.12, gap_max: 0.25, shape: line}
   # Shelves: the arm needs room to reach in.
-  cabinet:      {gap: 0.17, gap_min: 0.10, gap_max: 0.25, shape: line}
-  shelf:        {gap: 0.17, gap_min: 0.10, gap_max: 0.25, shape: line}
+  cabinet:      {gap: 0.17, gap_min: 0.10, gap_max: 0.25, shape: line, grasp: front}
+  shelf:        {gap: 0.17, gap_min: 0.10, gap_max: 0.25, shape: line, grasp: front}
   # Restaurant: serving at a customer table / bar with the arm tucked in nav_pose.
   serving_table: {gap: 0.19, gap_min: 0.12, gap_max: 0.25, shape: auto}
   # Unknown surface: table band, let table_docker pick line/circle.
@@ -47,3 +49,21 @@ weights:
 # Candidate poses keep this margin (m) from every obstacle except the surface
 # being docked at (the footprint is grown by it for the collision check).
 footprint_padding: 0.03
+
+# Reach check (table_docker): when the caller asks for it (DockTable.check_reach)
+# and gives a 3D target, the best candidates are verified with MoveIt's
+# /compute_ik before the base commits to one. The target is expressed in the
+# base_link the robot WOULD have at each candidate, so no motion is needed.
+# Kinematics only (no collision check: the planning scene is the current pose).
+# A candidate passes when both the grasp and the pre-grasp have an IK solution.
+reach_check:
+  enabled: true
+  service: /compute_ik
+  group: xarm6                  # frida_pymoveit2.robots.xarm6.MOVE_GROUP_ARM
+  ik_link: gripper_grasp_frame  # manipulation_constants.GRASP_LINK_FRAME
+  timeout: 0.1                  # s per IK request
+  max_candidates: 6             # best-ranked candidates checked per plan
+  grasps:
+    # xyzw quaternions in base_link, as manipulation's place pipeline uses them
+    top:   {quat: [0.0, 1.0, 0.0, 0.0], pregrasp: 0.10}
+    front: {quat: [0.650, -0.290, 0.636, -0.299], pregrasp: 0.25}

@@ -59,6 +59,10 @@ SHELF_LEVEL_NAMES = {1: "bottom", 2: "second", 3: "third", 4: "top"}
 # but places fall back to the lowest reachable level and pick sweeps skip it.
 MIN_REACHABLE_SHELF_Z = 0.20
 
+# Re-dock in front of the next object to pick when it sits farther than this (m)
+# to the side of the current docked pose (base_link y).
+REDOCK_LATERAL = 0.25
+
 
 class ObjectCategory(Enum):
     """Object categories for placement decisions"""
@@ -117,6 +121,7 @@ class ObjectInfo:
         self.name = name
         self.category = category
         self.bbox = bbox
+        self.map_point: PointStamped | None = None  # fixed when perceived; docking target
         self.is_picked = False
         self.skipped = False  # gave up before grasping (distinct from is_picked)
         self.is_placed = False
@@ -183,6 +188,9 @@ class PickAndPlaceTM(Node):
         # recoverable, a collision is not. (Stability decision 2026-07-02.)
         self.use_octomap_clearing = False
         self.max_cleanup_objects = 3  # how many to clean before breakfast
+        # When the spot in front of an object is blocked (a chair), ask a person to
+        # move it and dock once more. Off: check the competition rules first.
+        self.ask_to_clear_blockers = False
 
         # YOLO name mapping: logical → detection class (the model's actual labels).
         # Incheon 2026: the cereal box is detected as blue_cereal_box (the model also has
@@ -409,13 +417,51 @@ class PickAndPlaceTM(Node):
 
         return result
 
-    def dock_at(self, location: Location):
-        """Dock at `location` as its DOCK_SURFACES type; skips places marked None."""
+    def dock_at(self, location: Location, target: PointStamped | None = None):
+        """Dock at `location` as its DOCK_SURFACES type; skips places marked None.
+
+        With `target` (the object to pick, map frame) the base stands in front of
+        it and the candidate poses are checked against the arm's reach."""
         surface = DOCK_SURFACES.get(location)
         if surface is None:
             CLog.nav(self, "DOCK", f"No dock configured for {location.value}, skipping.")
             return
-        self.subtask_manager.nav.dock_table(surface_type=surface)
+        nav = self.subtask_manager.nav
+        nav.dock_table(surface_type=surface, target=target, check_reach=target is not None)
+        result = nav.last_dock_result
+        if target is not None and result.get("target_blocked") and self.ask_to_clear_blockers:
+            side = result.get("blocker_side") or "front"
+            where = "in front of me" if side == "center" else f"on my {side}"
+            self.subtask_manager.hri.say(
+                f"Something {where} keeps me from reaching the object. Could you please move it?"
+            )
+            self.timeout(5.0)
+            nav.dock_table(surface_type=surface, target=target, check_reach=True)
+
+    def _map_point(self, detection) -> PointStamped | None:
+        """Map-frame point of a detection, fixed now so it stays valid after the
+        robot moves (it is the docking target for that object)."""
+        try:
+            stamped_point = PointStamped()
+            stamped_point.header.frame_id = CAMERA_FRAME
+            stamped_point.header.stamp = rclpy.time.Time().to_msg()
+            stamped_point.point.x = float(detection.px)
+            stamped_point.point.y = float(detection.py)
+            stamped_point.point.z = float(detection.pz)
+            return self.tf_buffer.transform(stamped_point, "map", timeout=Duration(seconds=1.0))
+        except Exception as e:
+            CLog.vision(self, "TF", f"No map point for {detection.classname}: {e}", level="warn")
+            return None
+
+    def _far_to_the_side(self, target: PointStamped | None) -> bool:
+        """Whether `target` sits more than REDOCK_LATERAL to the side of the base."""
+        if target is None:
+            return False
+        try:
+            p = self.tf_buffer.transform(target, "base_link", timeout=Duration(seconds=1.0))
+        except Exception:
+            return False
+        return abs(p.point.y) > REDOCK_LATERAL
 
     def timeout(self, duration: float = 2.0):
         """Non-blocking wait that keeps spinning ROS"""
@@ -932,13 +978,9 @@ class PickAndPlaceTM(Node):
                         if self.use_extra_surface
                         else self.categorize_object(obj_name)
                     )
-                    self.detected_objects.append(
-                        ObjectInfo(
-                            name=obj_name,
-                            category=category,
-                            bbox=bbox,
-                        )
-                    )
+                    obj = ObjectInfo(name=obj_name, category=category, bbox=bbox)
+                    obj.map_point = self._map_point(bbox)
+                    self.detected_objects.append(obj)
                 CLog.vision(
                     self,
                     "DETECT",
@@ -1072,11 +1114,19 @@ class PickAndPlaceTM(Node):
             table_location = (
                 Location.EXTRA_SURFACE if self.use_extra_surface else Location.DINING_TABLE
             )
-            # Dock once per table visit: skip if perceive or a prior object already
-            # docked here; retries reuse it.
+            # Dock in front of this object: skip if already docked here (perceive or a
+            # prior object) unless the object sits well to the side; retries reuse it.
+            target = self.grasped_object.map_point
+            if (
+                self.current_attempts == 0
+                and self._docked_at_table
+                and self._far_to_the_side(target)
+            ):
+                CLog.nav(self, "DOCK", f"Re-docking in front of the {self.grasped_object.name}.")
+                self._docked_at_table = False
             if self.current_attempts == 0 and not self._docked_at_table:
                 self.navigate_to_location(table_location, say=False)
-                self.dock_at(table_location)
+                self.dock_at(table_location, target=target)
                 self._docked_at_table = True
 
             if not self._ensure_gripper_empty():

@@ -33,7 +33,9 @@ work on (`target_point`). Once the face is locked:
   a. Base placement: candidate base poses along the face (or around the round
      table) inside the type's reach band [gap_min, gap_max] are scored on the
      local costmap with the FULL footprint (a chair next to the table rejects
-     the poses it overlaps), lateral offset from the target and travel.
+     the poses it overlaps), lateral offset from the target and travel. With
+     `check_reach` and a 3D target, the best-ranked candidates are then checked
+     with the arm's IK (MoveIt /compute_ik) and the first one it reaches from wins.
   b. Motion: MPPI (nav2 controller_server, Omni model, footprint-aware) drives a
      planned path to a pre-dock pose `predock_distance` in front of the best pose,
      with the goal checker tightened for the duration.
@@ -46,7 +48,9 @@ lidar keeps every point at least `safety_clearance` outside the footprint.
 Detection runs only when a service is called — there is no free-running timer.
 """
 
+import json
 import math
+import os
 import time
 import threading
 import collections
@@ -54,6 +58,7 @@ import collections
 import numpy as np
 
 import rclpy
+import rclpy.parameter
 from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
@@ -86,6 +91,14 @@ try:
     _HAVE_PC2 = True
 except Exception:
     _HAVE_PC2 = False
+
+# The reach check asks MoveIt for IK; the navigation container may not ship
+# moveit_msgs, in which case docking simply runs without it.
+try:
+    from moveit_msgs.srv import GetPositionIK
+    _HAVE_MOVEIT = True
+except Exception:
+    _HAVE_MOVEIT = False
 
 from frida_constants.navigation_constants import (
     DOCK_SERVICE,
@@ -283,6 +296,13 @@ class TableDocker(Node):
         self.target_point = list(self.declare_parameter(
             "target_point", rclpy.Parameter.Type.DOUBLE_ARRAY).value or [])
         self.target_frame = self.declare_parameter("target_frame", "map").value
+        # Verify candidates with the arm's IK against the 3D target_point.
+        self.check_reach = self.declare_parameter("check_reach", False).value
+        # Outcome of the last dock (JSON), read back by nav_central for DockTable.
+        self.last_result = self.declare_parameter("last_result", "{}").value
+        # Append every dock outcome as one JSON line to this file ("" = off), to
+        # tune the reach bands from real runs.
+        self.result_log = self.declare_parameter("result_log", "").value
         self.profiles_file = self.declare_parameter("profiles_file", "").value
         self._load_profiles()
 
@@ -361,6 +381,8 @@ class TableDocker(Node):
         self._face = None       # locked face in odom frame
         self._plan = None       # planned dock (odom frame)
         self._target_odom = None
+        self._target_z = None   # target height above base_link (m), for the reach check
+        self._blocked = None    # what blocks the ideal dock pose (see _diagnose_block)
         self._costmap = None
         # Lethal cells seen since the current request started (odom cell keys).
         # Thin obstacles (chair legs) get raytraced out of nav2's costmap as soon
@@ -393,6 +415,12 @@ class TableDocker(Node):
                                                     callback_group=client_cb)
         self.ctrl_get_client = self.create_client(GetParameters, "/controller_server/get_parameters",
                                                   callback_group=client_cb)
+        self.ik_client = None
+        if self.reach_cfg["enabled"] and _HAVE_MOVEIT:
+            self.ik_client = self.create_client(GetPositionIK, self.reach_cfg["service"],
+                                                callback_group=client_cb)
+        elif self.reach_cfg["enabled"]:
+            self.log("warn", "moveit_msgs not available: docking without the reach check")
         self.path_pub = self.create_publisher(Path, "/approach_planner/path", 1)
         self.cand_pub = self.create_publisher(MarkerArray, "/approach_planner/candidates", 1)
 
@@ -462,6 +490,17 @@ class TableDocker(Node):
         self._fp_samples_sweep = ap.footprint_samples(self.footprint, 0.025, self.footprint_padding / 2)
         if "default" not in self.profiles:
             self.profiles["default"] = ap.ReachProfile(0.03, 0.02, 0.15, "auto")
+        rc = data.get("reach_check") or {}
+        self.reach_cfg = {
+            "enabled": bool(rc.get("enabled", False)),
+            "service": str(rc.get("service", "/compute_ik")),
+            "group": str(rc.get("group", "xarm6")),
+            "ik_link": str(rc.get("ik_link", "gripper_grasp_frame")),
+            "timeout": float(rc.get("timeout", 0.1)),
+            "max_candidates": int(rc.get("max_candidates", 6)),
+            "grasps": {name: (np.asarray(g["quat"], dtype=float), float(g.get("pregrasp", 0.0)))
+                       for name, g in (rc.get("grasps") or {}).items()},
+        }
 
     def _profile(self):
         """Reach band for this call: surface_type's profile (+ target_gap override)."""
@@ -469,7 +508,7 @@ class TableDocker(Node):
         if prof is None:
             self.log("warn", f"unknown surface_type '{self.surface_type}', using 'default'")
             prof = self.profiles["default"]
-        prof = ap.ReachProfile(prof.gap, prof.gap_min, prof.gap_max, prof.shape)
+        prof = ap.ReachProfile(prof.gap, prof.gap_min, prof.gap_max, prof.shape, prof.grasp)
         if self.target_gap is not None and self.target_gap >= 0.0:
             # Explicit gap (e.g. a legacy offset): a band centred on it.
             prof.gap = float(self.target_gap)
@@ -480,10 +519,12 @@ class TableDocker(Node):
     def _reset_request(self):
         """Per-call fields must not leak into the next dock."""
         self._target_odom = None
+        self._target_z = None
         self.surface_type = ""
         self.target_gap = -1.0
         self.target_point = []
         self.target_frame = "map"
+        self.check_reach = False
 
     def _costmap_cb(self, msg):
         """Full local costmap: keep it as an array + its geometry."""
@@ -876,23 +917,34 @@ class TableDocker(Node):
         R, t = Rt
         return float(t[0]), float(t[1]), math.atan2(R[1, 0], R[0, 0])
 
-    def _target_in(self, frame):
-        """The per-call target_point in `frame`, or None."""
-        if len(self.target_point) < 2:
+    def _target_in(self, frame, with_z=False):
+        """The per-call target_point ([x, y] or [x, y, z]) in `frame`, or None.
+        With `with_z`, returns [x, y, z] (None when the caller gave no z)."""
+        if len(self.target_point) < 2 or (with_z and len(self.target_point) < 3):
             return None
         ps = PointStamped()
         ps.header.frame_id = self.target_frame or "map"
         ps.point.x, ps.point.y = float(self.target_point[0]), float(self.target_point[1])
-        if ps.header.frame_id == frame:
-            return np.array([ps.point.x, ps.point.y])
-        try:
-            tf = self.tf_buffer.lookup_transform(frame, ps.header.frame_id, RclpyTime(),
-                                                 timeout=Duration(seconds=0.5))
-        except Exception as e:
-            self.log("warn", f"target TF {ps.header.frame_id}->{frame} failed ({e}); ignoring target")
-            return None
-        p = do_transform_point(ps, tf).point
-        return np.array([p.x, p.y])
+        if len(self.target_point) >= 3:
+            ps.point.z = float(self.target_point[2])
+        p = ps.point
+        if ps.header.frame_id != frame:
+            try:
+                tf = self.tf_buffer.lookup_transform(frame, ps.header.frame_id, RclpyTime(),
+                                                     timeout=Duration(seconds=0.5))
+            except Exception as e:
+                self.log("warn", f"target TF {ps.header.frame_id}->{frame} failed ({e}); ignoring target")
+                return None
+            p = do_transform_point(ps, tf).point
+        return np.array([p.x, p.y, p.z]) if with_z else np.array([p.x, p.y])
+
+    def _fix_target(self):
+        """Pin the per-call target in odom (a target given in base_link/camera must
+        not move with the robot) and keep its height above base_link, which planar
+        base motion does not change."""
+        self._target_odom = self._target_in(self.odom_frame)
+        in_base = self._target_in(self.base_frame, with_z=True)
+        self._target_z = None if in_base is None else float(in_base[2])
 
     def _fresh_grid(self, max_age=3.0):
         """Local costmap as an ap.Grid in the odom frame, or None if stale/missing."""
@@ -921,9 +973,10 @@ class TableDocker(Node):
         return ap.Grid(ap.occupancy_to_cost(data.ravel()), info.width, info.height, info.resolution,
                        info.origin.position.x, info.origin.position.y)
 
-    def _plan_dock(self, profile):
+    def _plan_dock(self, profile, reach=True):
         """Base placement on the locked face (odom frame). Returns the plan dict
-        (best pose + face point + pre-dock pose) or None."""
+        (best pose + face point + pre-dock pose) or None. With `reach`, the best
+        candidates go through the arm's IK check (if the caller asked for it)."""
         with self._lock:
             face = self._face
         robot = self._robot_pose(self.odom_frame)
@@ -958,6 +1011,10 @@ class TableDocker(Node):
                 if ap.footprint_cost(grid, px, py, c.yaw, self._fp_samples_padded, ignore) >= ap.LETHAL:
                     c.valid, c.reason = False, "pre-dock blocked"
             valid = [c for c in valid if c.valid]
+        blocked = self._diagnose_block(all_c, profile, grid, ignore)
+        reach_state = None
+        if reach and valid:
+            valid, reach_state = self._reach_order(valid, profile)
         self._publish_candidates(all_c, valid[0] if valid else None)
         if self.debug_dump:
             self._dump_n = getattr(self, "_dump_n", 0) + 1
@@ -967,6 +1024,8 @@ class TableDocker(Node):
                                     + list(face["normal"]) + list(face["p1"]) + list(face["p2"])]),
                      cands=np.array([[c.x, c.y, c.yaw, c.gap, c.cost, c.valid, c.score] for c in all_c]),
                      robot=np.array(robot), footprint=self.footprint)
+        with self._lock:
+            self._blocked = blocked
         if not valid:
             return None
         best = valid[0]
@@ -976,11 +1035,98 @@ class TableDocker(Node):
         plan = {"pose": (best.x, best.y, best.yaw), "pre": (float(pre[0]), float(pre[1]), best.yaw),
                 "q": pose + nvec * (self.front + best.gap), "normal": nvec, "gap": best.gap,
                 "cost": best.cost, "lateral": best.lateral, "target": target,
-                "n_valid": len(valid), "n_total": len(all_c), "checked": grid is not None}
+                "n_valid": len(valid), "n_total": len(all_c), "checked": grid is not None,
+                "reach": reach_state}
         with self._lock:
             self._plan = plan
         self._publish_plan_markers(plan)
         return plan
+
+    def _diagnose_block(self, cands, profile, grid, ignore):
+        """What keeps the base from standing straight in front of the target (or
+        where nav2 left it): the obstacle cells under the ideal candidate's
+        footprint, or under its pre-dock pose. Returns {"point" (odom), "side"} or
+        None when the ideal pose is free."""
+        if grid is None:
+            return None
+        ideal = ap.ideal_candidate(cands, profile)
+        if ideal is None or ideal.valid:
+            return None
+        hits = ap.footprint_hits(grid, ideal.x, ideal.y, ideal.yaw, self._fp_samples_padded, ignore)
+        if len(hits) == 0:
+            px = ideal.x - math.cos(ideal.yaw) * self.predock_distance
+            py = ideal.y - math.sin(ideal.yaw) * self.predock_distance
+            hits = ap.footprint_hits(grid, px, py, ideal.yaw, self._fp_samples_padded, ignore)
+        if len(hits) == 0:
+            return None
+        return {"point": hits.mean(axis=0), "side": ap.side_of(hits, ideal.x, ideal.y, ideal.yaw)}
+
+    # ------------------------------------------------------------- reach check
+    def _reach_order(self, valid, profile):
+        """Walk the ranked candidates and put the first one the arm can reach the
+        target from at the front. Returns (candidates, "ok" | "unreachable" |
+        "unchecked"). Stops at the first pass, so the usual cost is one or two IK
+        calls. When nothing passes the ranking is kept: manipulation may still
+        manage (the check is kinematics only, with an approximate grasp)."""
+        if not self.check_reach:
+            return valid, "unchecked"
+        if self.ik_client is None or self._target_odom is None or self._target_z is None:
+            self.log("warn", "Reach check skipped: needs moveit_msgs and a 3D target")
+            return valid, "unchecked"
+        grasp = self.reach_cfg["grasps"].get(profile.grasp)
+        if grasp is None:
+            self.log("warn", f"Reach check skipped: no '{profile.grasp}' grasp in reach_check.grasps")
+            return valid, "unchecked"
+        if not self.ik_client.service_is_ready():
+            self.log("warn", f"Reach check skipped: {self.reach_cfg['service']} not available")
+            return valid, "unchecked"
+        for i, c in enumerate(valid[:self.reach_cfg["max_candidates"]]):
+            ok = self._reachable_from(c, grasp)
+            if ok is None:
+                return valid, "unchecked"
+            if ok:
+                if i:
+                    self.log("info", f"Reach check: candidate {i} is the first the arm reaches from")
+                return [c] + valid[:i] + valid[i + 1:], "ok"
+            c.reason = "arm cannot reach the target"
+        self.log("warn", "Reach check: no checked candidate reaches the target; keeping the ranking")
+        return valid, "unreachable"
+
+    def _reachable_from(self, cand, grasp):
+        """Whether the arm has IK for the grasp and the pre-grasp with the base at
+        `cand`. None if the IK service failed."""
+        quat, pregrasp = grasp
+        bx, by = ap.to_base_frame(self._target_odom, cand.x, cand.y, cand.yaw)
+        grasp_pos = np.array([bx, by, self._target_z])
+        # Pre-grasp: backed off along the gripper's own Z, as manipulation does.
+        approach = quat_to_rot(*quat)[:, 2]
+        for pos in (grasp_pos, grasp_pos - approach * pregrasp):
+            ok = self._ik(pos, quat)
+            if not ok:
+                return ok
+        return True
+
+    def _ik(self, pos, quat):
+        """MoveIt IK for the grasp link at `pos`/`quat` in base_link (kinematics
+        only). True/False, or None if the service did not answer."""
+        cfg = self.reach_cfg
+        req = GetPositionIK.Request()
+        r = req.ik_request
+        r.group_name = cfg["group"]
+        r.ik_link_name = cfg["ik_link"]
+        r.avoid_collisions = False
+        r.pose_stamped.header.frame_id = self.base_frame
+        r.pose_stamped.pose.position.x, r.pose_stamped.pose.position.y, r.pose_stamped.pose.position.z = (
+            float(v) for v in pos)
+        o = r.pose_stamped.pose.orientation
+        o.x, o.y, o.z, o.w = (float(v) for v in quat)
+        r.timeout.sec = int(cfg["timeout"])
+        r.timeout.nanosec = int((cfg["timeout"] % 1.0) * 1e9)
+        future = self.ik_client.call_async(req)
+        if not self._wait(future, cfg["timeout"] + 1.0) or future.result() is None:
+            self.log("warn", "Reach check: no answer from the IK service")
+            return None
+        return future.result().error_code.val == 1  # MoveItErrorCodes.SUCCESS
 
     def _same_surface(self, old, max_offset=0.10, max_deeper=0.35):
         """Whether the freshly locked face is the surface we are docking at.
@@ -1058,7 +1204,10 @@ class TableDocker(Node):
             fit = None
         if fit is not None:
             self._fuse_face_orientation(old_face)
-        new = self._plan_dock(profile) if fit is not None else None
+        new = self._plan_dock(profile, reach=not narrow) if fit is not None else None
+        if new is not None and new["reach"] is None:
+            # Close-range refinements move a few cm: the reach verdict still holds.
+            new["reach"] = plan.get("reach")
         if new is None:
             with self._lock:
                 self._face, self._plan = old_face, plan
@@ -1502,8 +1651,7 @@ class TableDocker(Node):
     def _preview_cb(self, request, response):
         self.log("info", "Preview requested — detecting + planning (no motion)")
         profile = self._profile()
-        # Fixed in odom once: a target given in base_link/camera must not move with the robot.
-        self._target_odom = self._target_in(self.odom_frame)
+        self._fix_target()
         try:
             fit = self._detect_and_lock(profile.shape)
             if fit is None:
@@ -1522,7 +1670,7 @@ class TableDocker(Node):
             response.message = (f"Detected ({shape_txt.strip()}): yaw_err={math.degrees(e_yaw):.1f}deg "
                                 f"dist={distance:.3f}m points={len(fit['pts'])}; "
                                 + (f"plan gap={plan['gap']:.2f}m lateral={plan['lateral']:.2f}m "
-                                   f"({plan['n_valid']}/{plan['n_total']} free)" if plan
+                                   f"({plan['n_valid']}/{plan['n_total']} free) reach={plan['reach']}" if plan
                                    else "no collision-free dock pose"))
             self.log("info", response.message)
             return response
@@ -1535,13 +1683,16 @@ class TableDocker(Node):
         self.log("info", f"Dock requested — surface={self.surface_type or 'default'} "
                          f"gap={profile.gap:.2f}m band=[{profile.gap_min:.2f}, {profile.gap_max:.2f}] "
                          f"target={self.target_point or '-'} [{self.target_frame}]")
-        # Fixed in odom once: a target given in base_link/camera must not move with the robot.
-        self._target_odom = self._target_in(self.odom_frame)
+        self._fix_target()
         with self._lock:
             self._memory = set()
             self._remember = True
+            self._plan = None
+            self._blocked = None
         try:
-            return self._dock(profile, response)
+            response = self._dock(profile, response)
+            self._record_result(response)
+            return response
         finally:
             with self._lock:
                 self._remember = False
@@ -1635,6 +1786,58 @@ class TableDocker(Node):
         response.message = msg
         self.log("info" if ok else "error", msg)
         return response
+
+    def _record_result(self, response):
+        """Outcome of this dock as JSON: the `last_result` parameter (nav_central
+        reads it back for the DockTable response) and, if set, one line of
+        `result_log` to tune the reach bands from real runs."""
+        with self._lock:
+            plan, blocked = self._plan, self._blocked
+        result = {
+            "stamp": time.time(),
+            "success": bool(response.success),
+            "message": response.message,
+            "surface": self.surface_type or "default",
+            "target": None if self._target_odom is None else [round(float(v), 3) for v in self._target_odom],
+            "target_z": None if self._target_z is None else round(self._target_z, 3),
+            "planned_gap": None if plan is None else round(float(plan["gap"]), 3),
+            "measured_gap": None,
+            "lateral_error": 0.0,
+            "reach": (plan or {}).get("reach") or "unchecked",
+            "target_blocked": blocked is not None,
+            "blocker": None,
+            "blocker_frame": "",
+            "blocker_side": "",
+        }
+        if response.success:
+            gap = self._live_front_clearance()
+            result["measured_gap"] = None if gap is None else round(gap, 3)
+        robot = self._robot_pose(self.odom_frame)
+        if self._target_odom is not None and robot is not None:
+            result["lateral_error"] = round(ap.to_base_frame(self._target_odom, *robot)[1], 3)
+        if blocked is not None:
+            frame, point = self._odom_point_to_map(blocked["point"])
+            result.update(blocker=[round(float(v), 3) for v in point], blocker_frame=frame,
+                          blocker_side=blocked["side"])
+            self.log("warn", f"Ideal dock pose blocked by something on the {blocked['side']} "
+                             f"at {result['blocker']} [{frame}]")
+        text = json.dumps(result)
+        self.set_parameters([rclpy.parameter.Parameter("last_result", value=text)])
+        if self.result_log:
+            try:
+                with open(os.path.expanduser(self.result_log), "a") as f:
+                    f.write(text + "\n")
+            except OSError as e:
+                self.log("warn", f"Could not write {self.result_log}: {e}")
+
+    def _odom_point_to_map(self, xy):
+        """(frame, [x, y]) of an odom point in map, or in odom if TF is missing."""
+        Rt = self._lookup_Rt("map", self.odom_frame)
+        if Rt is None:
+            return self.odom_frame, [float(xy[0]), float(xy[1])]
+        R, t = Rt
+        p = R @ np.array([float(xy[0]), float(xy[1]), 0.0]) + t
+        return "map", [float(p[0]), float(p[1])]
 
     def _servo_path_safe(self, plan, blind_limit=0.30):
         """Whether the straight sweep from here to the planned pose is collision-free
