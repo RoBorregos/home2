@@ -252,12 +252,6 @@ class RobotArm:
     def joint_state(self) -> Optional[JointState]:
         return self._latest_joint_state
 
-    def tcp_z(self) -> Optional[float]:
-        """Current tool-centre-point Z in metres, or None if unknown."""
-        if self._latest_robot_state is None:
-            return None
-        return self._latest_robot_state.pose[2] / 1000.0
-
     def tcp_xyz(self) -> Optional[np.ndarray]:
         """Current tool-centre-point XYZ in metres, or None if unknown."""
         if self._latest_robot_state is None:
@@ -620,14 +614,13 @@ class RobotArm:
     # ==================================================================
 
     @contextmanager
-    def cartesian_velocity_mode(self, label: str, on_mode1=None):
+    def cartesian_velocity_mode(self, label: str):
         """Hold the arm in mode 5 for the duration of the block.
 
         Whatever happens inside -- an exception, an e-stop, an early return --
         the exit path zeroes the velocity and restores mode 1. Leaving the arm
         in mode 5 takes the trajectory controller offline, so every subsequent
-        MoveIt goal would fail. ``on_mode1`` runs once mode 1 is back, before the
-        controller recovery wait.
+        MoveIt goal would fail.
         """
         if not self._set_xarm_mode(0):
             raise PickHardwareError(f"[{label}] could not enter mode 0")
@@ -643,7 +636,7 @@ class RobotArm:
             yield
         finally:
             self._stop_cartesian_velocity()
-            self._restore_mode1(on_mode1)
+            self._restore_mode1()
 
     def _send_cartesian_velocity(
         self, speed_mm_s: float, label: str, direction=(0.0, 0.0, 1.0)
@@ -785,77 +778,15 @@ class RobotArm:
     def fixed_distance_descent(
         self, distance_m: float, speed_mm_s: float, descend: bool = True
     ) -> bool:
-        """Move a fixed Z distance under cartesian velocity, closed on TCP Z.
-
-        ``descend=False`` drives +Z instead, reusing the same mechanism.
-        """
-        label = "FixedDescent"
-        sign = -1.0 if descend else 1.0
-        direction = "descending" if descend else "ascending"
-        self._log.info(
-            f"[{label}] {direction} {distance_m * 1000:.0f}mm at {speed_mm_s:.1f} mm/s"
+        """Move a fixed Z distance, a vertical cartesian_approach."""
+        return self.cartesian_approach(
+            (0.0, 0.0, -1.0 if descend else 1.0), distance_m, speed_mm_s
         )
-
-        # Read the start height before any mode switch, so a stale TCP reading
-        # cannot be mistaken for progress.
-        wait_start = time.time()
-        while self.tcp_z() is None:
-            if time.time() - wait_start > 2.0:
-                self._log.error(
-                    f"[{label}] no robot_states after 2s, cannot verify descent"
-                )
-                return False
-            time.sleep(0.05)
-
-        start_z = self.tcp_z()
-        self._log.info(
-            f"[{label}] start_z={start_z * 1000:.1f}mm "
-            f"target_z={(start_z + sign * distance_m) * 1000:.1f}mm"
-        )
-
-        reached = False
-        with self.cartesian_velocity_mode(label):
-            self._send_cartesian_velocity(sign * speed_mm_s, label)
-
-            timeout = (distance_m * 1000.0 / speed_mm_s) * DESCENT_TIMEOUT_FACTOR
-            loop_start = time.time()
-
-            while True:
-                time.sleep(0.02)  # 50 Hz
-                elapsed = time.time() - loop_start
-
-                if elapsed > timeout:
-                    self._log.warn(
-                        f"[{label}] timeout after {elapsed:.1f}s (limit={timeout:.1f}s)"
-                    )
-                    break
-
-                if self._estop:
-                    self._log.warn(f"[{label}] e-stop during descent")
-                    raise PickAborted("e-stop during fixed-distance descent")
-
-                current_z = self.tcp_z()
-                if current_z is None:
-                    continue
-
-                moved = (start_z - current_z) if descend else (current_z - start_z)
-                if moved >= distance_m:
-                    self._log.info(
-                        f"[{label}] reached: moved={moved * 1000:.1f}mm "
-                        f"(target={distance_m * 1000:.0f}mm)"
-                    )
-                    reached = True
-                    break
-
-        return reached
 
     def cartesian_approach(
-        self,
-        direction,
-        distance_m: float,
-        speed_mm_s: float,
-        close_on_reach: bool = False,
+        self, direction, distance_m: float, speed_mm_s: float
     ) -> bool:
+        """Drive distance_m along a unit direction, closed on the TCP position."""
         label = "CartesianApproach"
         direction = np.asarray(direction)
         self._log.info(
@@ -863,13 +794,13 @@ class RobotArm:
             f"{direction.round(2).tolist()} at {speed_mm_s:.1f} mm/s"
         )
 
-        # Read the start height before any mode switch, so a stale TCP reading
+        # Read the start position before any mode switch, so a stale TCP reading
         # cannot be mistaken for progress.
         wait_start = time.time()
         while self.tcp_xyz() is None:
-            if time.time() - wait_start > 1.0:
+            if time.time() - wait_start > 2.0:
                 self._log.error(
-                    f"[{label}] no robot_states after 1s, cannot verify the move"
+                    f"[{label}] no robot_states after 2s, cannot verify the move"
                 )
                 return False
             time.sleep(0.05)
@@ -881,13 +812,7 @@ class RobotArm:
         )
 
         reached = False
-
-        def close_now():
-            if reached and close_on_reach:
-                self._log.info(f"[{label}] closing gripper")
-                self.close_gripper(settle_s=0.0)
-
-        with self.cartesian_velocity_mode(label, on_mode1=close_now):
+        with self.cartesian_velocity_mode(label):
             self._send_cartesian_velocity(speed_mm_s, label, direction)
 
             timeout = (distance_m * 1000.0 / speed_mm_s) * DESCENT_TIMEOUT_FACTOR
@@ -969,7 +894,7 @@ class RobotArm:
         except Exception as exc:
             self._log.error(f"[xArm] stop error: {exc}")
 
-    def _restore_mode1(self, on_mode1=None):
+    def _restore_mode1(self):
         self._log.info("[xArm] restoring mode 1...")
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
@@ -985,8 +910,6 @@ class RobotArm:
                 time.sleep(1.0)
                 continue
 
-            if on_mode1 is not None:
-                on_mode1()
             self._log.info(
                 f"[xArm] waiting {MODE1_RECOVERY_TIME}s for the trajectory controller"
             )

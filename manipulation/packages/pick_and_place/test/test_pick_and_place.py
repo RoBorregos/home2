@@ -27,7 +27,7 @@ from frida_constants.manipulation_constants import (
     BOWL_NAME,
     PRE_GRASP_DISTANCE,
     RIM_NAMES,
-    SAFETY_HEIGHT,
+    SAFETY_HEIGHT_GEOMETRIC,
 )
 from frida_interfaces.msg import ManipulationTask, PlaceParams
 from pathlib import Path
@@ -41,6 +41,7 @@ from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
+    PICK_STRATEGY_RIM,
     resolve_pick_strategy,
 )
 from pick_and_place.pipelines.errors import (
@@ -138,7 +139,7 @@ def test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis():
         < arm.calls.index("close_gripper")
         < arm.calls.index("attach_pick_object")
     )
-    assert arm.close_settles == [0.0]
+    assert arm.close_settles == [profile.close_settle]
     assert "move_to_pose" not in arm.calls
 
 
@@ -179,14 +180,25 @@ def test_gpd_falls_back_to_the_next_config(strategies):
         grasps=[([], []), ([make_pose()], [0.9])],
     )
     arm = FakeArm()
-    success, _ = run_pick(arm, perception, strategies, object_name="cup")
+    success, _ = run_pick(arm, perception, strategies, object_name="coke", use_gpd=True)
     assert success
     assert perception.calls.count("detect_grasps") == 2
 
 
+def test_a_failed_rim_pick_does_not_fall_back_to_gpd(strategies):
+    perception = flat_perception()
+    arm = FakeArm(pregrasp_results=[False] * 10)
+
+    success, _ = run_pick(arm, perception, strategies, object_name="basket")
+
+    assert not success
+    assert "detect_grasps" not in perception.calls
+    assert "add_collision_object" not in arm.calls
+
+
 def test_a_shape_pick_adds_the_fitted_object_and_retries_the_next_candidate(strategies):
     fitted = FakeGenerateGraspsResponse(
-        make_pose(z=0.3), grasps=[make_pose(z=0.3), make_pose(z=0.3)]
+        make_pose(z=0.3), grasps=[make_pose(z=0.3), make_pose(z=0.3)], object_type="box"
     )
     fitted.object.pose.pose.position.z = 0.15
     fitted.object.dimensions.z = 0.20
@@ -200,14 +212,16 @@ def test_a_shape_pick_adds_the_fitted_object_and_retries_the_next_candidate(stra
     assert arm.calls.count("cartesian_approach") == 2
     assert arm.calls.index("add_collision_object") < arm.calls.index("snapshot_scene")
     assert outcome.object_height == pytest.approx(0.20)
-    assert outcome.object_pick_height == pytest.approx(0.13 - 0.05 + SAFETY_HEIGHT)
+    assert outcome.object_pick_height == pytest.approx(
+        0.13 - 0.05 + SAFETY_HEIGHT_GEOMETRIC
+    )
 
 
 @pytest.mark.parametrize("candidates_fail", [False, True])
 def test_a_failed_shape_pick_falls_back_to_gpd(strategies, candidates_fail):
     generated, arm = None, FakeArm()
     if candidates_fail:
-        generated = FakeGenerateGraspsResponse(make_pose(z=0.3))
+        generated = FakeGenerateGraspsResponse(make_pose(z=0.3), object_type="box")
         generated.object.id = "fitted"
         arm = FakeArm(pregrasp_results=[False] * 10)
     perception = FakePerception(
@@ -620,9 +634,21 @@ def test_bowl_wins_over_rim():
     assert resolve_pick_strategy(BOWL_NAME) == PICK_STRATEGY_BOWL
 
 
-@pytest.mark.parametrize("name", ["", None, "cup"])
-def test_unknown_names_fall_back_to_gpd(name):
+@pytest.mark.parametrize("name", ["", None])
+def test_a_request_without_a_name_goes_to_gpd(name):
     assert resolve_pick_strategy(name) == PICK_STRATEGY_GPD
+
+
+@pytest.mark.parametrize(
+    "name,force_gpd,expected",
+    [
+        ("coke", False, PICK_STRATEGY_GEOMETRIC),
+        ("coke", True, PICK_STRATEGY_GPD),
+        ("cup", True, PICK_STRATEGY_RIM),
+    ],
+)
+def test_force_gpd_only_overrides_the_geometric_default(name, force_gpd, expected):
+    assert resolve_pick_strategy(name, force_gpd) == expected
 
 
 # ============================================================================

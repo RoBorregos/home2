@@ -16,7 +16,11 @@ from frida_constants.manipulation_constants import (
     GRASP_CLASS_RIM,
     GRASP_CLASS_ROUND,
     GRASP_CLASS_TRASH,
+    GRIPPER_BODY_CORNERS,
     GRIPPER_FINGER_LENGTH,
+    GRIPPER_FINGER_THICKNESS,
+    GRIPPER_HALF_THICKNESS,
+    GRIPPER_MAX_APERTURE,
     GRIPPER_REACH,
     PEAK_NAMES,
     PLACE_TRASH_HEIGHT_OFFSET,
@@ -40,9 +44,6 @@ assert len(OBJECT_GRASP_CLASS) == sum(
     map(len, GRASP_CLASS_OBJECTS.values())
 ), "an object is listed under two grasp classes"
 DEFORMABLE_OBJECTS = frozenset({"clothes", "bread", "chip_bag", "towel", "plush_toy"})
-
-GRIPPER_MAX_APERTURE = 0.095
-GRIPPER_HALF_THICKNESS = 0.032
 
 MIN_POINTS_FOR_PCA = 10
 ELONGATION_MIN_RATIO = 2.0
@@ -81,13 +82,12 @@ DEPTH_JUMP = 0.01
 NEIGHBOUR_PAD = 0.5
 OBSTACLE_MIN_POINTS = 10
 SELF_MARGIN = 0.01
-GRIPPER_FINGER_THICKNESS = 0.03
 
 TABLE_CLEARANCE = 0.005
 CYLINDER_TOP_DEPTH = 0.09
 PALM_OFFSET = 0.073
 PALM_ABOVE_TIP = GRIPPER_REACH - PALM_OFFSET
-GRIPPER_BODY = np.array([[-0.091, -0.099, 0.0], [0.039, 0.099, 0.081]])
+GRIPPER_BODY = np.array(GRIPPER_BODY_CORNERS)
 
 FINGER_SWEEP = np.array(
     [
@@ -143,6 +143,8 @@ class Intrinsics:
 
 @dataclass(frozen=True)
 class Scene:
+    """One depth frame with its bbox and the transforms to work in link_base."""
+
     depth: np.ndarray
     intrinsics: Intrinsics
     cam_to_base: np.ndarray
@@ -213,10 +215,8 @@ def above_support(points: np.ndarray, margin: float) -> tuple:
     return support_z, above if len(above) >= MIN_POINTS_FOR_PCA else points
 
 
-# defining the object is the biggest depth-continuous blob in the bbox; a
-# neighbour touching it merges in, a bigger neighbour inside the bbox wins, part outside
-# bbox is obstacle, bigger neighbour inside the bbox still wins.
 def segment(scene: Scene, margin: float) -> tuple:
+    # Object = blob with most pixels in the bbox; everything else is an obstacle.
     xmin, ymin, xmax, ymax = scene.bbox
     height, width = scene.depth.shape
     pad_x = int((xmax - xmin) * NEIGHBOUR_PAD)
@@ -400,6 +400,7 @@ def circumsphere(sample: np.ndarray) -> tuple:
 
 
 def shape_fractions(points: np.ndarray) -> dict:
+    """Share of points explained by the best sphere, cylinder and box."""
     rng = np.random.default_rng(0)
     points = points - points.mean(axis=0)
     xy, z = points[:, :2], points[:, 2]
@@ -434,6 +435,7 @@ def shape_fractions(points: np.ndarray) -> dict:
 
 
 def box_axes_share(points: np.ndarray) -> float:
+    """Share of side-surface normals aligned with the box axes (NaN if few)."""
     points = points - points.mean(axis=0)
     if len(points) < NORMAL_NEIGHBOURS:
         return np.nan
@@ -451,6 +453,7 @@ def box_axes_share(points: np.ndarray) -> float:
 
 
 def estimate_shape(points: np.ndarray, support_z: float) -> str:
+    """Pick sphere, cylinder or box from the fit shares, normals and height."""
     fractions = shape_fractions(points)
     share = box_axes_share(points)
     if share >= BOX_AXES_MIN:
@@ -470,8 +473,8 @@ def turn(vector: np.ndarray, degrees: float) -> np.ndarray:
     return np.array([c * vector[0] - s * vector[1], s * vector[0] + c * vector[1]])
 
 
-# (label, tilt from vertical, horizontal approach side, closing axis) per shape.
 def approaches(grasp_class, away, short_axis, long_axis) -> list:
+    """Candidate (label, tilt, approach side, closing axis) for a grasp class."""
     tangent = np.array([-away[1], away[0]])
     tops = [(f"top {t}", 0, away, turn(tangent, t)) for t in (0, 45, 90, 135)]
     if grasp_class in (GRASP_CLASS_ROUND, GRASP_CLASS_CYLINDRICAL):
@@ -503,8 +506,9 @@ def pad_contact(center, normal, extent, bottom, span, tip, rotation) -> np.ndarr
     return section[on_pads]
 
 
-def solid(scene: Scene, grasp_class: str) -> tuple:
-    support_z, points, obstacles = segment(scene, SOLID_SUPPORT_MARGIN)
+def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
+    """Rank grasps on a segmented solid of the given class; returns (fit, grasps)."""
+    support_z, points, obstacles = segmented
     points = points[:: max(1, len(points) // SOLID_MAX_POINTS)]
     top_z = np.percentile(points[:, 2], SOLID_TOP_PERCENTILE)
     center, short_axis, long_axis, short, long = fit_box(points)
@@ -635,11 +639,13 @@ def solid(scene: Scene, grasp_class: str) -> tuple:
 
 
 def measured_solid(scene: Scene) -> tuple:
-    support_z, points, _ = segment(scene, SOLID_SUPPORT_MARGIN)
+    """Classify a solid by its measured shape, then grasp it."""
+    segmented = segment(scene, SOLID_SUPPORT_MARGIN)
+    support_z, points, _ = segmented
     shape = SHAPE_CLASS[
         estimate_shape(points[:: max(1, len(points) // SOLID_MAX_POINTS)], support_z)
     ]
-    return (shape, *solid(scene, shape))
+    return (shape, *solid(scene, shape, segmented))
 
 
 def count_inside(points: np.ndarray, box: np.ndarray) -> int:

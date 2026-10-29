@@ -1,6 +1,6 @@
 """Pick motion strategies: how the arm actually closes on an object.
 
-Three algorithms cover every object the robot picks. Which one runs is decided
+Four algorithms cover every object the robot picks. Which one runs is decided
 by ``resolve_pick_strategy(object_name)`` and looked up in ``STRATEGIES`` at the
 bottom of this file; the numbers each one uses come from
 ``config/pick_profiles.yaml``.
@@ -62,7 +62,7 @@ class PickOutcome:
 
 
 class PickStrategy:
-    """Base for the three motion strategies."""
+    """Base for the four motion strategies."""
 
     def __init__(self, profile: PickProfile):
         self.profile = profile
@@ -129,8 +129,8 @@ class CartesianApproachPick(PickStrategy):
     """Back off along the grasp's approach axis, then close straight in on it.
 
     The rim strategy, tilted: the arm moves to a pre-grasp behind the grasp, drives
-    straight forward along the approach axis, attaches the fitted object, closes and saves
-    the PickOutcome data like height.
+    straight forward along the approach axis, closes, attaches the fitted object and
+    saves the PickOutcome data like height.
     """
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
@@ -157,11 +157,13 @@ class CartesianApproachPick(PickStrategy):
                 approach_axis(candidate.pose),
                 distance,
                 profile.descent_speed,
-                close_on_reach=True,
             ):
                 raise PickAttemptFailed(
                     f"approach of {distance * 1000:.0f} mm did not complete"
                 )
+
+        with arm.phase("close_gripper"):
+            arm.close_gripper(settle_s=profile.close_settle)
 
         with arm.phase("attach_object"):
             arm.attach_pick_object()

@@ -15,11 +15,15 @@ from frida_constants.vision_constants import (
 )
 from frida_constants.manipulation_constants import (
     GENERATE_GRASPS_SERVICE,
+    GRASP_CLASS_BOX,
+    GRASP_CLASS_CYLINDRICAL,
     GRASP_CLASS_RIM,
+    GRASP_CLASS_ROUND,
     MANIPULATION_ACTION_SERVER,
 )
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
+    PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
     resolve_pick_strategy,
 )
@@ -201,10 +205,18 @@ class KeyboardInput(Node):
             f"class={response.grasp_class}, deformable={response.deformable}"
         )
 
-        expected = GRASP_CLASS_RIM if strategy == PICK_STRATEGY_BOWL else strategy
+        # Strategy keys match the generator's class
+        expected = {
+            PICK_STRATEGY_BOWL: {GRASP_CLASS_RIM},
+            PICK_STRATEGY_GEOMETRIC: {
+                GRASP_CLASS_BOX,
+                GRASP_CLASS_CYLINDRICAL,
+                GRASP_CLASS_ROUND,
+            },
+        }.get(strategy, {strategy})
         if strategy == PICK_STRATEGY_GPD:
             verdict = "these candidates are not used"
-        elif response.grasp_class == expected:
+        elif response.grasp_class in expected:
             verdict = "OK, same class as the generator"
         else:
             verdict = f"MISMATCH, the generator measured '{response.grasp_class}'"

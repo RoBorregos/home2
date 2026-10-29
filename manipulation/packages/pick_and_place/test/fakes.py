@@ -160,15 +160,10 @@ class FakeArm:
         self.descents.append((distance_m, speed_mm_s))
         return self._next(self._descent_results, True)
 
-    def cartesian_approach(
-        self, direction, distance_m, speed_mm_s, close_on_reach=False
-    ):
+    def cartesian_approach(self, direction, distance_m, speed_mm_s):
         self.calls.append("cartesian_approach")
         self.approaches.append((direction, distance_m, speed_mm_s))
-        reached = self._next(self._descent_results, True)
-        if reached and close_on_reach:
-            self.close_gripper(settle_s=0.0)
-        return reached
+        return self._next(self._descent_results, True)
 
     def force_guarded_descent(self, guard):
         self.calls.append("force_guarded_descent")
@@ -244,9 +239,6 @@ class FakeArm:
         return 0.12
 
     # --- state and observability --------------------------------------------
-
-    def tcp_z(self):
-        return 0.5
 
     def tcp_xyz(self):
         return (0.5, 0.0, 0.5)
@@ -392,11 +384,13 @@ class FakePerception:
 class FakeGenerateGraspsResponse:
     """Stand-in for the grasp generator's reply."""
 
-    def __init__(self, pose, samples_collected: int = 5, grasps=None):
+    def __init__(
+        self, pose, samples_collected: int = 5, grasps=None, object_type: str = ""
+    ):
         self.pose = pose
         self.grasps = grasps or [pose]
         self.scores = [1.0] * len(self.grasps)
-        self.object = CollisionObject(type="box")
+        self.object = CollisionObject(type=object_type)
         self.samples_collected = samples_collected
         self.success = True
         self.message = ""

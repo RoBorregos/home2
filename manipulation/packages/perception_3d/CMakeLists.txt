@@ -150,7 +150,6 @@ ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS
   scripts/record_relative_pose.py
   scripts/dock_to_handle.py
-  scripts/flat_grasp_estimator.py
   scripts/grasp_generator.py
   DESTINATION lib/${PROJECT_NAME}
 )

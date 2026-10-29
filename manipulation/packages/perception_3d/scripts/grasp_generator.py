@@ -27,6 +27,7 @@ from frida_constants.manipulation_constants import (
     GRASP_CLASS_PEAK,
     GRASP_CLASS_RIM,
     GRASP_LINK_FRAME,
+    GRIPPER_MAX_APERTURE,
     PICK_OBJECT_NAMESPACE,
     PRE_GRASP_DISTANCE,
 )
@@ -40,7 +41,6 @@ from frida_interfaces.msg import CollisionObject, ObjectDetection, ObjectDetecti
 from frida_interfaces.srv import GenerateGrasps
 from perception_3d.geometric_grasps import (
     DEFORMABLE_OBJECTS,
-    GRIPPER_MAX_APERTURE,
     OBJECT_GRASP_CLASS,
     Fit,
     Grasp,
@@ -59,9 +59,10 @@ DEFAULT_SAMPLES = 10  # frames to collect when the caller passes <= 0
 COLLECT_TIMEOUT = 5.0  # s, give up collecting after this
 
 
-# One frame's result: the class used and its fitted object and grasps.
 @dataclass(frozen=True)
 class Sample:
+    """One frame's result: the class used and its fitted object and grasps."""
+
     grasp_class: str
     fit: Optional[Fit]
     grasps: list
@@ -110,8 +111,8 @@ class GraspGenerator(Node):
         )
         self.get_logger().info("Grasp generator ready")
 
-    # collect up to N samples for object_name, then combine them.
     def _generate(self, request, response):
+        """Collect up to num_samples frames for the object, then combine them."""
         if self._intrinsics is None:
             return self._fail(response, "camera intrinsics not received yet")
 
@@ -140,8 +141,8 @@ class GraspGenerator(Node):
         finally:
             self._busy.release()
 
-    # Reset the session; known is None for solids with shape measured.
     def _start(self, target: str) -> None:
+        """Reset the session; _known is None for solids whose shape is measured."""
         self._target = target
         self._known = OBJECT_GRASP_CLASS.get(target)
         self._samples = []
@@ -149,9 +150,8 @@ class GraspGenerator(Node):
         self._depth = None  # never reuse a frame from a previous request
         self._collecting = True
 
-    # Majority class wins. Per approach: median position over the frames that
-    # produced it (robust to bad frames), orientation and fit from the latest,
     def _finish(self, response):
+        """Majority class wins; median position per approach, latest orientation."""
         samples = list(self._samples)
         grasp_class = Counter(s.grasp_class for s in samples).most_common(1)[0][0]
         voted = [s for s in samples if s.grasp_class == grasp_class]
@@ -273,8 +273,8 @@ class GraspGenerator(Node):
         response.message = message
         return response
 
-    # Idle unless a request is collecting (saves CPU).
     def _depth_cb(self, msg: Image) -> None:
+        """Idle unless a request is collecting (saves CPU)."""
         if self._collecting:
             self._depth = self._bridge.imgmsg_to_cv2(msg, desired_encoding="32FC1")
             self._depth_frame = msg.header.frame_id
@@ -297,15 +297,14 @@ class GraspGenerator(Node):
             except GraspRejected as reason:
                 rejections[str(reason)] += 1
 
-    # Peak targets (clothes) are never detected directly: look inside containers.
     def _matches(self, label: str) -> bool:
+        """Clothes (peak) match any rim container, never themselves."""
         if self._known == GRASP_CLASS_PEAK:
             return OBJECT_GRASP_CLASS.get(label) == GRASP_CLASS_RIM
         return label == self._target
 
-    # One detection in one frame -> one grasp sample (or GraspRejected).
-    # Named classes use their recipe; anything else gets its best-fitting solid strategy.
     def _sample(self, detection: ObjectDetection) -> Sample:
+        """One detection in one frame -> one grasp sample (or GraspRejected)."""
         scene = self._scene(detection)
         if self._known:
             grasp_class, (fit, grasps) = self._known, grasp_for(scene, self._known)
@@ -330,8 +329,8 @@ class GraspGenerator(Node):
             ),
         )
 
-    # Latest frame -> link_base transform as a 4x4 matrix.
     def _to_base(self, frame: str) -> np.ndarray:
+        """Latest frame -> link_base transform as a 4x4 matrix."""
         try:
             transform = self._tf_buffer.lookup_transform(
                 BASE_FRAME,

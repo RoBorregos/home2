@@ -42,17 +42,12 @@ _STRATEGY_BY_OBJECT_NAME = (
 )
 
 
-def resolve_pick_strategy(object_name: str) -> str:
-    """Map an object name to the pick strategy that should handle it.
-
-    Any other object is a solid picked with the geometric grasp generator, which
-    measures its shape the other use a specific strategy by name classification,
-    GPD is solid fallback + handles a request without name.
-    """
+def resolve_pick_strategy(object_name: str, force_gpd: bool = False) -> str:
+    """Name -> strategy; unlisted names are solids, sent to GPD with ``force_gpd``."""
     if not object_name:
         return PICK_STRATEGY_GPD
     key = object_name.lower()
     for strategy, names in _STRATEGY_BY_OBJECT_NAME:
         if key in names:
             return strategy
-    return PICK_STRATEGY_GEOMETRIC
+    return PICK_STRATEGY_GPD if force_gpd else PICK_STRATEGY_GEOMETRIC
