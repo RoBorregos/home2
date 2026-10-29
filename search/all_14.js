@@ -59,7 +59,7 @@ var searchData=
   ['talking_5fmin_5fmean_5fdelta_56',['TALKING_MIN_MEAN_DELTA',['../namespacefrida__constants_1_1vision__constants.html#a50660e8280f1fa9f2c8f6363b0441f62',1,'frida_constants::vision_constants']]],
   ['talking_5fratio_5fceiling_57',['TALKING_RATIO_CEILING',['../namespacefrida__constants_1_1vision__constants.html#a4cabd139758d428b8fc4b2affc500de8',1,'frida_constants::vision_constants']]],
   ['talking_5fsmoothing_5fwindow_58',['TALKING_SMOOTHING_WINDOW',['../namespacefrida__constants_1_1vision__constants.html#a1cf047098764db54ef9ed5c075cd748c',1,'frida_constants::vision_constants']]],
-  ['talkingdetection_59',['TalkingDetection',['../classtalking__detection__node_1_1TalkingDetection.html',1,'talking_detection_node']]],
+  ['talkingdetectionnode_59',['TalkingDetectionNode',['../classtalking__detection__node_1_1TalkingDetectionNode.html',1,'talking_detection_node']]],
   ['target_5fclasses_60',['target_classes',['../classflat__grasp__estimator_1_1FlatGraspEstimator.html#a7f99dc251c2187f11249f37466eb8337',1,'flat_grasp_estimator::FlatGraspEstimator']]],
   ['target_5fdistance_61',['target_distance',['../classtable__docker_1_1TableDocker.html#ad78fb03156e128a15c54fc252bd6a6aa',1,'table_docker::TableDocker']]],
   ['target_5fframe_62',['target_frame',['../classbase__detector__node_1_1BaseDetectorNode.html#ada4c4266b2581dc605ddd5a4d405b552',1,'base_detector_node.BaseDetectorNode.target_frame()'],['../classflat__grasp__estimator_1_1FlatGraspEstimator.html#ac9422dfda4ad604f6f35a2ab4b5d3a19',1,'flat_grasp_estimator.FlatGraspEstimator.target_frame()']]],

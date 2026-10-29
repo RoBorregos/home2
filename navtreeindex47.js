@@ -1,7 +1,5 @@
 var NAVTREEINDEX47 =
 {
-"place_8py.html#afcae70283fcc627343e5d6b71fea2dc9":[43,0,3,0,5,1,0,5,24],
-"plan_8hh.html":[43,0,3,0,7,2,0,0,2,6],
 "plan_8hh_source.html":[43,0,3,0,7,2,0,0,2,6],
 "planning_2utils_8hh.html":[43,0,3,0,7,2,0,0,2,13],
 "planning_2utils_8hh.html#a2afae646d319749e094b3d6105834318":[43,0,3,0,7,2,0,0,2,13,7],
@@ -249,5 +247,7 @@ var NAVTREEINDEX47 =
 "report_8py.html#ad006332fc7b51fb4800551b40a13186d":[43,0,7,0,0,0,6,13],
 "report_8py.html#ae8fd03c442ff51b566228be32b0c7d5e":[43,0,7,0,0,0,6,12],
 "report_8py.html#aecae975092bc257b287ad107f65eee5e":[43,0,7,0,0,0,6,2],
-"report_8py.html#afa3e1d03634a7a29e05c9f2048d4451e":[43,0,7,0,0,0,6,0]
+"report_8py.html#afa3e1d03634a7a29e05c9f2048d4451e":[43,0,7,0,0,0,6,0],
+"restaurant__commands_8py.html":[43,0,7,1,2,1,1,4],
+"restaurant__commands_8py.html#a5ea91af67a635ddf952b6192faae79f9":[43,0,7,1,2,1,1,4,1]
 };

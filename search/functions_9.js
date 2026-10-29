@@ -58,7 +58,7 @@ var searchData=
   ['is_5fsame_5ftransform_55',['is_same_transform',['../namespacevamp_1_1transformations.html#afbb3e69c2da02bb9d596ba9f3cf54c41',1,'vamp::transformations']]],
   ['is_5fsitting_5ffrom_5fkeypoints_56',['is_sitting_from_keypoints',['../classmodels_1_1pose__detection_1_1PoseDetection.html#ad95d4c5bd47672abf95b9963613c6bd8',1,'models::pose_detection::PoseDetection']]],
   ['is_5fsitting_5fmoondream_57',['is_sitting_moondream',['../classcustomer__node_1_1CustomerNode.html#abbd4f02f544ebc705622d00dc610a41c',1,'customer_node::CustomerNode']]],
-  ['is_5ftalking_5fcallback_58',['is_talking_callback',['../classtalking__detection__node_1_1TalkingDetection.html#ac70922548822301fed7f83e7722b60a2',1,'talking_detection_node::TalkingDetection']]],
+  ['is_5ftalking_5fcallback_58',['is_talking_callback',['../classtalking__detection__node_1_1TalkingDetectionNode.html#acf12584e12a28f216f4ae41235f3618f',1,'talking_detection_node::TalkingDetectionNode']]],
   ['is_5fvalid_59',['is_valid',['../structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a2ca20f41244fef732d1cd67a6b6f6086',1,'vamp::collision::CAPT::BuildFrame::is_valid()'],['../structvamp_1_1collision_1_1CAPT.html#a8862f19d86289efea9336de5f1044c03',1,'vamp::collision::CAPT::is_valid()']]],
   ['is_5fvalue_5fin_5fenum_60',['is_value_in_enum',['../namespacefrida__constants_1_1vision__enums.html#a0332e09d677c452e51fd0d08415fefb5',1,'frida_constants::vision_enums']]],
   ['is_5fwaving_5ffrom_5fkeypoints_61',['is_waving_from_keypoints',['../classmodels_1_1pose__detection_1_1PoseDetection.html#ae499214a0de9340a7c2720e78835503a',1,'models::pose_detection::PoseDetection']]],

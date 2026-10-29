@@ -1,7 +1,5 @@
 var NAVTREEINDEX44 =
 {
-"namespacetest__hri__manager.html#a246a2a82635f931d92365e0a218576a3":[41,0,155,6],
-"namespacetest__hri__manager.html#a2b89018d4828726cfb8545330447a473":[41,0,155,32],
 "namespacetest__hri__manager.html#a413f9c068afedd81078d3f34c44b4ab2":[41,0,155,20],
 "namespacetest__hri__manager.html#a422e7805f73a62b241b16687216a5e7c":[41,0,155,13],
 "namespacetest__hri__manager.html#a4430ca670401cd0238602938659e8f3b":[41,0,155,19],
@@ -249,5 +247,7 @@ var NAVTREEINDEX44 =
 "namespaceutils_1_1models_1_1reid__model.html#ad29324f2e1b69b42c7f148193b114250":[41,0,170,3,1,2],
 "namespaceutils_1_1models_1_1reid__model.html#ad866cda832511cedc31c66a0efb14eae":[41,0,170,3,1,28],
 "namespaceutils_1_1models_1_1reid__model.html#add8b1886210160673adf8ddd3ef44ea7":[41,0,170,3,1,31],
-"namespaceutils_1_1models_1_1reid__model.html#ae671375d833f458905be442e9620fb00":[41,0,170,3,1,29]
+"namespaceutils_1_1models_1_1reid__model.html#ae671375d833f458905be442e9620fb00":[41,0,170,3,1,29],
+"namespaceutils_1_1models_1_1reid__model.html#ae67ee668422e997b2323de411abf9c54":[41,0,170,3,1,14],
+"namespaceutils_1_1models_1_1reid__model.html#ae819961ee14a8e25b634c048925d1bbd":[41,0,170,3,1,32]
 };

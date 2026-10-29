@@ -95,7 +95,7 @@ var searchData=
   ['detections_5fposes_5ftopic_92',['DETECTIONS_POSES_TOPIC',['../vision__constants__cpp_8hpp.html#aa478254fb94cbbd70ffaf6fbcde0b114',1,'DETECTIONS_POSES_TOPIC():&#160;vision_constants_cpp.hpp'],['../namespacefrida__constants_1_1vision__constants.html#abfb57b52b5acfed535e61b4e7f700bce',1,'frida_constants.vision_constants.DETECTIONS_POSES_TOPIC()']]],
   ['detections_5fsub_93',['detections_sub',['../classpointing__detection_1_1DetectPointingObjectServer.html#a00687386243d13fb0aa3c29380b56f57',1,'pointing_detection::DetectPointingObjectServer']]],
   ['detections_5ftopic_94',['DETECTIONS_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a181ff6edba78fa4bcb8532368721f561',1,'frida_constants.vision_constants.DETECTIONS_TOPIC()'],['../vision__constants__cpp_8hpp.html#acaad7ae86da491dce03ebb7fa9fad25c',1,'DETECTIONS_TOPIC():&#160;vision_constants_cpp.hpp']]],
-  ['detector_95',['detector',['../classtalking__detection__node_1_1TalkingDetection.html#a722842852fd9e6fa5a67e84b3f33b7ce',1,'talking_detection_node::TalkingDetection']]],
+  ['detector_95',['detector',['../classtalking__detection__node_1_1TalkingDetectionNode.html#a73ed1aff5039319051402e0ab43bba2d',1,'talking_detection_node::TalkingDetectionNode']]],
   ['detector_5fmodels_96',['DETECTOR_MODELS',['../namespacefetch__models.html#ac892b069cde350920ef0b83cb23fe506',1,'fetch_models']]],
   ['detectors_5fdir_97',['DETECTORS_DIR',['../namespacecore_1_1dataset.html#a6c7284d623e228fdd6363533002c2438',1,'core::dataset']]],
   ['determine_5fplacement_98',['DETERMINE_PLACEMENT',['../classpickandplace__task__manager_1_1PickAndPlaceTM_1_1TaskStates.html#a986facced618200ffbe668757aecd902',1,'pickandplace_task_manager::PickAndPlaceTM::TaskStates']]],

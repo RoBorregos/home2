@@ -1,7 +1,5 @@
 var NAVTREEINDEX37 =
 {
-"md_vision_README.html#autotoc_md177":[13,3,1,0],
-"md_vision_README.html#autotoc_md178":[13,3,2],
 "md_vision_README.html#autotoc_md179":[13,4],
 "md_vision_README.html#autotoc_md180":[13,4,0],
 "md_vision_README.html#autotoc_md181":[13,4,1],
@@ -249,5 +247,7 @@ var NAVTREEINDEX37 =
 "namespacecore_1_1proposers.html#a96a5ff183fa0b0f84290aa1fd2df20ea":[41,0,15,4,5],
 "namespacecore_1_1proposers.html#abeb13a4fa372802d97f758b8d406e6c6":[41,0,15,4,0],
 "namespacecore_1_1proposers.html#ac61cdd30df87b0ed37d473b542d7b943":[41,0,15,4,3],
-"namespacecore_1_1proposers.html#ad02f6e3a19cd931dd8c76cceb7ea5430":[41,0,15,4,7]
+"namespacecore_1_1proposers.html#ad02f6e3a19cd931dd8c76cceb7ea5430":[41,0,15,4,7],
+"namespacecore_1_1report.html":[41,0,15,5],
+"namespacecore_1_1report.html#a033cc06e49159ad57352b93683cb749d":[41,0,15,5,5]
 };

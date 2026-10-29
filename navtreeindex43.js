@@ -1,7 +1,5 @@
 var NAVTREEINDEX43 =
 {
-"namespacesetup.html#ad027a8e9452da003dca32bf7467bd16e":[41,0,134,0],
-"namespacesetup.html#ada7058afc98897f073d3f3b8b9157059":[41,0,134,2],
 "namespacesetup.html#aedf461ec52a946bda975938ba0b93ec0":[41,0,134,1],
 "namespacesetup.html#aff2375a361fd5865c77bd9aa093be747":[41,0,134,9],
 "namespacesimulate__map.html":[41,0,135],
@@ -249,5 +247,7 @@ var NAVTREEINDEX43 =
 "namespacetest__hri__manager.html#a0badb875d731e79a361252aae7631ac1":[41,0,155,29],
 "namespacetest__hri__manager.html#a10ad79e1fb8596318d88a288b07d9741":[41,0,155,7],
 "namespacetest__hri__manager.html#a1d345e1c23e0096c46baaa89be53f927":[41,0,155,2],
-"namespacetest__hri__manager.html#a215d2c6323fb3053457a0cfcfd95bb76":[41,0,155,9]
+"namespacetest__hri__manager.html#a215d2c6323fb3053457a0cfcfd95bb76":[41,0,155,9],
+"namespacetest__hri__manager.html#a246a2a82635f931d92365e0a218576a3":[41,0,155,6],
+"namespacetest__hri__manager.html#a2b89018d4828726cfb8545330447a473":[41,0,155,32]
 };

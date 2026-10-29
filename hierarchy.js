@@ -377,7 +377,6 @@ var hierarchy =
       [ "simulate_position.SimulatePosition", "classsimulate__position_1_1SimulatePosition.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "table_docker.TableDocker", "classtable__docker_1_1TableDocker.html", null ],
-      [ "talking_detection_node.TalkingDetection", "classtalking__detection__node_1_1TalkingDetection.html", null ],
       [ "temp_follow.FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", null ],
       [ "test_basket_pick.TestRimPick", "classtest__basket__pick_1_1TestRimPick.html", null ],
       [ "test_chairs_to_remove.TestChairsToRemove", "classtest__chairs__to__remove_1_1TestChairsToRemove.html", null ],
@@ -402,7 +401,8 @@ var hierarchy =
         [ "face_recognition_node.FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", null ],
         [ "gpsr_commands.GPSRCommands", "classgpsr__commands_1_1GPSRCommands.html", null ],
         [ "hric_commands.HRICCommands", "classhric__commands_1_1HRICCommands.html", null ],
-        [ "restaurant_commands.RESTAURANTCommands", "classrestaurant__commands_1_1RESTAURANTCommands.html", null ]
+        [ "restaurant_commands.RESTAURANTCommands", "classrestaurant__commands_1_1RESTAURANTCommands.html", null ],
+        [ "talking_detection_node.TalkingDetectionNode", "classtalking__detection__node_1_1TalkingDetectionNode.html", null ]
       ] ],
       [ "wait_for_controller_input_node.WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", null ],
       [ "xarm_utils.grasp_detector.GraspDetector", "classxarm__utils_1_1grasp__detector_1_1GraspDetector.html", null ],

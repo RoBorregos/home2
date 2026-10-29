@@ -1,7 +1,5 @@
 var NAVTREEINDEX31 =
 {
-"colored__logger_8py.html":[43,0,6,2,2,1],
-"colored__logger_8py.html#a2e9693062dcffe46a119336e7741f3fc":[43,0,6,2,2,1,4],
 "colored__logger_8py.html#a416192077f1be5e35474b8dbe599de8f":[43,0,6,2,2,1,3],
 "colored__logger_8py.html#acf7155779537a3153bce705c38d79b02":[43,0,6,2,2,1,2],
 "colored__logger_8py.html#af39bc6f616ad2b1e6beb51d91fd5539b":[43,0,6,2,2,1,1],
@@ -249,5 +247,7 @@ var NAVTREEINDEX31 =
 "doing__laundry__task__manager_8py.html#a8ab163e0bce0780df198e565ec65146d":[43,0,6,1,3,3],
 "doing__laundry__task__manager_8py.html#ab1be158dc654ec760840aee94103fbb8":[43,0,6,1,3,4],
 "down__sample__pc_8cpp.html":[43,0,3,0,4,4,1],
-"down__sample__pc_8cpp.html#ab2a47326e0e97826112f1ec1d3896594":[43,0,3,0,4,4,1,2]
+"down__sample__pc_8cpp.html#ab2a47326e0e97826112f1ec1d3896594":[43,0,3,0,4,4,1,2],
+"down__sample__pc_8cpp.html#adb27e16249dfa327ea178fe5a5462a66":[43,0,3,0,4,4,1,3],
+"down__sample__pc_8cpp.html#adc3f32de3702dd114e2ab1c2ddd3cae9":[43,0,3,0,4,4,1,1]
 };

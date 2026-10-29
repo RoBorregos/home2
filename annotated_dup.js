@@ -396,7 +396,7 @@ var annotated_dup =
       [ "TableDocker", "classtable__docker_1_1TableDocker.html", "classtable__docker_1_1TableDocker" ]
     ] ],
     [ "talking_detection_node", "namespacetalking__detection__node.html", [
-      [ "TalkingDetection", "classtalking__detection__node_1_1TalkingDetection.html", "classtalking__detection__node_1_1TalkingDetection" ]
+      [ "TalkingDetectionNode", "classtalking__detection__node_1_1TalkingDetectionNode.html", "classtalking__detection__node_1_1TalkingDetectionNode" ]
     ] ],
     [ "task_manager", "namespacetask__manager.html", [
       [ "gpsr", "namespacetask__manager_1_1gpsr.html", [

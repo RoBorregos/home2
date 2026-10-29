@@ -1,7 +1,5 @@
 var NAVTREEINDEX51 =
 {
-"structvamp_1_1collision_1_1HeightField.html#a5aa1e89ad35a0610c3dd9342835291b4":[41,0,171,2,6,4],
-"structvamp_1_1collision_1_1HeightField.html#a5aa1e89ad35a0610c3dd9342835291b4":[42,0,101,1,5,4],
 "structvamp_1_1collision_1_1HeightField.html#a703e0ee0b5539ce41b9eaa1040618526":[42,0,101,1,5,5],
 "structvamp_1_1collision_1_1HeightField.html#a703e0ee0b5539ce41b9eaa1040618526":[41,0,171,2,6,5],
 "structvamp_1_1collision_1_1HeightField.html#a8417bcc66382915f9f2f129e5274bd15":[42,0,101,1,5,11],
@@ -249,5 +247,7 @@ var NAVTREEINDEX51 =
 "structvamp_1_1planning_1_1PRMStarNeighborParams.html#aab6583dcfdd2c5c7740c360abb7e7031":[41,0,171,5,20,3],
 "structvamp_1_1planning_1_1PRMStarNeighborParams.html#aab6583dcfdd2c5c7740c360abb7e7031":[42,0,101,3,20,3],
 "structvamp_1_1planning_1_1PRMStarNeighborParams.html#aabe382e0af9e8db7af870d9047b0bc9c":[41,0,171,5,20,0],
-"structvamp_1_1planning_1_1PRMStarNeighborParams.html#aabe382e0af9e8db7af870d9047b0bc9c":[42,0,101,3,20,0]
+"structvamp_1_1planning_1_1PRMStarNeighborParams.html#aabe382e0af9e8db7af870d9047b0bc9c":[42,0,101,3,20,0],
+"structvamp_1_1planning_1_1PRMStarNeighborParams.html#abf6d66a6c903c40d61f9587aa46ffb04":[42,0,101,3,20,1],
+"structvamp_1_1planning_1_1PRMStarNeighborParams.html#abf6d66a6c903c40d61f9587aa46ffb04":[41,0,171,5,20,1]
 };

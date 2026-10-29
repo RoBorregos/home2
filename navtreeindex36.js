@@ -1,7 +1,5 @@
 var NAVTREEINDEX36 =
 {
-"md_docs_ai_vision_optimization_plan.html#autotoc_md275":[25,0],
-"md_docs_ai_vision_optimization_plan.html#autotoc_md277":[25,1],
 "md_docs_ai_vision_optimization_plan.html#autotoc_md278":[25,2],
 "md_docs_ai_vision_optimization_plan.html#autotoc_md279":[25,3],
 "md_docs_ai_vision_optimization_plan.html#autotoc_md280":[25,4],
@@ -249,5 +247,7 @@ var NAVTREEINDEX36 =
 "md_vision_README.html#autotoc_md173":[13,3],
 "md_vision_README.html#autotoc_md174":[13,3,0],
 "md_vision_README.html#autotoc_md175":[13,3,0,0],
-"md_vision_README.html#autotoc_md176":[13,3,1]
+"md_vision_README.html#autotoc_md176":[13,3,1],
+"md_vision_README.html#autotoc_md177":[13,3,1,0],
+"md_vision_README.html#autotoc_md178":[13,3,2]
 };

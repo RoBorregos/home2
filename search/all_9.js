@@ -172,7 +172,7 @@ var searchData=
   ['is_5fshelf_169',['is_shelf',['../classpick__and__place_1_1pipelines_1_1pick_1_1PickRequest.html#a783ce2922787ed617fc0e98e93a8504e',1,'pick_and_place::pipelines::pick::PickRequest']]],
   ['is_5fsitting_5ffrom_5fkeypoints_170',['is_sitting_from_keypoints',['../classmodels_1_1pose__detection_1_1PoseDetection.html#ad95d4c5bd47672abf95b9963613c6bd8',1,'models::pose_detection::PoseDetection']]],
   ['is_5fsitting_5fmoondream_171',['is_sitting_moondream',['../classcustomer__node_1_1CustomerNode.html#abbd4f02f544ebc705622d00dc610a41c',1,'customer_node::CustomerNode']]],
-  ['is_5ftalking_5fcallback_172',['is_talking_callback',['../classtalking__detection__node_1_1TalkingDetection.html#ac70922548822301fed7f83e7722b60a2',1,'talking_detection_node::TalkingDetection']]],
+  ['is_5ftalking_5fcallback_172',['is_talking_callback',['../classtalking__detection__node_1_1TalkingDetectionNode.html#acf12584e12a28f216f4ae41235f3618f',1,'talking_detection_node::TalkingDetectionNode']]],
   ['is_5ftalking_5ftopic_173',['IS_TALKING_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a13af2ecf98043daced224061e46f2b18',1,'frida_constants::vision_constants']]],
   ['is_5ftracking_174',['is_tracking',['../classhelp__me__carry_1_1HelpMeCarryTM.html#a1f7ab34a7acffebbf814f74c505e9c3e',1,'help_me_carry::HelpMeCarryTM']]],
   ['is_5ftracking_5fresult_175',['is_tracking_result',['../classtracker__node_1_1SingleTracker.html#af8feef1513c02af7c70d6376e17d4f41',1,'tracker_node::SingleTracker']]],
