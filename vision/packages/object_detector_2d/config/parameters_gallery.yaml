@@ -1,0 +1,16 @@
+GalleryDetect2D:
+  ros__parameters:
+    RGB_IMAGE_TOPIC: /vision/camera/image_oriented
+    DEPTH_IMAGE_TOPIC: /zed/zed_node/depth/depth_registered
+    CAMERA_INFO_TOPIC: /zed/zed_node/depth/camera_info
+    DETECTIONS_TOPIC: /vision/gallery_detections
+    DETECTIONS_IMAGE_TOPIC: /vision/gallery_detections_image
+    DETECTIONS_POSES_TOPIC: /vision/gallery_detections_poses
+    DETECTIONS_3D_TOPIC: /vision/gallery_detections_3d
+    DETECTIONS_ACTIVE_TOPIC: /vision/gallery_detections_active
+    TARGET_FRAME: base_link
+    USE_ACTIVE_FLAG: False
+    DEPTH_ACTIVE: True
+    VERBOSE: False
+    FLIP_IMAGE: False
+    MAX_DEPTH_THRESH: 2.0

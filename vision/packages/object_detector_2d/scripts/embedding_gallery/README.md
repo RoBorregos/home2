@@ -116,7 +116,7 @@ mkdir -p gallery_photos/<object_name>    # then copy the photos in (.jpg, .jpeg 
 
 Look at `gallery_photos/<object_name>/_crops/` afterwards: if a crop is not the object, retake that photo with the object front and centre.
 
-Then restart the node. No code change or rebuild is needed (`embedding_gallery` is already in `object_detector_2d/config/parameters.yaml`). Takes ~30 s on the Orin. After a fresh setup the first node start also builds the TensorRT engine, which takes several minutes: run `./run.sh vision --warmup` beforehand to avoid it.
+Then restart `GalleryDetect2D`. No code change or rebuild is needed (it is already started by `object_detector_2d/launch/object_detector_node.launch.py`, and `ObjectDetect2D` merges its results into `/vision/detections`). Takes ~30 s on the Orin. After a fresh setup the first node start also builds the TensorRT engine, which takes several minutes: run `./run.sh vision --warmup` beforehand to avoid it.
 
 `add_object.sh`:
 1. Builds the entry into `$TENSORRT_CACHE_DIR/gallery` (default `/workspace/trt_cache/gallery`, on the host `docker/vision/trt_cache/gallery/`), a mount that persists across containers and fresh clones. `gallery/` in the source tree is gitignored, so writing there would leave a fresh checkout with zero objects.
@@ -144,6 +144,6 @@ The backbone is always `MODEL_CONFIGS["embedding_gallery"]["backbone"]` in `regi
 
 Drop the new `.pt` beside `registry.py`, update `filename`, and write a new translation JSON (raw class → published label) or remove the key. Thresholds in `gallery_matcher.py` and `known_limitation_classes` in the benchmark's `config/dataset_config.json` were tuned on RCW2026_v2; treat them as a starting point and re-run the `embeddings` and `e2e_calibrate` tasks on your own data.
 
-**Using both:** to keep the old model too, add a second entry in `MODEL_CONFIGS` instead of replacing this one, and list both under `models:` in `object_detector_2d/config/parameters.yaml`. `ObjectDetect2D` runs every listed model and IoU-dedupes across them (threshold 0.6), which is how `yolo_finetuned` and `embedding_gallery` already run together.
+**Using both:** to keep the old model too, add a second entry in `MODEL_CONFIGS` instead of replacing this one, and list both under `models:` in `object_detector_2d/config/parameters.yaml`. `ObjectDetect2D` runs every listed model and IoU-dedupes across them (threshold 0.6). `embedding_gallery` is not listed there: it runs in `GalleryDetect2D` and is merged with the same 0.6 IoU, YOLO winning on overlap.
 
 **Swapping the benchmark dataset:** run `./run.sh prepare --source` on the new export and edit the benchmark's `config/dataset_config.json`, the only place dataset-specific class names live (`out_of_gallery_classes`, `hard_negative_classes`, `known_limitation_classes`; see "Configuration" in the [benchmark README](../../../../benchmarks/embedding_gallery/README.md)). `known_limitation_classes` can only be found from a run's confusion breakdown.
