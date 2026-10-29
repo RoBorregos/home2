@@ -14,7 +14,7 @@ person is talking. Callers such as face recognition send one request per face.
 """
 
 import rclpy
-from cv_bridge import CvBridge, CvBridgeError
+from cv_bridge import CvBridgeError
 from frida_constants.vision_constants import (
     IS_TALKING_TOPIC,
     SILENT_MESSAGE,
@@ -23,17 +23,20 @@ from frida_constants.vision_constants import (
 from frida_interfaces.srv import IsTalking
 from models.mediapipe_detector import MediapipeDetector
 from models.talking_detection import MouthActivity
-from rclpy.node import Node
-from vision_runtime import spin
+from vision_runtime import VisionRuntime, spin
 
 
-class TalkingDetection(Node):
+class TalkingDetectionNode(VisionRuntime):
     def __init__(self):
         super().__init__("talking_detection")
-        self.bridge = CvBridge()
         self.detector = MediapipeDetector()
 
-        self.create_service(IsTalking, IS_TALKING_TOPIC, self.is_talking_callback)
+        self.create_service(
+            IsTalking,
+            IS_TALKING_TOPIC,
+            self.is_talking_callback,
+            callback_group=self.callback_group,
+        )
         self.get_logger().info("Talking detection ready")
 
     def is_talking_callback(self, request, response):
@@ -62,7 +65,7 @@ class TalkingDetection(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    spin(TalkingDetection())
+    spin(TalkingDetectionNode())
 
 
 if __name__ == "__main__":
