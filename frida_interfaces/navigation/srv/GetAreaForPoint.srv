@@ -1,0 +1,14 @@
+# Request
+# Area (room) containing a point and its closest sublocations. The point may be
+# in any TF frame; nav_central transforms it to map.
+
+geometry_msgs/PointStamped point
+float32 max_sublocation_distance   # meters; <= 0 uses the default (1.5)
+---
+#Response
+bool success
+string area                        # "" when the point is in no area polygon
+string[] sublocations              # names in `area`, sorted by XY distance
+float32[] distances                # meters, same order as sublocations
+bool in_house                      # inside ANY area polygon
+string error
