@@ -7,7 +7,8 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     config = os.path.join(
-        get_package_share_directory("object_detector_2d"), "config", "parameters.yaml"
+        get_package_share_directory(
+            "object_detector_2d"), "config", "parameters.yaml"
     )
     return LaunchDescription(
         [
@@ -52,6 +53,13 @@ def generate_launch_description():
                 package="vision_general",
                 executable="tracker_node.py",
                 name="tracker_node",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="vision_general",
+                executable="talking_detection_node.py",
+                name="talking_detection",
                 output="screen",
                 emulate_tty=True,
             ),

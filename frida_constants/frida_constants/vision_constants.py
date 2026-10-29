@@ -151,6 +151,7 @@ CHAIR_REMOVAL_IMAGE_TOPIC = "/vision/chair_removal_image"
 
 # Talking detection node
 IS_TALKING_TOPIC = "/vision/is_talking"
+TALKING_PEOPLE_TOPIC = "/vision/talking_people"
 TALKING_MESSAGE = "TALKING"
 SILENT_MESSAGE = "SILENT"
 

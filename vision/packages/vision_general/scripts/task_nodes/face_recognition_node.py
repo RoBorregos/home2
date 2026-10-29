@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Face recognition ROS2 node. Model logic lives in models.face_recognition."""
 
+import time
 import rclpy
 import rclpy.duration
 import tqdm
@@ -16,17 +17,22 @@ from frida_constants.vision_constants import (
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
     IMAGE_ORIENTED_TOPIC,
+    IS_TALKING_TOPIC,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     SAVE_NAME_TOPIC,
+    TALKING_HISTORY_FRAMES,
+    TALKING_PEOPLE_TOPIC,
 )
+
 from frida_interfaces.msg import Person, PersonList
-from frida_interfaces.srv import SaveName
+from frida_interfaces.srv import IsTalking, SaveName, TalkingPeople
 from models.face_recognition import FaceModel, TRACK_THRESHOLD
 from utils.debug_pub import DebugImagePublisher
 from vision_runtime import VisionRuntime, spin
 
 MAX_DEGREE = 1
+TALKING_CROP_MARGIN = 0.25
 PACKAGE_PATH = get_package_share_directory("vision_general")
 KNOWN_FACES_PATH = PACKAGE_PATH + "/utils/known_faces"
 
@@ -55,11 +61,24 @@ class FaceRecognition(VisionRuntime):
             callback_group=self.callback_group,
         )
 
+        self.is_talking_client = self.create_client(
+            IsTalking,
+            IS_TALKING_TOPIC,
+            callback_group=self.callback_group,
+        )
+        self.create_service(
+            TalkingPeople,
+            TALKING_PEOPLE_TOPIC,
+            self.talking_people_callback,
+            callback_group=self.callback_group,
+        )
+
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
         self.view_pub = DebugImagePublisher(
             self, FACE_RECOGNITION_IMAGE, "face_recognition"
         )
-        self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
+        self.name_publisher = self.create_publisher(
+            String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
         )
@@ -111,6 +130,117 @@ class FaceRecognition(VisionRuntime):
         res.success = len(self.curr_faces) > 0
         if not res.success:
             self.get_logger().info("No face detected")
+        return res
+
+    def _collect_face_crops(self, timeout):
+        tracks = []
+        last_stamp = None
+        deadline = time.time() + timeout
+
+        while time.time() < deadline:
+            if tracks and all(
+                len(t["crops"]) >= TALKING_HISTORY_FRAMES for t in tracks
+            ):
+                break
+
+            frame = self.image
+            stamp = self.image_header.stamp if self.image_header is not None else None
+            if frame is None or stamp == last_stamp:
+                time.sleep(0.005)
+                continue
+            last_stamp = stamp
+
+            height, width = frame.shape[:2]
+            for face in self.face_model.detect(frame):
+                x1, y1, x2, y2 = face.bbox.astype(int)
+                cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+
+                track = next(
+                    (
+                        t
+                        for t in tracks
+                        if abs(t["x"] - cx) < TRACK_THRESHOLD
+                        and abs(t["y"] - cy) < TRACK_THRESHOLD
+                    ),
+                    None,
+                )
+                if track is None:
+                    track = {
+                        "name": self.face_model.match(
+                            face.embedding.astype(np.float32)
+                        ),
+                        "crops": [],
+                    }
+                    tracks.append(track)
+                track.update(x=cx, y=cy, bbox=(x1, y1, x2, y2))
+
+                if len(track["crops"]) < TALKING_HISTORY_FRAMES:
+                    mw = int((x2 - x1) * TALKING_CROP_MARGIN)
+                    mh = int((y2 - y1) * TALKING_CROP_MARGIN)
+                    crop = frame[
+                        max(y1 - mh, 0): min(y2 + mh, height),
+                        max(x1 - mw, 0): min(x2 + mw, width),
+                    ].copy()
+                    track["crops"].append(crop)
+
+        return tracks
+
+    def talking_people_callback(self, req, res):
+        self.get_logger().info("Executing service talking people")
+        res.success = False
+        res.people = []
+
+        if not self.is_talking_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().error("is_talking service not available")
+            return res
+
+        timeout = req.timeout if req.timeout > 0 else 5.0
+
+        # Pause run() while this thread uses the face model.
+        while self.is_processing:
+            time.sleep(0.01)
+        self.is_processing = True
+        try:
+            tracks = self._collect_face_crops(timeout)
+        finally:
+            self.is_processing = False
+
+        if not tracks:
+            self.get_logger().info("No faces detected")
+            return res
+
+        height, width = self.image.shape[:2]
+        answered = 0
+        for track in tracks:
+            if len(track["crops"]) < TALKING_HISTORY_FRAMES:
+                continue
+
+            request = IsTalking.Request()
+            request.frames = [
+                self.bridge.cv2_to_imgmsg(crop, "bgr8") for crop in track["crops"]
+            ]
+            response = self.call_service(self.is_talking_client, request, 5.0)
+            if response is None:
+                self.get_logger().warn(
+                    f"is_talking timed out for {track['name']}")
+                continue
+
+            answered += 1
+            self.get_logger().info(f"{track['name']}: {response.message}")
+            if not response.is_talking:
+                continue
+
+            x1, y1, x2, y2 = track["bbox"]
+            person = Person()
+            person.name = track["name"]
+            person.x = int((track["x"] - width / 2) * MAX_DEGREE / (width / 2))
+            person.y = int(
+                (height / 2 - track["y"]) * MAX_DEGREE / (height / 2))
+            person.x1, person.y1 = int(x1), int(y1)
+            person.x2, person.y2 = int(x2), int(y2)
+            res.people.append(person)
+
+        res.success = answered > 0
         return res
 
     # ── Main loop ──
@@ -167,7 +297,8 @@ class FaceRecognition(VisionRuntime):
                     break
 
             if not tracked or name == "Unknown":
-                name = self.face_model.match(ins_face.embedding.astype(np.float32))
+                name = self.face_model.match(
+                    ins_face.embedding.astype(np.float32))
 
             xc = left + (right - left) / 2.0
             yc = top + (bottom - top) / 2.0
@@ -183,7 +314,8 @@ class FaceRecognition(VisionRuntime):
 
             color = (255, 0, 0) if tracked else (0, 0, 255)
             cv2.rectangle(
-                annotated, (left, bottom - 35), (right, bottom), color, cv2.FILLED
+                annotated, (left, bottom - 35), (right,
+                                                 bottom), color, cv2.FILLED
             )
             cv2.rectangle(annotated, (left, top), (right, bottom), color, 2)
             cv2.putText(
