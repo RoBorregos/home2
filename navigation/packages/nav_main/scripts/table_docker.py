@@ -332,6 +332,16 @@ class TableDocker(Node):
         self.refine_fov_deg = self.declare_parameter("refine_fov_deg", 50.0).value
         # Cells within this distance of the docked face belong to the surface itself.
         self.face_ignore_margin = self.declare_parameter("face_ignore_margin", 0.06).value
+        # Approach legs that cannot go straight (they skirt obstacles, often ones only
+        # the docker remembers) are followed by the docker's own holonomic pursuit
+        # instead of MPPI, which optimises against nav2's costmap and cuts corners.
+        self.follow_detours = self.declare_parameter("follow_detours", True).value
+        self.path_speed = self.declare_parameter("path_speed", 0.15).value
+        self.path_lookahead = self.declare_parameter("path_lookahead", 0.15).value
+        # Obstacle memory also keeps the live lidar hits within this range (m) seen
+        # during a dock, not only the cells that made it into nav2's costmap.
+        self.remember_scan = self.declare_parameter("remember_scan", True).value
+        self.scan_memory_range = self.declare_parameter("scan_memory_range", 2.0).value
         # Debug: write each plan's grid/face/candidates to this .npz path ("" = off).
         self.debug_dump = self.declare_parameter("debug_dump", "").value
 
@@ -459,6 +469,7 @@ class TableDocker(Node):
                 self.footprint = self._parse_footprint(p.value)
                 self._fp_samples_padded = ap.footprint_samples(
                     self.footprint, 0.025, self.footprint_padding)
+                self._fp_samples_path = self._fp_samples_padded
                 self._fp_samples_sweep = ap.footprint_samples(
                     self.footprint, 0.025, self.footprint_padding / 2)
             elif p.name == "target_point":
@@ -485,8 +496,11 @@ class TableDocker(Node):
         self.weights = ap.load_weights(data.get("weights"), "dock")
         self.footprint_padding = float(data.get("footprint_padding", 0.0))
         self._fp_samples_padded = ap.footprint_samples(self.footprint, 0.025, self.footprint_padding)
-        # Margins shrink from planning (padding) to sweeps (padding/2) to the live
-        # guard (safety_clearance), so a pose that was planned never trips the guard.
+        self._fp_samples_path = self._fp_samples_padded
+        # Margins shrink from planning and approach paths (padding) to the final
+        # straight-in sweep (padding/2) to the memory guard during MPPI (the bare
+        # footprint), so MPPI has the full padding to deviate from its path without
+        # tripping the guard.
         self._fp_samples_sweep = ap.footprint_samples(self.footprint, 0.025, self.footprint_padding / 2)
         if "default" not in self.profiles:
             self.profiles["default"] = ap.ReachProfile(0.03, 0.02, 0.15, "auto")
@@ -589,6 +603,34 @@ class TableDocker(Node):
         with self._lock:
             self._scan = msg
             self._scan_buf.append(msg)
+            remember = self._remember and self.remember_scan
+        if remember:
+            self._remember_scan_hits(msg)
+
+    def _remember_scan_hits(self, scan):
+        """Add the scan's hits within scan_memory_range to the request's obstacle
+        memory. nav2 raytraces thin obstacles (chair legs thinner than a cell) out
+        of its costmap almost as soon as it marks them; the lidar still sees them."""
+        with self._lock:
+            cm = self._costmap
+        if cm is None:
+            return
+        r = np.asarray(scan.ranges, dtype=float)
+        a = scan.angle_min + np.arange(len(r)) * scan.angle_increment
+        ok = np.isfinite(r) & (r > max(scan.range_min, 1e-3)) & (r < self.scan_memory_range)
+        if not ok.any():
+            return
+        Rt = self._lookup_Rt(self.odom_frame, scan.header.frame_id or self.base_frame)
+        if Rt is None:
+            return
+        R, t = Rt
+        pts = np.stack([r[ok] * np.cos(a[ok]), r[ok] * np.sin(a[ok]), np.zeros(ok.sum())], axis=1)
+        world = pts @ R.T + t
+        res = cm["info"].resolution
+        keys = np.floor(world[:, :2] / res).astype(int)
+        with self._lock:
+            if self._remember:
+                self._memory.update(map(tuple, keys.tolist()))
 
     def _cloud_cb(self, msg):
         with self._lock:
@@ -1291,9 +1333,10 @@ class TableDocker(Node):
                 return False
         return True
 
-    def _straight_path_free(self, start, goal, grid, ignore):
+    def _straight_path_free(self, start, goal, grid, ignore, samples=None):
         """Whether the footprint swept along start->goal (yaw interpolated) stays
-        clear of lethal cells."""
+        clear of lethal cells. `samples` defaults to the straight-in sweep margin."""
+        samples = self._fp_samples_sweep if samples is None else samples
         if grid is None:
             return False
         dist = math.hypot(goal[0] - start[0], goal[1] - start[1])
@@ -1302,7 +1345,7 @@ class TableDocker(Node):
         for s in np.linspace(0.0, 1.0, steps):
             x = start[0] + s * (goal[0] - start[0])
             y = start[1] + s * (goal[1] - start[1])
-            if ap.footprint_cost(grid, x, y, start[2] + s * dyaw, self._fp_samples_sweep, ignore) >= ap.LETHAL:
+            if ap.footprint_cost(grid, x, y, start[2] + s * dyaw, samples, ignore) >= ap.LETHAL:
                 return False
         return True
 
@@ -1317,7 +1360,7 @@ class TableDocker(Node):
             ignore = ap.disc_ignore(face["center"], face["radius"], self.face_ignore_margin)
         else:
             ignore = ap.halfplane_ignore(face["centroid"], face["normal"], self.face_ignore_margin)
-        if self._straight_path_free(start, goal, self._fresh_grid(), ignore):
+        if self._straight_path_free(start, goal, self._fresh_grid(), ignore, self._fp_samples_path):
             path = Path()
             path.header.frame_id = self.odom_frame
             path.header.stamp = self.get_clock().now().to_msg()
@@ -1333,7 +1376,7 @@ class TableDocker(Node):
         # remembered during this request (nav2's own planner may have lost them).
         grid = self._fresh_grid()
         if grid is not None:
-            pts = ap.footprint_astar(grid, start[:2], goal[:2], goal[2], self._fp_samples_sweep, ignore)
+            pts = ap.footprint_astar(grid, start[:2], goal[:2], goal[2], self._fp_samples_path, ignore)
             if pts is not None:
                 path = Path()
                 path.header.frame_id = self.odom_frame
@@ -1397,6 +1440,12 @@ class TableDocker(Node):
         if path is None:
             return False, how
         self.path_pub.publish(path)
+        if how != "straight" and self.follow_detours:
+            # The straight line was blocked, so this path skirts obstacles, often
+            # ones only the docker remembers (thin chair legs). MPPI optimises
+            # against nav2's costmap and would cut those corners: follow it here.
+            ok, msg = self._follow_path(path, xy_tol, yaw_tol)
+            return ok, f"{msg} ({how} path, docker controller)"
         saved = self._goal_checker_params()
         if saved is None or not self._goal_checker_params(xy_tol, yaw_tol):
             return False, "could not tighten the goal checker"
@@ -1411,7 +1460,7 @@ class TableDocker(Node):
             res = handle.get_result_async()
             end = self._now() + self.motion_timeout
             ignore = self._face_ignore()
-            guard = ap.footprint_samples(self.footprint, 0.025, self.safety_clearance)
+            guard = self._fp_samples
             tick = 0
             while rclpy.ok() and not res.done():
                 clr = self._live_clearance()
@@ -1433,6 +1482,76 @@ class TableDocker(Node):
             return status == GoalStatus.STATUS_SUCCEEDED, f"MPPI via {how} path (status {status})"
         finally:
             self._goal_checker_params(*saved)
+
+    def _follow_path(self, path, xy_tol, yaw_tol):
+        """Holonomic pursuit along `path` with the docker's own controller: a
+        lookahead point on the path, heading from the path poses. Stops on the live
+        lidar guard and on remembered obstacles under the bare footprint. Returns
+        (ok, message)."""
+        frame = (path.header.frame_id or self.odom_frame).lstrip("/")
+        Rt = None if frame == self.odom_frame else self._lookup_Rt(self.odom_frame, frame)
+        if frame != self.odom_frame and Rt is None:
+            return False, f"no TF {self.odom_frame}<-{frame}"
+        pts, yaws = [], []
+        for p in path.poses:
+            q = p.pose.orientation
+            xy = (p.pose.position.x, p.pose.position.y)
+            yaw = math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
+            if Rt is not None:
+                xy = self._xform_pt(Rt[0], Rt[1], xy)
+                yaw += math.atan2(Rt[0][1, 0], Rt[0][0, 0])
+            pts.append(xy)
+            yaws.append(yaw)
+        pts = np.asarray(pts, dtype=float)
+        n = len(pts)
+        dt = 1.0 / self.control_rate
+        deadline = self._now() + self.motion_timeout
+        ignore = self._face_ignore()
+        idx = tick = tf_fail = 0
+        while rclpy.ok():
+            if self._now() > deadline:
+                self._stop()
+                return False, "timeout"
+            pose = self._robot_pose(self.odom_frame)
+            if pose is None:
+                tf_fail += 1
+                self._stop()
+                if tf_fail > self.max_tf_fail:
+                    return False, "lost TF"
+                time.sleep(dt)
+                continue
+            tf_fail = 0
+            # Progress along the path, then a lookahead point ahead of it.
+            idx += int(np.argmin(np.hypot(pts[idx:, 0] - pose[0], pts[idx:, 1] - pose[1])))
+            la = idx
+            while la < n - 1 and math.hypot(pts[la, 0] - pose[0], pts[la, 1] - pose[1]) < self.path_lookahead:
+                la += 1
+            dx, dy = ap.to_base_frame(pts[la], *pose)
+            to_goal = math.hypot(pts[-1, 0] - pose[0], pts[-1, 1] - pose[1])
+            e_yaw = (yaws[la] - pose[2] + math.pi) % (2 * math.pi) - math.pi
+            e_goal_yaw = (yaws[-1] - pose[2] + math.pi) % (2 * math.pi) - math.pi
+            if to_goal <= xy_tol and abs(e_goal_yaw) <= yaw_tol:
+                self._stop()
+                return True, f"reached the pre-dock (err {to_goal:.3f} m)"
+            dist = math.hypot(dx, dy)
+            speed = min(self.path_speed, self.k_x * dist) if la == n - 1 else self.path_speed
+            vx, vy = (dx / dist * speed, dy / dist * speed) if dist > 1e-3 else (0.0, 0.0)
+            wz = self._clamp(self.k_yaw * e_yaw, self.max_wz)
+            live = self._live_clearance()
+            if live is not None and live <= self.safety_clearance:
+                self._stop()
+                return False, f"safety stop (clearance {live:.3f} m)"
+            tick += 1
+            if tick % 4 == 0:
+                grid = self._fresh_grid()
+                if grid is not None and ap.footprint_cost(
+                        grid, pose[0], pose[1], pose[2], self._fp_samples, ignore) >= ap.LETHAL:
+                    self._stop()
+                    return False, "remembered obstacle at the footprint"
+            self._publish_cmd(vx, vy, wz)
+            time.sleep(dt)
+        self._stop()
+        return False, "aborted (shutdown)"
 
     def _publish_candidates(self, cands, best):
         arr = MarkerArray()

@@ -37,7 +37,10 @@ from frida_gz_sim.nav import (
     TEST_TARGET,
 )
 from geometry_msgs.msg import Point, PointStamped
+from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.time import Time
+from tf2_ros import Buffer, TransformListener
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from frida_constants.navigation_constants import (
     GO_TO_POSE_SERVICE,
@@ -90,6 +93,33 @@ SCENARIOS = {
         "check": "line",
         "region": "island_table",
         "blocked": True,  # the chair stands right in front of the target
+    },
+    "island_reach_blocked": {
+        # Same spot, now with the arm's IK check against the mug (its centre sits
+        # 0.80 m above the floor). Needs move_group (/compute_ik). The chair leaves
+        # free only poses well to the side, from where the arm cannot reach: the
+        # dock must still succeed, and report it as unreachable and blocked.
+        "staging": ("pose", -0.8, -8.0, -90.0),
+        "surface": "table",
+        "target": TEST_TARGET,
+        "target_z": 0.80,
+        "check_reach": True,
+        "expect_reach": "unreachable",
+        "check": "line",
+        "region": "island_table",
+        "blocked": True,
+    },
+    "island_reach_free": {
+        # An object near the free end of the island, next to the chair: the pose
+        # in front of it is clear and the arm reaches it.
+        "staging": ("pose", -0.3, -8.0, -90.0),
+        "surface": "table",
+        "target": (-0.25, -9.35),
+        "target_z": 0.80,
+        "check_reach": True,
+        "expect_reach": "ok",
+        "check": "line",
+        "region": "island_table",
     },
     "dishwasher": {
         "staging": ("kitchen", "dishwasher"),
@@ -169,6 +199,8 @@ class SimDockTest(Node):
         self.names = [n for n in names.split(",") if n] if names else list(SCENARIOS)
         self.settle_time = self.declare_parameter("settle_time", 2.0).value
         self.navigation = NavigationTasks(self, task=Task.DEBUG)
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
         self.move_client = self.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
         self.pose_client = self.create_client(GoToPose, GO_TO_POSE_SERVICE)
         share = get_package_share_directory("nav_main")
@@ -322,17 +354,29 @@ class SimDockTest(Node):
             Status.EXECUTION_SUCCESS if res.success else Status.EXECUTION_ERROR
         ), res.error
 
-    def perceived(self, target):
+    def base_height(self):
+        """Height of base_link above the floor (map z), 0 if TF is not there."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "map", "base_link", Time(), timeout=Duration(seconds=2.0)
+            )
+            return tf.transform.translation.z
+        except Exception:
+            return 0.0
+
+    def perceived(self, target, z_world=None):
         """The target as perception would report it: in base_link, from the robot's
         TRUE pose (so localization error does not leak into the check, exactly like
-        a camera detection on the real robot)."""
+        a camera detection on the real robot). `z_world` is the object's height
+        above the floor (needed by the reach check)."""
         if not target:
             return None
         pose = gazebo_pose()
         tb = gt.to_base(np.array([target]), *pose)[0]
         pt = PointStamped()
         pt.header.frame_id = "base_link"
-        pt.point = Point(x=float(tb[0]), y=float(tb[1]))
+        z = 0.0 if z_world is None else z_world - self.base_height()
+        pt.point = Point(x=float(tb[0]), y=float(tb[1]), z=float(z))
         return pt
 
     def surface_points(self, sc):
@@ -414,6 +458,10 @@ class SimDockTest(Node):
                     for k in np.unique(strips)
                 ]
             )
+            # Near the end of a face, strips past the corner only see the SIDE of
+            # the furniture (far behind the front): those are not the front edge.
+            if len(edge):
+                edge = edge[edge[:, 0] <= np.median(edge[:, 0]) + 0.10]
             if len(edge) < 3:
                 out["checks"]["square"] = False
                 out["error"] = "surface not in front of the robot"
@@ -455,12 +503,14 @@ class SimDockTest(Node):
             pt.point = Point(x=sc["approach_point"][0], y=sc["approach_point"][1])
             status, err = self.navigation.approach_point(pt)
         else:
-            target = self.perceived(sc.get("target"))
+            target = self.perceived(sc.get("target"), sc.get("target_z"))
             if sc.get("legacy_offset"):
                 status, err = self.navigation.dock_table(offset=sc["legacy_offset"])
             else:
                 status, err = self.navigation.dock_table(
-                    surface_type=sc["surface"], target=target
+                    surface_type=sc["surface"],
+                    target=target,
+                    check_reach=sc.get("check_reach", False),
                 )
         elapsed = time.time() - start
         self.wait(self.settle_time)
@@ -476,6 +526,25 @@ class SimDockTest(Node):
             res.update(passed=False, error="no gazebo pose")
             return res
         res.update(self.evaluate(name, sc, pose))
+        diag = dict(self.navigation.last_dock_result)
+        if diag.get("blocker") is not None:
+            b = diag["blocker"]
+            diag["blocker"] = [
+                round(b.point.x, 3),
+                round(b.point.y, 3),
+                b.header.frame_id,
+            ]
+        res["dock_result"] = diag
+        if sc["check"] != "point" and sc.get("target"):
+            # The DockTable diagnostics must match what the sim knows: the chair
+            # blocks the island target, nothing blocks the others.
+            res["checks"]["blocker_reported"] = bool(
+                diag.get("target_blocked")
+            ) == bool(sc.get("blocked"))
+        if sc.get("check_reach"):
+            res["checks"]["reach_as_expected"] = diag.get("reach") == sc.get(
+                "expect_reach", "ok"
+            )
         res["checks"] = {k: bool(v) for k, v in res["checks"].items()}
         res["passed"] = bool(res["service_ok"] and all(res["checks"].values()))
         self.get_logger().info(

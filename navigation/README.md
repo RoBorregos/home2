@@ -224,10 +224,12 @@ on. The docker then works through four steps:
 Three safeguards keep the approach from trusting a single snapshot:
 
 - **Obstacle memory.** During a dock, every lethal costmap cell seen since the
-  request started is kept. The memory is cleared when the dock ends. nav2's
+  request started is kept, and so is every lidar hit within
+  `scan_memory_range` (2 m). The memory is cleared when the dock ends. nav2's
   costmap loses thin obstacles such as chair legs once rays pass beside them or
-  they fall into the lidar's near blind zone. The plan, the swept-path checks and
-  a guard during MPPI all use the remembered cells.
+  they fall into the lidar's near blind zone. Legs thinner than a cell may never
+  reach the costmap at all, while the lidar still sees them. The plan, the
+  swept-path checks and a guard during MPPI all use the remembered cells.
 - **Same-surface check.** A re-detection more than 10 cm *closer* than the
   locked face is ignored, so the docker does not switch to a chair in front of
   the table. A face up to 35 cm *farther* is accepted only if the lidar shows the
