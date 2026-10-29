@@ -189,7 +189,9 @@ class ObjectDetectorNode(BaseDetectorNode):
                 d.label_text = f"trash/{d.label_text}"
             published.append(d)
 
-        self.pub_detections.publish(ObjectDetectionArray(detections=published))
+        self.pub_detections.publish(
+            ObjectDetectionArray(header=self.run_header, detections=published)
+        )
         self.detections_frame = self.visualize(visual, published)
 
         if self.verbose:

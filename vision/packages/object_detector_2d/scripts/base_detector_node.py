@@ -87,6 +87,7 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         self.depth_image = []
         self.camera_info = None
         self.curr_clock = None
+        self.run_header = None
         self.detections_frame = []
         self.latest_detections = []
         self.run_thread = None
@@ -153,6 +154,7 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             self.run_thread is None or not self.run_thread.is_alive()
         ):
             frame = copy.deepcopy(rgb)
+            self.run_header = copy.deepcopy(data.header)
             self.run_thread = threading.Thread(
                 target=self.run, args=(frame,), daemon=True
             )
