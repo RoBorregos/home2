@@ -77,8 +77,7 @@ class FaceRecognition(VisionRuntime):
         self.view_pub = DebugImagePublisher(
             self, FACE_RECOGNITION_IMAGE, "face_recognition"
         )
-        self.name_publisher = self.create_publisher(
-            String, PERSON_NAME_TOPIC, 10)
+        self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
         )
@@ -178,8 +177,8 @@ class FaceRecognition(VisionRuntime):
                     mw = int((x2 - x1) * TALKING_CROP_MARGIN)
                     mh = int((y2 - y1) * TALKING_CROP_MARGIN)
                     crop = frame[
-                        max(y1 - mh, 0): min(y2 + mh, height),
-                        max(x1 - mw, 0): min(x2 + mw, width),
+                        max(y1 - mh, 0) : min(y2 + mh, height),
+                        max(x1 - mw, 0) : min(x2 + mw, width),
                     ].copy()
                     track["crops"].append(crop)
 
@@ -221,8 +220,7 @@ class FaceRecognition(VisionRuntime):
             ]
             response = self.call_service(self.is_talking_client, request, 5.0)
             if response is None:
-                self.get_logger().warn(
-                    f"is_talking timed out for {track['name']}")
+                self.get_logger().warn(f"is_talking timed out for {track['name']}")
                 continue
 
             answered += 1
@@ -234,8 +232,7 @@ class FaceRecognition(VisionRuntime):
             person = Person()
             person.name = track["name"]
             person.x = int((track["x"] - width / 2) * MAX_DEGREE / (width / 2))
-            person.y = int(
-                (height / 2 - track["y"]) * MAX_DEGREE / (height / 2))
+            person.y = int((height / 2 - track["y"]) * MAX_DEGREE / (height / 2))
             person.x1, person.y1 = int(x1), int(y1)
             person.x2, person.y2 = int(x2), int(y2)
             res.people.append(person)
@@ -297,8 +294,7 @@ class FaceRecognition(VisionRuntime):
                     break
 
             if not tracked or name == "Unknown":
-                name = self.face_model.match(
-                    ins_face.embedding.astype(np.float32))
+                name = self.face_model.match(ins_face.embedding.astype(np.float32))
 
             xc = left + (right - left) / 2.0
             yc = top + (bottom - top) / 2.0
@@ -314,8 +310,7 @@ class FaceRecognition(VisionRuntime):
 
             color = (255, 0, 0) if tracked else (0, 0, 255)
             cv2.rectangle(
-                annotated, (left, bottom - 35), (right,
-                                                 bottom), color, cv2.FILLED
+                annotated, (left, bottom - 35), (right, bottom), color, cv2.FILLED
             )
             cv2.rectangle(annotated, (left, top), (right, bottom), color, 2)
             cv2.putText(
