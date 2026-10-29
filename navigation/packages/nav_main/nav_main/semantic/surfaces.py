@@ -7,7 +7,6 @@ viewpoint. Surface type and dwell are inferred from the name.
 
 from __future__ import annotations
 
-import json
 import math
 from dataclasses import dataclass
 
@@ -102,7 +101,6 @@ class Viewpoint:
     surface_type: str = "unknown"
     arm_pose: str = ARM_POSE
     dwell_s: float = DEFAULT_DWELL_S
-    target_height: float = 0.75
 
     @property
     def yaw(self) -> float:
@@ -157,7 +155,7 @@ def load_viewpoints(
             surface_type = classify(name)
             if surface_type == "waypoint" and not include_waypoints:
                 continue
-            height, dwell = SURFACE_TYPES.get(
+            _, dwell = SURFACE_TYPES.get(
                 surface_type, SURFACE_TYPES["unknown"]
             )
             out.append(
@@ -170,13 +168,6 @@ def load_viewpoints(
                     qw=qw,
                     surface_type=surface_type,
                     dwell_s=dwell,
-                    target_height=height,
                 )
             )
     return out
-
-
-def load_viewpoints_from_file(path: str, **kwargs) -> list[Viewpoint]:
-    """`load_viewpoints` on an ``areas_<MAP_NAME>.json`` file (offline testing)."""
-    with open(path, "r") as handle:
-        return load_viewpoints(json.load(handle), **kwargs)

@@ -7,8 +7,7 @@ inside the inflation makes Nav2 reject the goal and stalls the whole route. This
 module checks each pose against an occupancy grid and, when one is blocked,
 walks a ring around the furniture to find the nearest free replacement that still
 faces it — the same idea as ``nav_central._find_free_approach``
-(`nav_central.py:1015`), but ROS-free so it can be exercised offline against the
-saved ``.pgm`` of the arena.
+(`nav_central.py:1015`), but ROS-free so it can be unit-tested offline.
 
 Pure stdlib: the grid is read as the flat row-major sequence that
 ``nav_msgs/OccupancyGrid`` already provides (-1 unknown, 0-100 cost), so nothing
@@ -221,63 +220,3 @@ def validate_viewpoints(
         relocated.append((vp.key, math.hypot(moved.x - vp.x, moved.y - vp.y)))
 
     return ValidationReport(kept=kept, relocated=relocated, dropped=dropped)
-
-
-# ----------------------------------------------------------------- offline only
-
-
-def grid_from_pgm(pgm_path: str, map_yaml: dict) -> Grid:
-    """Read a saved map (``.pgm`` + its YAML) into a :class:`Grid`.
-
-    For offline testing against the real arena map; the node builds its Grid from
-    a live ``OccupancyGrid`` instead. Applies the nav2 trinary conversion using
-    the YAML's ``occupied_thresh`` / ``free_thresh`` / ``negate``.
-    """
-    with open(pgm_path, "rb") as handle:
-        raw = handle.read()
-
-    # P5 header: magic, then width height maxval, skipping '#' comments.
-    fields: list[int] = []
-    index = 2  # past "P5"
-    while len(fields) < 3:
-        while index < len(raw) and raw[index : index + 1].isspace():
-            index += 1
-        if raw[index : index + 1] == b"#":
-            while index < len(raw) and raw[index : index + 1] not in (b"\n", b"\r"):
-                index += 1
-            continue
-        start = index
-        while index < len(raw) and not raw[index : index + 1].isspace():
-            index += 1
-        fields.append(int(raw[start:index]))
-    index += 1  # single whitespace byte after maxval
-    width, height, _maxval = fields
-    pixels = raw[index : index + width * height]
-
-    occupied = float(map_yaml.get("occupied_thresh", 0.65))
-    free = float(map_yaml.get("free_thresh", 0.196))
-    negate = bool(map_yaml.get("negate", 0))
-    origin = map_yaml.get("origin", [0.0, 0.0, 0.0])
-
-    data = [0] * (width * height)
-    for row in range(height):
-        # PGM rows run top-down; OccupancyGrid rows run bottom-up.
-        src = (height - 1 - row) * width
-        dst = row * width
-        for col in range(width):
-            value = pixels[src + col]
-            ratio = value / 255.0 if negate else (255 - value) / 255.0
-            if ratio > occupied:
-                data[dst + col] = 100
-            elif ratio < free:
-                data[dst + col] = 0
-            else:
-                data[dst + col] = UNKNOWN
-    return Grid(
-        data=data,
-        width=width,
-        height=height,
-        resolution=float(map_yaml.get("resolution", 0.05)),
-        origin_x=float(origin[0]),
-        origin_y=float(origin[1]),
-    )

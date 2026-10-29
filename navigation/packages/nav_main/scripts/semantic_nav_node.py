@@ -274,7 +274,6 @@ class SemanticNav(Node):
         if marked:
             self.get_logger().info(f"Scanned {marked[0]}", throttle_duration_sec=5.0)
             self._publish_staleness()
-            self._staleness_published = True
 
     def _snapshot_timer(self):
         if not self.scan_log.dirty or not self.scan_log.path:
