@@ -2,6 +2,7 @@ var map__area__tagger_8py =
 [
     [ "map_area_tagger.MapCanvas", "classmap__area__tagger_1_1MapCanvas.html", "classmap__area__tagger_1_1MapCanvas" ],
     [ "map_area_tagger.MapAreaTagger", "classmap__area__tagger_1_1MapAreaTagger.html", "classmap__area__tagger_1_1MapAreaTagger" ],
+    [ "is_location", "map__area__tagger_8py.html#aa3c45ff1720560f65c705d5b80511313", null ],
     [ "main", "map__area__tagger_8py.html#a33c0e02922d99d9405848a521fad78ab", null ],
     [ "AREA_COLORS", "map__area__tagger_8py.html#a0a8c16661fedc07a4d89252f175f3fde", null ],
     [ "LOCATION_COLOR", "map__area__tagger_8py.html#aa51966e06f7d42b83f9394fc912a38ab", null ],

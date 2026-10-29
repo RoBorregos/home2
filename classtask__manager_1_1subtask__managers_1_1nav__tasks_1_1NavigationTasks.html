@@ -112,6 +112,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:add19447e6e03896302af3f75705c8056"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3741bd4168f432606adacf7f7709125d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a3741bd4168f432606adacf7f7709125d">retrieve_areas</a> (self)</td></tr>
 <tr class="separator:a3741bd4168f432606adacf7f7709125d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00c0d3eb43fa724211d4a658031c741e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a00c0d3eb43fa724211d4a658031c741e">get_area_for_point</a> (self, PointStamped point, float max_sublocation_distance=0.0)</td></tr>
+<tr class="separator:a00c0d3eb43fa724211d4a658031c741e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a353c7a4df547e63ec9160c4cef7461ee"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a353c7a4df547e63ec9160c4cef7461ee">plan_patrol</a> (self, list areas=[], str mode=&quot;full&quot;, int max_viewpoints=0)</td></tr>
+<tr class="separator:a353c7a4df547e63ec9160c4cef7461ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a03078902443e9c684ea6deddb7a33921"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a03078902443e9c684ea6deddb7a33921">check_door</a> (self)</td></tr>
 <tr class="separator:a03078902443e9c684ea6deddb7a33921"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af971c18c37a11bef89307e70ef8324f7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af971c18c37a11bef89307e70ef8324f7">move_to_location</a> (self, location, sublocation)</td></tr>
@@ -169,6 +173,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a2a07f940d3a78c4e8c826a9f22c40ade"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12343ec8a730594eb3e4a84299bd54ee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a12343ec8a730594eb3e4a84299bd54ee">approach_point_srv</a></td></tr>
 <tr class="separator:a12343ec8a730594eb3e4a84299bd54ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa13bc2aecb07ae928b3cf2063aa3d501"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa13bc2aecb07ae928b3cf2063aa3d501">get_area_for_point_srv</a></td></tr>
+<tr class="separator:aa13bc2aecb07ae928b3cf2063aa3d501"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24a91fd4c7549eca485a1456b4a62930"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a24a91fd4c7549eca485a1456b4a62930">plan_patrol_srv</a></td></tr>
+<tr class="separator:a24a91fd4c7549eca485a1456b4a62930"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a03276f40d23b969019fdf3a434557910"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a03276f40d23b969019fdf3a434557910">tf_buffer</a></td></tr>
 <tr class="separator:a03276f40d23b969019fdf3a434557910"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a667582aa1ec14c0e04386a236cce035f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a667582aa1ec14c0e04386a236cce035f">tf_listener</a></td></tr>
@@ -554,6 +562,49 @@ When False: the active goal is cancelled and nav params are restored.
 </pre> 
 </div>
 </div>
+<a id="a00c0d3eb43fa724211d4a658031c741e" name="a00c0d3eb43fa724211d4a658031c741e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00c0d3eb43fa724211d4a658031c741e">&#9670;&#160;</a></span>get_area_for_point()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.get_area_for_point </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">PointStamped&#160;</td>
+          <td class="paramname"><em>point</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>max_sublocation_distance</em> = <code>0.0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Which room and piece of furniture a map point belongs to.
+
+`point` may be stamped in any TF frame; nav_central transforms it. Use this
+instead of running point-in-polygon locally: only the active map's
+areas_&lt;MAP_NAME&gt;.json is authoritative.
+
+Returns (Status, {"area", "sublocations", "distances", "in_house"}); `area`
+is "" when the point falls in no room, which is a valid answer because the
+polygons do not tile the map.
+</pre> 
+</div>
+</div>
 <a id="aaf7596f84ae56e1471a2670e9d79d41f" name="aaf7596f84ae56e1471a2670e9d79d41f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaf7596f84ae56e1471a2670e9d79d41f">&#9670;&#160;</a></span>get_current_pose()</h2>
 
@@ -723,6 +774,55 @@ detections to a sector in front of a reference pose.</pre>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Navigate to an arbitrary map-frame PoseStamped via nav_central GoToPose.</pre> 
+</div>
+</div>
+<a id="a353c7a4df547e63ec9160c4cef7461ee" name="a353c7a4df547e63ec9160c4cef7461ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a353c7a4df547e63ec9160c4cef7461ee">&#9670;&#160;</a></span>plan_patrol()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.plan_patrol </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list &#160;</td>
+          <td class="paramname"><em>areas</em> = <code>[]</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>mode</em> = <code>&quot;full&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &#160;</td>
+          <td class="paramname"><em>max_viewpoints</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Ordered patrol route over the tagged furniture poses of the active map.
+
+Nav plans, this manager drives: for each entry navigate to `pose`, ask
+manipulation for `arm_pose`, then wait `dwell_s` so vision can confirm what
+is on that surface.
+
+`mode`: "full" (every surface), "quick" (one per room), "revisit" (stalest
+first). Returns (Status, [{"pose", "area", "sublocation", "arm_pose",
+"dwell_s"}]) in visit order.
+</pre> 
 </div>
 </div>
 <a id="a3741bd4168f432606adacf7f7709125d" name="a3741bd4168f432606adacf7f7709125d"></a>
@@ -993,6 +1093,20 @@ None if the point is empty or the transform fails.</pre>
 
 </div>
 </div>
+<a id="aa13bc2aecb07ae928b3cf2063aa3d501" name="aa13bc2aecb07ae928b3cf2063aa3d501"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa13bc2aecb07ae928b3cf2063aa3d501">&#9670;&#160;</a></span>get_area_for_point_srv</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.nav_tasks.NavigationTasks.get_area_for_point_srv</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a2a07f940d3a78c4e8c826a9f22c40ade" name="a2a07f940d3a78c4e8c826a9f22c40ade"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2a07f940d3a78c4e8c826a9f22c40ade">&#9670;&#160;</a></span>get_robot_pose_srv</h2>
 
@@ -1071,6 +1185,20 @@ None if the point is empty or the transform fails.</pre>
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.nav_tasks.NavigationTasks.node</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a24a91fd4c7549eca485a1456b4a62930" name="a24a91fd4c7549eca485a1456b4a62930"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24a91fd4c7549eca485a1456b4a62930">&#9670;&#160;</a></span>plan_patrol_srv</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.nav_tasks.NavigationTasks.plan_patrol_srv</td>
         </tr>
       </table>
 </div><div class="memdoc">

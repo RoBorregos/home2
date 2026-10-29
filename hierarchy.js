@@ -78,6 +78,7 @@ var hierarchy =
     [ "vamp::planning::GNATNode< dimension >", "structvamp_1_1planning_1_1GNATNode.html", null ],
     [ "pick_and_place.pipelines.strategies.GraspCandidate", "classpick__and__place_1_1pipelines_1_1strategies_1_1GraspCandidate.html", null ],
     [ "pick_and_place.pipelines.pick.GraspSet", "classpick__and__place_1_1pipelines_1_1pick_1_1GraspSet.html", null ],
+    [ "nav_main.semantic.viewpoints.Grid", "classnav__main_1_1semantic_1_1viewpoints_1_1Grid.html", null ],
     [ "hric_task_manager.Guest", "classhric__task__manager_1_1Guest.html", null ],
     [ "receptionist_task_manager.Guest", "classreceptionist__task__manager_1_1Guest.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
@@ -220,6 +221,7 @@ var hierarchy =
     [ "vamp::planning::RRTC< Robot, rake, resolution >", "structvamp_1_1planning_1_1RRTC.html", null ],
     [ "vamp::planning::RRTCSettings", "structvamp_1_1planning_1_1RRTCSettings.html", null ],
     [ "vamp::same_num_scalars< S1, S2 >", "structvamp_1_1same__num__scalars.html", null ],
+    [ "nav_main.semantic.staleness.ScanLog", "classnav__main_1_1semantic_1_1staleness_1_1ScanLog.html", null ],
     [ "fakes.ServiceStub", "classfakes_1_1ServiceStub.html", null ],
     [ "vamp::collision::Shape< DataT >", "structvamp_1_1collision_1_1Shape.html", [
       [ "vamp::collision::Cuboid< DataT >", "structvamp_1_1collision_1_1Cuboid.html", null ],
@@ -261,6 +263,7 @@ var hierarchy =
     [ "vamp_server.VampServer.Timer", "classvamp__server_1_1VampServer_1_1Timer.html", null ],
     [ "models.tracker.TrackerModel", "classmodels_1_1tracker_1_1TrackerModel.html", null ],
     [ "vamp::robots::UR5", "structvamp_1_1robots_1_1UR5.html", null ],
+    [ "nav_main.semantic.viewpoints.ValidationReport", "classnav__main_1_1semantic_1_1viewpoints_1_1ValidationReport.html", null ],
     [ "ValueError", null, [
       [ "pick_and_place.pipelines.profiles.ProfileError", "classpick__and__place_1_1pipelines_1_1profiles_1_1ProfileError.html", null ]
     ] ],
@@ -281,6 +284,7 @@ var hierarchy =
     ] ],
     [ "vamp::VectorInterface< Vector< SIMDVector< __m256i >, num_rows, num_scalars_per_row >, VectorSignature< SIMDVector< __m256i >, num_rows, num_scalars_per_row > >", "structvamp_1_1VectorInterface.html", null ],
     [ "vamp::VectorSignature< SimdT_, num_rows_, num_scalars_per_row_ >", "structvamp_1_1VectorSignature.html", null ],
+    [ "nav_main.semantic.surfaces.Viewpoint", "classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html", null ],
     [ "task_manager.subtask_managers.vision_tasks.VisionTasks", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html", null ],
     [ "vamp::collision::Volume", "structvamp_1_1collision_1_1Volume.html", null ],
     [ "XArmServices.XArmServices", "classXArmServices_1_1XArmServices.html", null ],
@@ -374,6 +378,7 @@ var hierarchy =
       [ "restaurant_task_manager.RestaurantTaskManager", "classrestaurant__task__manager_1_1RestaurantTaskManager.html", null ],
       [ "run_while_hearing.ServiceClientServerNode", "classrun__while__hearing_1_1ServiceClientServerNode.html", null ],
       [ "safety_task_manager.SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", null ],
+      [ "semantic_nav_node.SemanticNav", "classsemantic__nav__node_1_1SemanticNav.html", null ],
       [ "simulate_position.SimulatePosition", "classsimulate__position_1_1SimulatePosition.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "table_docker.TableDocker", "classtable__docker_1_1TableDocker.html", null ],

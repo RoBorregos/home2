@@ -93,7 +93,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_orin.html',''); initResizab
   <div class="headertitle"><div class="title">Working on the Orins </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md253"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md255"></a>
 Working on the Orin</h1>
 <p>FRIDA has <b>two Orins</b>, both shared robot computers. Treat them as deploy targets, not dev machines:</p>
 <table class="markdownTable">
@@ -105,7 +105,7 @@ Working on the Orin</h1>
 <td class="markdownTableBodyNone">Main Orin   </td><td class="markdownTableBodyNone">Every other area: vision, navigation, manipulation, integration, zed, display   </td></tr>
 </table>
 <p>Make sure you are on the right one for the area you are working on.</p>
-<h2><a class="anchor" id="autotoc_md254"></a>
+<h2><a class="anchor" id="autotoc_md256"></a>
 Golden rules</h2>
 <ol type="1">
 <li><b>The Orin is pull-only.</b> Edit and commit on your own machine, push, then pull on the Orin. Never commit from the Orin and never leave uncommitted edits there.</li>
@@ -113,11 +113,11 @@ Golden rules</h2>
 <li><b>Host config is off-limits</b> (<code>/etc/*</code>, sysctl, udev, <code>/etc/pip.conf</code>, JetPack/drivers, docker daemon) unless the user explicitly asks. If a host change is made, document it in <code>docs/</code> (see <code><a class="el" href="jetpack7-jazzy-migration_8md.html">docs/jetpack7-jazzy-migration.md</a></code> → "Host configuration").</li>
 <li><b>Ask before anything destructive or global</b>: <code>./run.sh --stop|--down|--build|--clean</code> act on <b>all</b> areas and kill every <code>screen</code> session; <code>docker system prune</code>, <code>docker rmi</code>, <code>git reset --hard</code>, <code>git clean</code>, reboots.</li>
 </ol>
-<h2><a class="anchor" id="autotoc_md255"></a>
+<h2><a class="anchor" id="autotoc_md257"></a>
 Connecting</h2>
 <p>Connect over SSH from the robot's Wi-Fi network. Hosts and IPs are still changing, so <b>ask the user for the host</b> of the Orin you need instead of guessing or hardcoding one.</p>
 <p><code>lib.sh</code> reaches the HRI Orin from the main one through <code>ORIN_SSH_USER/PASS/HOST</code> in the repo-root <code>.env</code> (see <code>.env.example</code>) for areas in <code>ORIN_SERVER_AREAS</code>. If SSH times out, you are not on the robot's network — tell the user instead of retrying.</p>
-<h2><a class="anchor" id="autotoc_md256"></a>
+<h2><a class="anchor" id="autotoc_md258"></a>
 Which checkout: &lt;tt&gt;~/home2&lt;/tt&gt; vs &lt;tt&gt;~/dev/&lt;area&gt;&lt;/tt&gt;</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -130,7 +130,7 @@ Which checkout: &lt;tt&gt;~/home2&lt;/tt&gt; vs &lt;tt&gt;~/dev/&lt;area&gt;&lt;
 <p>Containers have <b>fixed names</b> (<code>home2-navigation</code>, <code>home2-manipulation</code>, ...) and mount the checkout that created them (<code>../../:/workspace/src</code>). Before testing, check which checkout a running container is using:</p>
 <div class="fragment"><div class="line">docker inspect home2-navigation --format &#39;{{range .Mounts}}{{.Source}} {{end}}&#39;</div>
 </div><!-- fragment --><p>When switching between <code>~/home2</code> and <code>~/dev/&lt;area&gt;</code>, recreate <b>only your</b> container: <code>./run.sh &lt;area&gt; --recreate</code>.</p>
-<h2><a class="anchor" id="autotoc_md257"></a>
+<h2><a class="anchor" id="autotoc_md259"></a>
 Syncing code to the Orin</h2>
 <div class="fragment"><div class="line"># laptop: commit + push first</div>
 <div class="line">cd ~/dev/&lt;area&gt;            # or ~/home2 if that&#39;s what is being run</div>
@@ -140,7 +140,7 @@ Syncing code to the Orin</h2>
 <div class="line">git pull --ff-only origin &lt;branch&gt;   # explicit remote: the branch may have no upstream</div>
 <div class="line">git submodule update --init --recursive</div>
 </div><!-- fragment --><p>A plain <code>git pull</code> with no upstream can silently do nothing — always check <code>git log -1</code> matches the commit you pushed.</p>
-<h2><a class="anchor" id="autotoc_md258"></a>
+<h2><a class="anchor" id="autotoc_md260"></a>
 Testing</h2>
 <div class="fragment"><div class="line">./run.sh &lt;area&gt;                      # starts/enters the area container (l4t auto-detected)</div>
 <div class="line">docker exec -it home2-&lt;area&gt; bash    # extra shell in a running container</div>
@@ -153,7 +153,7 @@ Testing</h2>
 <li>Hardware tests (base, arm, cameras) move a real robot — confirm with the user that it is safe before launching anything that actuates.</li>
 <li>Report results with the actual command output; don't claim it works from a build alone.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md259"></a>
+<h2><a class="anchor" id="autotoc_md261"></a>
 Changes made on the Orin (hotfixes)</h2>
 <p>If something was edited on the Orin (e.g. a fix during a competition), bring it back to git instead of leaving it there:</p>
 <div class="fragment"><div class="line"># Orin</div>

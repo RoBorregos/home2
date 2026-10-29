@@ -12,6 +12,7 @@ var classmap__area__tagger_1_1MapAreaTagger =
     [ "finish_keepout_zone", "classmap__area__tagger_1_1MapAreaTagger.html#a34eb16a43f75e5447af390aa9b39a6cc", null ],
     [ "finish_polygon", "classmap__area__tagger_1_1MapAreaTagger.html#ad8e7ab06ee5217cec7caa5105f7f3121", null ],
     [ "fit_view", "classmap__area__tagger_1_1MapAreaTagger.html#aae6e108703b75f531d3da7d534861e38", null ],
+    [ "item_name", "classmap__area__tagger_1_1MapAreaTagger.html#a35de0c4ee70d57a571324016b21772a5", null ],
     [ "keyPressEvent", "classmap__area__tagger_1_1MapAreaTagger.html#ad6be04c79c0b7453e0c65d042429462e", null ],
     [ "load_json", "classmap__area__tagger_1_1MapAreaTagger.html#a383b9686bf997f5e4e6d15b97bf9cea1", null ],
     [ "load_task_areas", "classmap__area__tagger_1_1MapAreaTagger.html#a63677a0e8df5a531620ffc141972e09e", null ],

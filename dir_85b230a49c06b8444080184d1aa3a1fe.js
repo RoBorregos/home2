@@ -6,5 +6,6 @@ var dir_85b230a49c06b8444080184d1aa3a1fe =
     [ "nav_central.py", "nav__central_8py.html", "nav__central_8py" ],
     [ "node_monitor.py", "node__monitor_8py.html", "node__monitor_8py" ],
     [ "person_goal_smoother.py", "person__goal__smoother_8py.html", "person__goal__smoother_8py" ],
+    [ "semantic_nav_node.py", "semantic__nav__node_8py.html", "semantic__nav__node_8py" ],
     [ "table_docker.py", "table__docker_8py.html", "table__docker_8py" ]
 ];

@@ -112,8 +112,9 @@ Tree structure</h1>
 <div class="line">│   ├── msg/</div>
 <div class="line">│   │   ├── MonitorReport.msg</div>
 <div class="line">│   │   └── NodeStatus.msg</div>
-<div class="line">│   └── srv/                            # ApproachPoint, DockTable, GetRobotPose,</div>
-<div class="line">│                                       # GoToPose, MapAreas, MoveLocation, NavQuery</div>
+<div class="line">│   └── srv/                            # ApproachPoint, DockTable, GetAreaForPoint,</div>
+<div class="line">│                                       # GetRobotPose, GoToPose, MapAreas, MoveLocation,</div>
+<div class="line">│                                       # NavQuery, PlanPatrol</div>
 <div class="line">│</div>
 <div class="line">│navigation/</div>
 <div class="line">├── packages/                           # ROS 2 packages for the area</div>
@@ -133,8 +134,16 @@ Tree structure</h1>
 <div class="line">│   │   │       ├── restaurant.launch.py</div>
 <div class="line">│   │   │       ├── hric.launch.py</div>
 <div class="line">│   │   │       └── gpsr_hric.launch.py</div>
+<div class="line">│   │   ├── nav_main/                   # Importable Python package</div>
+<div class="line">│   │   │   └── semantic/               # Semantic nav core (no ROS, unit-testable)</div>
+<div class="line">│   │   │       ├── areas.py            # Point -&gt; room / furniture</div>
+<div class="line">│   │   │       ├── surfaces.py         # Furniture typing, arm pose and dwell</div>
+<div class="line">│   │   │       ├── route.py            # Patrol ordering (exact per room)</div>
+<div class="line">│   │   │       ├── viewpoints.py       # Costmap check and relocation</div>
+<div class="line">│   │   │       └── staleness.py        # When each surface was last scanned</div>
 <div class="line">│   │   └── scripts/                    # ROS nodes (Python)</div>
 <div class="line">│   │       ├── nav_central.py          # Central navigation orchestrator</div>
+<div class="line">│   │       ├── semantic_nav_node.py    # Patrol routes + scan bookkeeping</div>
 <div class="line">│   │       ├── table_docker.py         # Perpendicular table/shelf docking</div>
 <div class="line">│   │       ├── person_goal_smoother.py # Person-following goal bridge</div>
 <div class="line">│   │       ├── adaptive_goal_publisher.py</div>
@@ -187,7 +196,7 @@ Requirements</h2>
 </ul>
 <h2><a class="anchor" id="autotoc_md143"></a>
 Building and entering the container</h2>
-<p>From the repo root (<code>home2</code>), the general <code>./run.sh</code> script forwards to <code>docker/navigation/run.sh</code>. It auto-detects the environment (cpu / cuda / l4t), sets up USB devices and CycloneDDS, builds <code>nav_main</code> and opens a shell:</p>
+<p>From the repo root (<code>home2</code>), the general <code>./run.sh</code> script forwards to <code>docker/navigation/run.sh</code>. It auto-detects the environment (cpu / cuda / l4t), sets up USB devices and CycloneDDS, builds <code><a class="el" href="namespacenav__main.html">nav_main</a></code> and opens a shell:</p>
 <div class="fragment"><div class="line"># From home2/</div>
 <div class="line">./run.sh navigation</div>
 </div><!-- fragment --><p>Inside the container the workspace lives at <code>/workspace</code> and the repo is mounted at <code>/workspace/src</code>. To build manually:</p>
@@ -224,7 +233,7 @@ Running navigation</h1>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md146"></a>
 Building a map (mapping workflow)</h2>
 <ol type="1">
-<li>Launch mapping: <code>ros2 launch nav_main <a class="el" href="mapping_8launch_8py.html">mapping.launch.py</a></code> (or <code>./run.sh navigation --mapping</code>). This starts <code><a class="el" href="namespacenav__central.html">nav_central</a></code> in mapping mode, the SLAM backend and the **<code><a class="el" href="namespacenav__ui.html">nav_ui</a></code>** control panel.</li>
+<li>Launch mapping: <code>ros2 launch <a class="el" href="namespacenav__main.html">nav_main</a> <a class="el" href="mapping_8launch_8py.html">mapping.launch.py</a></code> (or <code>./run.sh navigation --mapping</code>). This starts <code><a class="el" href="namespacenav__central.html">nav_central</a></code> in mapping mode, the SLAM backend and the **<code><a class="el" href="namespacenav__ui.html">nav_ui</a></code>** control panel.</li>
 <li>Drive the robot around the arena to cover the whole space.</li>
 <li>In <code><a class="el" href="namespacenav__ui.html">nav_ui</a></code>, use <b>Save Map</b> to persist it:<ul>
 <li><code>&lt;name&gt;.posegraph</code> + <code>&lt;name&gt;.data</code> + a <code>&lt;name&gt;.yaml</code>/<code>&lt;name&gt;.pgm</code> grid. Maps are written to <code>navigation/packages/map_context/maps/</code>.</li>
@@ -278,7 +287,11 @@ Navigation services</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>/navigation/follow_person</code>   </td><td class="markdownTableBodyNone"><code>SetBool</code>   </td><td class="markdownTableBodyNone">Start/stop person following    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>/navigation/resume_nav</code>   </td><td class="markdownTableBodyNone"><code>Empty</code>   </td><td class="markdownTableBodyNone">Resume paused Nav2   </td></tr>
+<td class="markdownTableBodyNone"><code>/navigation/resume_nav</code>   </td><td class="markdownTableBodyNone"><code>Empty</code>   </td><td class="markdownTableBodyNone">Resume paused Nav2    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/navigation/get_area_for_point</code>   </td><td class="markdownTableBodyNone"><code>GetAreaForPoint</code>   </td><td class="markdownTableBodyNone">Which room and furniture a map point belongs to    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/navigation/plan_patrol</code>   </td><td class="markdownTableBodyNone"><code>PlanPatrol</code>   </td><td class="markdownTableBodyNone">Ordered route over the tagged furniture poses (no motion)   </td></tr>
 </table>
 <h2><a class="anchor" id="autotoc_md150"></a>
 Example service calls</h2>
@@ -293,7 +306,31 @@ Example service calls</h2>
 <div class="line"># Start / stop following a person</div>
 <div class="line">ros2 service call /navigation/follow_person std_srvs/srv/SetBool &quot;{data: true}&quot;</div>
 <div class="line">ros2 service call /navigation/follow_person std_srvs/srv/SetBool &quot;{data: false}&quot;</div>
+</div><!-- fragment --><div class="fragment"><div class="line"># Which room / furniture is this point in? (the point may be in any TF frame)</div>
+<div class="line">ros2 service call /navigation/get_area_for_point frida_interfaces/srv/GetAreaForPoint \</div>
+<div class="line">  &quot;{point: {header: {frame_id: map}, point: {x: -0.4, y: -12.8, z: 0.75}}}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Patrol route over every tagged piece of furniture (plans only, never drives)</div>
+<div class="line">ros2 service call /navigation/plan_patrol frida_interfaces/srv/PlanPatrol &quot;{mode: full}&quot;</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md151"></a>
+Semantic navigation (patrol routes and area lookup)</h1>
+<p><code><a class="el" href="semantic__nav__node_8py.html">semantic_nav_node.py</a></code> turns the furniture already tagged in <code>areas_&lt;MAP_NAME&gt;.json</code> into a patrol route, and keeps track of when each surface was last looked at. It is the navigation half of the semantic map (issue #1268): vision owns the objects, navigation owns <em>where to stand to see them</em>.</p>
+<p><b>Why it exists.</b> The object detector only reaches <b>2.0 m</b>, so patrolling is not visiting rooms — it is parking in front of each piece of furniture. The exploration used until now drives to each area's <code>safe_place</code>, i.e. the middle of the room, where nothing on a tabletop is in range.</p>
+<p><b>The poses are not invented.</b> A sublocation entry in <code>areas_&lt;MAP_NAME&gt;.json</code> is already a <em>robot</em> pose: the tagger stores the operator's click as the base position and the drag as the heading, and <code>nav_central.go_to_area</code> sends it straight to Nav2. The node selects those poses, checks each one against the global costmap (relocating it around its furniture when something now blocks it), orders them in the shortest order (exact, grouped by room), and annotates each with an arm "stare" pose and a dwell time.</p>
+<p><b>Nav plans, the caller drives.</b> <code>PlanPatrol</code> returns a list; <a class="el" href="namespacetask__manager.html">task_manager</a> iterates it, navigates to each pose, asks manipulation for <code>arm_poses[i]</code> and waits <code>dwell_s[i]</code> so vision can confirm what is there. The node has no <code>cmd_vel</code> publisher and no action client — it cannot move the robot.</p>
+<p>Modes: <code>full</code> (every surface), <code>quick</code> (one per room), <code>revisit</code> (stalest first — what the robot has not looked at in a while, for Finals).</p>
+<p>Surface type, arm pose and dwell are inferred from the sublocation name (<code>table</code> → surface, <code>shelf</code>/<code>cabinet</code> → shelf, <code>refrigerator</code>/<code>sink</code> → appliance, <code>trash</code>/<code>basket</code> → floor, <code>bed</code>/<code>sofa</code> → low surface), and the sublocation pose is used as the viewpoint.</p>
+<h2><a class="anchor" id="autotoc_md152"></a>
+Topics</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Topic   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Purpose    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/navigation/patrol/markers</code>   </td><td class="markdownTableBodyNone"><code>MarkerArray</code>   </td><td class="markdownTableBodyNone">Viewpoints in RViz, coloured by how recently each was scanned    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/navigation/patrol/staleness</code>   </td><td class="markdownTableBodyNone"><code>String</code> (JSON)   </td><td class="markdownTableBodyNone">Age of the last scan per surface   </td></tr>
+</table>
+<h1><a class="anchor" id="autotoc_md153"></a>
 Testing</h1>
 <p><a href="../task_manager/scripts/test/test_navigation_manager.py"><code>task_manager/scripts/test/test_navigation_manager.py</code></a> first checks the basics — ODrive axis errors and states, bus voltage, the merged <code>/scan</code>, the <code>map -&gt; base_link</code> TF and the <code><a class="el" href="namespacenav__central.html">nav_central</a></code> services — and then runs the <code>NavigationTasks</code> functions, which do move the robot.</p>
 <div class="fragment"><div class="line">ros2 run task_manager test_navigation_manager.py</div>
@@ -321,7 +358,7 @@ Testing</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>cmd_vel_topic</code> / <code>stamped_cmd_vel</code>   </td><td class="markdownTableBodyNone"><code>/cmd_vel</code> / <code>true</code>   </td><td class="markdownTableBodyNone">Where the base listens and whether it expects <code>TwistStamped</code>   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md152"></a>
+<h1><a class="anchor" id="autotoc_md154"></a>
 Nav_ui — live monitor &amp; control panel</h1>
 <p><code><a class="el" href="nav__ui_8py.html">nav_ui.py</a></code> (launched automatically with mapping / general navigation) is the Qt panel used on the field. It renders the map, robot pose, costmaps and planned trajectories, and lets the operator:</p>
 <ul>
@@ -329,7 +366,7 @@ Nav_ui — live monitor &amp; control panel</h1>
 <li>Send goals, change the active map, save maps, resume paused navigation.</li>
 <li>Trigger docking with a configurable offset.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md153"></a>
+<h1><a class="anchor" id="autotoc_md155"></a>
 Robot bases</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -337,7 +374,7 @@ Robot bases</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>omnidriver</code>   </td><td class="markdownTableBodyNone">Holonomic ODrive base   </td><td class="markdownTableBodyNone">Current   </td><td class="markdownTableBodyNone"><code>odrive_serial_twist</code> (cmd_vel → wheels), <code>odrive_dashboard</code> web dashboard, <code>simple_rx</code>   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md154"></a>
+<h1><a class="anchor" id="autotoc_md156"></a>
 External repositories</h1>
 <ul>
 <li><b>Dashgo base driver &amp; launch files</b>: Moved to <a href="https://github.com/RoBorregos/Dashgo.git">RoBorregos/Dashgo</a> </li>

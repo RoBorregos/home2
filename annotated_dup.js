@@ -252,6 +252,20 @@ var annotated_dup =
     [ "nav_central", "namespacenav__central.html", [
       [ "Nav_Central", "classnav__central_1_1Nav__Central.html", "classnav__central_1_1Nav__Central" ]
     ] ],
+    [ "nav_main", "namespacenav__main.html", [
+      [ "semantic", "namespacenav__main_1_1semantic.html", [
+        [ "staleness", "namespacenav__main_1_1semantic_1_1staleness.html", [
+          [ "ScanLog", "classnav__main_1_1semantic_1_1staleness_1_1ScanLog.html", "classnav__main_1_1semantic_1_1staleness_1_1ScanLog" ]
+        ] ],
+        [ "surfaces", "namespacenav__main_1_1semantic_1_1surfaces.html", [
+          [ "Viewpoint", "classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html", "classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint" ]
+        ] ],
+        [ "viewpoints", "namespacenav__main_1_1semantic_1_1viewpoints.html", [
+          [ "Grid", "classnav__main_1_1semantic_1_1viewpoints_1_1Grid.html", "classnav__main_1_1semantic_1_1viewpoints_1_1Grid" ],
+          [ "ValidationReport", "classnav__main_1_1semantic_1_1viewpoints_1_1ValidationReport.html", "classnav__main_1_1semantic_1_1viewpoints_1_1ValidationReport" ]
+        ] ]
+      ] ]
+    ] ],
     [ "nav_ui", "namespacenav__ui.html", [
       [ "NavCanvas", "classnav__ui_1_1NavCanvas.html", "classnav__ui_1_1NavCanvas" ],
       [ "NavRosNode", "classnav__ui_1_1NavRosNode.html", "classnav__ui_1_1NavRosNode" ],
@@ -376,6 +390,9 @@ var annotated_dup =
       [ "ExecutionStates", "classsafety__task__manager_1_1ExecutionStates.html", null ],
       [ "Retries", "classsafety__task__manager_1_1Retries.html", null ],
       [ "SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", "classsafety__task__manager_1_1SafetyTaskManager" ]
+    ] ],
+    [ "semantic_nav_node", "namespacesemantic__nav__node.html", [
+      [ "SemanticNav", "classsemantic__nav__node_1_1SemanticNav.html", "classsemantic__nav__node_1_1SemanticNav" ]
     ] ],
     [ "server", "namespaceserver.html", [
       [ "MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", "classserver_1_1MoonDreamServicer" ]

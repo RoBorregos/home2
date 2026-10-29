@@ -7,6 +7,7 @@ var classtest__navigation__manager_1_1TestNavigationManager =
     [ "check_localization", "classtest__navigation__manager_1_1TestNavigationManager.html#a79e6a354e05a32d793d39a4e15db80b9", null ],
     [ "check_motors", "classtest__navigation__manager_1_1TestNavigationManager.html#a26c0408b6cca8828722ac231660acc5e", null ],
     [ "check_nav_task", "classtest__navigation__manager_1_1TestNavigationManager.html#a86bd2bf50993ef7477cf1ad0f30a14f6", null ],
+    [ "check_patrol_route", "classtest__navigation__manager_1_1TestNavigationManager.html#a2b825411d5a8c582d5fe947c5f246722", null ],
     [ "check_scan", "classtest__navigation__manager_1_1TestNavigationManager.html#a7f0ebc65579581aae5b8ea697bae633a", null ],
     [ "check_services", "classtest__navigation__manager_1_1TestNavigationManager.html#a05f5113a1b0a46d23285b8505fc59f68", null ],
     [ "check_wheels", "classtest__navigation__manager_1_1TestNavigationManager.html#a1da33503206121186cf95ea408c77a89", null ],

@@ -276,6 +276,7 @@ var namespaces_dup =
       [ "launch_setup", "namespacenav2__omni.html#a9f93b07e8eb53e1d1c2a1aac7bf8cd7c", null ]
     ] ],
     [ "nav_central", "namespacenav__central.html", "namespacenav__central" ],
+    [ "nav_main", "namespacenav__main.html", "namespacenav__main" ],
     [ "nav_ui", "namespacenav__ui.html", "namespacenav__ui" ],
     [ "node_monitor", "namespacenode__monitor.html", "namespacenode__monitor" ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [
@@ -381,6 +382,7 @@ var namespaces_dup =
       [ "endpoint_self_collides", "namespaceself__collision__utils.html#adc0819160793aeeeaaf2e2880945f843", null ],
       [ "IK_TIMEOUT_SEC", "namespaceself__collision__utils.html#ad75c962b15bb9c25c399069936671bb1", null ]
     ] ],
+    [ "semantic_nav_node", "namespacesemantic__nav__node.html", "namespacesemantic__nav__node" ],
     [ "server", "namespaceserver.html", "namespaceserver" ],
     [ "service_utils", "namespaceservice__utils.html", [
       [ "close_gripper", "namespaceservice__utils.html#a479ef9705921d2c4e6c2549e4731ef57", null ],

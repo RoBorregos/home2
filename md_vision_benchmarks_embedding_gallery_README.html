@@ -98,12 +98,12 @@ $(document).ready(function(){initNavTree('md_vision_benchmarks_embedding_gallery
 <li><b>Want to add an object to the robot?</b> That is not this folder: see <a href="../../README.md#adding-an-object-to-the-gallery-few-shot">Adding an object to the gallery</a> in <code><a class="el" href="vision_2README_8md.html">vision/README.md</a></code>.</li>
 <li>Background, accuracy numbers and troubleshooting: <a class="el" href="md_vision_packages_object_detector_2d_scripts_embedding_gallery_README.html">`embedding_gallery/README.md`</a>.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md156"></a>
+<h1><a class="anchor" id="autotoc_md158"></a>
 Before you start</h1>
 <p><code>data/</code> is gitignored, so it is empty on a fresh clone and every task below fails until you build it. It is generated once from the YOLO-seg export of the <code>RCW2026_v2</code> dataset (about 22 GB, not in this repo). The export must contain <code>dataset/data.yaml</code> and <code>dataset/{train,valid,test}/{images,labels}</code>; pass the folder that contains <code>dataset/</code>:</p>
 <div class="fragment"><div class="line">./run.sh prepare --source /path/to/RCW2026_v2</div>
 </div><!-- fragment --><p><code>prepare</code> <b>deletes and rebuilds</b> <code>data/</code>, and the numbers change with the sampled images. <code>e2e_eval</code> and <code>e2e_calibrate</code> also need <code>--source</code> on every run (they read images from the export itself, not from <code>data/</code>), except <code>e2e_calibrate --from-cache</code>.</p>
-<h1><a class="anchor" id="autotoc_md157"></a>
+<h1><a class="anchor" id="autotoc_md159"></a>
 What the tasks measure</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -118,7 +118,7 @@ What the tasks measure</h1>
 <td class="markdownTableBodyNone"><code>e2e_calibrate</code>   </td><td class="markdownTableBodyNone">Finds the similarity and margin thresholds (global and per class) on those real crops   </td></tr>
 </table>
 <p><b>Gated recall</b> is recall@1 excluding <code>known_limitation_classes</code> (cutlery, kitchenware and cans, which only confuse each other and are already handled by <code>yolo_finetuned</code>). The gate is gated recall@1 ≥ 80% and unknown-rejection ≥ 80%. <code>embeddings</code> prints PASS or FAIL per backbone; <code>boxes</code> prints <code>GATE PASSED</code> or <code>GATE NOT MET</code>.</p>
-<h1><a class="anchor" id="autotoc_md158"></a>
+<h1><a class="anchor" id="autotoc_md160"></a>
 Running</h1>
 <div class="fragment"><div class="line">./run.sh                                      # interactive task menu</div>
 <div class="line">./run.sh --tasks boxes,embeddings             # Phase 0 + Phase 1 on data/</div>
@@ -132,7 +132,7 @@ Running</h1>
 </div><!-- fragment --><p>Needs Python with <code>torch</code> and <code>timm</code> (plus <code>ultralytics</code>/<code>cv2</code> for the box tasks, <code>clip</code> for CLIP backbones): run it in the vision container, or set <code>EMBEDDING_PYTHON</code>. A <code>.venv/</code> in this folder is picked up automatically.</p>
 <p>Python runs from <code>~/.cache/embedding_gallery</code> (override with <code>EMBEDDING_WORKDIR</code>), so files ultralytics downloads into the cwd, such as the 570 MB <code>mobileclip_blt.ts</code>, stay out of the repo. Relative <code>--source</code>, <code>--data</code> and <code>--results-dir</code> are resolved first; use absolute paths with <code>prepare</code> and <code>experiment</code>.</p>
 <p>Measured on a Jetson Orin (GPU): <code>e2e_eval</code> (150 images) and <code>e2e_calibrate</code> (149 images) take about 15-20 minutes each, and <code>finetune-arcface</code> (400 train images) about 35. On a laptop CPU they are several times slower.</p>
-<h1><a class="anchor" id="autotoc_md159"></a>
+<h1><a class="anchor" id="autotoc_md161"></a>
 Layout</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -158,7 +158,7 @@ Layout</h1>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>experiments/</code>   </td><td class="markdownTableBodyNone">Optional fine-tunes (<code><a class="el" href="namespacefinetune__head.html">finetune_head</a></code>, <code><a class="el" href="namespacefinetune__arcface.html">finetune_arcface</a></code>)   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md160"></a>
+<h1><a class="anchor" id="autotoc_md162"></a>
 Configuration</h1>
 <ul>
 <li><code>config/models.json</code>: <code>box_proposers</code> (Phase 0 candidates) and <code>backbones</code> (timm id, dim, optional <code>img_size</code>).</li>
@@ -169,7 +169,7 @@ Configuration</h1>
 </ul>
 </li>
 </ul>
-<h1><a class="anchor" id="autotoc_md161"></a>
+<h1><a class="anchor" id="autotoc_md163"></a>
 Data</h1>
 <div class="fragment"><div class="line">data/</div>
 <div class="line">  box_recall/             # Phase 0: images + annotations.json</div>
@@ -178,7 +178,7 @@ Data</h1>
 <div class="line">  hard_negatives/         # Phase 1: look-alike crops + annotations.json</div>
 <div class="line">  out_of_gallery/         # Phase 1: crops of objects not in the gallery</div>
 </div><!-- fragment --><p><code>gallery_photos/</code> must not overlap <code>held_out/</code>, or recall@1 measures memorization. All <code>RCW2026_v2</code> images come from one capture session, so treat the numbers as optimistic.</p>
-<h1><a class="anchor" id="autotoc_md162"></a>
+<h1><a class="anchor" id="autotoc_md164"></a>
 Results</h1>
 <p>Written to <code>results/</code> (gitignored):</p>
 <ul>

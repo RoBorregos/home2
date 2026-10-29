@@ -120,6 +120,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a76276d51f480a1a027c16c5c9e74b071"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b554bc01e696e55b06183500aa95e62"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a4b554bc01e696e55b06183500aa95e62">map_areas_callback</a> (self, request, response)</td></tr>
 <tr class="separator:a4b554bc01e696e55b06183500aa95e62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a014f63bcc9ff531cf29693208d9a3146"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a014f63bcc9ff531cf29693208d9a3146">get_area_for_point_callback</a> (self, request, response)</td></tr>
+<tr class="separator:a014f63bcc9ff531cf29693208d9a3146"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad68df68fcda8235c85001cf80be8870a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#ad68df68fcda8235c85001cf80be8870a">goal_feedback</a> (self, feedback_msg)</td></tr>
 <tr class="separator:ad68df68fcda8235c85001cf80be8870a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0af14edfb44923cb02e840f7a802a344"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a0af14edfb44923cb02e840f7a802a344">send_nav_goal</a> (self, pose, behaivor_tree=None, max_attempts=None)</td></tr>
@@ -227,6 +229,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a26b333e672e7a3f2fd58f729d03d0c26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79825a0986d004e58132859585c32c70"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a79825a0986d004e58132859585c32c70">map_areas_srv</a></td></tr>
 <tr class="separator:a79825a0986d004e58132859585c32c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae92386b772df8e8e33c4bcb3cffd59ab"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#ae92386b772df8e8e33c4bcb3cffd59ab">get_area_for_point_srv</a></td></tr>
+<tr class="separator:ae92386b772df8e8e33c4bcb3cffd59ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12fff5ff4931cb938de492947576a783"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a12fff5ff4931cb938de492947576a783">range_min</a></td></tr>
 <tr class="separator:a12fff5ff4931cb938de492947576a783"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5cddad97100b96ef13a8a79f2a3572a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#af5cddad97100b96ef13a8a79f2a3572a">range_max</a></td></tr>
@@ -1384,6 +1388,45 @@ same goal pipeline as go_to_pose.</pre>
 <pre class="fragment">Service: dock to the table/shelf in front of the robot (with offset).</pre> 
 </div>
 </div>
+<a id="a014f63bcc9ff531cf29693208d9a3146" name="a014f63bcc9ff531cf29693208d9a3146"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a014f63bcc9ff531cf29693208d9a3146">&#9670;&#160;</a></span>get_area_for_point_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_central.Nav_Central.get_area_for_point_callback </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>request</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>response</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Point (any TF frame) -&gt; containing area + its nearest sublocations.
+
+Single source of truth for "where is this?": vision and task_manager call
+this instead of running point-in-polygon against their own copy of
+areas.json. Only the active map's areas_&lt;MAP_NAME&gt;.json is authoritative.
+</pre> 
+</div>
+</div>
 <a id="a00cbb3067c64d3b8f6ce48e825808d7f" name="a00cbb3067c64d3b8f6ce48e825808d7f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a00cbb3067c64d3b8f6ce48e825808d7f">&#9670;&#160;</a></span>get_robot_pose_callback()</h2>
 
@@ -2430,6 +2473,20 @@ just wait until it is publishing the map.</pre>
       <table class="memname">
         <tr>
           <td class="memname">nav_central.Nav_Central.follow_person_srv</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae92386b772df8e8e33c4bcb3cffd59ab" name="ae92386b772df8e8e33c4bcb3cffd59ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae92386b772df8e8e33c4bcb3cffd59ab">&#9670;&#160;</a></span>get_area_for_point_srv</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_central.Nav_Central.get_area_for_point_srv</td>
         </tr>
       </table>
 </div><div class="memdoc">

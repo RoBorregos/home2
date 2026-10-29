@@ -2,9 +2,11 @@ var dir_87b6290cad74f26c76b51d85f69c3779 =
 [
     [ "ApproachPoint.srv", "ApproachPoint_8srv.html", null ],
     [ "DockTable.srv", "DockTable_8srv.html", null ],
+    [ "GetAreaForPoint.srv", "GetAreaForPoint_8srv.html", null ],
     [ "GetRobotPose.srv", "GetRobotPose_8srv.html", null ],
     [ "GoToPose.srv", "GoToPose_8srv.html", null ],
     [ "MapAreas.srv", "MapAreas_8srv.html", null ],
     [ "MoveLocation.srv", "MoveLocation_8srv.html", null ],
-    [ "NavQuery.srv", "NavQuery_8srv.html", null ]
+    [ "NavQuery.srv", "NavQuery_8srv.html", null ],
+    [ "PlanPatrol.srv", "PlanPatrol_8srv.html", null ]
 ];

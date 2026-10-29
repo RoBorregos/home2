@@ -1,6 +1,7 @@
 var classpoint__transformer_1_1PointTransformer =
 [
     [ "__init__", "classpoint__transformer_1_1PointTransformer.html#a3166f28cfc6ddf3631f608e4fcb00994", null ],
+    [ "_get_location_from_pose_local", "classpoint__transformer_1_1PointTransformer.html#af6949f6d9555774074ed5ad81531dadf", null ],
     [ "get_actual_pose", "classpoint__transformer_1_1PointTransformer.html#a00a6e65fd33d1b035cfb5fe4fe2c1e2a", null ],
     [ "get_current_location", "classpoint__transformer_1_1PointTransformer.html#a351223e0eeb1b9879f2e733ed027f7cb", null ],
     [ "get_location_from_pose", "classpoint__transformer_1_1PointTransformer.html#adfe43f15743a1d2f53625d4c6af9c9b9", null ],
@@ -9,6 +10,7 @@ var classpoint__transformer_1_1PointTransformer =
     [ "set_target_callback", "classpoint__transformer_1_1PointTransformer.html#ad94c0cdcac4507b49bd67726b946635e", null ],
     [ "update_laser", "classpoint__transformer_1_1PointTransformer.html#a8004bd3f74182640c3bb273ffcdf4f52", null ],
     [ "_default_callback_group", "classpoint__transformer_1_1PointTransformer.html#ac749b2e4491dc4cda51363e84b9a0343", null ],
+    [ "area_client", "classpoint__transformer_1_1PointTransformer.html#a13efa70903b3e57e162169cb1ad15dc6", null ],
     [ "laser_sub", "classpoint__transformer_1_1PointTransformer.html#a8dbd440a79c34380c9fb2fccf51cdd2a", null ],
     [ "return_areas", "classpoint__transformer_1_1PointTransformer.html#a4308756226635bb50e09409315fb0f2d", null ],
     [ "return_laser", "classpoint__transformer_1_1PointTransformer.html#aaa856f1ade5c37779f0d87c211b604e2", null ],

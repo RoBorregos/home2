@@ -2,6 +2,7 @@ var namespacetest__navigation__manager =
 [
     [ "TestNavigationManager", "classtest__navigation__manager_1_1TestNavigationManager.html", "classtest__navigation__manager_1_1TestNavigationManager" ],
     [ "_front_point", "namespacetest__navigation__manager.html#ae170ba4fa3fd897c321917e59d5846bc", null ],
+    [ "_here", "namespacetest__navigation__manager.html#a1c027b11d9d3353db903abc53a142bff", null ],
     [ "main", "namespacetest__navigation__manager.html#a6b0ab051435a3e31ac391bc143854e4e", null ],
     [ "AXIS_ERRORS_TOPIC", "namespacetest__navigation__manager.html#a2fe0c872d33a24409abe030f72807582", null ],
     [ "AXIS_STATE_CLOSED_LOOP", "namespacetest__navigation__manager.html#a4d1889d6c5e7b209bf94049ffc4925bc", null ],
