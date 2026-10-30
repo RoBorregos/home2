@@ -1425,6 +1425,10 @@ class TableDocker(Node):
         grid = self._fresh_grid()
         if grid is not None:
             pts = ap.footprint_astar(grid, start[:2], goal[:2], goal[2], self._fp_samples_path, ignore)
+            if pts is None:
+                g_cost = ap.footprint_cost(grid, goal[0], goal[1], goal[2], self._fp_samples_path, ignore)
+                s_cost = ap.footprint_cost(grid, start[0], start[1], goal[2], self._fp_samples_path, ignore)
+                self.log("warn", f"Local A* found no path (pre-dock cost {g_cost}, start cost {s_cost})")
             if pts is not None:
                 path = Path()
                 path.header.frame_id = self.odom_frame
