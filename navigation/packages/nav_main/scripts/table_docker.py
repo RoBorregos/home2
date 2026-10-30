@@ -620,9 +620,19 @@ class TableDocker(Node):
         ok = np.isfinite(r) & (r > max(scan.range_min, 1e-3)) & (r < self.scan_memory_range)
         if not ok.any():
             return
+        # The robot moves and turns while docking: each scan must be placed with the
+        # pose it was taken from, or its points smear (a turn drags the surface's
+        # own rim onto the footprint). No TF at the scan's stamp -> skip the scan.
         to_base = self._lookup_Rt(self.base_frame, scan.header.frame_id or self.base_frame)
-        to_odom = self._lookup_Rt(self.odom_frame, self.base_frame)
-        if to_base is None or to_odom is None:
+        try:
+            tf = self.tf_buffer.lookup_transform(self.odom_frame, self.base_frame,
+                                                 RclpyTime.from_msg(scan.header.stamp),
+                                                 timeout=Duration(seconds=0.1))
+        except Exception:
+            return
+        q, tr = tf.transform.rotation, tf.transform.translation
+        to_odom = (quat_to_rot(q.x, q.y, q.z, q.w), np.array([tr.x, tr.y, tr.z]))
+        if to_base is None:
             return
         pts = np.stack([r[ok] * np.cos(a[ok]), r[ok] * np.sin(a[ok]), np.zeros(ok.sum())], axis=1)
         base = pts @ to_base[0].T + to_base[1]
