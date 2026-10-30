@@ -10,10 +10,11 @@ from frida_constants.vision_constants import (
     CLIP_EMBEDDING_MODEL,
     EMBED_TEXT_TOPIC,
     EMBED_CROPS_TOPIC,
-    FINALS_BUFFER_SECONDS
+    FINALS_BUFFER_SECONDS,
 )
 from utils.models.image_embedder import ImageEmbedder
 import threading
+
 
 class FinalsCommandsNode(VisionRuntime):
     def __init__(self):
@@ -28,17 +29,20 @@ class FinalsCommandsNode(VisionRuntime):
         self.frames_lock = threading.Lock()
 
         self.create_service(
-            EmbedText, EMBED_TEXT_TOPIC, self.embed_text_callback,
+            EmbedText,
+            EMBED_TEXT_TOPIC,
+            self.embed_text_callback,
             callback_group=self.callback_group,
         )
 
         self.create_service(
-            EmbedCrops, EMBED_CROPS_TOPIC, self.embed_crops_callback,
+            EmbedCrops,
+            EMBED_CROPS_TOPIC,
+            self.embed_crops_callback,
             callback_group=self.callback_group,
         )
 
         self.get_logger().info("Finals commands ready")
-
 
     def _image_callback(self, msg):
         super()._image_callback(msg)
@@ -62,7 +66,6 @@ class FinalsCommandsNode(VisionRuntime):
         response.success = True
         return response
 
-
     def embed_crops_callback(self, request, response):
         response.dim = self.embedder.dim
         with self.frames_lock:
@@ -81,13 +84,16 @@ class FinalsCommandsNode(VisionRuntime):
                 self.get_logger().warn("EmbedCrops: empty box")
                 response.success = False
                 return response
-            crops.append(Image.fromarray(np.ascontiguousarray(frame[y1:y2, x1:x2, ::-1])))
+            crops.append(
+                Image.fromarray(np.ascontiguousarray(frame[y1:y2, x1:x2, ::-1]))
+            )
 
         with self.embedder_lock:
             vectors = self.embedder.embed_batch(crops, normalize=True)
         response.embeddings = vectors.reshape(-1).tolist()
         response.success = True
         return response
+
 
 def main(args=None):
     rclpy.init(args=args)

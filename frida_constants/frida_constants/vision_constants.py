@@ -184,5 +184,5 @@ DISHWASHER_DEBUG_IMAGE_TOPIC = "/vision/dishwasher/debug_image"
 EMBED_TEXT_TOPIC = "/vision/embed_text"
 EMBED_CROPS_TOPIC = "/vision/embed_crops"
 
-CLIP_EMBEDDING_MODEL="clip:ViT-B/32"
-FINALS_BUFFER_SECONDS=3
+CLIP_EMBEDDING_MODEL = "clip:ViT-B/32"
+FINALS_BUFFER_SECONDS = 3
