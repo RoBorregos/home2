@@ -220,7 +220,10 @@ on. The docker then works through four steps:
    obstacles, often ones only the docker remembers, such as chair legs. MPPI
    optimises against Nav2's costmap and would cut those corners, so the docker
    follows those paths with its own holonomic controller (`follow_detours`,
-   `path_speed`). Paths keep the full `footprint_padding` from obstacles. During
+   `path_speed`, `path_lookahead`). That controller settles on the pre-dock
+   pose within `path_xy_tol` (4 cm). Paths keep the full `footprint_padding`
+   from obstacles, and remembered obstacles get a soft cost ring
+   (`memory_inflation`, 10 cm) so paths and scores keep away from them. During
    the motion, the robot stops if a remembered obstacle reaches the bare
    footprint or a live lidar point comes within `safety_clearance`.
 
