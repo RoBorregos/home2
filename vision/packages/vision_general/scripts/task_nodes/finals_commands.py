@@ -68,7 +68,7 @@ class FinalsCommandsNode(VisionRuntime):
         with self.frames_lock:
             frame = next((img for s, img in self.frames if s == request.stamp), None)
         if frame is None:
-            self.get_logger().warn("EmbedCrops: stamp not in buffer")
+            self.get_logger().warn("EmbedCrops: dropped stamp not in buffer")
             response.success = False
             return response
 
