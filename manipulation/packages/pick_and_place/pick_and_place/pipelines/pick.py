@@ -8,11 +8,14 @@ Read this file top to bottom and you have the whole pick.
 
 import copy
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Iterator, List, Optional, Tuple
 
 import numpy as np
-from frida_constants.manipulation_constants import PICK_MAX_DISTANCE
+from frida_constants.manipulation_constants import (
+    PICK_MAX_DISTANCE,
+    SAFETY_HEIGHT_GEOMETRIC,
+)
 from geometry_msgs.msg import PointStamped
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
@@ -84,6 +87,7 @@ class PickRequest:
     min_distance: float = 0.0
     max_distance: float = PICK_MAX_DISTANCE
     is_shelf: bool = False
+    use_gpd: bool = False
     in_configuration: bool = False
     # False leaves the arm where the grasp ended, for callers that move on from
     # there themselves (the pour lifts straight up from the grasp).
@@ -105,15 +109,29 @@ class Perceived:
 
     cluster: Optional[object] = None
     height: float = 0.0
-    flat_pose: Optional[object] = None
+    grasps: Optional[object] = None
+
+    @property
+    def fitted(self):
+        """The generator's fitted collision object, if any."""
+        grasps = self.grasps
+        return grasps.object if grasps is not None and grasps.object.type else None
 
 
 def execute(
     arm, perception, request: PickRequest, strategies
 ) -> Tuple[bool, PickOutcome]:
     """Pick an object. Returns (success, outcome)."""
+    strategy_key = resolve_pick_strategy(
+        request.object_name, force_gpd=request.is_shelf or request.use_gpd
+    )
+    return _pick(arm, perception, request, strategies, strategy_key)
+
+
+def _pick(
+    arm, perception, request: PickRequest, strategies, strategy_key: str
+) -> Tuple[bool, PickOutcome]:
     log = arm.logger
-    strategy_key = resolve_pick_strategy(request.object_name)
     strategy = strategies[strategy_key]
     arm.set_context(strategy_key)
 
@@ -126,16 +144,20 @@ def execute(
 
     perceived = _perceive(perception, request, strategy_key)
     if perceived is None:
-        return False, PickOutcome()
+        return _fall_back_or_fail(arm, perception, request, strategies, strategy)
 
     # Open after perceiving: the fingers are in the camera's view while it looks.
     arm.open_gripper()
 
-    # Remember the perceived objects so DirectGraspPick can attach one.
+    fitted = perceived.fitted
+    if fitted is not None:
+        arm.add_collision_object(fitted)
+
+    # Remember the perceived objects so a strategy can attach one.
     arm.snapshot_scene()
 
     outcome = None
-    for grasp_set in _grasp_sets(perception, perceived, request, strategy_key):
+    for grasp_set in _grasp_sets(perception, perceived, request):
         outcome = _run_strategy(arm, strategy, grasp_set)
         if outcome is not None:
             break
@@ -143,17 +165,42 @@ def execute(
 
     if outcome is None:
         log.error(f"[{strategy_key}] pick failed: no candidate succeeded")
-        return False, PickOutcome()
+        return _fall_back_or_fail(
+            arm, perception, request, strategies, strategy, fitted
+        )
 
     # Defensive re-close: the strategy already closed, but a missed service
     # response there would otherwise leave the object un-gripped for the return.
     arm.close_gripper(settle_s=0.0)
 
     outcome.object_name = request.object_name
+    if fitted is not None:
+        outcome.object_pick_height, outcome.object_height = _fitted_heights(
+            fitted, outcome.pick_pose
+        )
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
     return True, outcome
+
+
+def _fall_back_or_fail(
+    arm, perception, request: PickRequest, strategies, strategy, fitted=None
+) -> Tuple[bool, PickOutcome]:
+    if not strategy.profile.fallback_to_gpd:
+        return False, PickOutcome()
+    arm.logger.warn(
+        f"'{request.object_name}': {strategy.name} pick failed, falling back to GPD"
+    )
+    if fitted is not None:
+        arm.remove_collision_object(fitted.id)
+    return _pick(
+        arm,
+        perception,
+        replace(request, in_configuration=False),
+        strategies,
+        PICK_STRATEGY_GPD,
+    )
 
 
 # ======================================================================
@@ -178,20 +225,20 @@ def _perceive(
 ) -> Optional[Perceived]:
     """Locate the object. Returns None when it cannot be found."""
     if strategy_key != PICK_STRATEGY_GPD:
-        return _perceive_flat(perception, request, strategy_key)
+        return _perceive_grasps(perception, request, strategy_key)
     return _perceive_cluster(perception, request)
 
 
-def _perceive_flat(perception, request: PickRequest, strategy_key: str):
-    """Ask the estimator for a top-down pose.
+def _perceive_grasps(perception, request: PickRequest, strategy_key: str):
+    """Ask the grasp generator for the object's grasp candidates.
 
     Deliberately does NOT cluster: clustering adds the table as a collision
     object, which makes MoveIt reject every near-table path.
     """
     perception.logger.info(
-        f"Flat object '{request.object_name}': asking the estimator for a pose"
+        f"'{request.object_name}': asking the grasp generator for candidates"
     )
-    response = perception.estimate_flat_grasp(request.object_name)
+    response = perception.generate_grasps(request.object_name)
     if response is None:
         return None
 
@@ -201,10 +248,10 @@ def _perceive_flat(perception, request: PickRequest, strategy_key: str):
     pose = response.pose
     pose.pose.position.z += z_tweak
     perception.logger.info(
-        f"Flat grasp pose received ({response.samples_collected} samples), "
+        f"Generated grasp pose received ({response.samples_collected} samples), "
         f"z tweak={z_tweak}"
     )
-    return Perceived(flat_pose=pose)
+    return Perceived(grasps=response)
 
 
 def _perceive_cluster(perception, request: PickRequest) -> Optional[Perceived]:
@@ -279,24 +326,25 @@ def _cluster_height(cluster) -> Optional[float]:
 
 
 def _grasp_sets(
-    perception, perceived: Perceived, request: PickRequest, strategy_key: str
+    perception, perceived: Perceived, request: PickRequest
 ) -> Iterator[GraspSet]:
     """Yield batches of candidates, best source first.
 
-    Flat objects yield a single set from the estimator. GPD yields one set per
-    config, so a config whose grasps are all unreachable falls back to the next.
+    Shapes yield the generator's best candidates. Flat objects yield the generator's
+    one pose and its flip. GPD yields one set per config, so a config whose grasps
+    are all unreachable falls back to the next.
     """
-    if strategy_key != PICK_STRATEGY_GPD:
-        # A 90 deg alternative would align the fingers with a fork's long axis
-        # and collide with it, so the only alternative is the symmetric flip.
-        yield GraspSet(
-            poses=[
-                perceived.flat_pose,
-                _rotate_about_approach(perceived.flat_pose, 180),
-            ],
-            scores=[1.0, 0.9],
-            source="flat_estimator",
-        )
+    response = perceived.grasps
+    if response is not None:
+        if perceived.fitted is not None:
+            # Already ranked across every approach, flips included.
+            poses, scores = list(response.grasps[:5]), list(response.scores[:5])
+        else:
+            # A 90 deg alternative would align the fingers with a fork's long axis
+            # and collide with it, so the only alternative is the symmetric flip.
+            poses = [response.pose, _rotate_about_approach(response.pose, 180)]
+            scores = [1.0, 0.9]
+        yield GraspSet(poses=poses, scores=scores, source="grasp_generator")
         return
 
     # Shelf: retry the same config a few times. GPD samples randomly, so
@@ -480,6 +528,13 @@ def _candidates(arm, profile, grasp_set: GraspSet) -> Iterator[GraspCandidate]:
             )
 
 
+def _fitted_heights(fitted, grasp_pose) -> Tuple[float, float]:
+    """The place pipeline's (pick height, object height) for the fitted object."""
+    height = 2 * fitted.dimensions.x if fitted.type == "sphere" else fitted.dimensions.z
+    bottom = fitted.pose.pose.position.z - height / 2
+    return grasp_pose.pose.position.z - bottom + SAFETY_HEIGHT_GEOMETRIC, height
+
+
 # ======================================================================
 # Return to a carry pose
 # ======================================================================
@@ -504,8 +559,8 @@ def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
     named = "look_side_stare" if strategy_key == PICK_STRATEGY_PEAK else "table_stare"
     log.info(f"Returning to {named}")
     with arm.phase(f"return/{named}"):
-        arm.clear_octomap()
         for _ in range(5):
+            arm.clear_octomap()
             if arm.move_to_named_position(named, velocity=0.5):
                 return
         log.warn(f"Could not return to {named} after 5 attempts")

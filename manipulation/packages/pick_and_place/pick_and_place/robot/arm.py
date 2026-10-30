@@ -269,11 +269,11 @@ class RobotArm:
     def joint_state(self) -> Optional[JointState]:
         return self._latest_joint_state
 
-    def tcp_z(self) -> Optional[float]:
-        """Current tool-centre-point Z in metres, or None if unknown."""
+    def tcp_xyz(self) -> Optional[np.ndarray]:
+        """Current tool-centre-point XYZ in metres, or None if unknown."""
         if self._latest_robot_state is None:
             return None
-        return self._latest_robot_state.pose[2] / 1000.0
+        return np.array(self._latest_robot_state.pose[:3]) / 1000.0
 
     def tip_offset(self, param_name: str) -> float:
         """Read a tip-offset ROS parameter by name."""
@@ -562,6 +562,14 @@ class RobotArm:
             self.wait_for_future(self._attach_client.call_async(request), timeout=10)
         return True
 
+    def add_collision_object(self, obj: CollisionObject) -> None:
+        request = AddCollisionObjects.Request()
+        request.collision_objects.append(obj)
+        if not self._add_objects_client.wait_for_service(timeout_sec=3.0):
+            self._log.warn(f"add_collision_objects unavailable; '{obj.id}' not added")
+            return
+        self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
+
     def add_shelf_ceiling_guard(self, place_pose, table_height: float) -> None:
         """Block the place return from routing up into the compartment ceiling.
 
@@ -647,12 +655,14 @@ class RobotArm:
             self._stop_cartesian_velocity()
             self._restore_mode1()
 
-    def _send_cartesian_velocity(self, speed_mm_s: float, label: str) -> None:
+    def _send_cartesian_velocity(
+        self, speed_mm_s: float, label: str, direction=(0.0, 0.0, 1.0)
+    ) -> None:
         if not self._cartesian_velocity_client.wait_for_service(timeout_sec=2.0):
             raise PickHardwareError(f"[{label}] vc_set_cartesian_velocity unavailable")
 
         request = MoveVelocity.Request()
-        request.speeds = [0.0, 0.0, speed_mm_s, 0.0, 0.0, 0.0]
+        request.speeds = [*(speed_mm_s * np.asarray(direction)), 0.0, 0.0, 0.0]
         request.is_tool_coord = False
         request.duration = 0.0
 
@@ -785,37 +795,42 @@ class RobotArm:
     def fixed_distance_descent(
         self, distance_m: float, speed_mm_s: float, descend: bool = True
     ) -> bool:
-        """Move a fixed Z distance under cartesian velocity, closed on TCP Z.
-
-        ``descend=False`` drives +Z instead, reusing the same mechanism.
-        """
-        label = "FixedDescent"
-        sign = -1.0 if descend else 1.0
-        direction = "descending" if descend else "ascending"
-        self._log.info(
-            f"[{label}] {direction} {distance_m * 1000:.0f}mm at {speed_mm_s:.1f} mm/s"
+        """Move a fixed Z distance, a vertical cartesian_approach."""
+        return self.cartesian_approach(
+            (0.0, 0.0, -1.0 if descend else 1.0), distance_m, speed_mm_s
         )
 
-        # Read the start height before any mode switch, so a stale TCP reading
+    def cartesian_approach(
+        self, direction, distance_m: float, speed_mm_s: float
+    ) -> bool:
+        """Drive distance_m along a unit direction, closed on the TCP position."""
+        label = "CartesianApproach"
+        direction = np.asarray(direction)
+        self._log.info(
+            f"[{label}] moving {distance_m * 1000:.0f}mm along "
+            f"{direction.round(2).tolist()} at {speed_mm_s:.1f} mm/s"
+        )
+
+        # Read the start position before any mode switch, so a stale TCP reading
         # cannot be mistaken for progress.
         wait_start = time.time()
-        while self.tcp_z() is None:
+        while self.tcp_xyz() is None:
             if time.time() - wait_start > 2.0:
                 self._log.error(
-                    f"[{label}] no robot_states after 2s, cannot verify descent"
+                    f"[{label}] no robot_states after 2s, cannot verify the move"
                 )
                 return False
             time.sleep(0.05)
 
-        start_z = self.tcp_z()
+        start_xyz = self.tcp_xyz()
         self._log.info(
-            f"[{label}] start_z={start_z * 1000:.1f}mm "
-            f"target_z={(start_z + sign * distance_m) * 1000:.1f}mm"
+            f"[{label}] start={(start_xyz * 1000).round(1).tolist()}mm "
+            f"target={((start_xyz + direction * distance_m) * 1000).round(1).tolist()}mm"
         )
 
         reached = False
         with self.cartesian_velocity_mode(label):
-            self._send_cartesian_velocity(sign * speed_mm_s, label)
+            self._send_cartesian_velocity(speed_mm_s, label, direction)
 
             timeout = (distance_m * 1000.0 / speed_mm_s) * DESCENT_TIMEOUT_FACTOR
             loop_start = time.time()
@@ -831,14 +846,14 @@ class RobotArm:
                     break
 
                 if self._estop:
-                    self._log.warn(f"[{label}] e-stop during descent")
-                    raise PickAborted("e-stop during fixed-distance descent")
+                    self._log.warn(f"[{label}] e-stop during approach")
+                    raise PickAborted("e-stop during cartesian approach")
 
-                current_z = self.tcp_z()
-                if current_z is None:
+                current_xyz = self.tcp_xyz()
+                if current_xyz is None:
                     continue
 
-                moved = (start_z - current_z) if descend else (current_z - start_z)
+                moved = float(np.dot(current_xyz - start_xyz, direction))
                 if moved >= distance_m:
                     self._log.info(
                         f"[{label}] reached: moved={moved * 1000:.1f}mm "

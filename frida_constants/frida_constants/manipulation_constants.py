@@ -65,8 +65,17 @@ GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
 GRIPPER_GRASP_STATE_TOPIC = "/gripper/grasp_state"
 SAFETY_HEIGHT = 0.05
+SAFETY_HEIGHT_GEOMETRIC = 0.005
+GRIPPER_FINGER_LENGTH = 0.085
+GRIPPER_PALM_TO_FLANGE = 0.085
+GRIPPER_REACH = GRIPPER_FINGER_LENGTH + GRIPPER_PALM_TO_FLANGE
+GRIPPER_MAX_APERTURE = 0.095
+GRIPPER_HALF_THICKNESS = 0.032
+GRIPPER_FINGER_THICKNESS = 0.03
+GRIPPER_BODY_CORNERS = ((-0.091, -0.099, 0.0), (0.039, 0.099, 0.081))
+PRE_GRASP_DISTANCE = 0.06
 PICK_MIN_HEIGHT = 0.04
-# Objects picked with the flat-grasp estimator. toothpaste/sponge/dishwasher_tab are
+# Objects the grasp generator treats as flat. toothpaste/sponge/dishwasher_tab are
 # low, flat items GPD fails to grasp from above (PPC run 2026-07-02: toothpaste 0/2).
 # These are detector labels -- they must match what the vision model publishes.
 FLAT_OBJECT_NAMES = [
@@ -85,8 +94,17 @@ GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Object-name sets consumed by the pick strategy classifier
 BOWL_NAME = "bowl"
-RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME]
+RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME, "cup"]
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
+
+GENERATE_GRASPS_SERVICE = "/manipulation/generate_grasps"
+GRASP_CLASS_FLAT = "flat"
+GRASP_CLASS_BOX = "box"
+GRASP_CLASS_CYLINDRICAL = "cylindrical"
+GRASP_CLASS_ROUND = "round"
+GRASP_CLASS_RIM = "rim"
+GRASP_CLASS_PEAK = "peak"
+GRASP_CLASS_TRASH = "trash"
 
 # Default speed for the generic /manipulation/fixed_distance_move service,
 RIM_DESCENT_SPEED = 20.0  # mm/s

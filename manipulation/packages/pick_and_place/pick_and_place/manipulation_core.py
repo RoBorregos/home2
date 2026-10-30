@@ -20,6 +20,7 @@ from frida_constants.manipulation_constants import (
     FOLLOW_FACE_ARM_SERVICE,
     FOLLOW_PERSON_ARM_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
+    GRIPPER_REACH,
     MANIPULATION_ACTION_SERVER,
     RIM_DESCENT_SPEED,
 )
@@ -69,6 +70,7 @@ class ManipulationCore(Node):
         self.declare_parameter("ee_link_offset", -0.125)
         self.declare_parameter("rim_tip_offset", -0.18)
         self.declare_parameter("bowl_tip_offset", -0.12)
+        self.declare_parameter("geometric_tip_offset", -GRIPPER_REACH)
         # Points at an alternative profile file; empty means the installed one.
         self.declare_parameter("pick_profiles_file", "")
 
