@@ -49,6 +49,8 @@ from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
 NAV_GOAL_TIMEOUT = 90.0
+# Planned dock = detect + plan + MPPI approach + final straight-in
+DOCK_TIMEOUT = 150.0
 
 
 def _mock_pose():
@@ -82,6 +84,8 @@ class NavigationTasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
+        # Diagnostics of the last dock_table call (see dock_table).
+        self.last_dock_result = {}
 
         # Action clients and services
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
@@ -439,18 +443,54 @@ class NavigationTasks:
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def dock_table(self, offset=0.0):
-        """Perpendicular-approach (dock to) the table/shelf in front of the robot.
+    def dock_table(
+        self, offset=0.0, surface_type: str = "", target=None, check_reach: bool = False
+    ):
+        """Plan + dock at the surface in front of the robot.
 
-        offset: desired front offset in meters; 0.0 uses the docker default.
+        surface_type: surface profile in nav_main/config/approach_profiles.yaml
+            (table, round_table, counter, dishwasher, cabinet, shelf). The base pose
+            is planned inside that surface's reach band — no hardcoded distance.
+        target: optional PointStamped (any frame) of the object to work on; the
+            robot stands in front of it instead of the face centre.
+        check_reach: verify the candidate poses with the arm's IK against `target`
+            (keep its z) before docking. Only for an object to grasp.
+        offset: DEPRECATED legacy front offset (m), only used without surface_type.
+
+        Returns (Status, error). Diagnostics land in `self.last_dock_result`:
+        {"lateral_error", "reach", "target_blocked", "blocker" (PointStamped or
+        None), "blocker_side"}.
         """
-        CLog.nav(self.node, "MOVE", f"Requesting table docking (offset={offset})")
+        CLog.nav(
+            self.node,
+            "MOVE",
+            f"Requesting table docking (surface={surface_type or 'legacy'}, offset={offset})",
+        )
         request = DockTable.Request()
+        request.surface_type = surface_type
         request.offset = float(offset)
+        if target is not None:
+            request.target = target
+        request.check_reach = bool(check_reach and target is not None)
+        self.last_dock_result = {}
         future = self.dock_table_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=DOCK_TIMEOUT)
         result = future.result()
         if result is not None:
+            self.last_dock_result = {
+                "lateral_error": result.lateral_error,
+                "reach": result.reach,
+                "target_blocked": result.target_blocked,
+                "blocker": result.blocker if result.target_blocked else None,
+                "blocker_side": result.blocker_side,
+            }
+            if result.target_blocked:
+                CLog.nav(
+                    self.node,
+                    "DOCK",
+                    f"Spot in front of the target blocked on the {result.blocker_side}",
+                    level="warn",
+                )
             if result.success:
                 CLog.nav(self.node, "SUCCESS", "Docked to table")
                 return (Status.EXECUTION_SUCCESS, "")
