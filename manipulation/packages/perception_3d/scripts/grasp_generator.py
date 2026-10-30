@@ -55,7 +55,7 @@ from perception_3d.geometric_grasps import (
 BASE_FRAME = "link_base"  # every grasp pose is expressed here (z up)
 DEBUG_POSE_TOPIC = "/manipulation/generated_grasp_pose"
 MARKERS_TOPIC = "/manipulation/generated_grasps"
-DEFAULT_SAMPLES = 10  # frames to collect when the caller passes <= 0
+DEFAULT_SAMPLES = 1  # frames to collect when the caller passes <= 0
 COLLECT_TIMEOUT = 5.0  # s, give up collecting after this
 
 
