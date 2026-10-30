@@ -1917,6 +1917,17 @@ class TableDocker(Node):
         if self.use_planned_motion:
             for leg in range(1, self.max_motion_legs + 1):
                 ok, msg = self._drive_to_predock(plan)
+                if not ok and leg < self.max_motion_legs:
+                    # The memory keeps growing as the robot moves (a chair leg seen
+                    # closer up): the chosen pose may no longer be free. Re-plan on
+                    # the locked face with what is known now and try again.
+                    new = self._plan_dock(profile)
+                    if new is not None and math.hypot(new["pose"][0] - plan["pose"][0],
+                                                      new["pose"][1] - plan["pose"][1]) > 0.05:
+                        self.log("warn", f"Approach motion (leg {leg}): {msg} — re-planned with "
+                                         f"the obstacles seen since (lateral_err={new['lateral']:.2f}m)")
+                        plan = new
+                        continue
                 self.log("info" if ok else "warn", f"Approach motion (leg {leg}): {msg}"
                          + ("" if ok else " — finishing with the docking controller"))
                 if not ok:
