@@ -122,7 +122,6 @@ var namespaces_dup =
     ] ],
     [ "finetune_arcface", "namespacefinetune__arcface.html", "namespacefinetune__arcface" ],
     [ "finetune_head", "namespacefinetune__head.html", "namespacefinetune__head" ],
-    [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", "namespaceflat__grasp__estimator" ],
     [ "flying_sphere", "namespaceflying__sphere.html", [
       [ "main", "namespaceflying__sphere.html#a16e948a58bf363c63448a2e12fbfb72c", null ],
       [ "goal_pos", "namespaceflying__sphere.html#acb69026d6e931da75e2e65186b913021", null ],
@@ -177,6 +176,7 @@ var namespaces_dup =
     ] ],
     [ "gpsr_task_manager", "namespacegpsr__task__manager.html", "namespacegpsr__task__manager" ],
     [ "grasp_detection_example", "namespacegrasp__detection__example.html", "namespacegrasp__detection__example" ],
+    [ "grasp_generator", "namespacegrasp__generator.html", "namespacegrasp__generator" ],
     [ "grasp_markers", "namespacegrasp__markers.html", "namespacegrasp__markers" ],
     [ "grasp_orientation", "namespacegrasp__orientation.html", [
       [ "is_frontal_grasp", "namespacegrasp__orientation.html#a9aa2a0df6c7b8d7c41abd2549791d806", null ],
@@ -287,9 +287,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceomni__basics.html#aaa6181047378b8fed9d7735c8f2a9341", null ]
     ] ],
     [ "omnidriver", "namespaceomnidriver.html", "namespaceomnidriver" ],
-    [ "perception_3d", "namespaceperception__3d.html", [
-      [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
-    ] ],
+    [ "perception_3d", "namespaceperception__3d.html", "namespaceperception__3d" ],
     [ "perception_utils", "namespaceperception__utils.html", [
       [ "get_object_cluster", "namespaceperception__utils.html#ac1455008e46c7408e221e29ac0302030", null ],
       [ "get_object_point", "namespaceperception__utils.html#a2c14626d1731182b72d1680307e9c488", null ],

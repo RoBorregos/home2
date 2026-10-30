@@ -13,10 +13,11 @@ var searchData=
   ['keyword_10',['keyword',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#ae5c294eb45ec75f1040ca12a64e10372',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['keyword_5fclient_11',['keyword_client',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a2183aabd66aeff1dd31fd7a8bb94c724',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['keyword_5ftopic_12',['KEYWORD_TOPIC',['../namespacefrida__constants_1_1hri__constants.html#a99a70242344952dd09be65d3260da4a7',1,'frida_constants::hri_constants']]],
-  ['kitchen_13',['KITCHEN',['../classpickandplace__task__manager_1_1Location.html#a6ab0cce169d528f361218a6cd167d583',1,'pickandplace_task_manager::Location']]],
-  ['known_5ffaces_5fpath_14',['known_faces_path',['../classmodels_1_1face__recognition_1_1FaceModel.html#a7157d34848628bed1b845a45e8310d91',1,'models::face_recognition::FaceModel']]],
-  ['known_5ffaces_5fpath_15',['KNOWN_FACES_PATH',['../namespaceface__recognition__node.html#a4b2d182930304b364cdc2af6f6b32bef',1,'face_recognition_node']]],
-  ['known_5flimitation_5fclasses_16',['KNOWN_LIMITATION_CLASSES',['../namespacecore_1_1dataset.html#acc558db2374c8583b07dc44fb84604bb',1,'core::dataset']]],
-  ['known_5fstrategy_5fkinds_17',['KNOWN_STRATEGY_KINDS',['../namespacepick__and__place_1_1pipelines_1_1profiles.html#a6e3381fe4e1e49e1a6d1f748fa52da22',1,'pick_and_place::pipelines::profiles']]],
-  ['kp_5fconf_18',['KP_CONF',['../namespacemodels_1_1pose__detection.html#abda8d67aad212f9a92a490ded3d4f642',1,'models.pose_detection.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()']]]
+  ['kind_13',['kind',['../classperception__3d_1_1geometric__grasps_1_1Fit.html#a258cbb88f3a92bfe6c4bc32759fdc41f',1,'perception_3d::geometric_grasps::Fit']]],
+  ['kitchen_14',['KITCHEN',['../classpickandplace__task__manager_1_1Location.html#a6ab0cce169d528f361218a6cd167d583',1,'pickandplace_task_manager::Location']]],
+  ['known_5ffaces_5fpath_15',['known_faces_path',['../classmodels_1_1face__recognition_1_1FaceModel.html#a7157d34848628bed1b845a45e8310d91',1,'models::face_recognition::FaceModel']]],
+  ['known_5ffaces_5fpath_16',['KNOWN_FACES_PATH',['../namespaceface__recognition__node.html#a4b2d182930304b364cdc2af6f6b32bef',1,'face_recognition_node']]],
+  ['known_5flimitation_5fclasses_17',['KNOWN_LIMITATION_CLASSES',['../namespacecore_1_1dataset.html#acc558db2374c8583b07dc44fb84604bb',1,'core::dataset']]],
+  ['known_5fstrategy_5fkinds_18',['KNOWN_STRATEGY_KINDS',['../namespacepick__and__place_1_1pipelines_1_1profiles.html#a6e3381fe4e1e49e1a6d1f748fa52da22',1,'pick_and_place::pipelines::profiles']]],
+  ['kp_5fconf_19',['KP_CONF',['../namespacemodels_1_1pose__detection.html#abda8d67aad212f9a92a490ded3d4f642',1,'models.pose_detection.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()']]]
 ];

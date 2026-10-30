@@ -147,7 +147,7 @@ Ours (&lt;tt&gt;manipulation/packages/&lt;/tt&gt;)</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">**<code><a class="el" href="namespacefrida__motion__planning.html">frida_motion_planning</a></code>**   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacemotion__planning__server.html">motion_planning_server</a></code>   </td><td class="markdownTableBodyNone">The only node that commands the arm. Decides <em>how</em> to move    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">**<code><a class="el" href="namespaceperception__3d.html">perception_3d</a></code>**   </td><td class="markdownTableBodyNone"><code>test_only_orchestrator</code>, <code>pick_primitives</code>, <code>plane_service</code>, <code><a class="el" href="namespaceflat__grasp__estimator.html">flat_grasp_estimator</a></code>, <code><a class="el" href="namespacedownsample__pc.html">downsample_pc</a></code>   </td><td class="markdownTableBodyNone">Segments objects and surfaces from the point cloud    </td></tr>
+<td class="markdownTableBodyNone">**<code><a class="el" href="namespaceperception__3d.html">perception_3d</a></code>**   </td><td class="markdownTableBodyNone"><code>test_only_orchestrator</code>, <code>pick_primitives</code>, <code>plane_service</code>, <code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code>, <code><a class="el" href="namespacedownsample__pc.html">downsample_pc</a></code>   </td><td class="markdownTableBodyNone">Segments objects and surfaces from the point cloud; <code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code> fits flat objects and solids and ranks their grasps    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">**<code>place</code>**   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespaceheatmapPlace__Server.html">heatmapPlace_Server</a></code>   </td><td class="markdownTableBodyNone">Scores a surface and returns the best free spot    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -189,7 +189,7 @@ Shared, outside &lt;tt&gt;manipulation/&lt;/tt&gt;</h2>
 <div class="line">    end</div>
 <div class="line">    subgraph L2[&quot;② Perceive&quot;]</div>
 <div class="line">        orch[&quot;test_only_orchestrator&lt;br/&gt;&lt;i&gt;perception_3d&lt;/i&gt;&quot;]</div>
-<div class="line">        flat[&quot;flat_grasp_estimator&lt;br/&gt;&lt;i&gt;perception_3d&lt;/i&gt;&quot;]</div>
+<div class="line">        gen[&quot;grasp_generator&lt;br/&gt;&lt;i&gt;perception_3d&lt;/i&gt;&quot;]</div>
 <div class="line">        gpd[&quot;gpd_service&lt;br/&gt;&lt;i&gt;arm_pkg&lt;/i&gt;&quot;]</div>
 <div class="line">        heat[&quot;heatmapPlace_Server&lt;br/&gt;&lt;i&gt;place&lt;/i&gt;&quot;]</div>
 <div class="line">    end</div>
@@ -202,7 +202,7 @@ Shared, outside &lt;tt&gt;manipulation/&lt;/tt&gt;</h2>
 <div class="line">    end</div>
 <div class="line"> </div>
 <div class="line">    core --&gt;|&quot;pick_perception_service&lt;br/&gt;place_perception_service&quot;| orch</div>
-<div class="line">    core --&gt;|&quot;estimate_flat_grasp&quot;| flat</div>
+<div class="line">    core --&gt;|&quot;generate_grasps&quot;| gen</div>
 <div class="line">    core --&gt;|&quot;detect_grasps&quot;| gpd</div>
 <div class="line">    core --&gt;|&quot;heatmap_place_service&quot;| heat</div>
 <div class="line">    core --&gt;|&quot;move_to_pose · move_joints&lt;br/&gt;collision objects · gripper&quot;| mps</div>
@@ -215,7 +215,7 @@ Shared, outside &lt;tt&gt;manipulation/&lt;/tt&gt;</h2>
 <div class="line">    classDef l3 fill:#6a4c93,stroke:#c8b6ff,color:#fff</div>
 <div class="line">    classDef l4 fill:#343a40,stroke:#adb5bd,color:#fff</div>
 <div class="line">    class core l1</div>
-<div class="line">    class orch,flat,gpd,heat l2</div>
+<div class="line">    class orch,gen,gpd,heat l2</div>
 <div class="line">    class mps l3</div>
 <div class="line">    class mg,ctl l4</div>
 </div><!-- fragment --><p><b>The rule that keeps this readable:</b> the pipelines never create a ROS client. They call <code>RobotArm</code> and <code>Perception</code> (in <code>pick_and_place/robot/</code>), and those two own every service and action client in the area. A unit test enforces it.</p>
@@ -228,7 +228,7 @@ Two ways to reach the arm</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">xArm mode   </td><td class="markdownTableBodyNone"><b>1</b>   </td><td class="markdownTableBodyNone"><b>5</b>    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">Used by   </td><td class="markdownTableBodyNone">every <code>move_to_pose</code> / <code>move_joints</code>   </td><td class="markdownTableBodyNone">force-guarded and fixed-distance descents    </td></tr>
+<td class="markdownTableBodyNone">Used by   </td><td class="markdownTableBodyNone">every <code>move_to_pose</code> / <code>move_joints</code>   </td><td class="markdownTableBodyNone">force-guarded and fixed-distance descents, the geometric approach    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Collision checking   </td><td class="markdownTableBodyNone">yes, full planning scene   </td><td class="markdownTableBodyNone"><b>none</b>    </td></tr>
 <tr class="markdownTableRowEven">
@@ -253,7 +253,7 @@ Two ways to reach the arm</h2>
 <div class="line">    ├── motion_planning_server      (frida_motion_planning)</div>
 <div class="line">    ├── manipulation_safeguard      (manipulation_general)</div>
 <div class="line">    ├── fix_position_to_plane       (pick_and_place)</div>
-<div class="line">    └── flat_grasp_estimator        (perception_3d)</div>
+<div class="line">    └── grasp_generator             (perception_3d)</div>
 </div><!-- fragment --><blockquote class="doxtable">
 <p>&zwj;<b>Naming trap:</b> <code>test_only_orchestrator</code> is <b>not</b> test-only. It serves <code>pick_perception_service</code> and <code>place_perception_service</code> — segmenting the object cluster and the place surface. Without it, every pick and place fails at perception. </p>
 </blockquote>
@@ -265,6 +265,7 @@ Two ways to reach the arm</h2>
 <div class="line">    participant TM as task_manager</div>
 <div class="line">    participant C as manipulation_core</div>
 <div class="line">    participant P as perception_3d</div>
+<div class="line">    participant N as grasp_generator</div>
 <div class="line">    participant G as gpd_service</div>
 <div class="line">    participant M as motion_planning_server</div>
 <div class="line"> </div>
@@ -272,10 +273,10 @@ Two ways to reach the arm</h2>
 <div class="line">    C-&gt;&gt;M: move_joints(&quot;flat_stare&quot;)</div>
 <div class="line">    Note over C: strategy resolved from the object name</div>
 <div class="line"> </div>
-<div class="line">    alt Flat object (fork, plate, banana)</div>
-<div class="line">        C-&gt;&gt;P: estimate_flat_grasp</div>
-<div class="line">        P--&gt;&gt;C: top-down pose</div>
-<div class="line">    else Anything else</div>
+<div class="line">    alt Flat, rim, peak or any solid (fork, basket, coke)</div>
+<div class="line">        C-&gt;&gt;N: generate_grasps</div>
+<div class="line">        N--&gt;&gt;C: ranked grasp poses (+ fitted shape for a solid)</div>
+<div class="line">    else GPD (no name, shelf, pour, or the geometric fallback)</div>
 <div class="line">        C-&gt;&gt;P: pick_perception_service</div>
 <div class="line">        P--&gt;&gt;C: object cluster</div>
 <div class="line">        C-&gt;&gt;G: detect_grasps(cluster)</div>
@@ -284,14 +285,14 @@ Two ways to reach the arm</h2>
 <div class="line"> </div>
 <div class="line">    loop each candidate until one works</div>
 <div class="line">        C-&gt;&gt;M: move_to_pose(pre-grasp)</div>
-<div class="line">        C-&gt;&gt;M: descend (guarded or fixed)</div>
+<div class="line">        C-&gt;&gt;M: approach (guarded, fixed or cartesian)</div>
 <div class="line">        C-&gt;&gt;M: close_gripper</div>
 <div class="line">    end</div>
 <div class="line"> </div>
 <div class="line">    C-&gt;&gt;M: move_joints(carry pose)</div>
 <div class="line">    C--&gt;&gt;TM: success</div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md120"></a>
-The five pick strategies</h2>
+The six pick strategies</h2>
 <p>Chosen by object name in <code><a class="el" href="classification_8py.html">pipelines/classification.py</a></code>; tuned in <code>config/pick_profiles.yaml</code>.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -305,7 +306,9 @@ The five pick strategies</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>peak</code>   </td><td class="markdownTableBodyNone">clothes piles   </td><td class="markdownTableBodyNone">Same, onto the highest point    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>gpd</code>   </td><td class="markdownTableBodyNone"><b>everything else</b>   </td><td class="markdownTableBodyNone">Plan straight to a GPD grasp, no descent   </td></tr>
+<td class="markdownTableBodyNone"><code>geometric</code>   </td><td class="markdownTableBodyNone"><b>any other name</b> (cans, boxes, fruit)   </td><td class="markdownTableBodyNone">Back off along the generator's approach axis, drive straight in, close; falls back to <code>gpd</code>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>gpd</code>   </td><td class="markdownTableBodyNone">no name, shelf and pour picks, the fallback   </td><td class="markdownTableBodyNone">Plan straight to a GPD grasp, no descent   </td></tr>
 </table>
 <p>Retuning any number is a YAML edit. Adding a behaviour that reuses an existing motion is a YAML entry plus two lines. Only a genuinely new motion needs a new class.</p>
 <hr  />
@@ -327,7 +330,7 @@ The five pick strategies</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/manipulation/place_perception_service</code>   </td><td class="markdownTableBodyNone"><code>test_only_orchestrator</code>   </td><td class="markdownTableBodyNone">Place surface cloud    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>/manipulation/estimate_flat_grasp</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespaceflat__grasp__estimator.html">flat_grasp_estimator</a></code>   </td><td class="markdownTableBodyNone">Top-down pose for flat objects    </td></tr>
+<td class="markdownTableBodyNone"><code>/manipulation/generate_grasps</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code>   </td><td class="markdownTableBodyNone">Ranked grasp poses, plus the fitted shape of a solid    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/manipulation/detect_grasps</code>   </td><td class="markdownTableBodyNone"><code>gpd_service</code>   </td><td class="markdownTableBodyNone">GPD grasp candidates    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -358,6 +361,10 @@ The five pick strategies</h2>
 <td class="markdownTableBodyNone">Change where a place lands   </td><td class="markdownTableBodyNone"><code><a class="el" href="heatmapPlace__Server_8py.html">place/scripts/heatmapPlace_Server.py</a></code>    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">Change object/surface segmentation   </td><td class="markdownTableBodyNone"><code>perception_3d/</code>    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Change how flat objects and solids are grasped (geometry)   </td><td class="markdownTableBodyNone"><code><a class="el" href="geometric__grasps_8py.html">perception_3d/perception_3d/geometric_grasps.py</a></code>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Change the gripper dimensions   </td><td class="markdownTableBodyNone"><code><a class="el" href="manipulation__constants_8py.html">frida_constants/manipulation_constants.py</a></code>    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Add a named arm pose   </td><td class="markdownTableBodyNone"><code><a class="el" href="xarm__configurations_8py.html">frida_constants/xarm_configurations.py</a></code>    </td></tr>
 <tr class="markdownTableRowEven">

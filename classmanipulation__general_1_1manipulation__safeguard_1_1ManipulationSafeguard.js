@@ -25,6 +25,7 @@ var classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafegua
     [ "_set_mode_client", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a0736ba45f07d06a18a45ddb025d22b86", null ],
     [ "_set_servo_angle_client", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a29fb371814a7f1e46ffdbb322fa76e7c", null ],
     [ "_set_state_client", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a88acd693834ff1c08ccbd7020a778af7", null ],
+    [ "_stopped_since", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#aca01864266d33d143ff3c83f62dfbaef", null ],
     [ "callback_group", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a3871d7e0542971f56ef4307936d0654d", null ],
     [ "switch_controller_client", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a79f852cfa0c4ac360717798289da1121", null ]
 ];

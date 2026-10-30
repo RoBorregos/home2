@@ -103,9 +103,10 @@ Inheritance diagram for pick_and_place.pipelines.strategies.PickStrategy:</div>
  <div class="center">
   <img src="classpick__and__place_1_1pipelines_1_1strategies_1_1PickStrategy.png" usemap="#pick_5Fand_5Fplace.pipelines.strategies.PickStrategy_map" alt=""/>
   <map id="pick_5Fand_5Fplace.pipelines.strategies.PickStrategy_map" name="pick_5Fand_5Fplace.pipelines.strategies.PickStrategy_map">
-<area href="classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick.html" alt="pick_and_place.pipelines.strategies.DirectGraspPick" shape="rect" coords="0,56,370,80"/>
-<area href="classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick.html" alt="pick_and_place.pipelines.strategies.FixedDistanceDescentPick" shape="rect" coords="380,56,750,80"/>
-<area href="classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick.html" alt="pick_and_place.pipelines.strategies.ForceGuardedDescentPick" shape="rect" coords="760,56,1130,80"/>
+<area href="classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick.html" alt="pick_and_place.pipelines.strategies.CartesianApproachPick" shape="rect" coords="0,56,370,80"/>
+<area href="classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick.html" alt="pick_and_place.pipelines.strategies.DirectGraspPick" shape="rect" coords="380,56,750,80"/>
+<area href="classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick.html" alt="pick_and_place.pipelines.strategies.FixedDistanceDescentPick" shape="rect" coords="760,56,1130,80"/>
+<area href="classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick.html" alt="pick_and_place.pipelines.strategies.ForceGuardedDescentPick" shape="rect" coords="1140,56,1510,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -124,7 +125,7 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a195aaa1c4d461bd24c3e2d40ddfc2bfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Base for the three motion strategies.</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<div class="textblock"><pre class="fragment">Base for the four motion strategies.</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a6f0fa2dbd8dfa3bd6bd09dfdd92e5772" name="a6f0fa2dbd8dfa3bd6bd09dfdd92e5772"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6f0fa2dbd8dfa3bd6bd09dfdd92e5772">&#9670;&#160;</a></span>__init__()</h2>
 
@@ -190,7 +191,7 @@ Public Attributes</h2></td></tr>
 Returns a PickOutcome on success. Raises PickAttemptFailed to move on to
 the next candidate, or PickAborted / PickHardwareError to stop the task.
 </pre> 
-<p>Reimplemented in <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick.html#a2f231f6d7d059a56452823a91bee9b04">pick_and_place.pipelines.strategies.FixedDistanceDescentPick</a>, <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick.html#ab420feeb3dc443ac1f2b8f3a1c233ac4">pick_and_place.pipelines.strategies.ForceGuardedDescentPick</a>, and <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick.html#a230d2c84e0d09f7cb73709517a2c3ab5">pick_and_place.pipelines.strategies.DirectGraspPick</a>.</p>
+<p>Reimplemented in <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick.html#a2f231f6d7d059a56452823a91bee9b04">pick_and_place.pipelines.strategies.FixedDistanceDescentPick</a>, <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick.html#a1d95b8e3cd9b74529865672be5243ec9">pick_and_place.pipelines.strategies.CartesianApproachPick</a>, <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick.html#ab420feeb3dc443ac1f2b8f3a1c233ac4">pick_and_place.pipelines.strategies.ForceGuardedDescentPick</a>, and <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick.html#a230d2c84e0d09f7cb73709517a2c3ab5">pick_and_place.pipelines.strategies.DirectGraspPick</a>.</p>
 
 </div>
 </div>

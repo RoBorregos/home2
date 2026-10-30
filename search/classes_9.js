@@ -10,5 +10,6 @@ var searchData=
   ['iksolver_7',['IKSolver',['../classIKSolver.html',1,'']]],
   ['imageembedder_8',['ImageEmbedder',['../classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html',1,'utils::models::image_embedder']]],
   ['imageorienter_9',['ImageOrienter',['../classimage__orienter_1_1ImageOrienter.html',1,'image_orienter']]],
-  ['interleavedplan_10',['InterleavedPlan',['../classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html',1,'task_manager::gpsr::merger']]]
+  ['interleavedplan_10',['InterleavedPlan',['../classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html',1,'task_manager::gpsr::merger']]],
+  ['intrinsics_11',['Intrinsics',['../classperception__3d_1_1geometric__grasps_1_1Intrinsics.html',1,'perception_3d::geometric_grasps']]]
 ];

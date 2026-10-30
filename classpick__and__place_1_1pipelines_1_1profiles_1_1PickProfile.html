@@ -125,6 +125,8 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a36fc51f803cc9a9b0565b16dd9c75690"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a438bd09412dbfe77f56961d08b7b01"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html#a7a438bd09412dbfe77f56961d08b7b01">pre_grasp_height</a></td></tr>
 <tr class="separator:a7a438bd09412dbfe77f56961d08b7b01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a058c4630bc1463c4bdf28bf24f9280f2"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html#a058c4630bc1463c4bdf28bf24f9280f2">post_grasp_height</a></td></tr>
+<tr class="separator:a058c4630bc1463c4bdf28bf24f9280f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a251290fde7e66cabd5f3c8ae25d8eadb"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html#a251290fde7e66cabd5f3c8ae25d8eadb">pre_grasp_velocity</a></td></tr>
 <tr class="separator:a251290fde7e66cabd5f3c8ae25d8eadb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad9f5a64987e533b781301861cbee26c2"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html#ad9f5a64987e533b781301861cbee26c2">close_settle</a></td></tr>
@@ -145,6 +147,8 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a55c060d15fde028f7b3e109522ad675b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a493276203909638b2e211dfa10321595"><td class="memItemLeft" align="right" valign="top">Optional&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html#a493276203909638b2e211dfa10321595">force_guard</a> = None</td></tr>
 <tr class="separator:a493276203909638b2e211dfa10321595"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a465660a2dc74cc8e19998b157b3b1de1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html#a465660a2dc74cc8e19998b157b3b1de1">fallback_to_gpd</a> = False</td></tr>
+<tr class="separator:a465660a2dc74cc8e19998b157b3b1de1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Everything that varies between pick behaviors.</pre> </div><h2 class="groupheader">Member Function Documentation</h2>
@@ -300,6 +304,28 @@ past it by the tweak. An explicit ``descent_distance`` overrides this.
 
 </div>
 </div>
+<a id="a465660a2dc74cc8e19998b157b3b1de1" name="a465660a2dc74cc8e19998b157b3b1de1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a465660a2dc74cc8e19998b157b3b1de1">&#9670;&#160;</a></span>fallback_to_gpd</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool pick_and_place.pipelines.profiles.PickProfile.fallback_to_gpd = False</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a493276203909638b2e211dfa10321595" name="a493276203909638b2e211dfa10321595"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a493276203909638b2e211dfa10321595">&#9670;&#160;</a></span>force_guard</h2>
 
@@ -421,6 +447,28 @@ past it by the tweak. An explicit ``descent_distance`` overrides this.
       <table class="memname">
         <tr>
           <td class="memname">float pick_and_place.pipelines.profiles.PickProfile.post_contact_retract = 0.0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a058c4630bc1463c4bdf28bf24f9280f2" name="a058c4630bc1463c4bdf28bf24f9280f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a058c4630bc1463c4bdf28bf24f9280f2">&#9670;&#160;</a></span>post_grasp_height</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float pick_and_place.pipelines.profiles.PickProfile.post_grasp_height</td>
         </tr>
       </table>
   </td>

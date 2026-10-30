@@ -1,5 +1,6 @@
 var namespacepick__and__place_1_1pipelines_1_1strategies =
 [
+    [ "CartesianApproachPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick" ],
     [ "DirectGraspPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick" ],
     [ "FixedDistanceDescentPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick" ],
     [ "ForceGuardedDescentPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick" ],

@@ -1,9 +1,11 @@
 var classfakes_1_1FakeArm =
 [
     [ "__init__", "classfakes_1_1FakeArm.html#ab9b0bc9ead075c552d6a1cc4cf875f12", null ],
+    [ "add_collision_object", "classfakes_1_1FakeArm.html#a2dd972ed0a26e7fa447ef0149f3a4cb6", null ],
     [ "add_shelf_ceiling_guard", "classfakes_1_1FakeArm.html#ab7f26c05e511cb8cfad2ccc88d759d95", null ],
     [ "attach_pick_object", "classfakes_1_1FakeArm.html#ac3ec1f2904017552d0d40d28458d26ce", null ],
     [ "bind_goal", "classfakes_1_1FakeArm.html#a5d37dbb1ea08232ec9d8c4ad15857931", null ],
+    [ "cartesian_approach", "classfakes_1_1FakeArm.html#af2465a7bc989fe6261e69ed7c09a6896", null ],
     [ "cartesian_velocity_mode", "classfakes_1_1FakeArm.html#a152599d0e0d62b1468e3f7b133b1c943", null ],
     [ "check_abort", "classfakes_1_1FakeArm.html#a54383a06ece97b1a37062984c2ea3e71", null ],
     [ "clear_octomap", "classfakes_1_1FakeArm.html#a4d832c600f3767a169f8a2c547c9061c", null ],
@@ -39,7 +41,7 @@ var classfakes_1_1FakeArm =
     [ "send_joint_velocity", "classfakes_1_1FakeArm.html#a233ce6e447340fdbf2ce27a194964d78", null ],
     [ "set_context", "classfakes_1_1FakeArm.html#aadabb42d6ad3fe6680619b3f1836477e", null ],
     [ "snapshot_scene", "classfakes_1_1FakeArm.html#a9c2ec4e2dabc300654fbc09e16098e2f", null ],
-    [ "tcp_z", "classfakes_1_1FakeArm.html#afae707c99eb8960962e8a1796a0859b5", null ],
+    [ "tcp_xyz", "classfakes_1_1FakeArm.html#a8106c2b4c731fb6d0040f4f3488f900a", null ],
     [ "tip_offset", "classfakes_1_1FakeArm.html#ac8366565f4cd4711f3a55b58b263ccf4", null ],
     [ "wait_for_future", "classfakes_1_1FakeArm.html#ae4d8faf7146487c7cf955969be1c571c", null ],
     [ "wait_until_ready", "classfakes_1_1FakeArm.html#a9f1513b4b24f684a9763a92656ca35ef", null ],

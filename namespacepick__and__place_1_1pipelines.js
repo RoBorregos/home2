@@ -1,10 +1,11 @@
 var namespacepick__and__place_1_1pipelines =
 [
     [ "classification", "namespacepick__and__place_1_1pipelines_1_1classification.html", [
-      [ "resolve_pick_strategy", "namespacepick__and__place_1_1pipelines_1_1classification.html#a8589579035158b066c9b09b114b95e0e", null ],
+      [ "resolve_pick_strategy", "namespacepick__and__place_1_1pipelines_1_1classification.html#ae481bb29c63140aed967432438865fae", null ],
       [ "_STRATEGY_BY_OBJECT_NAME", "namespacepick__and__place_1_1pipelines_1_1classification.html#a0b4826e5057f406c0e1e2f1e10208c41", null ],
       [ "PICK_STRATEGY_BOWL", "namespacepick__and__place_1_1pipelines_1_1classification.html#a04e9773210acbea052d57e8582bf8fee", null ],
       [ "PICK_STRATEGY_FLAT", "namespacepick__and__place_1_1pipelines_1_1classification.html#a17a6ec35dfa5e0efbf015ca7b9f1ccdb", null ],
+      [ "PICK_STRATEGY_GEOMETRIC", "namespacepick__and__place_1_1pipelines_1_1classification.html#a124f75a66977df309f3747a91339426c", null ],
       [ "PICK_STRATEGY_GPD", "namespacepick__and__place_1_1pipelines_1_1classification.html#ac24e186bca6e6a859ce472c85a7f5f8f", null ],
       [ "PICK_STRATEGY_KEYS", "namespacepick__and__place_1_1pipelines_1_1classification.html#a3a97c710c129e94bc4271f5cf904e7aa", null ],
       [ "PICK_STRATEGY_PEAK", "namespacepick__and__place_1_1pipelines_1_1classification.html#ac8f8dabbe34b09a9b5bd0a29481ff12b", null ],

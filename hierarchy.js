@@ -49,6 +49,7 @@ var hierarchy =
     [ "vamp::collision::Environment< DataT >", "structvamp_1_1collision_1_1Environment.html", null ],
     [ "Exception", null, [
       [ "embedding_gallery.core.gallery_build.BuildError", "classembedding__gallery_1_1core_1_1gallery__build_1_1BuildError.html", null ],
+      [ "perception_3d.geometric_grasps.GraspRejected", "classperception__3d_1_1geometric__grasps_1_1GraspRejected.html", null ],
       [ "pick_and_place.pipelines.errors.PickAborted", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAborted.html", null ],
       [ "pick_and_place.pipelines.errors.PickAttemptFailed", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAttemptFailed.html", null ],
       [ "pick_and_place.pipelines.errors.PickHardwareError", "classpick__and__place_1_1pipelines_1_1errors_1_1PickHardwareError.html", null ]
@@ -57,7 +58,7 @@ var hierarchy =
     [ "models.face_recognition.FaceModel", "classmodels_1_1face__recognition_1_1FaceModel.html", null ],
     [ "pick_and_place.pipelines.follow.FaceState", "classpick__and__place_1_1pipelines_1_1follow_1_1FaceState.html", null ],
     [ "fakes.FakeArm", "classfakes_1_1FakeArm.html", null ],
-    [ "fakes.FakeFlatResponse", "classfakes_1_1FakeFlatResponse.html", null ],
+    [ "fakes.FakeGenerateGraspsResponse", "classfakes_1_1FakeGenerateGraspsResponse.html", null ],
     [ "fakes.FakeLogger", "classfakes_1_1FakeLogger.html", null ],
     [ "fakes.FakeObject", "classfakes_1_1FakeObject.html", null ],
     [ "fakes.FakePerception", "classfakes_1_1FakePerception.html", null ],
@@ -67,6 +68,7 @@ var hierarchy =
     [ "vamp::planning::FCITStarNeighborParams", "structvamp_1_1planning_1_1FCITStarNeighborParams.html", null ],
     [ "vamp::robots::Fetch", "structvamp_1_1robots_1_1Fetch.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.FindClosestResult", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
+    [ "perception_3d.geometric_grasps.Fit", "classperception__3d_1_1geometric__grasps_1_1Fit.html", null ],
     [ "vamp::planning::FMTStarNeighborParams", "structvamp_1_1planning_1_1FMTStarNeighborParams.html", null ],
     [ "pick_and_place.pipelines.profiles.ForceGuardProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html", null ],
     [ "vamp::robots::FRIDA_Real", "structvamp_1_1robots_1_1FRIDA__Real.html", null ],
@@ -76,6 +78,7 @@ var hierarchy =
       [ "task_manager.subtask_managers.gpsr_tasks.GPSRTask", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]
     ] ],
     [ "vamp::planning::GNATNode< dimension >", "structvamp_1_1planning_1_1GNATNode.html", null ],
+    [ "perception_3d.geometric_grasps.Grasp", "classperception__3d_1_1geometric__grasps_1_1Grasp.html", null ],
     [ "pick_and_place.pipelines.strategies.GraspCandidate", "classpick__and__place_1_1pipelines_1_1strategies_1_1GraspCandidate.html", null ],
     [ "pick_and_place.pipelines.pick.GraspSet", "classpick__and__place_1_1pipelines_1_1pick_1_1GraspSet.html", null ],
     [ "nav_main.semantic.viewpoints.Grid", "classnav__main_1_1semantic_1_1viewpoints_1_1Grid.html", null ],
@@ -96,6 +99,7 @@ var hierarchy =
     [ "IKSolver", "classIKSolver.html", null ],
     [ "utils.models.image_embedder.ImageEmbedder", "classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html", null ],
     [ "task_manager.gpsr.merger.InterleavedPlan", "classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html", null ],
+    [ "perception_3d.geometric_grasps.Intrinsics", "classperception__3d_1_1geometric__grasps_1_1Intrinsics.html", null ],
     [ "kinematics::KinematicsBase", null, [
       [ "xarm6_ikfast_plugin::IKFastKinematicsPlugin", "classxarm6__ikfast__plugin_1_1IKFastKinematicsPlugin.html", null ]
     ] ],
@@ -184,6 +188,7 @@ var hierarchy =
     [ "pick_and_place.pipelines.profiles.PickProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html", null ],
     [ "pick_and_place.pipelines.pick.PickRequest", "classpick__and__place_1_1pipelines_1_1pick_1_1PickRequest.html", null ],
     [ "pick_and_place.pipelines.strategies.PickStrategy", "classpick__and__place_1_1pipelines_1_1strategies_1_1PickStrategy.html", [
+      [ "pick_and_place.pipelines.strategies.CartesianApproachPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick.html", null ],
       [ "pick_and_place.pipelines.strategies.DirectGraspPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick.html", null ],
       [ "pick_and_place.pipelines.strategies.FixedDistanceDescentPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick.html", null ],
       [ "pick_and_place.pipelines.strategies.ForceGuardedDescentPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick.html", null ]
@@ -221,7 +226,9 @@ var hierarchy =
     [ "vamp::planning::RRTC< Robot, rake, resolution >", "structvamp_1_1planning_1_1RRTC.html", null ],
     [ "vamp::planning::RRTCSettings", "structvamp_1_1planning_1_1RRTCSettings.html", null ],
     [ "vamp::same_num_scalars< S1, S2 >", "structvamp_1_1same__num__scalars.html", null ],
+    [ "grasp_generator.Sample", "classgrasp__generator_1_1Sample.html", null ],
     [ "nav_main.semantic.staleness.ScanLog", "classnav__main_1_1semantic_1_1staleness_1_1ScanLog.html", null ],
+    [ "perception_3d.geometric_grasps.Scene", "classperception__3d_1_1geometric__grasps_1_1Scene.html", null ],
     [ "fakes.ServiceStub", "classfakes_1_1ServiceStub.html", null ],
     [ "vamp::collision::Shape< DataT >", "structvamp_1_1collision_1_1Shape.html", [
       [ "vamp::collision::Cuboid< DataT >", "structvamp_1_1collision_1_1Cuboid.html", null ],
@@ -340,7 +347,6 @@ var hierarchy =
       [ "egsr_cut.EGPSRTM", "classegsr__cut_1_1EGPSRTM.html", null ],
       [ "ex_orientation_path_constraint.MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", null ],
       [ "example_node.ExampleNode", "classexample__node_1_1ExampleNode.html", null ],
-      [ "flat_grasp_estimator.FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", null ],
       [ "follow_face_node_copt.FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", null ],
       [ "follow_person_node copy.FollowPersonNode", "classfollow__person__node_01copy_1_1FollowPersonNode.html", null ],
       [ "follow_person_node.FollowPersonNode", "classfollow__person__node_1_1FollowPersonNode.html", null ],
@@ -348,6 +354,7 @@ var hierarchy =
       [ "frida_motion_planning.motion_planning_server.MotionPlanningServer", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html", null ],
       [ "gpsr_task_manager.GPSRTM", "classgpsr__task__manager_1_1GPSRTM.html", null ],
       [ "grasp_detection_example.GraspDetectionClient", "classgrasp__detection__example_1_1GraspDetectionClient.html", null ],
+      [ "grasp_generator.GraspGenerator", "classgrasp__generator_1_1GraspGenerator.html", null ],
       [ "grasp_markers.GraspVisualizer", "classgrasp__markers_1_1GraspVisualizer.html", null ],
       [ "hand_task_manager.HandTM", "classhand__task__manager_1_1HandTM.html", null ],
       [ "heatmapPlace_Server.HeatmapServer", "classheatmapPlace__Server_1_1HeatmapServer.html", null ],

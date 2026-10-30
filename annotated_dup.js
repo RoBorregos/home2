@@ -107,7 +107,7 @@ var annotated_dup =
     [ "fakes", "namespacefakes.html", [
       [ "_DoneFuture", "classfakes_1_1__DoneFuture.html", "classfakes_1_1__DoneFuture" ],
       [ "FakeArm", "classfakes_1_1FakeArm.html", "classfakes_1_1FakeArm" ],
-      [ "FakeFlatResponse", "classfakes_1_1FakeFlatResponse.html", "classfakes_1_1FakeFlatResponse" ],
+      [ "FakeGenerateGraspsResponse", "classfakes_1_1FakeGenerateGraspsResponse.html", "classfakes_1_1FakeGenerateGraspsResponse" ],
       [ "FakeLogger", "classfakes_1_1FakeLogger.html", "classfakes_1_1FakeLogger" ],
       [ "FakeObject", "classfakes_1_1FakeObject.html", "classfakes_1_1FakeObject" ],
       [ "FakePerception", "classfakes_1_1FakePerception.html", "classfakes_1_1FakePerception" ],
@@ -119,9 +119,6 @@ var annotated_dup =
     ] ],
     [ "finetune_head", "namespacefinetune__head.html", [
       [ "ProjectionHead", "classfinetune__head_1_1ProjectionHead.html", "classfinetune__head_1_1ProjectionHead" ]
-    ] ],
-    [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", [
-      [ "FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", "classflat__grasp__estimator_1_1FlatGraspEstimator" ]
     ] ],
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", [
       [ "FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", "classfollow__face__node__copt_1_1FollowFaceNode" ]
@@ -172,6 +169,10 @@ var annotated_dup =
     ] ],
     [ "grasp_detection_example", "namespacegrasp__detection__example.html", [
       [ "GraspDetectionClient", "classgrasp__detection__example_1_1GraspDetectionClient.html", "classgrasp__detection__example_1_1GraspDetectionClient" ]
+    ] ],
+    [ "grasp_generator", "namespacegrasp__generator.html", [
+      [ "GraspGenerator", "classgrasp__generator_1_1GraspGenerator.html", "classgrasp__generator_1_1GraspGenerator" ],
+      [ "Sample", "classgrasp__generator_1_1Sample.html", null ]
     ] ],
     [ "grasp_markers", "namespacegrasp__markers.html", [
       [ "GraspVisualizer", "classgrasp__markers_1_1GraspVisualizer.html", "classgrasp__markers_1_1GraspVisualizer" ]
@@ -289,6 +290,15 @@ var annotated_dup =
         [ "RawSerialReceiver", "classomnidriver_1_1simple__rx_1_1RawSerialReceiver.html", "classomnidriver_1_1simple__rx_1_1RawSerialReceiver" ]
       ] ]
     ] ],
+    [ "perception_3d", "namespaceperception__3d.html", [
+      [ "geometric_grasps", "namespaceperception__3d_1_1geometric__grasps.html", [
+        [ "Fit", "classperception__3d_1_1geometric__grasps_1_1Fit.html", null ],
+        [ "Grasp", "classperception__3d_1_1geometric__grasps_1_1Grasp.html", null ],
+        [ "GraspRejected", "classperception__3d_1_1geometric__grasps_1_1GraspRejected.html", null ],
+        [ "Intrinsics", "classperception__3d_1_1geometric__grasps_1_1Intrinsics.html", null ],
+        [ "Scene", "classperception__3d_1_1geometric__grasps_1_1Scene.html", "classperception__3d_1_1geometric__grasps_1_1Scene" ]
+      ] ]
+    ] ],
     [ "person_goal_smoother", "namespaceperson__goal__smoother.html", [
       [ "PersonGoalSmoother", "classperson__goal__smoother_1_1PersonGoalSmoother.html", "classperson__goal__smoother_1_1PersonGoalSmoother" ]
     ] ],
@@ -321,7 +331,7 @@ var annotated_dup =
         ] ],
         [ "pick", "namespacepick__and__place_1_1pipelines_1_1pick.html", [
           [ "GraspSet", "classpick__and__place_1_1pipelines_1_1pick_1_1GraspSet.html", null ],
-          [ "Perceived", "classpick__and__place_1_1pipelines_1_1pick_1_1Perceived.html", null ],
+          [ "Perceived", "classpick__and__place_1_1pipelines_1_1pick_1_1Perceived.html", "classpick__and__place_1_1pipelines_1_1pick_1_1Perceived" ],
           [ "PickRequest", "classpick__and__place_1_1pipelines_1_1pick_1_1PickRequest.html", null ]
         ] ],
         [ "pour", "namespacepick__and__place_1_1pipelines_1_1pour.html", [
@@ -333,6 +343,7 @@ var annotated_dup =
           [ "ProfileError", "classpick__and__place_1_1pipelines_1_1profiles_1_1ProfileError.html", null ]
         ] ],
         [ "strategies", "namespacepick__and__place_1_1pipelines_1_1strategies.html", [
+          [ "CartesianApproachPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick" ],
           [ "DirectGraspPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick" ],
           [ "FixedDistanceDescentPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick" ],
           [ "ForceGuardedDescentPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick" ],

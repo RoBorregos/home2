@@ -100,6 +100,8 @@ $(document).ready(function(){initNavTree('namespacepick__and__place_1_1pipelines
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick.html">CartesianApproachPick</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick.html">DirectGraspPick</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick.html">FixedDistanceDescentPick</a></td></tr>
@@ -126,7 +128,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Pick motion strategies: how the arm actually closes on an object.
 
-Three algorithms cover every object the robot picks. Which one runs is decided
+Four algorithms cover every object the robot picks. Which one runs is decided
 by ``resolve_pick_strategy(object_name)`` and looked up in ``STRATEGIES`` at the
 bottom of this file; the numbers each one uses come from
 ``config/pick_profiles.yaml``.
@@ -170,8 +172,9 @@ at launch rather than on the first pick of that type.
 <div class="line"><span class="lineno">    3</span>    PICK_STRATEGY_RIM: FixedDistanceDescentPick,</div>
 <div class="line"><span class="lineno">    4</span>    PICK_STRATEGY_BOWL: FixedDistanceDescentPick,</div>
 <div class="line"><span class="lineno">    5</span>    PICK_STRATEGY_PEAK: FixedDistanceDescentPick,</div>
-<div class="line"><span class="lineno">    6</span>    PICK_STRATEGY_GPD: DirectGraspPick,</div>
-<div class="line"><span class="lineno">    7</span>}</div>
+<div class="line"><span class="lineno">    6</span>    PICK_STRATEGY_GEOMETRIC: CartesianApproachPick,</div>
+<div class="line"><span class="lineno">    7</span>    PICK_STRATEGY_GPD: DirectGraspPick,</div>
+<div class="line"><span class="lineno">    8</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>

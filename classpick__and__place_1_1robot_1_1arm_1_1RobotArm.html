@@ -116,8 +116,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1c01fa0de8c1c10e89665b3905c0108b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a3608bcca55c29e3551dabb0a3db415"><td class="memItemLeft" align="right" valign="top">Optional[JointState]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a3a3608bcca55c29e3551dabb0a3db415">joint_state</a> (self)</td></tr>
 <tr class="separator:a3a3608bcca55c29e3551dabb0a3db415"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad0124ccbb52e4844ff0d79bc4f41d288"><td class="memItemLeft" align="right" valign="top">Optional[float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ad0124ccbb52e4844ff0d79bc4f41d288">tcp_z</a> (self)</td></tr>
-<tr class="separator:ad0124ccbb52e4844ff0d79bc4f41d288"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6693e6628f6cb8b1cbd12049a220e99e"><td class="memItemLeft" align="right" valign="top">Optional[np.ndarray]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a6693e6628f6cb8b1cbd12049a220e99e">tcp_xyz</a> (self)</td></tr>
+<tr class="separator:a6693e6628f6cb8b1cbd12049a220e99e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67be0c4ce4c80b701f8597f0adb64566"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a67be0c4ce4c80b701f8597f0adb64566">tip_offset</a> (self, str param_name)</td></tr>
 <tr class="separator:a67be0c4ce4c80b701f8597f0adb64566"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5791ff5f74049730ce7da599d9c1c76d"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a5791ff5f74049730ce7da599d9c1c76d">check_abort</a> (self)</td></tr>
@@ -166,6 +166,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a65eddb35b9f058d7aa2cccff079c7cef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88d3b9757aed0ebd2c0c2d1b01e3604c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a88d3b9757aed0ebd2c0c2d1b01e3604c">detach_pick_objects</a> (self)</td></tr>
 <tr class="separator:a88d3b9757aed0ebd2c0c2d1b01e3604c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa18e3d6163b2b0d3fe2715e382d2ca98"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#aa18e3d6163b2b0d3fe2715e382d2ca98">add_collision_object</a> (self, CollisionObject obj)</td></tr>
+<tr class="separator:aa18e3d6163b2b0d3fe2715e382d2ca98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a567a458776bc5a070a02116a024b26a0"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a567a458776bc5a070a02116a024b26a0">add_shelf_ceiling_guard</a> (self, place_pose, float table_height)</td></tr>
 <tr class="separator:a567a458776bc5a070a02116a024b26a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d2b1bcfa3393cdfb331f2f0da63cf85"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a7d2b1bcfa3393cdfb331f2f0da63cf85">remove_shelf_ceiling_guard</a> (self)</td></tr>
@@ -180,6 +182,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac11254b1d7f53ae374359db1b841a335"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab383a8ef301148d25fcbd0998b5a09d4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ab383a8ef301148d25fcbd0998b5a09d4">fixed_distance_descent</a> (self, float distance_m, float speed_mm_s, bool descend=True)</td></tr>
 <tr class="separator:ab383a8ef301148d25fcbd0998b5a09d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a111b02d5a4e491e69bc8c52a8499b809"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a111b02d5a4e491e69bc8c52a8499b809">cartesian_approach</a> (self, direction, float distance_m, float speed_mm_s)</td></tr>
+<tr class="separator:a111b02d5a4e491e69bc8c52a8499b809"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c45deabb70e224f7ba0bdc55bc6b8f6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a4c45deabb70e224f7ba0bdc55bc6b8f6">enter_joint_velocity_mode</a> (self)</td></tr>
 <tr class="separator:a4c45deabb70e224f7ba0bdc55bc6b8f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2c8d92e2f5ab92a1d6e78c6aec91650"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#aa2c8d92e2f5ab92a1d6e78c6aec91650">leave_joint_velocity_mode</a> (self)</td></tr>
@@ -212,8 +216,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a18d7709b20908f6474699d0a17592387"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2aa9f51e4b80ecc021ef5ff02972035"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ab2aa9f51e4b80ecc021ef5ff02972035">_move_to_pose_pair</a> (self, pose, velocity=PICK_VELOCITY)</td></tr>
 <tr class="separator:ab2aa9f51e4b80ecc021ef5ff02972035"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5a169b4abcc4cd748f72e46dd3d47523"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a5a169b4abcc4cd748f72e46dd3d47523">_send_cartesian_velocity</a> (self, float speed_mm_s, str label)</td></tr>
-<tr class="separator:a5a169b4abcc4cd748f72e46dd3d47523"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a623a174e0177978fe49c7ecc6d304a64"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a623a174e0177978fe49c7ecc6d304a64">_send_cartesian_velocity</a> (self, float speed_mm_s, str label, direction=(0.0, 0.0, 1.0))</td></tr>
+<tr class="separator:a623a174e0177978fe49c7ecc6d304a64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70f03e46043ed18693143f3ca0c6b66c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a70f03e46043ed18693143f3ca0c6b66c">_sample_effort_baseline</a> (self, str label, int required=5)</td></tr>
 <tr class="separator:a70f03e46043ed18693143f3ca0c6b66c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7739db107d252b9d7028a7cce7c9d757"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a7739db107d252b9d7028a7cce7c9d757">_monitor_for_contact</a> (self, <a class="el" href="classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html">ForceGuardProfile</a> guard, baseline, str label)</td></tr>
@@ -657,8 +661,8 @@ Protected Attributes</h2></td></tr>
 <pre class="fragment">Median joint effort over a short window, or None if unavailable.</pre> 
 </div>
 </div>
-<a id="a5a169b4abcc4cd748f72e46dd3d47523" name="a5a169b4abcc4cd748f72e46dd3d47523"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5a169b4abcc4cd748f72e46dd3d47523">&#9670;&#160;</a></span>_send_cartesian_velocity()</h2>
+<a id="a623a174e0177978fe49c7ecc6d304a64" name="a623a174e0177978fe49c7ecc6d304a64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a623a174e0177978fe49c7ecc6d304a64">&#9670;&#160;</a></span>_send_cartesian_velocity()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -682,7 +686,13 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">str&#160;</td>
-          <td class="paramname"><em>label</em>&#160;</td>
+          <td class="paramname"><em>label</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>direction</em> = <code>(0.0,&#160;0.0,&#160;1.0)</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -807,6 +817,34 @@ config_tgpio_reset_when_stop(0) call made by disable_tgpio_reset.
 
 </div>
 </div>
+<a id="aa18e3d6163b2b0d3fe2715e382d2ca98" name="aa18e3d6163b2b0d3fe2715e382d2ca98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa18e3d6163b2b0d3fe2715e382d2ca98">&#9670;&#160;</a></span>add_collision_object()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> None pick_and_place.robot.arm.RobotArm.add_collision_object </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">CollisionObject&#160;</td>
+          <td class="paramname"><em>obj</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a567a458776bc5a070a02116a024b26a0" name="a567a458776bc5a070a02116a024b26a0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a567a458776bc5a070a02116a024b26a0">&#9670;&#160;</a></span>add_shelf_ceiling_guard()</h2>
 
@@ -899,6 +937,47 @@ return motion and made front_stare/table_stare fail.
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Attach the in-flight goal, enabling cancellation and feedback.</pre> 
+</div>
+</div>
+<a id="a111b02d5a4e491e69bc8c52a8499b809" name="a111b02d5a4e491e69bc8c52a8499b809"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a111b02d5a4e491e69bc8c52a8499b809">&#9670;&#160;</a></span>cartesian_approach()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool pick_and_place.robot.arm.RobotArm.cartesian_approach </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>direction</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>distance_m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float
+    &#160;</td>
+          <td class="paramname"><em>speed_mm_s</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Drive distance_m along a unit direction, closed on the TCP position.</pre> 
 </div>
 </div>
 <a id="a3ea573f39386129b8ce304b613cafce9" name="a3ea573f39386129b8ce304b613cafce9"></a>
@@ -1150,10 +1229,7 @@ from would otherwise veto every candidate.
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Move a fixed Z distance under cartesian velocity, closed on TCP Z.
-
-``descend=False`` drives +Z instead, reusing the same mechanism.
-</pre> 
+<pre class="fragment">Move a fixed Z distance, a vertical cartesian_approach.</pre> 
 </div>
 </div>
 <a id="ac11254b1d7f53ae374359db1b841a335" name="ac11254b1d7f53ae374359db1b841a335"></a>
@@ -1859,14 +1935,14 @@ the back; seeding IK with the current state keeps the motion short.
 <pre class="fragment">Remember the perceived objects so a later attach can pick one.</pre> 
 </div>
 </div>
-<a id="ad0124ccbb52e4844ff0d79bc4f41d288" name="ad0124ccbb52e4844ff0d79bc4f41d288"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad0124ccbb52e4844ff0d79bc4f41d288">&#9670;&#160;</a></span>tcp_z()</h2>
+<a id="a6693e6628f6cb8b1cbd12049a220e99e" name="a6693e6628f6cb8b1cbd12049a220e99e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6693e6628f6cb8b1cbd12049a220e99e">&#9670;&#160;</a></span>tcp_xyz()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"> Optional[float] pick_and_place.robot.arm.RobotArm.tcp_z </td>
+          <td class="memname"> Optional[np.ndarray] pick_and_place.robot.arm.RobotArm.tcp_xyz </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em></td><td>)</td>
@@ -1874,7 +1950,7 @@ the back; seeding IK with the current state keeps the motion short.
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Current tool-centre-point Z in metres, or None if unknown.</pre> 
+<pre class="fragment">Current tool-centre-point XYZ in metres, or None if unknown.</pre> 
 </div>
 </div>
 <a id="a67be0c4ce4c80b701f8597f0adb64566" name="a67be0c4ce4c80b701f8597f0adb64566"></a>

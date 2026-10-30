@@ -11,6 +11,7 @@ var namespacepick__and__place_1_1pipelines_1_1profiles =
     [ "_DEFAULTS_KEY", "namespacepick__and__place_1_1pipelines_1_1profiles.html#a03089d8c756527d74054ae81a8393136", null ],
     [ "KNOWN_STRATEGY_KINDS", "namespacepick__and__place_1_1pipelines_1_1profiles.html#a6e3381fe4e1e49e1a6d1f748fa52da22", null ],
     [ "PROFILES_FILE_ENV_VAR", "namespacepick__and__place_1_1pipelines_1_1profiles.html#aa7fa9c3287c1b9da2edfd9c7ed986af3", null ],
+    [ "STRATEGY_CARTESIAN", "namespacepick__and__place_1_1pipelines_1_1profiles.html#a9d9b0bd935452a69a76d880cf4bf486d", null ],
     [ "STRATEGY_DIRECT", "namespacepick__and__place_1_1pipelines_1_1profiles.html#a2b780c876a2015839c0e05b900dfb084", null ],
     [ "STRATEGY_FIXED_DISTANCE", "namespacepick__and__place_1_1pipelines_1_1profiles.html#a27d238fa10fbb2b9f876874fb4c8082d", null ],
     [ "STRATEGY_FORCE_GUARDED", "namespacepick__and__place_1_1pipelines_1_1profiles.html#a7f86d00c00f260dc8315f23bf1a0c925", null ]

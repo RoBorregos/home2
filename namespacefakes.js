@@ -2,7 +2,7 @@ var namespacefakes =
 [
     [ "_DoneFuture", "classfakes_1_1__DoneFuture.html", "classfakes_1_1__DoneFuture" ],
     [ "FakeArm", "classfakes_1_1FakeArm.html", "classfakes_1_1FakeArm" ],
-    [ "FakeFlatResponse", "classfakes_1_1FakeFlatResponse.html", "classfakes_1_1FakeFlatResponse" ],
+    [ "FakeGenerateGraspsResponse", "classfakes_1_1FakeGenerateGraspsResponse.html", "classfakes_1_1FakeGenerateGraspsResponse" ],
     [ "FakeLogger", "classfakes_1_1FakeLogger.html", "classfakes_1_1FakeLogger" ],
     [ "FakeObject", "classfakes_1_1FakeObject.html", "classfakes_1_1FakeObject" ],
     [ "FakePerception", "classfakes_1_1FakePerception.html", "classfakes_1_1FakePerception" ],

@@ -9,7 +9,7 @@ var searchData=
   ['y_5floc_6',['y_loc',['../classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html#a33382f3417b8ccfc98ae115a72ac77b5',1,'task_manager::subtask_managers::hri_dataclasses::HandItem']]],
   ['y_5fmm_7',['y_mm',['../classheatmapPlace__Server_1_1HeatmapServer.html#a6996a3e87010bb4aee12f0fdb2e74ecc',1,'heatmapPlace_Server::HeatmapServer']]],
   ['y_5ftol_8',['y_tol',['../classtable__docker_1_1TableDocker.html#a26e583f71c5cdbc0cab86e357bcba197',1,'table_docker::TableDocker']]],
-  ['yaw_9',['yaw',['../classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html#aa7ac08fae8e94e4aff5bd99e3023577a',1,'nav_main::semantic::surfaces::Viewpoint']]],
+  ['yaw_9',['yaw',['../classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html#aa7ac08fae8e94e4aff5bd99e3023577a',1,'nav_main.semantic.surfaces.Viewpoint.yaw()'],['../classperception__3d_1_1geometric__grasps_1_1Fit.html#a488e81e2f84a208cb9cedf59c3b3a6c3',1,'perception_3d.geometric_grasps.Fit.yaw()']]],
   ['yaw_5ftol_10',['yaw_tol',['../classtable__docker_1_1TableDocker.html#aace0ecf8f162cbc68f8a86138bd22a5d',1,'table_docker::TableDocker']]],
   ['yd_11',['yd',['../structvamp_1_1collision_1_1HeightField.html#adfacae94c9021758e8fbcf99b2877035',1,'vamp::collision::HeightField']]],
   ['yd2_12',['yd2',['../structvamp_1_1collision_1_1HeightField.html#a88d008d881cfd1f590408cae440d1952',1,'vamp::collision::HeightField']]],

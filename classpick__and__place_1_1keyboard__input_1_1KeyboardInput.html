@@ -118,6 +118,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2f11c814fe79c13211ed61ca55d2b6b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a28ff82325e0d7d75c70197a1ea6221"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a7a28ff82325e0d7d75c70197a1ea6221">scan_shelf_levels</a> (self)</td></tr>
 <tr class="separator:a7a28ff82325e0d7d75c70197a1ea6221"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6409d07d77ffd5288f10154b47fbfa38"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a6409d07d77ffd5288f10154b47fbfa38">preview_grasps</a> (self, object_name)</td></tr>
+<tr class="separator:a6409d07d77ffd5288f10154b47fbfa38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a884647348f69f0954cab9d4cfe645c43"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a884647348f69f0954cab9d4cfe645c43">send_place_request</a> (self, is_shelf=False, table_height=None, table_height_tolerance=None, close_to=&quot;&quot;, special_request_position=None, special_request_object=None)</td></tr>
 <tr class="separator:a884647348f69f0954cab9d4cfe645c43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24a3edb39aae5187e6f2ff478ff877e1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a24a3edb39aae5187e6f2ff478ff877e1">send_pour_request</a> (self, object_name, bowl_name, object_already_grasped=False)</td></tr>
@@ -165,6 +167,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a4ca4e3f89d7762012273c056ac4a7bad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59d582523a93994972bd13229af84b4a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a59d582523a93994972bd13229af84b4a">_clear_octomap_client</a></td></tr>
 <tr class="separator:a59d582523a93994972bd13229af84b4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bed575c953d31d6872876503313224e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a1bed575c953d31d6872876503313224e">_generate_grasps_client</a></td></tr>
+<tr class="separator:a1bed575c953d31d6872876503313224e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a97bdeacbcc8414b61b677987db11fd94" name="a97bdeacbcc8414b61b677987db11fd94"></a>
@@ -366,6 +370,34 @@ deep/tight shelf grasp is not over-restricted; mirrors the FSM before a pick.</p
           <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>msg</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6409d07d77ffd5288f10154b47fbfa38" name="a6409d07d77ffd5288f10154b47fbfa38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6409d07d77ffd5288f10154b47fbfa38">&#9670;&#160;</a></span>preview_grasps()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.keyboard_input.KeyboardInput.preview_grasps </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>object_name</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -604,6 +636,28 @@ place. Mirrors the task manager cabinet scan; run before option -4 or -11.</pre>
       <table class="memname">
         <tr>
           <td class="memname">pick_and_place.keyboard_input.KeyboardInput._clear_octomap_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1bed575c953d31d6872876503313224e" name="a1bed575c953d31d6872876503313224e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1bed575c953d31d6872876503313224e">&#9670;&#160;</a></span>_generate_grasps_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.keyboard_input.KeyboardInput._generate_grasps_client</td>
         </tr>
       </table>
   </td>
