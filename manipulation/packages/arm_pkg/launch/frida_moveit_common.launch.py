@@ -91,10 +91,6 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             moveit_config_dict,
             {"use_sim_time": use_sim_time},
-            {
-                "vamp.response_adapters": "default_planner_response_adapters/AddTimeOptimalParameterization"
-            },
-            {"vamp.check_solution_paths": False},
             {"planning_scene_monitor_options": {"publish_planning_scene": True}},
             {"check_solution_paths": False},
             octomap_config,

@@ -1,11 +1,26 @@
-# Request
-float64[] start_state
-float64[] goal_state
-float64[] sphere_centers_flat
+# Joint order of start and goal
+string[] joint_names
+float64[] start
+float64[] goal
+
+# End effector pose at start in the planning frame, used to detect a stale collision model
+geometry_msgs/Pose start_end_effector_pose
+
+# World obstacles in the planning frame
+geometry_msgs/Point[] point_cloud
+float64 point_radius
+geometry_msgs/Point[] sphere_centers
 float64[] sphere_radii
-float64[] box_centers_flat
-float64[] box_sizes_flat
+geometry_msgs/Pose[] box_poses
+geometry_msgs/Vector3[] box_sizes
+geometry_msgs/Pose[] cylinder_poses
+float64[] cylinder_radii
+float64[] cylinder_lengths
+
+# Bodies held by the robot, as spheres in the end effector frame
+geometry_msgs/Point[] attached_sphere_centers
+float64[] attached_sphere_radii
 ---
-# Response
-float64[] waypoints_flat
 bool success
+string message
+trajectory_msgs/JointTrajectory trajectory

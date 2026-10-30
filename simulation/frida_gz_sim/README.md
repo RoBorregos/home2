@@ -50,7 +50,8 @@ block until the whole stack is live (about a minute for manip, two to three for 
 
 Flags: `--build` (object meshes + ROS workspace), `--build-image` (rebuild the
 Docker image), `--headless` (no Gazebo window), `--no-rviz` (no RViz),
-`--moveit-rviz` (also open MoveIt's own RViz), plus the usual `--stop`, `--down`,
+`--moveit-rviz` (also open MoveIt's own RViz), `--vamp` (plan with VAMP and fall back
+to OMPL, see `vamp_moveit_plugin`), plus the usual `--stop`, `--down`,
 `--recreate` and `--clean`. The Gazebo window and RViz open by default and X
 access is granted for you; on a loaded machine `--headless --no-rviz` leaves more
 CPU for the physics.
@@ -76,7 +77,7 @@ change the defaults:
 ros2 launch frida_gz_sim sim.launch.py gui:=true \
     world:=pnp_table.sdf image_width:=640 image_height:=360 camera_rate:=10 \
     grasp_assist:=false          # physics-only grasps, no weld
-ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=true
+ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=true planner:=vamp
 SIM_YOLO_MODEL=yolo26m.pt ros2 launch frida_gz_sim sim_vision.launch.py
 ros2 run frida_gz_sim sim_pnp_task_manager.py --ros-args -p max_objects:=1
 
@@ -141,7 +142,7 @@ headless, since it watches the robot and both tables from outside.
 | Launch | Contents |
 |---|---|
 | `sim.launch.py` | Gazebo world, robot spawn, `gz_ros2_control`, ZED topic bridge, gripper bridge, grasp assist |
-| `sim_manipulation.launch.py` | MoveIt + `pick_and_place/pick_and_place.launch.py`, all on sim time |
+| `sim_manipulation.launch.py` | MoveIt + `pick_and_place/pick_and_place.launch.py`, all on sim time; `planner:=vamp` also starts `vamp_server` |
 | `sim_vision.launch.py` | `image_orienter` + `object_detector_2d` with the COCO `yolo26s` model |
 | `sim_nav.launch.py` | `laserscan_multi_merger` + `localization.launch.py` + `nav2_omni.launch.py` + `nav_central.py` + `table_docker.py` (scan only), all on sim time |
 
