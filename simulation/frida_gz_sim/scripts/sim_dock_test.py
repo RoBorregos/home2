@@ -158,7 +158,7 @@ SCENARIOS = {
 }
 
 
-def gazebo_pose(model="frida", attempts=3):
+def gazebo_pose(model="frida", attempts=6):
     """Ground-truth (x, y, yaw); gz CLI calls can time out on a loaded machine."""
     for _ in range(attempts):
         try:
@@ -372,6 +372,8 @@ class SimDockTest(Node):
         if not target:
             return None
         pose = gazebo_pose()
+        if pose is None:
+            raise RuntimeError("no Gazebo pose for the robot (gz model timed out)")
         tb = gt.to_base(np.array([target]), *pose)[0]
         pt = PointStamped()
         pt.header.frame_id = "base_link"
@@ -556,7 +558,11 @@ class SimDockTest(Node):
         self.spawn_furniture()
         self.wait(2.0)
         for name in self.names:
-            self.results.append(self.run_one(name))
+            try:
+                self.results.append(self.run_one(name))
+            except Exception as e:  # one broken scenario must not end the suite
+                self.event(name, f"crashed: {e!r}")
+                self.results.append({"name": name, "passed": False, "error": repr(e)})
             self.save()
         passed = sum(r["passed"] for r in self.results)
         self.get_logger().info(f"Dock test: {passed}/{len(self.results)} passed")

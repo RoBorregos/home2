@@ -620,12 +620,19 @@ class TableDocker(Node):
         ok = np.isfinite(r) & (r > max(scan.range_min, 1e-3)) & (r < self.scan_memory_range)
         if not ok.any():
             return
-        Rt = self._lookup_Rt(self.odom_frame, scan.header.frame_id or self.base_frame)
-        if Rt is None:
+        to_base = self._lookup_Rt(self.base_frame, scan.header.frame_id or self.base_frame)
+        to_odom = self._lookup_Rt(self.odom_frame, self.base_frame)
+        if to_base is None or to_odom is None:
             return
-        R, t = Rt
         pts = np.stack([r[ok] * np.cos(a[ok]), r[ok] * np.sin(a[ok]), np.zeros(ok.sum())], axis=1)
-        world = pts @ R.T + t
+        base = pts @ to_base[0].T + to_base[1]
+        # A hit inside (or touching) the footprint is the robot itself or a noisy
+        # ray, never an obstacle it is standing on: remembering it would block
+        # every pose from here on.
+        base = base[ap.footprint_clearance(base[:, :2], self.footprint) > 0.02]
+        if len(base) == 0:
+            return
+        world = base @ to_odom[0].T + to_odom[1]
         res = cm["info"].resolution
         keys = np.floor(world[:, :2] / res).astype(int)
         with self._lock:
@@ -1476,7 +1483,7 @@ class TableDocker(Node):
                             grid, pose[0], pose[1], pose[2], guard, ignore) >= ap.LETHAL:
                         handle.cancel_goal_async()
                         self._stop()
-                        return False, "remembered obstacle at the footprint"
+                        return False, self._memory_hit_msg(grid, pose, ignore)
                 time.sleep(0.05)
             status = res.result().status
             return status == GoalStatus.STATUS_SUCCEEDED, f"MPPI via {how} path (status {status})"
@@ -1547,11 +1554,20 @@ class TableDocker(Node):
                 if grid is not None and ap.footprint_cost(
                         grid, pose[0], pose[1], pose[2], self._fp_samples, ignore) >= ap.LETHAL:
                     self._stop()
-                    return False, "remembered obstacle at the footprint"
+                    return False, self._memory_hit_msg(grid, pose, ignore)
             self._publish_cmd(vx, vy, wz)
             time.sleep(dt)
         self._stop()
         return False, "aborted (shutdown)"
+
+    def _memory_hit_msg(self, grid, pose, ignore):
+        """'remembered obstacle at the footprint' plus where it is (base_link)."""
+        hits = ap.footprint_hits(grid, pose[0], pose[1], pose[2], self._fp_samples, ignore)
+        if len(hits) == 0:
+            return "remembered obstacle at the footprint"
+        b = np.array([ap.to_base_frame(h, *pose) for h in hits])
+        return (f"remembered obstacle at the footprint ({len(b)} samples, base_link "
+                f"x=[{b[:, 0].min():.2f}, {b[:, 0].max():.2f}] y=[{b[:, 1].min():.2f}, {b[:, 1].max():.2f}])")
 
     def _publish_candidates(self, cands, best):
         arr = MarkerArray()
@@ -1984,7 +2000,23 @@ class TableDocker(Node):
             ignore = ap.halfplane_ignore(face["centroid"], face["normal"], self.face_ignore_margin)
         if self._straight_path_free(start, goal, grid, ignore):
             return True, ""
-        return False, "swept footprint hits an obstacle"
+        return False, "swept footprint hits an obstacle" + self._sweep_hits_txt(start, goal, grid, ignore)
+
+    def _sweep_hits_txt(self, start, goal, grid, ignore):
+        """Where the straight sweep start->goal first hits something, as
+        ' at (x, y) odom, (bx, by) base_link', for the logs."""
+        dist = math.hypot(goal[0] - start[0], goal[1] - start[1])
+        dyaw = (goal[2] - start[2] + math.pi) % (2 * math.pi) - math.pi
+        for s_ in np.linspace(0.0, 1.0, max(2, int(max(dist / 0.05, abs(dyaw) / 0.1)) + 1)):
+            x = start[0] + s_ * (goal[0] - start[0])
+            y = start[1] + s_ * (goal[1] - start[1])
+            hits = ap.footprint_hits(grid, x, y, start[2] + s_ * dyaw, self._fp_samples_sweep, ignore)
+            if len(hits):
+                c = hits.mean(axis=0)
+                bx, by = ap.to_base_frame(c, *start)
+                return (f" at ({c[0]:.2f}, {c[1]:.2f}) odom, ({bx:.2f}, {by:.2f}) base_link, "
+                        f"{s_ * dist:.2f}m along")
+        return ""
 
     def _servo(self, plan):
         """Holonomic P-controller to the planned pose against the locked face:

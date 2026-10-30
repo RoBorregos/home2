@@ -220,14 +220,25 @@ Navigation-only pieces:
 - `sim_dock_test.py` tests the planned table approach (`table_docker` +
   `nav_main/approach_planner.py`). It spawns `TEST_FURNITURE` from
   `frida_gz_sim/nav.py`: a living-room island with a chair in front of the
-  target object. It then docks with `dock_table(surface_type=..., target=...)` at
-  seven places: the round dinner table, the counter, the island, the dishwasher,
-  the cabinet, a legacy `offset` call, and `approach_point`. Each result is graded against the
-  Gazebo pose and the true geometry in `frida_gz_sim/ground_truth.py`:
+  target object. It then docks with `dock_table(surface_type=..., target=...)` in
+  nine scenarios: the round dinner table, the counter, the island (three
+  times), the dishwasher, the cabinet, a legacy `offset` call, and
+  `approach_point`. Two of the island scenarios also ask for the arm's reach
+  check (`check_reach`), so they need `move_group` running (`--all`, or
+  `sim_manipulation.launch.py`):
+  - `island_reach_blocked`: the target is the mug behind the chair. The
+    chair only leaves poses well to the side free, so the dock must report
+    `reach: unreachable` and the chair as the blocker.
+  - `island_reach_free`: the target is near the free end of the island. The
+    dock must report `reach: ok` and no blocker.
+
+  Each result is graded against the Gazebo pose and the true geometry in
+  `frida_gz_sim/ground_truth.py`:
   - the gap is inside the surface's reach band,
   - the robot is square to the surface,
   - the target is straight ahead,
-  - the footprint overlaps nothing.
+  - the footprint overlaps nothing,
+  - the `DockTable` diagnostics match the scene (blocker, reach verdict).
 
   Results are written to `logs/dock_test_results.json`. `config/sim_approach.rviz`
   shows the candidate poses, the chosen pose, the MPPI path and the furniture.

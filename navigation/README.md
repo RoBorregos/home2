@@ -209,12 +209,20 @@ on. The docker then works through four steps:
      so a chair next to the table rejects the poses it overlaps.
    - The remaining candidates are scored on gap, lateral offset from the object,
      and travel.
-3. **Motion.** MPPI (Nav2 `controller_server`) drives to a pre-dock pose in
-   front of the best candidate. The path is chosen in this order:
+3. **Motion.** The robot drives to a pre-dock pose in front of the best
+   candidate. The path is chosen in this order:
    1. the straight line, when the swept footprint is free;
    2. otherwise a footprint-aware A* on the local costmap plus the remembered
       obstacles;
    3. as a last resort, the Nav2 planner.
+
+   MPPI (Nav2 `controller_server`) drives the straight line. Paths 2 and 3 skirt
+   obstacles, often ones only the docker remembers, such as chair legs. MPPI
+   optimises against Nav2's costmap and would cut those corners, so the docker
+   follows those paths with its own holonomic controller (`follow_detours`,
+   `path_speed`). Paths keep the full `footprint_padding` from obstacles. During
+   the motion, the robot stops if a remembered obstacle reaches the bare
+   footprint or a live lidar point comes within `safety_clearance`.
 
    On arrival the docker re-detects and re-plans.
 4. **Straight-in.** A holonomic controller closes the last centimetres against
@@ -228,8 +236,10 @@ Three safeguards keep the approach from trusting a single snapshot:
   `scan_memory_range` (2 m). The memory is cleared when the dock ends. nav2's
   costmap loses thin obstacles such as chair legs once rays pass beside them or
   they fall into the lidar's near blind zone. Legs thinner than a cell may never
-  reach the costmap at all, while the lidar still sees them. The plan, the
-  swept-path checks and a guard during MPPI all use the remembered cells.
+  reach the costmap at all, while the lidar still sees them. Hits within 2 cm
+  of the footprint are dropped: they are the robot itself or a noisy ray. The
+  plan, the swept-path checks and the guard during the motion all use the
+  remembered cells.
 - **Same-surface check.** A re-detection more than 10 cm *closer* than the
   locked face is ignored, so the docker does not switch to a chair in front of
   the table. A face up to 35 cm *farther* is accepted only if the lidar shows the
