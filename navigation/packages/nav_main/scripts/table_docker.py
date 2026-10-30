@@ -2048,7 +2048,11 @@ class TableDocker(Node):
         with self._lock:
             face = self._face
         if "center" in face:
-            ignore = ap.disc_ignore(face["center"], face["radius"], self.face_ignore_margin)
+            # A circle fit to a real rim is rough (blocky or oval tops): within the
+            # wider scan-memory margin the rim itself is left to the servo, which
+            # never closes in further than the live lidar measures ahead.
+            ignore = ap.disc_ignore(face["center"], face["radius"],
+                                    max(self.face_ignore_margin, self.scan_memory_face_margin))
             # Never sweep THROUGH a round table: every intermediate pose must stay outside it.
             for s_ in np.linspace(0.0, 1.0, max(2, int(dist / 0.05) + 1)):
                 x = start[0] + s_ * (goal[0] - start[0])
