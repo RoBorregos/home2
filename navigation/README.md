@@ -237,7 +237,10 @@ Three safeguards keep the approach from trusting a single snapshot:
   costmap loses thin obstacles such as chair legs once rays pass beside them or
   they fall into the lidar's near blind zone. Legs thinner than a cell may never
   reach the costmap at all, while the lidar still sees them. Hits within 2 cm
-  of the footprint are dropped: they are the robot itself or a noisy ray. The
+  of the footprint are dropped, because they are the robot itself or a noisy
+  ray. Hits within `scan_memory_face_margin` (12 cm) of the docked surface are
+  also dropped: they scatter around the surface's own front over a dock, so near
+  the surface only the costmap counts. The
   plan, the swept-path checks and the guard during the motion all use the
   remembered cells.
 - **Same-surface check.** A re-detection more than 10 cm *closer* than the

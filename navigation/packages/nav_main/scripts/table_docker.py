@@ -337,11 +337,18 @@ class TableDocker(Node):
         # instead of MPPI, which optimises against nav2's costmap and cuts corners.
         self.follow_detours = self.declare_parameter("follow_detours", True).value
         self.path_speed = self.declare_parameter("path_speed", 0.15).value
-        self.path_lookahead = self.declare_parameter("path_lookahead", 0.15).value
+        self.path_lookahead = self.declare_parameter("path_lookahead", 0.10).value
+        # The docker's own controller can settle tighter on the pre-dock than MPPI.
+        self.path_xy_tol = self.declare_parameter("path_xy_tol", 0.04).value
+        self.path_yaw_tol = self.declare_parameter("path_yaw_tol", 0.08).value
+        # Soft cost ring (m) around remembered obstacles for paths and scoring.
+        self.memory_inflation = self.declare_parameter("memory_inflation", 0.10).value
         # Obstacle memory also keeps the live lidar hits within this range (m) seen
         # during a dock, not only the cells that made it into nav2's costmap.
         self.remember_scan = self.declare_parameter("remember_scan", True).value
         self.scan_memory_range = self.declare_parameter("scan_memory_range", 2.0).value
+        # ...but only farther than this (m) from the docked surface's face.
+        self.scan_memory_face_margin = self.declare_parameter("scan_memory_face_margin", 0.12).value
         # Debug: write each plan's grid/face/candidates to this .npz path ("" = off).
         self.debug_dump = self.declare_parameter("debug_dump", "").value
 
@@ -398,6 +405,7 @@ class TableDocker(Node):
         # Thin obstacles (chair legs) get raytraced out of nav2's costmap as soon
         # as they fall between rays or into the lidar's near blind zone.
         self._memory = set()
+        self._scan_memory = set()  # lidar hits, kept apart (see _fresh_grid)
         self._remember = False
         self.docked = False
 
@@ -647,7 +655,7 @@ class TableDocker(Node):
         keys = np.floor(world[:, :2] / res).astype(int)
         with self._lock:
             if self._remember:
-                self._memory.update(map(tuple, keys.tolist()))
+                self._scan_memory.update(map(tuple, keys.tolist()))
 
     def _cloud_cb(self, msg):
         with self._lock:
@@ -1022,13 +1030,35 @@ class TableDocker(Node):
         info = cm["info"]
         with self._lock:
             memory = list(self._memory)
+            scan_memory = list(self._scan_memory)
+        if scan_memory:
+            # Lidar hits on the surface's own front scatter a few cm around the
+            # fitted face over a dock (odometry drift, a blocky outline): near the
+            # surface only the costmap counts, the hits matter for what stands
+            # off it (chair legs between the robot and the table).
+            ks = np.asarray(scan_memory)
+            near_face = self._face_ignore(self.scan_memory_face_margin)
+            if near_face is not None:
+                ks = ks[~near_face((ks + 0.5) * info.resolution)]
+            memory.extend(map(tuple, ks.tolist()))
         if memory:
             res = info.resolution
             k = np.asarray(memory)
             cols = np.floor(((k[:, 0] + 0.5) * res - info.origin.position.x) / res).astype(int)
             rows = np.floor(((k[:, 1] + 0.5) * res - info.origin.position.y) / res).astype(int)
             inside = (cols >= 0) & (cols < info.width) & (rows >= 0) & (rows < info.height)
-            data[rows[inside], cols[inside]] = 100
+            rows, cols = rows[inside], cols[inside]
+            # Soft ring around remembered cells, like nav2's inflation (which they
+            # never got): paths and scores keep away from them, validity is unchanged.
+            ring = max(1, int(round(self.memory_inflation / res)))
+            for dr in range(-ring, ring + 1):
+                for dc in range(-ring, ring + 1):
+                    if dr == 0 and dc == 0:
+                        continue
+                    rr = np.clip(rows + dr, 0, info.height - 1)
+                    cc = np.clip(cols + dc, 0, info.width - 1)
+                    data[rr, cc] = np.where((data[rr, cc] >= 0) & (data[rr, cc] < 60), 60, data[rr, cc])
+            data[rows, cols] = 100
         return ap.Grid(ap.occupancy_to_cost(data.ravel()), info.width, info.height, info.resolution,
                        info.origin.position.x, info.origin.position.y)
 
@@ -1325,14 +1355,15 @@ class TableDocker(Node):
         p.pose.orientation.z, p.pose.orientation.w = math.sin(yaw / 2.0), math.cos(yaw / 2.0)
         return p
 
-    def _face_ignore(self):
+    def _face_ignore(self, margin=None):
+        margin = self.face_ignore_margin if margin is None else margin
         with self._lock:
             face = self._face
         if face is None:
             return None
         if "center" in face:
-            return ap.disc_ignore(face["center"], face["radius"], self.face_ignore_margin)
-        return ap.halfplane_ignore(face["centroid"], face["normal"], self.face_ignore_margin)
+            return ap.disc_ignore(face["center"], face["radius"], margin)
+        return ap.halfplane_ignore(face["centroid"], face["normal"], margin)
 
     def _path_free(self, path, grid, ignore):
         """Every pose of a nav_msgs/Path (any frame) keeps the footprint off lethal
@@ -1461,7 +1492,8 @@ class TableDocker(Node):
             # The straight line was blocked, so this path skirts obstacles, often
             # ones only the docker remembers (thin chair legs). MPPI optimises
             # against nav2's costmap and would cut those corners: follow it here.
-            ok, msg = self._follow_path(path, xy_tol, yaw_tol)
+            ok, msg = self._follow_path(path, min(xy_tol, self.path_xy_tol),
+                                        min(yaw_tol, self.path_yaw_tol))
             return ok, f"{msg} ({how} path, docker controller)"
         saved = self._goal_checker_params()
         if saved is None or not self._goal_checker_params(xy_tol, yaw_tol):
@@ -1831,6 +1863,7 @@ class TableDocker(Node):
         self._fix_target()
         with self._lock:
             self._memory = set()
+            self._scan_memory = set()
             self._remember = True
             self._plan = None
             self._blocked = None
@@ -1842,6 +1875,7 @@ class TableDocker(Node):
             with self._lock:
                 self._remember = False
                 self._memory = set()
+                self._scan_memory = set()
             self._reset_request()
 
     def _dock(self, profile, response):
