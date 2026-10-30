@@ -44,6 +44,8 @@
   <depend>nav2_msgs</depend>
   <depend>map_msgs</depend>
   <depend>geometry_msgs</depend>
+  <!-- table_docker's reach check calls MoveIt's /compute_ik (optional at runtime) -->
+  <exec_depend>moveit_msgs</exec_depend>
 
 
   <test_depend>ament_lint_auto</test_depend>
