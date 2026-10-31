@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Face recognition ROS2 node. Model logic lives in models.face_recognition."""
 
+import threading
 import time
 import rclpy
 import rclpy.duration
@@ -22,6 +23,7 @@ from frida_constants.vision_constants import (
     PERSON_NAME_TOPIC,
     SAVE_NAME_TOPIC,
     TALKING_HISTORY_FRAMES,
+    TALKER_WINDOW_SEC,
     TALKING_PEOPLE_TOPIC,
 )
 
@@ -33,6 +35,7 @@ from vision_runtime import VisionRuntime, spin
 
 MAX_DEGREE = 1
 TALKING_CROP_MARGIN = 0.25
+TALKER_POLL_PERIOD = 0.5
 PACKAGE_PATH = get_package_share_directory("vision_general")
 KNOWN_FACES_PATH = PACKAGE_PATH + "/utils/known_faces"
 
@@ -85,6 +88,7 @@ class FaceRecognition(VisionRuntime):
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
         self.create_timer(0.2, self.run, callback_group=self.callback_group)
+        threading.Thread(target=self._talker_loop, daemon=True).start()
 
     def setup(self):
         default_name = self.declare_parameter("default_name", "ale").value
@@ -105,6 +109,12 @@ class FaceRecognition(VisionRuntime):
         self.is_processing = False
         self.id = None
         self.processing_id = rclpy.duration.Infinite
+        # face_model is shared by run() and the talker crop collector.
+        self.model_lock = threading.Lock()
+        # Last person who talked ({name, x, y, bbox}); followed when follow_name == "area".
+        self.talker_lock = threading.Lock()
+        self.last_talker = None
+        self.talker_gen = 0
 
         self.pbar.update(1)
         self.get_logger().info("Face Recognition Ready")
@@ -126,6 +136,9 @@ class FaceRecognition(VisionRuntime):
     def follow_by_name_callback(self, req, res):
         self.get_logger().info("Executing service follow by")
         self.follow_name = req.name
+        with self.talker_lock:
+            self.last_talker = None
+            self.talker_gen += 1
         res.success = len(self.curr_faces) > 0
         if not res.success:
             self.get_logger().info("No face detected")
@@ -150,7 +163,9 @@ class FaceRecognition(VisionRuntime):
             last_stamp = stamp
 
             height, width = frame.shape[:2]
-            for face in self.face_model.detect(frame):
+            with self.model_lock:
+                faces = self.face_model.detect(frame)
+            for face in faces:
                 x1, y1, x2, y2 = face.bbox.astype(int)
                 cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
 
@@ -164,12 +179,9 @@ class FaceRecognition(VisionRuntime):
                     None,
                 )
                 if track is None:
-                    track = {
-                        "name": self.face_model.match(
-                            face.embedding.astype(np.float32)
-                        ),
-                        "crops": [],
-                    }
+                    with self.model_lock:
+                        name = self.face_model.match(face.embedding.astype(np.float32))
+                    track = {"name": name, "crops": []}
                     tracks.append(track)
                 track.update(x=cx, y=cy, bbox=(x1, y1, x2, y2))
 
@@ -195,39 +207,13 @@ class FaceRecognition(VisionRuntime):
 
         timeout = req.timeout if req.timeout > 0 else 5.0
 
-        # Pause run() while this thread uses the face model.
-        while self.is_processing:
-            time.sleep(0.01)
-        self.is_processing = True
-        try:
-            tracks = self._collect_face_crops(timeout)
-        finally:
-            self.is_processing = False
-
-        if not tracks:
+        talkers, answered = self._find_talkers(timeout)
+        if answered is None:
             self.get_logger().info("No faces detected")
             return res
 
         height, width = self.image.shape[:2]
-        answered = 0
-        for track in tracks:
-            if len(track["crops"]) < TALKING_HISTORY_FRAMES:
-                continue
-
-            request = IsTalking.Request()
-            request.frames = [
-                self.bridge.cv2_to_imgmsg(crop, "bgr8") for crop in track["crops"]
-            ]
-            response = self.call_service(self.is_talking_client, request, 5.0)
-            if response is None:
-                self.get_logger().warn(f"is_talking timed out for {track['name']}")
-                continue
-
-            answered += 1
-            self.get_logger().info(f"{track['name']}: {response.message}")
-            if not response.is_talking:
-                continue
-
+        for track in talkers:
             x1, y1, x2, y2 = track["bbox"]
             person = Person()
             person.name = track["name"]
@@ -239,6 +225,75 @@ class FaceRecognition(VisionRuntime):
 
         res.success = answered > 0
         return res
+
+    def _find_talkers(self, timeout, log=True):
+        tracks = self._collect_face_crops(timeout)
+        if not tracks:
+            return [], None
+
+        talkers = []
+        answered = 0
+        for track in tracks:
+            if len(track["crops"]) < TALKING_HISTORY_FRAMES:
+                continue
+
+            request = IsTalking.Request()
+            request.frames = [
+                self.bridge.cv2_to_imgmsg(crop, "bgr8") for crop in track["crops"]
+            ]
+            response = self.call_service(self.is_talking_client, request, 5.0)
+            if response is None:
+                if log:
+                    self.get_logger().warn(f"is_talking timed out for {track['name']}")
+                continue
+
+            answered += 1
+            if log:
+                self.get_logger().info(f"{track['name']}: {response.message}")
+            if response.is_talking:
+                talkers.append(track)
+
+        return talkers, answered
+
+    def _talker_loop(self):
+        while rclpy.ok():
+            time.sleep(TALKER_POLL_PERIOD)
+            if (
+                not self.active
+                or self.follow_name != "area"
+                or self.image is None
+                or not self.curr_faces
+                or not self.is_talking_client.service_is_ready()
+            ):
+                continue
+            try:
+                with self.talker_lock:
+                    gen = self.talker_gen
+                talkers, _ = self._find_talkers(TALKER_WINDOW_SEC, log=False)
+                if not talkers:
+                    continue
+                track = max(
+                    talkers,
+                    key=lambda t: (t["bbox"][2] - t["bbox"][0])
+                    * (t["bbox"][3] - t["bbox"][1]),
+                )
+                with self.talker_lock:
+                    # Drop the result if follow_by was called during the window.
+                    if gen != self.talker_gen:
+                        continue
+                    prev = self.last_talker
+                    self.last_talker = {
+                        "name": track["name"],
+                        "x": track["x"],
+                        "y": track["y"],
+                        "bbox": track["bbox"],
+                    }
+                if prev is None or prev["name"] != track["name"]:
+                    self.get_logger().info(f"Last talker: {track['name']}")
+            except Exception as e:
+                self.get_logger().warn(
+                    f"Talker loop error: {e}", throttle_duration_sec=5.0
+                )
 
     # ── Main loop ──
 
@@ -256,7 +311,8 @@ class FaceRecognition(VisionRuntime):
         self.annotated_frame = frame
         self.is_processing = True
         try:
-            self._run_inference(frame)
+            with self.model_lock:
+                self._run_inference(frame)
         finally:
             self.is_processing = False
 
@@ -266,11 +322,16 @@ class FaceRecognition(VisionRuntime):
         center = [frame.shape[1] / 2, frame.shape[0] / 2]
 
         detected_faces = self.face_model.detect(frame)
+        with self.talker_lock:
+            talker = self.last_talker
 
         self.curr_faces = []
         face_list = PersonList()
         largest_area, largest_area_params, largest_face_name = 0, None, ""
         follow_face_params = None
+        # Face in this frame matching the cached talker: by name, else nearest by position.
+        talker_params, talker_name, talker_face = None, "", None
+        talker_by_name, talker_dist = False, None
         detected = False
 
         for ins_face in detected_faces:
@@ -329,6 +390,19 @@ class FaceRecognition(VisionRuntime):
                 largest_face_name = name
             if self.follow_name == name:
                 follow_face_params = (left, top, right, bottom)
+            if talker is not None and not talker_by_name:
+                dx = abs(talker["x"] - centerx)
+                dy = abs(talker["y"] - centery)
+                if talker["name"] != "Unknown" and talker["name"] == name:
+                    talker_by_name = True
+                elif not (dx < TRACK_THRESHOLD and dy < TRACK_THRESHOLD):
+                    continue
+                elif talker_dist is not None and dx + dy >= talker_dist:
+                    continue
+                talker_dist = dx + dy
+                talker_params = (left, top, right, bottom)
+                talker_name = name
+                talker_face = (centerx, centery, (x1, y1, x2, y2))
 
         xc = yc = 0.0
         if largest_area_params:
@@ -344,6 +418,8 @@ class FaceRecognition(VisionRuntime):
                         f"Could not enroll {self.new_name}: no face found in the saved crop"
                     )
                 largest_face_name = self.new_name
+                if talker_params == largest_area_params:
+                    talker_name = self.new_name
                 # Back-patch the enrolled name into this tick's outputs, so neither the
                 # published list nor the position tracker carries "Unknown" for a face
                 # we just named.
@@ -354,13 +430,46 @@ class FaceRecognition(VisionRuntime):
                         break
                 self.new_name = ""
 
+        # Target: specific name > last talker > largest face.
+        target_name = largest_face_name
         if self.follow_name != "area":
             if follow_face_params:
                 left, top, right, bottom = follow_face_params
                 xc = left + (right - left) / 2.0
                 yc = top + (bottom - top) / 2.0
-                largest_face_name = self.follow_name
+                target_name = self.follow_name
             else:
+                detected = False
+        elif talker is not None:
+            if talker_params:
+                left, top, right, bottom = talker_params
+                xc = left + (right - left) / 2.0
+                yc = top + (bottom - top) / 2.0
+                target_name = talker_name
+                cv2.putText(
+                    annotated,
+                    "TALKING",
+                    (left + 6, max(top - 8, 20)),
+                    cv2.FONT_HERSHEY_DUPLEX,
+                    0.8,
+                    (0, 255, 0),
+                    2,
+                )
+                # Refresh the cache so the talker is followed while moving,
+                # unless the background loop replaced it meanwhile.
+                with self.talker_lock:
+                    if self.last_talker is talker:
+                        tx, ty, bbox = talker_face
+                        self.last_talker = {
+                            "name": talker_name
+                            if talker_name != "Unknown"
+                            else talker["name"],
+                            "x": tx,
+                            "y": ty,
+                            "bbox": bbox,
+                        }
+            else:
+                # Talker out of view: report no target but keep the cache.
                 detected = False
 
         self.prev_faces = self.curr_faces
@@ -370,7 +479,7 @@ class FaceRecognition(VisionRuntime):
         self.person_list_publisher.publish(face_list)
 
         if detected:
-            self._publish_follow_face(xc, yc, largest_face_name, center)
+            self._publish_follow_face(xc, yc, target_name, center)
         else:
             self.name_publisher.publish(String(data=""))
 
