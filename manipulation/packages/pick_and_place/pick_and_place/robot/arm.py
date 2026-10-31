@@ -74,7 +74,11 @@ from pick_and_place.utils.self_collision_utils import endpoint_self_collides
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
-MODE1_RECOVERY_TIME = 3.0  # s - wait after restoring mode 1 for traj controller
+MODE1_MIN_WAIT = (
+    0.6  # s - minimum wait after restoring mode 1, covers the gripper close
+)
+MODE1_RECOVERY_TIME = 3.0  # s - limit waiting for the arm to report mode 1 ready
+MODE1_READY_STATES = (0, 2)  # robot_states values for an idle arm
 MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 DESCENT_TIMEOUT_FACTOR = 2.5  # closed-loop descent timeout vs. expected duration
 SERVICE_TIMEOUT = 5.0
@@ -415,6 +419,7 @@ class RobotArm:
                 move_joints_action_client=self._move_joints_client,
                 named_position=name,
                 velocity=velocity,
+                acceleration=PICK_ACCELERATION,
             )
         )
 
@@ -631,7 +636,7 @@ class RobotArm:
     # ==================================================================
 
     @contextmanager
-    def cartesian_velocity_mode(self, label: str):
+    def cartesian_velocity_mode(self, label: str, on_mode1=None):
         """Hold the arm in mode 5 for the duration of the block.
 
         Whatever happens inside -- an exception, an e-stop, an early return --
@@ -653,7 +658,7 @@ class RobotArm:
             yield
         finally:
             self._stop_cartesian_velocity()
-            self._restore_mode1()
+            self._restore_mode1(on_mode1)
 
     def _send_cartesian_velocity(
         self, speed_mm_s: float, label: str, direction=(0.0, 0.0, 1.0)
@@ -801,7 +806,11 @@ class RobotArm:
         )
 
     def cartesian_approach(
-        self, direction, distance_m: float, speed_mm_s: float
+        self,
+        direction,
+        distance_m: float,
+        speed_mm_s: float,
+        close_on_reach: bool = False,
     ) -> bool:
         """Drive distance_m along a unit direction, closed on the TCP position."""
         label = "CartesianApproach"
@@ -829,7 +838,16 @@ class RobotArm:
         )
 
         reached = False
-        with self.cartesian_velocity_mode(label):
+        gripper_closed = False
+
+        def close_now():
+            nonlocal gripper_closed
+            if reached and close_on_reach:
+                self._log.info(f"[{label}] closing gripper")
+                self.close_gripper(settle_s=0.0)
+                gripper_closed = True
+
+        with self.cartesian_velocity_mode(label, on_mode1=close_now):
             self._send_cartesian_velocity(speed_mm_s, label, direction)
 
             timeout = (distance_m * 1000.0 / speed_mm_s) * DESCENT_TIMEOUT_FACTOR
@@ -862,6 +880,9 @@ class RobotArm:
                     reached = True
                     break
 
+        if reached and close_on_reach and not gripper_closed:
+            self._log.error(f"[{label}] mode 1 not restored, gripper not closed")
+            return False
         return reached
 
     # ==================================================================
@@ -1006,7 +1027,7 @@ class RobotArm:
         except Exception as exc:
             self._log.error(f"[xArm] stop error: {exc}")
 
-    def _restore_mode1(self):
+    def _restore_mode1(self, on_mode1=None):
         self._log.info("[xArm] restoring mode 1...")
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
@@ -1022,11 +1043,24 @@ class RobotArm:
                 time.sleep(1.0)
                 continue
 
-            self._log.info(
-                f"[xArm] waiting {MODE1_RECOVERY_TIME}s for the trajectory controller"
-            )
-            time.sleep(MODE1_RECOVERY_TIME)
+            if on_mode1 is not None:
+                on_mode1()
+            self._wait_mode1_ready()
             self._log.info(f"[xArm] mode 1 restored (attempt {attempt + 1})")
             return
 
         self._log.error("[xArm] CRITICAL: could not restore mode 1!")
+
+    def _wait_mode1_ready(self):
+        start = time.time()
+        time.sleep(MODE1_MIN_WAIT)
+        while time.time() - start < MODE1_RECOVERY_TIME:
+            robot = self._latest_robot_state
+            if robot is not None and robot.mode == 1:
+                if robot.state in MODE1_READY_STATES:
+                    self._log.info(
+                        f"[xArm] mode 1 ready after {time.time() - start:.2f}s"
+                    )
+                    return
+            time.sleep(0.05)
+        self._log.warn(f"[xArm] mode 1 not ready after {MODE1_RECOVERY_TIME}s")

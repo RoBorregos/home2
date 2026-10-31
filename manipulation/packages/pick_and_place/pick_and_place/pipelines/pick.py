@@ -147,7 +147,8 @@ def _pick(
         return _fall_back_or_fail(arm, perception, request, strategies, strategy)
 
     # Open after perceiving: the fingers are in the camera's view while it looks.
-    arm.open_gripper()
+    # No settle: the strategy opens again before moving.
+    arm.open_gripper(settle_s=0.0)
 
     fitted = perceived.fitted
     if fitted is not None:

@@ -14,6 +14,7 @@ def move_joint_positions(
     velocity: float = 0.1,
     degrees=False,  # set to true if joint_positions are in degrees
     wait=True,
+    acceleration: float = 0.0,  # 0 uses the server default
 ):
     """Set position of joints.
     If joint_positions is a dict, keys are treated as joint_names
@@ -73,6 +74,7 @@ def move_joint_positions(
         move_joints_action_client=move_joints_action_client,
         joint_names=joint_names,
         joint_positions=joint_vals,
+        acceleration=acceleration,
         velocity=velocity,
     )
     # Check result
