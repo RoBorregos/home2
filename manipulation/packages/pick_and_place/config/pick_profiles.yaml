@@ -88,6 +88,7 @@ geometric:
   strategy: cartesian
   tip_offset_param: geometric_tip_offset
   pre_grasp_height: 0.06
+  pre_grasp_velocity: 0.5
   post_grasp_height: 0.25
   descent_speed: 40.0 # mm/s
   validate_endpoint: true

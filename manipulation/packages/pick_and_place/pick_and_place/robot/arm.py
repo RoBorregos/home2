@@ -76,9 +76,7 @@ from pick_and_place.utils.self_collision_utils import endpoint_self_collides
 MODE_SWITCH_SETTLE_TIME = 0.2  # s - wait after mode 5 reports ready
 MODE_SWITCH_TIMEOUT = 1.0  # s - limit waiting for a mode change to be reported
 MODE_PENDING_STATE = 5  # robot_states value until set_state(0) takes effect
-MODE1_MIN_WAIT = (
-    0.6  # s - minimum wait after restoring mode 1, covers the gripper close
-)
+MODE1_MIN_WAIT = 1.0  # s - covers the gripper close and the controller restart
 MODE1_RECOVERY_TIME = 3.0  # s - limit waiting for the arm to report mode 1 ready
 MODE1_READY_STATES = (0, 2)  # robot_states values for an idle arm
 MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
@@ -482,7 +480,7 @@ class RobotArm:
     # Planning scene
     # ==================================================================
 
-    def clear_octomap(self, settle_s: float = 0.3) -> None:
+    def clear_octomap(self, settle_s: float = 0.0) -> None:
         """Clear the octomap so stale voxels do not block the next plan."""
         if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
             future = self._clear_octomap_client.call_async(Empty.Request())
