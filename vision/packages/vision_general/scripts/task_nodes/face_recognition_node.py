@@ -22,7 +22,7 @@ from frida_constants.vision_constants import (
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     SAVE_NAME_TOPIC,
-    TALKING_HISTORY_FRAMES,
+    TALKING_REQUEST_FRAMES,
     TALKER_WINDOW_SEC,
     TALKING_PEOPLE_TOPIC,
 )
@@ -151,7 +151,7 @@ class FaceRecognition(VisionRuntime):
 
         while time.time() < deadline:
             if tracks and all(
-                len(t["crops"]) >= TALKING_HISTORY_FRAMES for t in tracks
+                len(t["crops"]) >= TALKING_REQUEST_FRAMES for t in tracks
             ):
                 break
 
@@ -185,7 +185,7 @@ class FaceRecognition(VisionRuntime):
                     tracks.append(track)
                 track.update(x=cx, y=cy, bbox=(x1, y1, x2, y2))
 
-                if len(track["crops"]) < TALKING_HISTORY_FRAMES:
+                if len(track["crops"]) < TALKING_REQUEST_FRAMES:
                     mw = int((x2 - x1) * TALKING_CROP_MARGIN)
                     mh = int((y2 - y1) * TALKING_CROP_MARGIN)
                     crop = frame[
@@ -234,7 +234,7 @@ class FaceRecognition(VisionRuntime):
         talkers = []
         answered = 0
         for track in tracks:
-            if len(track["crops"]) < TALKING_HISTORY_FRAMES:
+            if len(track["crops"]) < TALKING_REQUEST_FRAMES:
                 continue
 
             request = IsTalking.Request()
@@ -288,7 +288,16 @@ class FaceRecognition(VisionRuntime):
                         "y": track["y"],
                         "bbox": track["bbox"],
                     }
-                if prev is None or prev["name"] != track["name"]:
+                # Unknown faces all share a name, so also compare position.
+                if (
+                    prev is None
+                    or prev["name"] != track["name"]
+                    or track["name"] == "Unknown"
+                    and (
+                        abs(prev["x"] - track["x"]) >= TRACK_THRESHOLD
+                        or abs(prev["y"] - track["y"]) >= TRACK_THRESHOLD
+                    )
+                ):
                     self.get_logger().info(f"Last talker: {track['name']}")
             except Exception as e:
                 self.get_logger().warn(
