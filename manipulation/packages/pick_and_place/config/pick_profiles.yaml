@@ -93,7 +93,6 @@ geometric:
   validate_endpoint: true
   lift_after_grasp: false
   attach_collision_object: true
-  close_settle: 0.5
   fallback_to_gpd: true
 
 # Default: plan straight to a GPD-generated grasp, no descent phase.

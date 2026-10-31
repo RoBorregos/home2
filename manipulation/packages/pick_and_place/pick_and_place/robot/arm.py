@@ -838,11 +838,14 @@ class RobotArm:
         )
 
         reached = False
+        gripper_closed = False
 
         def close_now():
+            nonlocal gripper_closed
             if reached and close_on_reach:
                 self._log.info(f"[{label}] closing gripper")
                 self.close_gripper(settle_s=0.0)
+                gripper_closed = True
 
         with self.cartesian_velocity_mode(label, on_mode1=close_now):
             self._send_cartesian_velocity(speed_mm_s, label, direction)
@@ -877,6 +880,9 @@ class RobotArm:
                     reached = True
                     break
 
+        if reached and close_on_reach and not gripper_closed:
+            self._log.error(f"[{label}] mode 1 not restored, gripper not closed")
+            return False
         return reached
 
     # ==================================================================
