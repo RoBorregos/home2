@@ -16,8 +16,7 @@ from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     SAFETY_HEIGHT_GEOMETRIC,
 )
-from frida_interfaces.msg import CollisionObject
-from geometry_msgs.msg import Point, PointStamped
+from geometry_msgs.msg import PointStamped
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
 
@@ -78,11 +77,6 @@ STARE_POSES = {
 }
 DEFAULT_STARE_POSE = "table_stare"
 
-TABLE_GUARD_ID = "table_guard"
-TABLE_GUARD_SIZE = 0.4  # m, stops short of the robot base
-TABLE_GUARD_THICKNESS = 0.02  # m
-TABLE_GUARD_GAP = 0.01  # m below the object, so the held object starts clear
-
 
 @dataclass
 class PickRequest:
@@ -107,6 +101,7 @@ class GraspSet:
     poses: List = field(default_factory=list)
     scores: List[float] = field(default_factory=list)
     source: str = ""
+    lift_tilted: bool = False
 
 
 @dataclass
@@ -122,6 +117,15 @@ class Perceived:
         """The generator's fitted collision object, if any."""
         grasps = self.grasps
         return grasps.object if grasps is not None and grasps.object.type else None
+
+    @property
+    def tilted_cylinder(self) -> bool:
+        fitted = self.fitted
+        return (
+            fitted is not None
+            and fitted.type == "cylinder"
+            and any(map(is_tilted, self.grasps.grasps[:5]))
+        )
 
 
 def execute(
@@ -163,20 +167,12 @@ def _pick(
     # Remember the perceived objects so a strategy can attach one.
     arm.snapshot_scene()
 
-    table_guard = _table_guard(perceived)
-    if table_guard is not None:
-        arm.add_collision_object(table_guard)
-
     outcome = None
-    try:
-        for grasp_set in _grasp_sets(perception, perceived, request):
-            outcome = _run_strategy(arm, strategy, grasp_set)
-            if outcome is not None:
-                break
-            time.sleep(0.2)
-    finally:
-        if table_guard is not None:
-            arm.remove_collision_object(table_guard.id)
+    for grasp_set in _grasp_sets(perception, perceived, request):
+        outcome = _run_strategy(arm, strategy, grasp_set)
+        if outcome is not None:
+            break
+        time.sleep(0.2)
 
     if outcome is None:
         log.error(f"[{strategy_key}] pick failed: no candidate succeeded")
@@ -359,7 +355,12 @@ def _grasp_sets(
             # and collide with it, so the only alternative is the symmetric flip.
             poses = [response.pose, _rotate_about_approach(response.pose, 180)]
             scores = [1.0, 0.9]
-        yield GraspSet(poses=poses, scores=scores, source="grasp_generator")
+        yield GraspSet(
+            poses=poses,
+            scores=scores,
+            source="grasp_generator",
+            lift_tilted=perceived.tilted_cylinder,
+        )
         return
 
     # Shelf: retry the same config a few times. GPD samples randomly, so
@@ -540,23 +541,8 @@ def _candidates(arm, profile, grasp_set: GraspSet) -> Iterator[GraspCandidate]:
                 score=score,
                 pose_index=pose_index,
                 alternative_index=alternative,
+                lift_first=grasp_set.lift_tilted and is_tilted(pose),
             )
-
-
-def _table_guard(perceived: Perceived) -> Optional[CollisionObject]:
-    """A table slab under the object, since a tilted grasp plans close to it."""
-    fitted = perceived.fitted
-    if fitted is None or not any(map(is_tilted, perceived.grasps.grasps[:5])):
-        return None
-    guard = CollisionObject(id=TABLE_GUARD_ID, type="box")
-    guard.pose = copy.deepcopy(fitted.pose)
-    guard.pose.pose.position.z -= (
-        fitted.dimensions.z / 2 + TABLE_GUARD_GAP + TABLE_GUARD_THICKNESS / 2
-    )
-    guard.dimensions = Point(
-        x=TABLE_GUARD_SIZE, y=TABLE_GUARD_SIZE, z=TABLE_GUARD_THICKNESS
-    )
-    return guard
 
 
 def _fitted_heights(fitted, grasp_pose) -> Tuple[float, float]:

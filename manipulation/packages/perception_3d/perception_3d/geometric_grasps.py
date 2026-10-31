@@ -86,7 +86,6 @@ SELF_MARGIN = 0.01
 TABLE_CLEARANCE = 0.005
 CYLINDER_TOP_DEPTH = 0.09
 CYLINDER_PAST_CENTER = 0.035  # the pads sit behind the tip, so reach past the axis
-CYLINDER_FRONT_HEIGHT = 0.065  # tip above the support, keeps the body off the table
 PALM_OFFSET = 0.073
 PALM_ABOVE_TIP = GRIPPER_REACH - PALM_OFFSET
 GRIPPER_BODY = np.array(GRIPPER_BODY_CORNERS)
@@ -152,7 +151,7 @@ class Scene:
     cam_to_base: np.ndarray
     gripper_to_base: np.ndarray
     bbox: tuple
-    cylinder_tilts: tuple = (0,)
+    cylinder_diagonal: bool = False
 
     @property
     def roi(self) -> np.ndarray:
@@ -476,15 +475,14 @@ def turn(vector: np.ndarray, degrees: float) -> np.ndarray:
     return np.array([c * vector[0] - s * vector[1], s * vector[0] + c * vector[1]])
 
 
-def approaches(grasp_class, away, short_axis, long_axis, cylinder_tilts=(0,)) -> list:
+def approaches(grasp_class, away, short_axis, long_axis, diagonal=False) -> list:
     """Candidate (label, tilt, approach side, closing axis) for a grasp class."""
     tangent = np.array([-away[1], away[0]])
     tops = [(f"top {t}", 0, away, turn(tangent, t)) for t in (0, 45, 90, 135)]
     if grasp_class == GRASP_CLASS_ROUND:
         return tops
     if grasp_class == GRASP_CLASS_CYLINDRICAL:
-        tilted = [(TILT_NAMES[t], t, away, tangent) for t in cylinder_tilts if t]
-        return (tops if 0 in cylinder_tilts else []) + tilted
+        return [(TILT_NAMES[45], 45, away, tangent)] if diagonal else tops
     found = []
     for name, closing, other in (
         ("short", short_axis, long_axis),
@@ -559,7 +557,7 @@ def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     )
     grasps, costs, rejected = [], [], Counter()
     for label, tilt, side, closing in approaches(
-        grasp_class, away, short_axis, long_axis, scene.cylinder_tilts
+        grasp_class, away, short_axis, long_axis, scene.cylinder_diagonal
     ):
         if not sees_top and abs(closing @ view) > np.sin(np.radians(20)):
             rejected["top hidden, closing across unseen depth"] += 1
@@ -573,8 +571,6 @@ def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
             if tilt == 0
             else middle + approach * tilted_past
         )
-        if grasp_class == GRASP_CLASS_CYLINDRICAL and tilt == 90:
-            tip[2] = max(tip[2], support_z + CYLINDER_FRONT_HEIGHT)
 
         local = (points - tip) @ rotation
         slab = np.abs(local[:, 0]) <= GRIPPER_HALF_THICKNESS
