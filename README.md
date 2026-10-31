@@ -172,22 +172,33 @@ All agent context lives in `docs/ai/` (e.g. `docs/ai/orin.md` — how to connect
 
 | Name | GitHub | Role |
 | --- | --- | --- |
-| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg) | HRI, Integration |
 | Gerardo Fregoso | [@GerardoFJ](https://github.com/GerardoFJ) | Navigation, Integration |
-| Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
-| Danae Sanchez | [@DanaeSG](https://github.com/DanaeSG) | Vision, Navigation, Integration |
 | Alejandro Gonzalez | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation |
 | Emil Winkler | [@emilwinkp](https://github.com/emilwinkp) | Manipulation |
 | Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
-| Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI |
+| Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI, Navigation |
 | Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
 | Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27) | HRI, Integration |
 | Jose Dominguez | [@JLDominguezM](https://github.com/JLDominguezM) | Manipulation, Integration |
+| Luis Benvenuto | [@biweep863](https://github.com/biweep863) | HRI, Integration |
+| Juan Pablo Gutierrez| [@jpgtzg](https://github.com/jpgtzg) | HRI, Vision |
+| Andrés Rodríguez | [@TEC-Andres](https://github.com/TEC-Andres) | HRI |
+| Marco Galindo | [@m2galindo](https://github.com/m2galindo) | Vision, Manipulation |
+| Jasiel Aldana Palacios | [@JasielAlPa](https://github.com/JasielAlPa) | Navigation, Electronics|
+| Jared Aldana Palacios | [@JaredAlPa](https://github.com/JaredAlPa) | Navigation, Manipulation |
+| Santiago Ramirez Cepeda | [@Champtiago](https://github.com/Champtiago)| Manipulation, Electronics|
+| Rebecca Gómez | [@Becca-731](https://github.com/Becca-731) | Navigation, Mechanics |
+| Rodrigo Gamboa Herrera | [@Rodrogamby](https://github.com/Rodrogamby) | Navigation |
+| Luis Alvaro Rosales Salazar | [@luisrosales852](https://github.com/luisrosales852) | HRI, Integration |
+
 
 ## Past Contributors
 
 | Name | GitHub | Role |
 | --- | --- | --- |
+| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg) | HRI, Integration |
+| Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
+| Danae Sanchez | [@DanaeSG](https://github.com/DanaeSG) | Vision, Navigation, Integration |
 | Adan Flores-Ramirez | [@afr2903](https://github.com/afr2903) | Research |
 | David Vazquez | [@deivideich](https://github.com/Deivideich) | Manipulation |
 | Emiliano Flores | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration |
