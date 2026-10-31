@@ -1,5 +1,9 @@
 var NAVTREEINDEX34 =
 {
+"functions_vars.html":[42,3,2],
+"functions_vars_a.html":[42,3,2,1],
+"functions_vars_b.html":[42,3,2,2],
+"functions_vars_c.html":[42,3,2,3],
 "functions_vars_d.html":[42,3,2,4],
 "functions_vars_e.html":[42,3,2,5],
 "functions_vars_f.html":[42,3,2,6],
@@ -245,9 +249,5 @@ var NAVTREEINDEX34 =
 "heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[43,0,3,0,6,1,0,1],
 "help__me__carry_8py.html":[43,0,6,1,0,10],
 "help__me__carry_8py.html#ab5e4a679e827451f1c0776fcf4137ac0":[43,0,6,1,0,10,2],
-"help__me__carry_8py.html#ac88fe056201780c2060003e5b20f4b6e":[43,0,6,1,0,10,1],
-"help__me__carry_8py.html#aeaa16e1397df6dada482cd75156c8788":[43,0,6,1,0,10,3],
-"hierarchy.html":[42,2],
-"hri__constants_8py.html":[43,0,1,1,1],
-"hri__constants_8py.html#a030ffe3f2fb1fc6cb72b2f14441d6e97":[43,0,1,1,1,20]
+"help__me__carry_8py.html#ac88fe056201780c2060003e5b20f4b6e":[43,0,6,1,0,10,1]
 };

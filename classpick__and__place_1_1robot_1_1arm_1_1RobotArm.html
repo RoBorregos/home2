@@ -152,8 +152,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a25865220c13c263974bcf2d826c23310"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad1ef97a26589ffa4645cc120b68df6bd"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ad1ef97a26589ffa4645cc120b68df6bd">close_gripper</a> (self, float settle_s=1.5)</td></tr>
 <tr class="separator:ad1ef97a26589ffa4645cc120b68df6bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d34541e13b9bc089aba48c2d8c1a01b"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a4d34541e13b9bc089aba48c2d8c1a01b">clear_octomap</a> (self, float settle_s=0.3)</td></tr>
-<tr class="separator:a4d34541e13b9bc089aba48c2d8c1a01b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5bdd06c8edbccd2f5fd8c8ad69c95837"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a5bdd06c8edbccd2f5fd8c8ad69c95837">clear_octomap</a> (self, float settle_s=0.0)</td></tr>
+<tr class="separator:a5bdd06c8edbccd2f5fd8c8ad69c95837"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43a218b49f68bfd8c33d89aad77d24b5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a43a218b49f68bfd8c33d89aad77d24b5">get_collision_objects</a> (self)</td></tr>
 <tr class="separator:a43a218b49f68bfd8c33d89aad77d24b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad15d6782640eea4f27e9d0d83c0bcdb"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#aad15d6782640eea4f27e9d0d83c0bcdb">snapshot_scene</a> (self)</td></tr>
@@ -228,6 +228,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a2c57a19ea861b9f921ae8ef6031beb1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2244efe06aaaac2721c494fd106e09f0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a2244efe06aaaac2721c494fd106e09f0">_set_xarm_mode</a> (self, int mode)</td></tr>
 <tr class="separator:a2244efe06aaaac2721c494fd106e09f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad62b5dfb0370cb7a8db4592c6de62401"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ad62b5dfb0370cb7a8db4592c6de62401">_wait_mode_report</a> (self, reported, str label)</td></tr>
+<tr class="separator:ad62b5dfb0370cb7a8db4592c6de62401"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5862797100aab5a3ebba9efa60a23845"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a5862797100aab5a3ebba9efa60a23845">_stop_cartesian_velocity</a> (self)</td></tr>
 <tr class="separator:a5862797100aab5a3ebba9efa60a23845"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff9a02f77d67483449d19699284b5e8b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#aff9a02f77d67483449d19699284b5e8b">_restore_mode1</a> (self, on_mode1=None)</td></tr>
@@ -855,6 +857,48 @@ config_tgpio_reset_when_stop(0) call made by disable_tgpio_reset.
 
 </div>
 </div>
+<a id="ad62b5dfb0370cb7a8db4592c6de62401" name="ad62b5dfb0370cb7a8db4592c6de62401"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad62b5dfb0370cb7a8db4592c6de62401">&#9670;&#160;</a></span>_wait_mode_report()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.robot.arm.RobotArm._wait_mode_report </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>reported</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>label</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aa18e3d6163b2b0d3fe2715e382d2ca98" name="aa18e3d6163b2b0d3fe2715e382d2ca98"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa18e3d6163b2b0d3fe2715e382d2ca98">&#9670;&#160;</a></span>add_collision_object()</h2>
 
@@ -1081,8 +1125,8 @@ MoveIt goal would fail.
 <pre class="fragment">Raise PickAborted if the e-stop is active or the goal was cancelled.</pre> 
 </div>
 </div>
-<a id="a4d34541e13b9bc089aba48c2d8c1a01b" name="a4d34541e13b9bc089aba48c2d8c1a01b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d34541e13b9bc089aba48c2d8c1a01b">&#9670;&#160;</a></span>clear_octomap()</h2>
+<a id="a5bdd06c8edbccd2f5fd8c8ad69c95837" name="a5bdd06c8edbccd2f5fd8c8ad69c95837"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bdd06c8edbccd2f5fd8c8ad69c95837">&#9670;&#160;</a></span>clear_octomap()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1097,7 +1141,7 @@ MoveIt goal would fail.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>settle_s</em> = <code>0.3</code>&#160;</td>
+          <td class="paramname"><em>settle_s</em> = <code>0.0</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

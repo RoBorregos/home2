@@ -8,7 +8,7 @@ var classfakes_1_1FakeArm =
     [ "cartesian_approach", "classfakes_1_1FakeArm.html#a133328d8da34e244b26cdf8b2de4ee00", null ],
     [ "cartesian_velocity_mode", "classfakes_1_1FakeArm.html#adad0c238c2d56fc4fdfe49bab6712eee", null ],
     [ "check_abort", "classfakes_1_1FakeArm.html#a54383a06ece97b1a37062984c2ea3e71", null ],
-    [ "clear_octomap", "classfakes_1_1FakeArm.html#a4d832c600f3767a169f8a2c547c9061c", null ],
+    [ "clear_octomap", "classfakes_1_1FakeArm.html#a3f7fd0b75ec45413c7b5da5196ac61c7", null ],
     [ "close_gripper", "classfakes_1_1FakeArm.html#a002f89f3d772ab05668a3616cc1d3290", null ],
     [ "detach_pick_objects", "classfakes_1_1FakeArm.html#afbc362a9b1e369ac1bf0898ebd0c3b6e", null ],
     [ "disable_tgpio_reset", "classfakes_1_1FakeArm.html#a93a8bbb771170fad68d4f8826e884eca", null ],

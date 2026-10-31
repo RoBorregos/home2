@@ -108,10 +108,14 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a9175810973d80da6c333b613137c6bcc"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1robot_1_1arm.html#a9175810973d80da6c333b613137c6bcc">MODE_SWITCH_SETTLE_TIME</a> = 1.0</td></tr>
+<tr class="memitem:a9175810973d80da6c333b613137c6bcc"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1robot_1_1arm.html#a9175810973d80da6c333b613137c6bcc">MODE_SWITCH_SETTLE_TIME</a> = 0.2</td></tr>
 <tr class="separator:a9175810973d80da6c333b613137c6bcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afcf2184bf424d3eb189139c0380dfff6"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1robot_1_1arm.html#afcf2184bf424d3eb189139c0380dfff6">MODE1_MIN_WAIT</a></td></tr>
-<tr class="separator:afcf2184bf424d3eb189139c0380dfff6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0775bbae7741b06b14a83f8eae79526c"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1robot_1_1arm.html#a0775bbae7741b06b14a83f8eae79526c">MODE_SWITCH_TIMEOUT</a> = 1.0</td></tr>
+<tr class="separator:a0775bbae7741b06b14a83f8eae79526c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa93e2334a65c64f96568ae5926552e2b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1robot_1_1arm.html#aa93e2334a65c64f96568ae5926552e2b">MODE_PENDING_STATE</a> = 5</td></tr>
+<tr class="separator:aa93e2334a65c64f96568ae5926552e2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a416be9314f8012eaf1ef8c160564298b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1robot_1_1arm.html#a416be9314f8012eaf1ef8c160564298b">MODE1_MIN_WAIT</a> = 1.0</td></tr>
+<tr class="separator:a416be9314f8012eaf1ef8c160564298b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3225498bd51e809eba2cd6d9afe3f35"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1robot_1_1arm.html#ad3225498bd51e809eba2cd6d9afe3f35">MODE1_RECOVERY_TIME</a> = 3.0</td></tr>
 <tr class="separator:ad3225498bd51e809eba2cd6d9afe3f35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad05f773c5c1d2d6c070cec8f73add289"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1robot_1_1arm.html#ad05f773c5c1d2d6c070cec8f73add289">MODE1_READY_STATES</a> = (0, 2)</td></tr>
@@ -146,21 +150,18 @@ lets them be unit-tested against a fake arm with no ROS graph.
 
 </div>
 </div>
-<a id="afcf2184bf424d3eb189139c0380dfff6" name="afcf2184bf424d3eb189139c0380dfff6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afcf2184bf424d3eb189139c0380dfff6">&#9670;&#160;</a></span>MODE1_MIN_WAIT</h2>
+<a id="a416be9314f8012eaf1ef8c160564298b" name="a416be9314f8012eaf1ef8c160564298b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a416be9314f8012eaf1ef8c160564298b">&#9670;&#160;</a></span>MODE1_MIN_WAIT</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">tuple pick_and_place.robot.arm.MODE1_MIN_WAIT</td>
+          <td class="memname">float pick_and_place.robot.arm.MODE1_MIN_WAIT = 1.0</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  (</div>
-<div class="line"><span class="lineno">    2</span>    0.6  <span class="comment"># s - minimum wait after restoring mode 1, covers the gripper close</span></div>
-<div class="line"><span class="lineno">    3</span>)</div>
-</div><!-- fragment -->
+
 </div>
 </div>
 <a id="ad05f773c5c1d2d6c070cec8f73add289" name="ad05f773c5c1d2d6c070cec8f73add289"></a>
@@ -205,6 +206,20 @@ lets them be unit-tested against a fake arm with no ROS graph.
 
 </div>
 </div>
+<a id="aa93e2334a65c64f96568ae5926552e2b" name="aa93e2334a65c64f96568ae5926552e2b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa93e2334a65c64f96568ae5926552e2b">&#9670;&#160;</a></span>MODE_PENDING_STATE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int pick_and_place.robot.arm.MODE_PENDING_STATE = 5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a9175810973d80da6c333b613137c6bcc" name="a9175810973d80da6c333b613137c6bcc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9175810973d80da6c333b613137c6bcc">&#9670;&#160;</a></span>MODE_SWITCH_SETTLE_TIME</h2>
 
@@ -212,7 +227,21 @@ lets them be unit-tested against a fake arm with no ROS graph.
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float pick_and_place.robot.arm.MODE_SWITCH_SETTLE_TIME = 1.0</td>
+          <td class="memname">float pick_and_place.robot.arm.MODE_SWITCH_SETTLE_TIME = 0.2</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0775bbae7741b06b14a83f8eae79526c" name="a0775bbae7741b06b14a83f8eae79526c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0775bbae7741b06b14a83f8eae79526c">&#9670;&#160;</a></span>MODE_SWITCH_TIMEOUT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float pick_and_place.robot.arm.MODE_SWITCH_TIMEOUT = 1.0</td>
         </tr>
       </table>
 </div><div class="memdoc">

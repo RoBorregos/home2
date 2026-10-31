@@ -1,5 +1,11 @@
 var NAVTREEINDEX46 =
 {
+"namespacetest__navigation__manager.html#afee9487db1e58490d116124be4935536":[41,0,162,7],
+"namespacetest__pep257.html":[41,0,163],
+"namespacetest__pep257.html#ac69de1fd6a28f245460be3110acc273f":[41,0,163,0],
+"namespacetest__pick__and__place.html":[41,0,164],
+"namespacetest__pick__and__place.html#a00f1fcafc09e09a517e6d047f9d5a516":[41,0,164,62],
+"namespacetest__pick__and__place.html#a017dd67c43d0631c52455aa6f01b2042":[41,0,164,41],
 "namespacetest__pick__and__place.html#a02e8ce01e89fc23334640b3e71387c63":[41,0,164,5],
 "namespacetest__pick__and__place.html#a02f2071143df3c4d6e2b4b6dd02b7bb5":[41,0,164,31],
 "namespacetest__pick__and__place.html#a05db9521832e7ab63b4b562d63441786":[41,0,164,50],
@@ -243,11 +249,5 @@ var NAVTREEINDEX46 =
 "namespacevamp.html#a7fdbecddc0b016a240acd6152be58294":[41,0,173,36],
 "namespacevamp.html#a8cb8caadf34b0bc496aeae335355f8bb":[41,0,173,43],
 "namespacevamp.html#aad7f5ed70166c04065c143c56397aa00":[41,0,173,27],
-"namespacevamp.html#abff3ee39e0a41aed1b7e4e4c77d5d4db":[41,0,173,35],
-"namespacevamp.html#ac17f95e9d15e80a780dfbc7719750d8d":[41,0,173,40],
-"namespacevamp.html#ac6958d5195161234885aa5dde0997a1c":[41,0,173,49],
-"namespacevamp.html#acf6508e61800f8f3f08c90c7ae129595":[41,0,173,30],
-"namespacevamp_1_1__core.html":[41,0,173,0],
-"namespacevamp_1_1binding.html":[41,0,173,1],
-"namespacevamp_1_1binding.html#af065f1890b22c3500cf3e648cff22ea6":[41,0,173,1,3]
+"namespacevamp.html#abff3ee39e0a41aed1b7e4e4c77d5d4db":[41,0,173,35]
 };

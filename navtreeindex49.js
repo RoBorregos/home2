@@ -1,5 +1,11 @@
 var NAVTREEINDEX49 =
 {
+"pointing__detection_8py.html#af403d88fbae3e2b0891a658ccb3d4054":[43,0,7,1,2,1,5,4],
+"pose__detection_8py.html":[43,0,7,1,2,1,0,3],
+"pose__detection_8py.html#a0081ab19bcebed14f32d6ebb7ab3b407":[43,0,7,1,2,1,0,3,2],
+"pose__detection_8py.html#a251d12122f06d7422ba5b2e512223d1d":[43,0,7,1,2,1,0,3,5],
+"pose__detection_8py.html#a2e86303f71c78c2e81d6569623b92b22":[43,0,7,1,2,1,0,3,6],
+"pose__detection_8py.html#a96e6adb71bc9f26b68a70b07f84e65b3":[43,0,7,1,2,1,0,3,12],
 "pose__detection_8py.html#a98dc8a018814a3a385a406aca2f1d88a":[43,0,7,1,2,1,0,3,9],
 "pose__detection_8py.html#a9ce496616a0c86c9e0cf8702bacec183":[43,0,7,1,2,1,0,3,16],
 "pose__detection_8py.html#aac7170abbef51a248673484293c99def":[43,0,7,1,2,1,0,3,13],
@@ -187,8 +193,8 @@ var NAVTREEINDEX49 =
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59":[43,0,3,0,4,4,6,1],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[43,0,3,0,4,4,6,1,0],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[43,0,3,0,4,4,6,1,3],
-"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[43,0,3,0,4,4,6,1,2],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[43,0,3,0,4,4,6,1,5],
+"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[43,0,3,0,4,4,6,1,2],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[43,0,3,0,4,4,6,1,1],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[43,0,3,0,4,4,6,1,4],
 "remove__plane_8cpp.html#adb27e16249dfa327ea178fe5a5462a66":[43,0,3,0,4,4,6,2],
@@ -243,11 +249,5 @@ var NAVTREEINDEX49 =
 "robometrics__to__pkl__json_8py.html#a82cfb68c65ca2aabcc4ce8a636a38b18":[43,0,3,0,7,0,1,2],
 "robometrics__to__pkl__json_8py.html#a939e57270c4ab7514975b7e0d1584b57":[43,0,3,0,7,0,1,0],
 "robot__description_2frida__description_2frida__description_2____init_____8py.html":[43,0,5,0,0,0],
-"robot__helper_8hh.html":[43,0,3,0,7,2,0,0,0,1],
-"robot__helper_8hh.html#aa1531213a37f00c9ed18df6904ef6f1f":[43,0,3,0,7,2,0,0,0,1,6],
-"robot__helper_8hh.html#ae05ff75b1b8c5280312aca5bf5362e61":[43,0,3,0,7,2,0,0,0,1,4],
-"robot__helper_8hh.html#aeb7aab4c64fbba60203ea2ab0d13fca2":[43,0,3,0,7,2,0,0,0,1,5],
-"robot__helper_8hh.html#af065f1890b22c3500cf3e648cff22ea6":[43,0,3,0,7,2,0,0,0,1,7],
-"robot__helper_8hh_source.html":[43,0,3,0,7,2,0,0,0,1],
-"route_8py.html":[43,0,4,0,2,1,0,2]
+"robot__helper_8hh.html":[43,0,3,0,7,2,0,0,0,1]
 };
