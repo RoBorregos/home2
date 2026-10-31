@@ -248,6 +248,6 @@ var NAVTREEINDEX45 =
 "namespacetest__pep257.html":[41,0,163],
 "namespacetest__pep257.html#ac69de1fd6a28f245460be3110acc273f":[41,0,163,0],
 "namespacetest__pick__and__place.html":[41,0,164],
-"namespacetest__pick__and__place.html#a00f1fcafc09e09a517e6d047f9d5a516":[41,0,164,59],
+"namespacetest__pick__and__place.html#a00f1fcafc09e09a517e6d047f9d5a516":[41,0,164,62],
 "namespacetest__pick__and__place.html#a017dd67c43d0631c52455aa6f01b2042":[41,0,164,41]
 };

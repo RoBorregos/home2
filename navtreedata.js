@@ -594,18 +594,18 @@ var NAVTREEINDEX =
 "namespacepick__and__place_1_1pipelines_1_1pour.html#aaff0a56a4b1950021ec314912493c533",
 "namespacetask__manager_1_1gpsr_1_1timeouts.html",
 "namespacetest__pick__and__place.html#a02e8ce01e89fc23334640b3e71387c63",
-"namespacevamp_1_1collision.html#a102a267ff272d2dcd44c3cd51cb36b97",
-"navigation_2packages_2nav__main_2launch_2task__launch_2hric_8launch_8py.html",
-"pose__detection_8py.html#ab7210ca6205e020f4d764cde7fd19642",
-"route_8py.html#a3fcf4436ea3e9a28deb39c17aab31a17",
-"structvamp_1_1Vector.html#af190283d6a3fe31a99ddd69f2e11cc09",
-"structvamp_1_1binding_1_1Helper.html#a2dc2514e1123253061dec66c74f392a7",
-"structvamp_1_1collision_1_1Shape.html#a746788b3ad8813603bfd0621519a2dea",
-"structvamp_1_1planning_1_1PerturbSettings.html#af07e727c69cdea0cdb9a0b02b790a65a",
-"structvamp_1_1robots_1_1Baxter_1_1Spheres.html#ac425162addb107eeab139dd8e4a16ff5",
-"test__mocks_8py.html#aec3afe2bbcdaf1c83cd5e01e86f53518",
-"vamp__server_8launch_8py.html",
-"xarm6__ikfast61_8cpp.html#abb5416a593fd7617f75130836a9f5491"
+"namespacevamp_1_1collision.html",
+"nav__ui_8py.html#af78c57aff04ad7e1b00a22c3f4ab2a7e",
+"pose__detection_8py.html#a98dc8a018814a3a385a406aca2f1d88a",
+"route_8py.html#a1e9da98462f9d8655d6dd7025d28ddb8",
+"structvamp_1_1Vector.html#aeeee72c1c0479b4a066af2a14856d317",
+"structvamp_1_1binding_1_1Helper.html#a22d281eb5c106ebc083093e2730afbf8",
+"structvamp_1_1collision_1_1Shape.html#a4705fd0f05b9c163ebba95a3f30c8ef0",
+"structvamp_1_1planning_1_1PerturbSettings.html#a8db0864690114c0c3d72a53bba077d5a",
+"structvamp_1_1robots_1_1Baxter_1_1Spheres.html#a9896ceb02952f90e4ec7db2a1d6693ad",
+"test__mocks_8py.html",
+"vamp__planner__manager_8cpp.html",
+"xarm6__ikfast61_8cpp.html#a903ab9632f6846449bbb3a8bba65ad8e"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
