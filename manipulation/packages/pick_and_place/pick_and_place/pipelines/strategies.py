@@ -157,13 +157,11 @@ class CartesianApproachPick(PickStrategy):
                 approach_axis(candidate.pose),
                 distance,
                 profile.descent_speed,
+                close_on_reach=True,
             ):
                 raise PickAttemptFailed(
                     f"approach of {distance * 1000:.0f} mm did not complete"
                 )
-
-        with arm.phase("close_gripper"):
-            arm.close_gripper(settle_s=profile.close_settle)
 
         with arm.phase("attach_object"):
             arm.attach_pick_object()
