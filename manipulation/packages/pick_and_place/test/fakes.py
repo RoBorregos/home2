@@ -217,7 +217,7 @@ class FakeArm:
         self.calls.append("close_gripper")
         self.close_settles.append(settle_s)
 
-    def clear_octomap(self, settle_s=0.3):
+    def clear_octomap(self, settle_s=0.0):
         self.calls.append("clear_octomap")
 
     def get_collision_objects(self):

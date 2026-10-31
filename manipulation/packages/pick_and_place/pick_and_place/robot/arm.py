@@ -73,10 +73,10 @@ from pick_and_place.utils.self_collision_utils import endpoint_self_collides
 
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
-MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
-MODE1_MIN_WAIT = (
-    0.6  # s - minimum wait after restoring mode 1, covers the gripper close
-)
+MODE_SWITCH_SETTLE_TIME = 0.2  # s - wait after mode 5 reports ready
+MODE_SWITCH_TIMEOUT = 1.0  # s - limit waiting for a mode change to be reported
+MODE_PENDING_STATE = 5  # robot_states value until set_state(0) takes effect
+MODE1_MIN_WAIT = 1.0  # s - covers the gripper close and the controller restart
 MODE1_RECOVERY_TIME = 3.0  # s - limit waiting for the arm to report mode 1 ready
 MODE1_READY_STATES = (0, 2)  # robot_states values for an idle arm
 MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
@@ -480,7 +480,7 @@ class RobotArm:
     # Planning scene
     # ==================================================================
 
-    def clear_octomap(self, settle_s: float = 0.3) -> None:
+    def clear_octomap(self, settle_s: float = 0.0) -> None:
         """Clear the octomap so stale voxels do not block the next plan."""
         if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
             future = self._clear_octomap_client.call_async(Empty.Request())
@@ -647,7 +647,6 @@ class RobotArm:
         """
         if not self._set_xarm_mode(0):
             raise PickHardwareError(f"[{label}] could not enter mode 0")
-        time.sleep(0.5)
 
         if not self._set_xarm_mode(5):
             self._restore_mode1()
@@ -994,7 +993,7 @@ class RobotArm:
                 self._log.error(f"[xArm] set_mode({mode}) failed")
                 return False
 
-            time.sleep(0.3)
+            self._wait_mode_report(lambda r: r.mode == mode, f"mode {mode}")
 
             if not self._set_state_client.wait_for_service(timeout_sec=2.0):
                 self._log.error("[xArm] set_state service unavailable")
@@ -1007,12 +1006,25 @@ class RobotArm:
                 self._log.error("[xArm] set_state(0) failed")
                 return False
 
+            self._wait_mode_report(
+                lambda r: r.mode == mode and r.state != MODE_PENDING_STATE,
+                f"mode {mode} ready",
+            )
             self._log.info(f"[xArm] mode {mode}, state 0 OK")
             return True
 
         except Exception as exc:
             self._log.error(f"[xArm] _set_xarm_mode({mode}) error: {exc}")
             return False
+
+    def _wait_mode_report(self, reported, label: str):
+        start = time.time()
+        while time.time() - start < MODE_SWITCH_TIMEOUT:
+            robot = self._latest_robot_state
+            if robot is not None and reported(robot):
+                return
+            time.sleep(0.02)
+        self._log.warn(f"[xArm] {label} not reported after {MODE_SWITCH_TIMEOUT}s")
 
     def _stop_cartesian_velocity(self):
         try:
@@ -1036,8 +1048,6 @@ class RobotArm:
                 self._log.warn(f"[xArm] mode 0 failed (attempt {attempt + 1})")
                 time.sleep(1.0)
                 continue
-
-            time.sleep(0.5)
 
             if not self._set_xarm_mode(1):
                 self._log.warn(f"[xArm] mode 1 failed (attempt {attempt + 1})")

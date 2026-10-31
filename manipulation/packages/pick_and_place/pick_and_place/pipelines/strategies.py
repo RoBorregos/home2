@@ -141,8 +141,9 @@ class CartesianApproachPick(PickStrategy):
                 if arm.endpoint_self_collides(candidate.pose):
                     raise PickAttemptFailed("grasp pose self-collides with robot")
 
+        # No settle: the gripper finishes opening during the pre-grasp move.
         with arm.phase("open_gripper"):
-            arm.open_gripper()
+            arm.open_gripper(settle_s=0.0)
 
         pre_grasp = offset_along_approach(candidate.pose, -profile.pre_grasp_height)
         with arm.phase("approach_pre_grasp"):
