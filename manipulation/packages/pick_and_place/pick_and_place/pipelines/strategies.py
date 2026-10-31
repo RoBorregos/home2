@@ -40,7 +40,6 @@ class GraspCandidate:
     score: float
     pose_index: int
     alternative_index: int
-    lift_first: bool = False
 
     def label(self) -> str:
         return f"pose={self.pose_index} alt={self.alternative_index}"
@@ -168,8 +167,7 @@ class CartesianApproachPick(PickStrategy):
         with arm.phase("attach_object"):
             arm.attach_pick_object()
 
-        # A tilted grasp lifts first so the return does not drag it over the table.
-        if profile.lift_after_grasp or candidate.lift_first:
+        if profile.lift_after_grasp:
             with arm.phase("lift"):
                 arm.clear_octomap()
                 arm.move_to_pose(

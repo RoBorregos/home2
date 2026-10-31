@@ -29,7 +29,7 @@ from pick_and_place.pipelines.classification import (
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.strategies import GraspCandidate, PickOutcome
-from pick_and_place.robot.geometry import is_tilted, offset_along_approach
+from pick_and_place.robot.geometry import offset_along_approach
 from pick_and_place.utils.grasp_orientation import is_frontal_grasp
 
 # GPD configs, tried in order until one yields a graspable candidate. The bool
@@ -101,7 +101,6 @@ class GraspSet:
     poses: List = field(default_factory=list)
     scores: List[float] = field(default_factory=list)
     source: str = ""
-    lift_tilted: bool = False
 
 
 @dataclass
@@ -117,15 +116,6 @@ class Perceived:
         """The generator's fitted collision object, if any."""
         grasps = self.grasps
         return grasps.object if grasps is not None and grasps.object.type else None
-
-    @property
-    def tilted_cylinder(self) -> bool:
-        fitted = self.fitted
-        return (
-            fitted is not None
-            and fitted.type == "cylinder"
-            and any(map(is_tilted, self.grasps.grasps[:5]))
-        )
 
 
 def execute(
@@ -355,12 +345,7 @@ def _grasp_sets(
             # and collide with it, so the only alternative is the symmetric flip.
             poses = [response.pose, _rotate_about_approach(response.pose, 180)]
             scores = [1.0, 0.9]
-        yield GraspSet(
-            poses=poses,
-            scores=scores,
-            source="grasp_generator",
-            lift_tilted=perceived.tilted_cylinder,
-        )
+        yield GraspSet(poses=poses, scores=scores, source="grasp_generator")
         return
 
     # Shelf: retry the same config a few times. GPD samples randomly, so
@@ -541,7 +526,6 @@ def _candidates(arm, profile, grasp_set: GraspSet) -> Iterator[GraspCandidate]:
                 score=score,
                 pose_index=pose_index,
                 alternative_index=alternative,
-                lift_first=grasp_set.lift_tilted and is_tilted(pose),
             )
 
 

@@ -211,7 +211,7 @@ The tip offsets stay ROS parameters because they are physical properties of the 
 `frida_constants/manipulation_constants.py`.
 
 `grasp_generator`'s `cylinder_diagonal` parameter (default `False`) replaces the top-down cylinder
-grasps with a 45 degree one, which lifts before returning.
+grasps with a 45 degree one.
 
 ## Adding or tuning a pick behavior
 

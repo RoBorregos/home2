@@ -174,12 +174,6 @@ def test_cartesian_approach_fails_when_the_gripper_never_closed(mode1_restored):
     assert closes == ([0.0] if mode1_restored else [])
 
 
-def tilted_pose():
-    pose = make_pose()
-    pose.pose.orientation.y = pose.pose.orientation.w = np.sqrt(0.5)
-    return pose
-
-
 def test_cylinders_stay_top_down_by_default():
     away, tangent = np.array([1.0, 0.0]), np.array([0.0, 1.0])
     found = approaches("cylindrical", away, tangent, away)
@@ -191,18 +185,6 @@ def test_diagonal_cylinders_close_across_the_approach():
     found = approaches("cylindrical", away, tangent, away, True)
     assert [label for label, *_ in found] == ["diagonal"]
     assert found[0][2] @ found[0][3] == pytest.approx(0.0)
-
-
-@pytest.mark.parametrize("object_type, lifts", [("cylinder", True), ("box", False)])
-def test_only_tilted_cylinders_lift_before_returning(strategies, object_type, lifts):
-    response = FakeGenerateGraspsResponse(
-        tilted_pose(), grasps=[tilted_pose()], object_type=object_type
-    )
-    arm = FakeArm()
-    perception = FakePerception(generated_grasps=response)
-    success, _ = run_pick(arm, perception, strategies, object_name="coke")
-    assert success
-    assert ("move_to_pose" in arm.calls) is lifts
 
 
 def test_gpd_still_reports_the_pick_when_attaching_fails(strategies):
