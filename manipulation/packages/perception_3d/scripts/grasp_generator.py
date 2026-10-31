@@ -86,6 +86,7 @@ class GraspGenerator(Node):
         self._samples: list[Sample] = []
         self._rejections: Counter = Counter()
         self._busy = threading.Lock()
+        self.declare_parameter("cylinder_tilts", [0])  # degrees from top-down
 
         # Reentrant + MultiThreadedExecutor: the service waits while the
         # depth/detection callbacks keep filling samples in other threads.
@@ -320,6 +321,7 @@ class GraspGenerator(Node):
             intrinsics=self._intrinsics,
             cam_to_base=self._to_base(self._depth_frame),
             gripper_to_base=self._to_base(GRASP_LINK_FRAME),
+            cylinder_tilts=tuple(self.get_parameter("cylinder_tilts").value),
             bbox=parse_bbox(
                 detection.xmin,
                 detection.ymin,

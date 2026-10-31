@@ -23,6 +23,7 @@ from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.profiles import PickProfile
 from pick_and_place.robot.geometry import (
     approach_axis,
+    is_tilted,
     offset_along_approach,
     offset_z,
 )
@@ -167,7 +168,8 @@ class CartesianApproachPick(PickStrategy):
         with arm.phase("attach_object"):
             arm.attach_pick_object()
 
-        if profile.lift_after_grasp:
+        # A tilted grasp lifts first so the return does not drag it over the table.
+        if profile.lift_after_grasp or is_tilted(candidate.pose):
             with arm.phase("lift"):
                 arm.clear_octomap()
                 arm.move_to_pose(

@@ -16,7 +16,8 @@ from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     SAFETY_HEIGHT_GEOMETRIC,
 )
-from geometry_msgs.msg import PointStamped
+from frida_interfaces.msg import CollisionObject
+from geometry_msgs.msg import Point, PointStamped
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
 
@@ -29,7 +30,7 @@ from pick_and_place.pipelines.classification import (
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.strategies import GraspCandidate, PickOutcome
-from pick_and_place.robot.geometry import offset_along_approach
+from pick_and_place.robot.geometry import is_tilted, offset_along_approach
 from pick_and_place.utils.grasp_orientation import is_frontal_grasp
 
 # GPD configs, tried in order until one yields a graspable candidate. The bool
@@ -76,6 +77,11 @@ STARE_POSES = {
     PICK_STRATEGY_FLAT: "flat_stare",
 }
 DEFAULT_STARE_POSE = "table_stare"
+
+TABLE_GUARD_ID = "table_guard"
+TABLE_GUARD_SIZE = 0.4  # m, stops short of the robot base
+TABLE_GUARD_THICKNESS = 0.02  # m
+TABLE_GUARD_GAP = 0.01  # m below the object, so the held object starts clear
 
 
 @dataclass
@@ -157,12 +163,20 @@ def _pick(
     # Remember the perceived objects so a strategy can attach one.
     arm.snapshot_scene()
 
+    table_guard = _table_guard(perceived)
+    if table_guard is not None:
+        arm.add_collision_object(table_guard)
+
     outcome = None
-    for grasp_set in _grasp_sets(perception, perceived, request):
-        outcome = _run_strategy(arm, strategy, grasp_set)
-        if outcome is not None:
-            break
-        time.sleep(0.2)
+    try:
+        for grasp_set in _grasp_sets(perception, perceived, request):
+            outcome = _run_strategy(arm, strategy, grasp_set)
+            if outcome is not None:
+                break
+            time.sleep(0.2)
+    finally:
+        if table_guard is not None:
+            arm.remove_collision_object(table_guard.id)
 
     if outcome is None:
         log.error(f"[{strategy_key}] pick failed: no candidate succeeded")
@@ -527,6 +541,22 @@ def _candidates(arm, profile, grasp_set: GraspSet) -> Iterator[GraspCandidate]:
                 pose_index=pose_index,
                 alternative_index=alternative,
             )
+
+
+def _table_guard(perceived: Perceived) -> Optional[CollisionObject]:
+    """A table slab under the object, since a tilted grasp plans close to it."""
+    fitted = perceived.fitted
+    if fitted is None or not any(map(is_tilted, perceived.grasps.grasps[:5])):
+        return None
+    guard = CollisionObject(id=TABLE_GUARD_ID, type="box")
+    guard.pose = copy.deepcopy(fitted.pose)
+    guard.pose.pose.position.z -= (
+        fitted.dimensions.z / 2 + TABLE_GUARD_GAP + TABLE_GUARD_THICKNESS / 2
+    )
+    guard.dimensions = Point(
+        x=TABLE_GUARD_SIZE, y=TABLE_GUARD_SIZE, z=TABLE_GUARD_THICKNESS
+    )
+    return guard
 
 
 def _fitted_heights(fitted, grasp_pose) -> Tuple[float, float]:

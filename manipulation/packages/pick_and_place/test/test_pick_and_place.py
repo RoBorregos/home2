@@ -16,6 +16,7 @@ import pytest
 import yaml
 from contextlib import contextmanager
 from scipy.spatial.transform import Rotation
+from types import SimpleNamespace
 
 from fakes import (
     FakeArm,
@@ -34,6 +35,7 @@ from frida_constants.manipulation_constants import (
 )
 from frida_interfaces.msg import ManipulationTask, PlaceParams
 from pathlib import Path
+from perception_3d.geometric_grasps import approaches
 from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import (
     follow as follow_pipeline,
@@ -144,7 +146,7 @@ def test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis():
         < arm.calls.index("attach_pick_object")
     )
     assert arm.close_settles == [0.0]
-    assert "move_to_pose" not in arm.calls
+    assert arm.calls.index("attach_pick_object") < arm.calls.index("move_to_pose")
 
 
 @pytest.mark.parametrize("mode1_restored", [True, False])
@@ -171,6 +173,38 @@ def test_cartesian_approach_fails_when_the_gripper_never_closed(mode1_restored):
 
     assert reached is mode1_restored
     assert closes == ([0.0] if mode1_restored else [])
+
+
+def test_cylinders_stay_top_down_by_default():
+    away, tangent = np.array([1.0, 0.0]), np.array([0.0, 1.0])
+    found = approaches("cylindrical", away, tangent, away)
+    assert {tilt for _, tilt, _, _ in found} == {0}
+
+
+def test_tilted_cylinders_close_across_the_approach():
+    away, tangent = np.array([1.0, 0.0]), np.array([0.0, 1.0])
+    found = approaches("cylindrical", away, tangent, away, (45, 90))
+    assert [label for label, *_ in found] == ["diagonal", "front"]
+    for _, _, side, closing in found:
+        assert side @ closing == pytest.approx(0.0)
+
+
+def test_table_guard_only_covers_tilted_grasps():
+    fitted = SimpleNamespace(type="cylinder", pose=make_pose(z=0.5))
+    fitted.dimensions = SimpleNamespace(z=0.12)
+    tilted = make_pose()
+    tilted.pose.orientation.y = tilted.pose.orientation.w = np.sqrt(0.5)
+    top = make_pose()
+    top.pose.orientation.x, top.pose.orientation.w = 1.0, 0.0
+
+    perceived = pick_pipeline.Perceived(
+        grasps=SimpleNamespace(object=fitted, grasps=[top, tilted])
+    )
+    guard = pick_pipeline._table_guard(perceived)
+    assert guard.pose.pose.position.z == pytest.approx(0.5 - 0.06 - 0.01 - 0.01)
+
+    perceived.grasps.grasps = [top]
+    assert pick_pipeline._table_guard(perceived) is None
 
 
 def test_gpd_still_reports_the_pick_when_attaching_fails(strategies):
