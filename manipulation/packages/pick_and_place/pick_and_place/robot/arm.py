@@ -478,7 +478,8 @@ class RobotArm:
     def clear_octomap(self, settle_s: float = 0.3) -> None:
         """Clear the octomap so stale voxels do not block the next plan."""
         if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
-            self._clear_octomap_client.call_async(Empty.Request())
+            future = self._clear_octomap_client.call_async(Empty.Request())
+            self.wait_for_future(future, timeout=2.0)
         time.sleep(settle_s)
 
     def get_collision_objects(self):

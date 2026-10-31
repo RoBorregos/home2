@@ -324,6 +324,25 @@ def test_guard_is_removed_even_when_the_return_fails():
     assert "remove_shelf_ceiling_guard" in arm.calls
 
 
+def test_place_fails_when_the_return_never_succeeds():
+    arm = FakeArm(named_position_results=[True] + [False] * 5)
+    assert run_place(arm, place_perception(), params()) is False
+    assert arm.calls.count("clear_octomap") == 4
+    assert "remove_all_collision_objects" in arm.calls
+
+
+def test_place_clears_the_octomap_only_before_a_retry():
+    arm = FakeArm(named_position_results=[True, False, True])
+    assert run_place(arm, place_perception(), params()) is True
+    assert arm.calls.count("clear_octomap") == 1
+
+
+def test_shelf_place_keeps_the_octomap_on_a_failed_return():
+    arm = FakeArm(named_position_results=[False] * 5)
+    assert run_place(arm, place_perception(), params(is_shelf=True)) is False
+    assert "clear_octomap" not in arm.calls
+
+
 def test_success_detaches_then_opens_the_gripper():
     arm = FakeArm()
     run_place(arm, place_perception(), params())
