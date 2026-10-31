@@ -34,6 +34,7 @@ from frida_constants.manipulation_constants import (
 )
 from frida_interfaces.msg import ManipulationTask, PlaceParams
 from pathlib import Path
+from perception_3d.geometric_grasps import approaches
 from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import (
     follow as follow_pipeline,
@@ -171,6 +172,19 @@ def test_cartesian_approach_fails_when_the_gripper_never_closed(mode1_restored):
 
     assert reached is mode1_restored
     assert closes == ([0.0] if mode1_restored else [])
+
+
+def test_cylinders_stay_top_down_by_default():
+    away, tangent = np.array([1.0, 0.0]), np.array([0.0, 1.0])
+    found = approaches("cylindrical", away, tangent, away)
+    assert {tilt for _, tilt, _, _ in found} == {0}
+
+
+def test_diagonal_cylinders_close_across_the_approach():
+    away, tangent = np.array([1.0, 0.0]), np.array([0.0, 1.0])
+    found = approaches("cylindrical", away, tangent, away, True)
+    assert [label for label, *_ in found] == ["diagonal"]
+    assert found[0][2] @ found[0][3] == pytest.approx(0.0)
 
 
 def test_gpd_still_reports_the_pick_when_attaching_fails(strategies):
