@@ -151,6 +151,7 @@ CHAIR_REMOVAL_IMAGE_TOPIC = "/vision/chair_removal_image"
 
 # Talking detection node
 IS_TALKING_TOPIC = "/vision/is_talking"
+TALKING_PEOPLE_TOPIC = "/vision/talking_people"
 TALKING_MESSAGE = "TALKING"
 SILENT_MESSAGE = "SILENT"
 
@@ -164,7 +165,11 @@ LEFT_MOUTH_LANDMARK = 61
 RIGHT_MOUTH_LANDMARK = 291
 
 # Talking detection tuning
-TALKING_HISTORY_FRAMES = 25
+TALKING_HISTORY_FRAMES = 20
+TALKER_WINDOW_SEC = 3.0
+# Crops sent per is_talking request. Each request starts a fresh MouthActivity, so
+# the first frames only fill its TALKING_HISTORY_FRAMES buffer and debounce.
+TALKING_REQUEST_FRAMES = 50
 TALKING_MIN_DELTA = 0.01
 TALKING_DIRECTION_CHANGE_THRESHOLD = 2
 TALKING_DEBOUNCE_ON_FRAMES = 3
