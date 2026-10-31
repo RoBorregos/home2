@@ -1,5 +1,9 @@
 var NAVTREEINDEX32 =
 {
+"demo__face_8launch_8py.html":[43,0,6,0,1],
+"demo__face_8launch_8py.html#ae3adde7c73c08762a4607a57106cd131":[43,0,6,0,1,0],
+"demo__manager_8py.html":[43,0,6,1,0,2],
+"demo__manager_8py.html#a2beab80f142431eb61e00531f3e19774":[43,0,6,1,0,2,4],
 "demo__manager_8py.html#a44da8b44a149c1ac1cf0220e7c0fc227":[43,0,6,1,0,2,5],
 "demo__manager_8py.html#a51e78fe12c7e5ee07d540e5f4bd46cf2":[43,0,6,1,0,2,3],
 "demo__manager_8py.html#a62ce8766f52bf96b489df0459fec5928":[43,0,6,1,0,2,8],
@@ -245,9 +249,5 @@ var NAVTREEINDEX32 =
 "ex__pose__goal_8py.html#a3c640a6e9488d4ac49c2a0e8328b589d":[43,0,3,0,2,0,3,0],
 "example__launch_8py.html":[43,0,7,1,2,0,1],
 "example__launch_8py.html#af49d150abaa0c5580b32932333d2f2c8":[43,0,7,1,2,0,1,0],
-"example__node_8py.html":[43,0,7,1,2,1,3],
-"example__node_8py.html#a0830ca6b73f60f3404af93f6221efd83":[43,0,7,1,2,1,3,2],
-"example__node_8py.html#a1a6f92bba0f94518d76beb4e33a039b9":[43,0,7,1,2,1,3,1],
-"example__node_8py.html#a44baeb1e0458c22477d9f58ffadbd9f0":[43,0,7,1,2,1,3,5],
-"example__node_8py.html#a6eae482e85ac51b66ae90ecccdd460d3":[43,0,7,1,2,1,3,3]
+"example__node_8py.html":[43,0,7,1,2,1,3]
 };

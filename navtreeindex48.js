@@ -1,5 +1,12 @@
 var NAVTREEINDEX48 =
 {
+"navigation_2packages_2nav__main_2launch_2task__launch_2hric_8launch_8py.html":[43,0,4,0,2,0,1,2],
+"navigation_2packages_2nav__main_2launch_2task__launch_2hric_8launch_8py.html#a9ba344eaf004b5e2b4032d983f068469":[43,0,4,0,2,0,1,2,1],
+"navigation_2packages_2nav__main_2launch_2task__launch_2hric_8launch_8py.html#ad1dd056eac0c72bace8a6fdd839dd77d":[43,0,4,0,2,0,1,2,0],
+"navigation_2packages_2nav__main_2launch_2task__launch_2restaurant_8launch_8py.html":[43,0,4,0,2,0,1,4],
+"navigation_2packages_2nav__main_2launch_2task__launch_2restaurant_8launch_8py.html#a3a3467e7dd94d1932f122f55c14d21c4":[43,0,4,0,2,0,1,4,1],
+"navigation_2packages_2nav__main_2launch_2task__launch_2restaurant_8launch_8py.html#a90267738e600fcd32bced0afc020e437":[43,0,4,0,2,0,1,4,0],
+"navigation_2packages_2nav__main_2nav__main_2____init_____8py.html":[43,0,4,0,2,1,1],
 "navigation_2packages_2nav__main_2nav__main_2semantic_2____init_____8py.html":[43,0,4,0,2,1,0,0],
 "navigation_2packages_2omnidriver_2omnidriver_2____init_____8py.html":[43,0,4,0,3,0,0],
 "navigation__constants_8py.html":[43,0,1,1,4],
@@ -242,12 +249,5 @@ var NAVTREEINDEX48 =
 "pose__detection_8py.html#a96e6adb71bc9f26b68a70b07f84e65b3":[43,0,7,1,2,1,0,3,12],
 "pose__detection_8py.html#a98dc8a018814a3a385a406aca2f1d88a":[43,0,7,1,2,1,0,3,9],
 "pose__detection_8py.html#a9ce496616a0c86c9e0cf8702bacec183":[43,0,7,1,2,1,0,3,16],
-"pose__detection_8py.html#aac7170abbef51a248673484293c99def":[43,0,7,1,2,1,0,3,13],
-"pose__detection_8py.html#ab7210ca6205e020f4d764cde7fd19642":[43,0,7,1,2,1,0,3,10],
-"pose__detection_8py.html#abb008387e919d3907137cd6100306e33":[43,0,7,1,2,1,0,3,15],
-"pose__detection_8py.html#abda8d67aad212f9a92a490ded3d4f642":[43,0,7,1,2,1,0,3,3],
-"pose__detection_8py.html#ad7ebcbedbc2adedbf4db8c97a3956fd5":[43,0,7,1,2,1,0,3,11],
-"pose__detection_8py.html#ada0cec3c0d851d59ea801b56b3cf10ad":[43,0,7,1,2,1,0,3,4],
-"pose__detection_8py.html#adc174a79756eebe468c01d57fa73368c":[43,0,7,1,2,1,0,3,8],
-"pose__detection_8py.html#ae1da494f085bfec06222cecfb2b8032d":[43,0,7,1,2,1,0,3,7]
+"pose__detection_8py.html#aac7170abbef51a248673484293c99def":[43,0,7,1,2,1,0,3,13]
 };

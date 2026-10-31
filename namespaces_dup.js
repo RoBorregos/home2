@@ -385,7 +385,7 @@ var namespaces_dup =
     [ "service_utils", "namespaceservice__utils.html", [
       [ "close_gripper", "namespaceservice__utils.html#a479ef9705921d2c4e6c2549e4731ef57", null ],
       [ "get_joint_positions", "namespaceservice__utils.html#a71accfcb34b0efa3659b647054fb840b", null ],
-      [ "move_joint_positions", "namespaceservice__utils.html#aa8e9262e7f52c324189d06f29a06f6da", null ],
+      [ "move_joint_positions", "namespaceservice__utils.html#a0912a73c0d3d833c6bdfb9a8d6069d55", null ],
       [ "open_gripper", "namespaceservice__utils.html#a4518b7fb3dfa02b7b1dfff5bf0e306b8", null ]
     ] ],
     [ "Servo", "namespaceServo.html", "namespaceServo" ],

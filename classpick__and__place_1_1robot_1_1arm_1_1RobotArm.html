@@ -176,14 +176,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae0096c6e79f38e0608767f82b58f4ac0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f2b2793e53d0116812628da08a82b2e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a6f2b2793e53d0116812628da08a82b2e">object_height</a> (self, lowest, highest)</td></tr>
 <tr class="separator:a6f2b2793e53d0116812628da08a82b2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ea573f39386129b8ce304b613cafce9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a3ea573f39386129b8ce304b613cafce9">cartesian_velocity_mode</a> (self, str label)</td></tr>
-<tr class="separator:a3ea573f39386129b8ce304b613cafce9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad010bcb57d958956e4ec956fd29348e3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ad010bcb57d958956e4ec956fd29348e3">cartesian_velocity_mode</a> (self, str label, on_mode1=None)</td></tr>
+<tr class="separator:ad010bcb57d958956e4ec956fd29348e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac11254b1d7f53ae374359db1b841a335"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1ContactResult.html">ContactResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ac11254b1d7f53ae374359db1b841a335">force_guarded_descent</a> (self, <a class="el" href="classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html">ForceGuardProfile</a> guard)</td></tr>
 <tr class="separator:ac11254b1d7f53ae374359db1b841a335"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab383a8ef301148d25fcbd0998b5a09d4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ab383a8ef301148d25fcbd0998b5a09d4">fixed_distance_descent</a> (self, float distance_m, float speed_mm_s, bool descend=True)</td></tr>
 <tr class="separator:ab383a8ef301148d25fcbd0998b5a09d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a111b02d5a4e491e69bc8c52a8499b809"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a111b02d5a4e491e69bc8c52a8499b809">cartesian_approach</a> (self, direction, float distance_m, float speed_mm_s)</td></tr>
-<tr class="separator:a111b02d5a4e491e69bc8c52a8499b809"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a959eac368e80d79a1b05054e78073131"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a959eac368e80d79a1b05054e78073131">cartesian_approach</a> (self, direction, float distance_m, float speed_mm_s, bool close_on_reach=False)</td></tr>
+<tr class="separator:a959eac368e80d79a1b05054e78073131"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c45deabb70e224f7ba0bdc55bc6b8f6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a4c45deabb70e224f7ba0bdc55bc6b8f6">enter_joint_velocity_mode</a> (self)</td></tr>
 <tr class="separator:a4c45deabb70e224f7ba0bdc55bc6b8f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2c8d92e2f5ab92a1d6e78c6aec91650"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#aa2c8d92e2f5ab92a1d6e78c6aec91650">leave_joint_velocity_mode</a> (self)</td></tr>
@@ -230,8 +230,10 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a2244efe06aaaac2721c494fd106e09f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5862797100aab5a3ebba9efa60a23845"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a5862797100aab5a3ebba9efa60a23845">_stop_cartesian_velocity</a> (self)</td></tr>
 <tr class="separator:a5862797100aab5a3ebba9efa60a23845"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add64291a1fe4576cb31524bbddde6b29"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#add64291a1fe4576cb31524bbddde6b29">_restore_mode1</a> (self)</td></tr>
-<tr class="separator:add64291a1fe4576cb31524bbddde6b29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff9a02f77d67483449d19699284b5e8b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#aff9a02f77d67483449d19699284b5e8b">_restore_mode1</a> (self, on_mode1=None)</td></tr>
+<tr class="separator:aff9a02f77d67483449d19699284b5e8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad069bcffef05480426c5b219c496609b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ad069bcffef05480426c5b219c496609b">_wait_mode1_ready</a> (self)</td></tr>
+<tr class="separator:ad069bcffef05480426c5b219c496609b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -593,8 +595,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="add64291a1fe4576cb31524bbddde6b29" name="add64291a1fe4576cb31524bbddde6b29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#add64291a1fe4576cb31524bbddde6b29">&#9670;&#160;</a></span>_restore_mode1()</h2>
+<a id="aff9a02f77d67483449d19699284b5e8b" name="aff9a02f77d67483449d19699284b5e8b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff9a02f77d67483449d19699284b5e8b">&#9670;&#160;</a></span>_restore_mode1()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -606,8 +608,18 @@ Protected Attributes</h2></td></tr>
           <td class="memname">def pick_and_place.robot.arm.RobotArm._restore_mode1 </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>on_mode1</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -817,6 +829,32 @@ config_tgpio_reset_when_stop(0) call made by disable_tgpio_reset.
 
 </div>
 </div>
+<a id="ad069bcffef05480426c5b219c496609b" name="ad069bcffef05480426c5b219c496609b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad069bcffef05480426c5b219c496609b">&#9670;&#160;</a></span>_wait_mode1_ready()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.robot.arm.RobotArm._wait_mode1_ready </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aa18e3d6163b2b0d3fe2715e382d2ca98" name="aa18e3d6163b2b0d3fe2715e382d2ca98"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa18e3d6163b2b0d3fe2715e382d2ca98">&#9670;&#160;</a></span>add_collision_object()</h2>
 
@@ -939,8 +977,8 @@ return motion and made front_stare/table_stare fail.
 <pre class="fragment">Attach the in-flight goal, enabling cancellation and feedback.</pre> 
 </div>
 </div>
-<a id="a111b02d5a4e491e69bc8c52a8499b809" name="a111b02d5a4e491e69bc8c52a8499b809"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a111b02d5a4e491e69bc8c52a8499b809">&#9670;&#160;</a></span>cartesian_approach()</h2>
+<a id="a959eac368e80d79a1b05054e78073131" name="a959eac368e80d79a1b05054e78073131"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a959eac368e80d79a1b05054e78073131">&#9670;&#160;</a></span>cartesian_approach()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -966,9 +1004,14 @@ return motion and made front_stare/table_stare fail.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">float
-    &#160;</td>
-          <td class="paramname"><em>speed_mm_s</em>&#160;</td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>speed_mm_s</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>close_on_reach</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -980,8 +1023,8 @@ return motion and made front_stare/table_stare fail.
 <pre class="fragment">Drive distance_m along a unit direction, closed on the TCP position.</pre> 
 </div>
 </div>
-<a id="a3ea573f39386129b8ce304b613cafce9" name="a3ea573f39386129b8ce304b613cafce9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ea573f39386129b8ce304b613cafce9">&#9670;&#160;</a></span>cartesian_velocity_mode()</h2>
+<a id="ad010bcb57d958956e4ec956fd29348e3" name="ad010bcb57d958956e4ec956fd29348e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad010bcb57d958956e4ec956fd29348e3">&#9670;&#160;</a></span>cartesian_velocity_mode()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -996,7 +1039,13 @@ return motion and made front_stare/table_stare fail.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">str&#160;</td>
-          <td class="paramname"><em>label</em>&#160;</td>
+          <td class="paramname"><em>label</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>on_mode1</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

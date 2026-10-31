@@ -29,6 +29,7 @@ var namespacetest__pick__and__place =
     [ "test_bowl_wins_over_rim", "namespacetest__pick__and__place.html#a294ada1cd4731cd196d53ef28299124c", null ],
     [ "test_build_rejects_a_profile_with_no_registered_class", "namespacetest__pick__and__place.html#af4115fe1130c1f90b0b2b0b21d1344b4", null ],
     [ "test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis", "namespacetest__pick__and__place.html#adf910ce732eec9ae773560d2733d7cdc", null ],
+    [ "test_cartesian_approach_fails_when_the_gripper_never_closed", "namespacetest__pick__and__place.html#a1bb16b7a2b3eedfd2985e9d5f29b2442", null ],
     [ "test_estop_during_descent_aborts_rather_than_retrying", "namespacetest__pick__and__place.html#af46db663aedbc0269bece84940421bfa", null ],
     [ "test_every_strategy_key_has_a_profile", "namespacetest__pick__and__place.html#a02f2071143df3c4d6e2b4b6dd02b7bb5", null ],
     [ "test_every_task_type_has_a_pipeline", "namespacetest__pick__and__place.html#a81d530f92c4061acd54e91c93bf5b8ba", null ],

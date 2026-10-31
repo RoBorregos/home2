@@ -118,14 +118,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a78f858e55cc8e14f979b41fddc902b32"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06fd78ec48180e2624fdf5ef07d5dc15"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a06fd78ec48180e2624fdf5ef07d5dc15">fixed_distance_descent</a> (self, distance_m, speed_mm_s, descend=True)</td></tr>
 <tr class="separator:a06fd78ec48180e2624fdf5ef07d5dc15"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2465a7bc989fe6261e69ed7c09a6896"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#af2465a7bc989fe6261e69ed7c09a6896">cartesian_approach</a> (self, direction, distance_m, speed_mm_s)</td></tr>
-<tr class="separator:af2465a7bc989fe6261e69ed7c09a6896"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a133328d8da34e244b26cdf8b2de4ee00"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a133328d8da34e244b26cdf8b2de4ee00">cartesian_approach</a> (self, direction, distance_m, speed_mm_s, close_on_reach=False)</td></tr>
+<tr class="separator:a133328d8da34e244b26cdf8b2de4ee00"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9666a5d8367037a3793bbc50f079737b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a9666a5d8367037a3793bbc50f079737b">force_guarded_descent</a> (self, guard)</td></tr>
 <tr class="separator:a9666a5d8367037a3793bbc50f079737b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f1513b4b24f684a9763a92656ca35ef"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a9f1513b4b24f684a9763a92656ca35ef">wait_until_ready</a> (self)</td></tr>
 <tr class="separator:a9f1513b4b24f684a9763a92656ca35ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a152599d0e0d62b1468e3f7b133b1c943"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a152599d0e0d62b1468e3f7b133b1c943">cartesian_velocity_mode</a> (self, label)</td></tr>
-<tr class="separator:a152599d0e0d62b1468e3f7b133b1c943"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adad0c238c2d56fc4fdfe49bab6712eee"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#adad0c238c2d56fc4fdfe49bab6712eee">cartesian_velocity_mode</a> (self, label, on_mode1=None)</td></tr>
+<tr class="separator:adad0c238c2d56fc4fdfe49bab6712eee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93a8bbb771170fad68d4f8826e884eca"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a93a8bbb771170fad68d4f8826e884eca">disable_tgpio_reset</a> (self)</td></tr>
 <tr class="separator:a93a8bbb771170fad68d4f8826e884eca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e98dbd5288129af7302befc53331a30"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a2e98dbd5288129af7302befc53331a30">enter_joint_velocity_mode</a> (self)</td></tr>
@@ -475,8 +475,8 @@ if the two drift apart.
 
 </div>
 </div>
-<a id="af2465a7bc989fe6261e69ed7c09a6896" name="af2465a7bc989fe6261e69ed7c09a6896"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2465a7bc989fe6261e69ed7c09a6896">&#9670;&#160;</a></span>cartesian_approach()</h2>
+<a id="a133328d8da34e244b26cdf8b2de4ee00" name="a133328d8da34e244b26cdf8b2de4ee00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a133328d8da34e244b26cdf8b2de4ee00">&#9670;&#160;</a></span>cartesian_approach()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -503,7 +503,13 @@ if the two drift apart.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>speed_mm_s</em>&#160;</td>
+          <td class="paramname"><em>speed_mm_s</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>close_on_reach</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -515,8 +521,8 @@ if the two drift apart.
 
 </div>
 </div>
-<a id="a152599d0e0d62b1468e3f7b133b1c943" name="a152599d0e0d62b1468e3f7b133b1c943"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a152599d0e0d62b1468e3f7b133b1c943">&#9670;&#160;</a></span>cartesian_velocity_mode()</h2>
+<a id="adad0c238c2d56fc4fdfe49bab6712eee" name="adad0c238c2d56fc4fdfe49bab6712eee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adad0c238c2d56fc4fdfe49bab6712eee">&#9670;&#160;</a></span>cartesian_velocity_mode()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -531,7 +537,13 @@ if the two drift apart.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>label</em>&#160;</td>
+          <td class="paramname"><em>label</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>on_mode1</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

@@ -1,5 +1,9 @@
 var NAVTREEINDEX38 =
 {
+"md_manipulation_packages_vamp_scripts_README.html#autotoc_md60":[5,3],
+"md_manipulation_packages_vamp_scripts_README.html#autotoc_md61":[5,4],
+"md_manipulation_packages_vamp_scripts_README.html#autotoc_md62":[5,4,0],
+"md_manipulation_packages_vamp_scripts_cpp_README.html":[4],
 "md_manipulation_packages_vamp_scripts_cpp_README.html#autotoc_md54":[4,0],
 "md_manipulation_packages_vamp_scripts_cpp_README.html#autotoc_md55":[4,1],
 "md_navigation_README.html":[10],
@@ -245,9 +249,5 @@ var NAVTREEINDEX38 =
 "namespacecore_1_1embed.html#af8648bfe24dcbed11ba9bd5afecac939":[41,0,15,1,7],
 "namespacecore_1_1metrics.html":[41,0,15,2],
 "namespacecore_1_1metrics.html#a0ed07b9f8db3fc711089891a38c465be":[41,0,15,2,8],
-"namespacecore_1_1metrics.html#a25885b8b3329aff785b7aac0c3a12dfa":[41,0,15,2,3],
-"namespacecore_1_1metrics.html#a2ab460a79dabcdf4c15cf082e9209081":[41,0,15,2,10],
-"namespacecore_1_1metrics.html#a505e795cd98149c38dc1ebee10775a43":[41,0,15,2,7],
-"namespacecore_1_1metrics.html#a5a4da0421505dc54931c0c465536b4dd":[41,0,15,2,0],
-"namespacecore_1_1metrics.html#a8bcb94167efde9afc64c7e2add070698":[41,0,15,2,9]
+"namespacecore_1_1metrics.html#a25885b8b3329aff785b7aac0c3a12dfa":[41,0,15,2,3]
 };
