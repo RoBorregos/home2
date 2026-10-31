@@ -30,6 +30,8 @@ var namespacetest__pick__and__place =
     [ "test_build_rejects_a_profile_with_no_registered_class", "namespacetest__pick__and__place.html#af4115fe1130c1f90b0b2b0b21d1344b4", null ],
     [ "test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis", "namespacetest__pick__and__place.html#adf910ce732eec9ae773560d2733d7cdc", null ],
     [ "test_cartesian_approach_fails_when_the_gripper_never_closed", "namespacetest__pick__and__place.html#a1bb16b7a2b3eedfd2985e9d5f29b2442", null ],
+    [ "test_cylinders_stay_top_down_by_default", "namespacetest__pick__and__place.html#a66beda2f99ad140f33ffc81dec89811e", null ],
+    [ "test_diagonal_cylinders_close_across_the_approach", "namespacetest__pick__and__place.html#aec6f4b3ea08526d1f8f0205f51940c49", null ],
     [ "test_estop_during_descent_aborts_rather_than_retrying", "namespacetest__pick__and__place.html#af46db663aedbc0269bece84940421bfa", null ],
     [ "test_every_strategy_key_has_a_profile", "namespacetest__pick__and__place.html#a02f2071143df3c4d6e2b4b6dd02b7bb5", null ],
     [ "test_every_task_type_has_a_pipeline", "namespacetest__pick__and__place.html#a81d530f92c4061acd54e91c93bf5b8ba", null ],

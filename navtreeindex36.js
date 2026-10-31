@@ -1,5 +1,6 @@
 var NAVTREEINDEX36 =
 {
+"manipulation__constants_8py.html#a16619c3dde995d837c19d6d3b5d54db9":[43,0,1,1,3,17],
 "manipulation__constants_8py.html#a1922f5fe1cb5b7e349cf1409c11f1527":[43,0,1,1,3,14],
 "manipulation__constants_8py.html#a1e0531fb0f37e118fe0fab5664116f5a":[43,0,1,1,3,29],
 "manipulation__constants_8py.html#a209cc1fb58923d6f4ab86bc17eee333a":[43,0,1,1,3,42],
@@ -248,6 +249,5 @@ var NAVTREEINDEX36 =
 "md_docs_ai_navigation_architecture.html#autotoc_md228":[21,4,1],
 "md_docs_ai_navigation_architecture.html#autotoc_md229":[21,4,2],
 "md_docs_ai_navigation_architecture.html#autotoc_md231":[21,5],
-"md_docs_ai_navigation_architecture.html#autotoc_md232":[21,6],
-"md_docs_ai_navigation_architecture.html#autotoc_md233":[21,7]
+"md_docs_ai_navigation_architecture.html#autotoc_md232":[21,6]
 };

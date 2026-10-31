@@ -149,8 +149,8 @@ Functions</h2></td></tr>
 <tr class="separator:a20da67b2d29f496dc47becd02a68ba52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afec75bad7586c78ff62f58a4d3f57793"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#afec75bad7586c78ff62f58a4d3f57793">turn</a> (np.ndarray vector, float degrees)</td></tr>
 <tr class="separator:afec75bad7586c78ff62f58a4d3f57793"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeaf5c9207ee2ed58f5c5b18835fda49b"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#aeaf5c9207ee2ed58f5c5b18835fda49b">approaches</a> (grasp_class, away, short_axis, long_axis)</td></tr>
-<tr class="separator:aeaf5c9207ee2ed58f5c5b18835fda49b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac905561b6f7221dc98e893c6f10e9470"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#ac905561b6f7221dc98e893c6f10e9470">approaches</a> (grasp_class, away, short_axis, long_axis, diagonal=False)</td></tr>
+<tr class="separator:ac905561b6f7221dc98e893c6f10e9470"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21e2fb76b2b5a19d7f0372b5d9d781a3"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a21e2fb76b2b5a19d7f0372b5d9d781a3">pad_contact</a> (center, normal, extent, bottom, span, tip, rotation)</td></tr>
 <tr class="separator:a21e2fb76b2b5a19d7f0372b5d9d781a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97666d31e7b7594b7071f7c4585002c1"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a97666d31e7b7594b7071f7c4585002c1">solid</a> (<a class="el" href="classperception__3d_1_1geometric__grasps_1_1Scene.html">Scene</a> scene, str grasp_class, tuple segmented)</td></tr>
@@ -240,6 +240,8 @@ Variables</h2></td></tr>
 <tr class="separator:a8a4b9598fbbb08a1cdbed2ef387a03cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5dcd0047cef1d5ec59931c4bf70b45d3"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a5dcd0047cef1d5ec59931c4bf70b45d3">CYLINDER_TOP_DEPTH</a> = 0.09</td></tr>
 <tr class="separator:a5dcd0047cef1d5ec59931c4bf70b45d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9e8924f877525353381300aecb5eaf1"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#af9e8924f877525353381300aecb5eaf1">CYLINDER_PAST_CENTER</a> = 0.035</td></tr>
+<tr class="separator:af9e8924f877525353381300aecb5eaf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5dace38b262c1d9d53628dd7681b537f"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a5dace38b262c1d9d53628dd7681b537f">PALM_OFFSET</a> = 0.073</td></tr>
 <tr class="separator:a5dace38b262c1d9d53628dd7681b537f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18473ac5aad6e6f6398a806553344839"><td class="memItemLeft" align="right" valign="top">GRIPPER_REACH&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a18473ac5aad6e6f6398a806553344839">PALM_ABOVE_TIP</a> = GRIPPER_REACH - <a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a5dace38b262c1d9d53628dd7681b537f">PALM_OFFSET</a></td></tr>
@@ -304,8 +306,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="aeaf5c9207ee2ed58f5c5b18835fda49b" name="aeaf5c9207ee2ed58f5c5b18835fda49b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeaf5c9207ee2ed58f5c5b18835fda49b">&#9670;&#160;</a></span>approaches()</h2>
+<a id="ac905561b6f7221dc98e893c6f10e9470" name="ac905561b6f7221dc98e893c6f10e9470"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac905561b6f7221dc98e893c6f10e9470">&#9670;&#160;</a></span>approaches()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -332,7 +334,13 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>long_axis</em>&#160;</td>
+          <td class="paramname"><em>long_axis</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>diagonal</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1065,6 +1073,20 @@ Variables</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">float perception_3d.geometric_grasps.BOX_AXES_MIN = 0.71</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af9e8924f877525353381300aecb5eaf1" name="af9e8924f877525353381300aecb5eaf1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9e8924f877525353381300aecb5eaf1">&#9670;&#160;</a></span>CYLINDER_PAST_CENTER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float perception_3d.geometric_grasps.CYLINDER_PAST_CENTER = 0.035</td>
         </tr>
       </table>
 </div><div class="memdoc">

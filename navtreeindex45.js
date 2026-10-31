@@ -1,5 +1,7 @@
 var NAVTREEINDEX45 =
 {
+"namespacetask__manager_1_1gpsr_1_1merger.html#a9004f130d8c8dedd7ad74ed3684f2231":[41,0,144,0,2,16],
+"namespacetask__manager_1_1gpsr_1_1merger.html#aafec8badcd26c6126412a456f872406c":[41,0,144,0,2,9],
 "namespacetask__manager_1_1gpsr_1_1merger.html#ab98959c3199ace33d5a190dda69bc34e":[41,0,144,0,2,5],
 "namespacetask__manager_1_1gpsr_1_1merger.html#ac23db6ebb9c83277ffa851ff040007bc":[41,0,144,0,2,18],
 "namespacetask__manager_1_1gpsr_1_1merger.html#ae05558fbe02a48a6534a3f94d9ac7692":[41,0,144,0,2,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX45 =
 "namespacetest__navigation__manager.html#a6b0ab051435a3e31ac391bc143854e4e":[41,0,162,3],
 "namespacetest__navigation__manager.html#ab1f09b5c9d0e88b1d289b33eec860a28":[41,0,162,6],
 "namespacetest__navigation__manager.html#ab8fdba64e6573573b9accb5381d48165":[41,0,162,14],
-"namespacetest__navigation__manager.html#ada961e352efb0c10940b770c69a60764":[41,0,162,15],
-"namespacetest__navigation__manager.html#adc1f2a64eff4944965209ae5a91fcba2":[41,0,162,13],
-"namespacetest__navigation__manager.html#ae170ba4fa3fd897c321917e59d5846bc":[41,0,162,1]
+"namespacetest__navigation__manager.html#ada961e352efb0c10940b770c69a60764":[41,0,162,15]
 };

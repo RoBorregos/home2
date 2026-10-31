@@ -1,5 +1,6 @@
 var NAVTREEINDEX39 =
 {
+"namespacecore_1_1embed.html#aeae2ad6dadcbc39ea1b7704b84484ca8":[41,0,15,1,3],
 "namespacecore_1_1embed.html#af8648bfe24dcbed11ba9bd5afecac939":[41,0,15,1,7],
 "namespacecore_1_1metrics.html":[41,0,15,2],
 "namespacecore_1_1metrics.html#a0ed07b9f8db3fc711089891a38c465be":[41,0,15,2,8],
@@ -248,6 +249,5 @@ var NAVTREEINDEX39 =
 "namespacefollow__person__node.html#ae66d60046d004ac46b9533d8a95636bc":[41,0,47,2],
 "namespacefollow__person__node.html#af3059a3dad952d77f7c8cfc496f0fbad":[41,0,47,9],
 "namespacefollow__person__node.html#af6451d851044b737000c8c1fb6ca5f82":[41,0,47,7],
-"namespacefollow__person__node_01copy.html":[41,0,48],
-"namespacefollow__person__node_01copy.html#a2a16ab26a0bce6aa68a67aae194be715":[41,0,48,4]
+"namespacefollow__person__node_01copy.html":[41,0,48]
 };
