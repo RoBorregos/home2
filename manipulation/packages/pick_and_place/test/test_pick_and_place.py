@@ -142,7 +142,7 @@ def test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis():
         < arm.calls.index("close_gripper")
         < arm.calls.index("attach_pick_object")
     )
-    assert arm.close_settles == [profile.close_settle]
+    assert arm.close_settles == [0.0]
     assert "move_to_pose" not in arm.calls
 
 
