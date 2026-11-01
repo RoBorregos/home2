@@ -86,7 +86,7 @@ class GraspGenerator(Node):
         self._samples: list[Sample] = []
         self._rejections: Counter = Counter()
         self._busy = threading.Lock()
-        self.declare_parameter("cylinder_diagonal", False)
+        self.declare_parameter("cylinder_diagonal", True)
 
         # Reentrant + MultiThreadedExecutor: the service waits while the
         # depth/detection callbacks keep filling samples in other threads.

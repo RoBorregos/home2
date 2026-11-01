@@ -210,8 +210,8 @@ The tip offsets stay ROS parameters because they are physical properties of the 
 `geometric_tip_offset` (−`GRIPPER_REACH`, flange to fingertip). The gripper's dimensions live in
 `frida_constants/manipulation_constants.py`.
 
-`grasp_generator`'s `cylinder_diagonal` parameter (default `False`) replaces the top-down cylinder
-grasps with a 45 degree one.
+`grasp_generator`'s `cylinder_diagonal` parameter (default `True`) replaces the top-down cylinder
+grasps with a 45 degree one. The place then turns the gripper straight down, so the can hangs upright.
 
 ## Adding or tuning a pick behavior
 

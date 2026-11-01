@@ -29,7 +29,7 @@ from pick_and_place.pipelines.classification import (
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.strategies import GraspCandidate, PickOutcome
-from pick_and_place.robot.geometry import offset_along_approach
+from pick_and_place.robot.geometry import is_tilted, offset_along_approach
 from pick_and_place.utils.grasp_orientation import is_frontal_grasp
 
 # GPD configs, tried in order until one yields a graspable candidate. The bool
@@ -178,6 +178,9 @@ def _pick(
     if fitted is not None:
         outcome.object_pick_height, outcome.object_height = _fitted_heights(
             fitted, outcome.pick_pose
+        )
+        outcome.place_top_down = fitted.type == "cylinder" and is_tilted(
+            outcome.pick_pose
         )
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)

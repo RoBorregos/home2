@@ -14,6 +14,7 @@ from frida_constants.manipulation_constants import (
     AIM_STRAIGHT_FRONT_QUAT,
     EEF_LINK_NAME,
     GRASP_LINK_FRAME,
+    GRIPPER_REACH,
     SHELF_MIN_REACH,
     SHELF_POSITION_PREPLACE_POSE,
     SHELF_REACH_BASE,
@@ -25,10 +26,10 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_motion_planning.utils.tf_utils import transform_point, transform_pose
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs_py import point_cloud2
-from transforms3d.quaternions import quat2mat
+from transforms3d.quaternions import mat2quat, quat2mat
 
 from pick_and_place.pipelines.strategies import PickOutcome
-from pick_and_place.robot.geometry import set_quaternion
+from pick_and_place.robot.geometry import approach_axis, set_quaternion
 
 # Shelf place: how far (m) to pull the place toward the front edge so the arm
 # and eye-in-hand camera do not jam against the short compartment ceiling.
@@ -55,6 +56,9 @@ TRASH_TIMEOUT = 15.0
 
 # Orientation with Z aiming down, used when the pick pose is unusable.
 TOP_DOWN_QUAT = [0.0, 1.0, 0.0, 0.0]
+
+# Where the pads hold a cylinder picked tilted, behind the fingertip.
+TOP_DOWN_HOLD_BEHIND_TIP = 0.08
 
 
 def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
@@ -479,10 +483,33 @@ def _apply_drop_height(
         drop = pick_outcome.object_pick_height
         orientation_source = pick_pose
 
+    if pick_outcome.place_top_down and not place_params.is_shelf:
+        return _top_down_cylinder_pose(pose, pick_pose, drop)
+
     # On a shelf the compartment ceiling, not the object, sets the clearance.
     pose.pose.position.z += 0.1 if place_params.is_shelf else drop
     pose.pose.orientation = orientation_source.pose.orientation
     return pose
+
+
+def _top_down_cylinder_pose(
+    pose: PoseStamped, pick_pose: PoseStamped, drop: float
+) -> PoseStamped:
+    """Hold a cylinder picked tilted over ``pose`` with the gripper pointing down.
+
+    It hangs from the pads, so turning about the closing axis leaves it upright.
+    """
+    orientation = pick_pose.pose.orientation
+    across = quat2mat([orientation.w, orientation.x, orientation.y, orientation.z])[
+        :, 1
+    ]
+    down = np.array([0.0, 0.0, -1.0])
+    rotation = np.column_stack((np.cross(across, down), across, down))
+
+    behind = GRIPPER_REACH - TOP_DOWN_HOLD_BEHIND_TIP
+    pose.pose.position.z += drop + behind * (1.0 + approach_axis(pick_pose)[2])
+    w, x, y, z = mat2quat(rotation)
+    return set_quaternion(pose, [x, y, z, w])
 
 
 def _trash_pose(perception) -> Optional[PoseStamped]:

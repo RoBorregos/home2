@@ -59,6 +59,7 @@ class PickOutcome:
     object_name: str = ""
     object_pick_height: float = 0.0
     object_height: float = 0.0
+    place_top_down: bool = False
 
 
 class PickStrategy:

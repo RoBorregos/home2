@@ -28,6 +28,7 @@ from fakes import (
 )
 from frida_constants.manipulation_constants import (
     BOWL_NAME,
+    GRIPPER_REACH,
     PRE_GRASP_DISTANCE,
     RIM_NAMES,
     SAFETY_HEIGHT_GEOMETRIC,
@@ -62,7 +63,7 @@ from pick_and_place.pipelines.strategies import (
     build_strategies,
 )
 from pick_and_place.robot.arm import AttachResult, ContactResult, RobotArm
-from pick_and_place.robot.geometry import set_quaternion
+from pick_and_place.robot.geometry import approach_axis, set_quaternion
 from pick_and_place.robot.perception import Perception
 
 PROFILES_PATH = Path(__file__).resolve().parents[1] / "config" / "pick_profiles.yaml"
@@ -394,6 +395,24 @@ def test_place_fails_when_no_rung_is_reachable():
     arm = FakeArm(move_to_pose_results=[False] * 8)
     assert run_place(arm, place_perception(), params(is_shelf=False)) is False
     assert "detach_pick_objects" not in arm.calls
+
+
+def tilted_pick(height=0.15):
+    pose = make_pose(z=0.5)
+    pose.pose.orientation.y = np.sin(np.radians(67.5))
+    pose.pose.orientation.w = np.cos(np.radians(67.5))
+    return PickOutcome(pick_pose=pose, object_pick_height=height, place_top_down=True)
+
+
+def test_tilted_cylinder_is_placed_top_down_over_the_place_point():
+    pick = tilted_pick()
+    pose = place_pipeline._top_down_cylinder_pose(
+        make_pose(x=0.4, y=0.0, z=0.7), pick.pick_pose, pick.object_pick_height
+    )
+    behind = GRIPPER_REACH - place_pipeline.TOP_DOWN_HOLD_BEHIND_TIP
+    assert approach_axis(pose) == pytest.approx([0.0, 0.0, -1.0], abs=1e-6)
+    assert pose.pose.position.x == pytest.approx(0.4)
+    assert pose.pose.position.z == pytest.approx(0.85 + behind * (1 - np.sqrt(0.5)))
 
 
 def test_trash_place_goes_to_the_pose_from_the_grasp_generator():
