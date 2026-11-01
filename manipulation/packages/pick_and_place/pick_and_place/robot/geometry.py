@@ -6,6 +6,8 @@ import numpy as np
 from geometry_msgs.msg import PoseStamped
 from transforms3d.quaternions import quat2mat
 
+TOP_DOWN_AXIS_Z = -0.99
+
 
 def offset_z(pose: PoseStamped, delta_z: float) -> PoseStamped:
     """Copy ``pose`` shifted by ``delta_z`` along world Z.
@@ -24,6 +26,11 @@ def approach_axis(pose: PoseStamped) -> np.ndarray:
     # quat2mat expects scalar-first [w, x, y, z].
     rotation = quat2mat([orientation.w, orientation.x, orientation.y, orientation.z])
     return rotation[:, 2]
+
+
+def is_tilted(pose: PoseStamped) -> bool:
+    """True when the gripper does not point straight down."""
+    return approach_axis(pose)[2] > TOP_DOWN_AXIS_Z
 
 
 def offset_along_approach(pose: PoseStamped, distance: float) -> PoseStamped:

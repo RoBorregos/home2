@@ -26,6 +26,7 @@ from frida_constants.manipulation_constants import (
     PLACE_TRASH_HEIGHT_OFFSET,
     PRE_GRASP_DISTANCE,
     RIM_NAMES,
+    TOP_GRASP_DEPTH,
     TRASH_BIN_NAME,
 )
 
@@ -85,6 +86,7 @@ SELF_MARGIN = 0.01
 
 TABLE_CLEARANCE = 0.005
 CYLINDER_TOP_DEPTH = 0.09
+CYLINDER_PAST_CENTER = 0.035  # the pads sit behind the tip, so reach past the axis
 PALM_OFFSET = 0.073
 PALM_ABOVE_TIP = GRIPPER_REACH - PALM_OFFSET
 GRIPPER_BODY = np.array(GRIPPER_BODY_CORNERS)
@@ -150,6 +152,7 @@ class Scene:
     cam_to_base: np.ndarray
     gripper_to_base: np.ndarray
     bbox: tuple
+    cylinder_diagonal: bool = False
 
     @property
     def roi(self) -> np.ndarray:
@@ -473,12 +476,14 @@ def turn(vector: np.ndarray, degrees: float) -> np.ndarray:
     return np.array([c * vector[0] - s * vector[1], s * vector[0] + c * vector[1]])
 
 
-def approaches(grasp_class, away, short_axis, long_axis) -> list:
+def approaches(grasp_class, away, short_axis, long_axis, diagonal=False) -> list:
     """Candidate (label, tilt, approach side, closing axis) for a grasp class."""
     tangent = np.array([-away[1], away[0]])
     tops = [(f"top {t}", 0, away, turn(tangent, t)) for t in (0, 45, 90, 135)]
-    if grasp_class in (GRASP_CLASS_ROUND, GRASP_CLASS_CYLINDRICAL):
+    if grasp_class == GRASP_CLASS_ROUND:
         return tops
+    if grasp_class == GRASP_CLASS_CYLINDRICAL:
+        return [(TILT_NAMES[45], 45, away, tangent)] if diagonal else tops
     found = []
     for name, closing, other in (
         ("short", short_axis, long_axis),
@@ -515,7 +520,7 @@ def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     require(np.linalg.norm(center) > 1e-6, "object at the robot origin")
     away = center / np.linalg.norm(center)
     middle = np.array([*center, (support_z + top_z) / 2])
-    top_tip_z = max(top_z - 0.9 * GRIPPER_FINGER_LENGTH, support_z + TABLE_CLEARANCE)
+    top_tip_z = max(top_z - TOP_GRASP_DEPTH, support_z + TABLE_CLEARANCE)
     above_tip = GRIPPER_FINGER_LENGTH
 
     height = top_z - support_z
@@ -546,9 +551,14 @@ def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     )
     obstacles = obstacles[gap >= SELF_MARGIN]
 
+    tilted_past = (
+        CYLINDER_PAST_CENTER
+        if grasp_class == GRASP_CLASS_CYLINDRICAL
+        else GRASP_PAST_CENTER
+    )
     grasps, costs, rejected = [], [], Counter()
     for label, tilt, side, closing in approaches(
-        grasp_class, away, short_axis, long_axis
+        grasp_class, away, short_axis, long_axis, scene.cylinder_diagonal
     ):
         if not sees_top and abs(closing @ view) > np.sin(np.radians(20)):
             rejected["top hidden, closing across unseen depth"] += 1
@@ -560,7 +570,7 @@ def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
         tip = (
             np.array([*center, top_tip_z])
             if tilt == 0
-            else middle + approach * GRASP_PAST_CENTER
+            else middle + approach * tilted_past
         )
 
         local = (points - tip) @ rotation

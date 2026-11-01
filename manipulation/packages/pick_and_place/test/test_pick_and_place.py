@@ -34,6 +34,7 @@ from frida_constants.manipulation_constants import (
 )
 from frida_interfaces.msg import ManipulationTask, PlaceParams
 from pathlib import Path
+from perception_3d.geometric_grasps import approaches
 from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import (
     follow as follow_pipeline,
@@ -61,7 +62,7 @@ from pick_and_place.pipelines.strategies import (
     build_strategies,
 )
 from pick_and_place.robot.arm import AttachResult, ContactResult, RobotArm
-from pick_and_place.robot.geometry import set_quaternion
+from pick_and_place.robot.geometry import approach_axis, set_quaternion
 from pick_and_place.robot.perception import Perception
 
 PROFILES_PATH = Path(__file__).resolve().parents[1] / "config" / "pick_profiles.yaml"
@@ -171,6 +172,19 @@ def test_cartesian_approach_fails_when_the_gripper_never_closed(mode1_restored):
 
     assert reached is mode1_restored
     assert closes == ([0.0] if mode1_restored else [])
+
+
+def test_cylinders_stay_top_down_by_default():
+    away, tangent = np.array([1.0, 0.0]), np.array([0.0, 1.0])
+    found = approaches("cylindrical", away, tangent, away)
+    assert {tilt for _, tilt, _, _ in found} == {0}
+
+
+def test_diagonal_cylinders_close_across_the_approach():
+    away, tangent = np.array([1.0, 0.0]), np.array([0.0, 1.0])
+    found = approaches("cylindrical", away, tangent, away, True)
+    assert [label for label, *_ in found] == ["diagonal"]
+    assert found[0][2] @ found[0][3] == pytest.approx(0.0)
 
 
 def test_gpd_still_reports_the_pick_when_attaching_fails(strategies):
@@ -380,6 +394,21 @@ def test_place_fails_when_no_rung_is_reachable():
     arm = FakeArm(move_to_pose_results=[False] * 8)
     assert run_place(arm, place_perception(), params(is_shelf=False)) is False
     assert "detach_pick_objects" not in arm.calls
+
+
+def tilted_pick(height=0.15):
+    pose = make_pose(z=0.5)
+    pose.pose.orientation.y = np.sin(np.radians(67.5))
+    pose.pose.orientation.w = np.cos(np.radians(67.5))
+    return PickOutcome(pick_pose=pose, object_pick_height=height, place_top_down=True)
+
+
+def test_tilted_cylinder_is_placed_top_down_at_the_pick_height():
+    arm = FakeArm()
+    assert run_place(arm, place_perception(), params(), tilted_pick())
+    pose = arm.poses["move_to_pose"][-1]
+    assert approach_axis(pose) == pytest.approx([0.0, 0.0, -1.0], abs=1e-6)
+    assert pose.pose.position.z == pytest.approx(0.70 + 0.15)
 
 
 def test_trash_place_goes_to_the_pose_from_the_grasp_generator():

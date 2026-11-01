@@ -1,0 +1,22 @@
+--- a/include/fcl/narrowphase/detail/traversal/octree/octree_solver-inl.h
++++ b/include/fcl/narrowphase/detail/traversal/octree/octree_solver-inl.h
+@@ -333,6 +333,9 @@
+                                  const Shape& s, const OBB<S>& obb2,
+                                  const Transform3<S>& tf1, const Transform3<S>& tf2) const
+ {
++  // An empty tree holds nothing to collide with; unknown space only matters for cost.
++  if(!root1 && !crequest->enable_cost) return false;
++
+   if(!root1)
+   {
+     OBB<S> obb1;
+@@ -576,6 +579,9 @@
+                                 const BVHModel<BV>* tree2, int root2,
+                                 const Transform3<S>& tf1, const Transform3<S>& tf2) const
+ {
++  // An empty tree holds nothing to collide with; unknown space only matters for cost.
++  if(!root1 && !crequest->enable_cost) return false;
++
+   if(!root1)
+   {
+     if(tree2->getBV(root2).isLeaf())

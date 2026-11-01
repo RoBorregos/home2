@@ -13,8 +13,10 @@ from typing import Iterator, List, Optional, Tuple
 
 import numpy as np
 from frida_constants.manipulation_constants import (
+    GRIPPER_REACH,
     PICK_MAX_DISTANCE,
     SAFETY_HEIGHT_GEOMETRIC,
+    TOP_GRASP_DEPTH,
 )
 from geometry_msgs.msg import PointStamped
 from scipy.spatial.transform import Rotation as R
@@ -29,7 +31,7 @@ from pick_and_place.pipelines.classification import (
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.strategies import GraspCandidate, PickOutcome
-from pick_and_place.robot.geometry import offset_along_approach
+from pick_and_place.robot.geometry import is_tilted, offset_along_approach
 from pick_and_place.utils.grasp_orientation import is_frontal_grasp
 
 # GPD configs, tried in order until one yields a graspable candidate. The bool
@@ -179,6 +181,9 @@ def _pick(
         outcome.object_pick_height, outcome.object_height = _fitted_heights(
             fitted, outcome.pick_pose
         )
+        if fitted.type == "cylinder" and is_tilted(outcome.pick_pose):
+            outcome.place_top_down = True
+            outcome.object_pick_height = _top_down_pick_height(outcome.object_height)
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
@@ -534,6 +539,11 @@ def _fitted_heights(fitted, grasp_pose) -> Tuple[float, float]:
     height = 2 * fitted.dimensions.x if fitted.type == "sphere" else fitted.dimensions.z
     bottom = fitted.pose.pose.position.z - height / 2
     return grasp_pose.pose.position.z - bottom + SAFETY_HEIGHT_GEOMETRIC, height
+
+
+def _top_down_pick_height(object_height: float) -> float:
+    """The pick height of the top-down grasp, which a tilted pick places with."""
+    return object_height - TOP_GRASP_DEPTH + GRIPPER_REACH + SAFETY_HEIGHT_GEOMETRIC
 
 
 # ======================================================================
