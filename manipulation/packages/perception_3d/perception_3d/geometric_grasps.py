@@ -26,6 +26,7 @@ from frida_constants.manipulation_constants import (
     PLACE_TRASH_HEIGHT_OFFSET,
     PRE_GRASP_DISTANCE,
     RIM_NAMES,
+    TOP_GRASP_DEPTH,
     TRASH_BIN_NAME,
 )
 
@@ -519,7 +520,7 @@ def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     require(np.linalg.norm(center) > 1e-6, "object at the robot origin")
     away = center / np.linalg.norm(center)
     middle = np.array([*center, (support_z + top_z) / 2])
-    top_tip_z = max(top_z - 0.9 * GRIPPER_FINGER_LENGTH, support_z + TABLE_CLEARANCE)
+    top_tip_z = max(top_z - TOP_GRASP_DEPTH, support_z + TABLE_CLEARANCE)
     above_tip = GRIPPER_FINGER_LENGTH
 
     height = top_z - support_z

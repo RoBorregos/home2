@@ -478,6 +478,8 @@ def _apply_drop_height(
         log.info(f"Object pick height: {pick_outcome.object_pick_height}")
         drop = pick_outcome.object_pick_height
         orientation_source = pick_pose
+        if pick_outcome.place_top_down and not place_params.is_shelf:
+            orientation_source = set_quaternion(PoseStamped(), TOP_DOWN_QUAT)
 
     # On a shelf the compartment ceiling, not the object, sets the clearance.
     pose.pose.position.z += 0.1 if place_params.is_shelf else drop

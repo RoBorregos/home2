@@ -62,7 +62,7 @@ from pick_and_place.pipelines.strategies import (
     build_strategies,
 )
 from pick_and_place.robot.arm import AttachResult, ContactResult, RobotArm
-from pick_and_place.robot.geometry import set_quaternion
+from pick_and_place.robot.geometry import approach_axis, set_quaternion
 from pick_and_place.robot.perception import Perception
 
 PROFILES_PATH = Path(__file__).resolve().parents[1] / "config" / "pick_profiles.yaml"
@@ -394,6 +394,21 @@ def test_place_fails_when_no_rung_is_reachable():
     arm = FakeArm(move_to_pose_results=[False] * 8)
     assert run_place(arm, place_perception(), params(is_shelf=False)) is False
     assert "detach_pick_objects" not in arm.calls
+
+
+def tilted_pick(height=0.15):
+    pose = make_pose(z=0.5)
+    pose.pose.orientation.y = np.sin(np.radians(67.5))
+    pose.pose.orientation.w = np.cos(np.radians(67.5))
+    return PickOutcome(pick_pose=pose, object_pick_height=height, place_top_down=True)
+
+
+def test_tilted_cylinder_is_placed_top_down_at_the_pick_height():
+    arm = FakeArm()
+    assert run_place(arm, place_perception(), params(), tilted_pick())
+    pose = arm.poses["move_to_pose"][-1]
+    assert approach_axis(pose) == pytest.approx([0.0, 0.0, -1.0], abs=1e-6)
+    assert pose.pose.position.z == pytest.approx(0.70 + 0.15)
 
 
 def test_trash_place_goes_to_the_pose_from_the_grasp_generator():
