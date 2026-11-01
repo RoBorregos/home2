@@ -268,7 +268,7 @@ Configuration</h1>
 <p>Every tuned number lives in <a href="config/pick_profiles.yaml"><code>config/pick_profiles.yaml</code></a> — pre-grasp heights, descent distances and speeds, gripper settle times, and the flat strategy's contact-force thresholds. Retuning is a YAML edit, not a code change.</p>
 <p>Profiles are loaded and <b>validated at startup</b>, so a bad value fails at launch rather than mid-descent with the arm in cartesian-velocity mode. Validation catches unknown and missing keys, wrong types, a descent that resolves non-positive, a <code>jump_trip</code> above the hard ceiling, and a force-guard timeout too short to cover the pre-grasp height.</p>
 <p>The tip offsets stay ROS parameters because they are physical properties of the gripper: <code>ee_link_offset</code> (−0.09 in the launch file), <code>rim_tip_offset</code>, <code>bowl_tip_offset</code> and <code>geometric_tip_offset</code> (−<code>GRIPPER_REACH</code>, flange to fingertip). The gripper's dimensions live in <code><a class="el" href="manipulation__constants_8py.html">frida_constants/manipulation_constants.py</a></code>.</p>
-<p><code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code>'s <code>cylinder_diagonal</code> parameter (default <code>False</code>) replaces the top-down cylinder grasps with a 45 degree one.</p>
+<p><code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code>'s <code>cylinder_diagonal</code> parameter (default <code>True</code>) replaces the top-down cylinder grasps with a 45 degree one. The place then turns the gripper straight down, so the can hangs upright.</p>
 <h1><a class="anchor" id="autotoc_md9"></a>
 Adding or tuning a pick behavior</h1>
 <ul>

@@ -1,5 +1,14 @@
 var NAVTREEINDEX47 =
 {
+"namespacevamp.html#a5a417b0a40d7cecdd386cc4112b06716":[41,0,173,44],
+"namespacevamp.html#a5d9bf3d37752d28c25bcae3081305613":[41,0,173,33],
+"namespacevamp.html#a6e69bf29b86d94e6ac0ccebb1974b477":[41,0,173,26],
+"namespacevamp.html#a6f5a3a3ceb806acbe5fbc8e5725afbe0":[41,0,173,37],
+"namespacevamp.html#a7543f990350947cb7b68bbdd596c43ec":[41,0,173,42],
+"namespacevamp.html#a76f2c7432faf43358e9f61c1e251ff6e":[41,0,173,38],
+"namespacevamp.html#a7967c0b8a9cea93b9053ff15e1bc8e0f":[41,0,173,25],
+"namespacevamp.html#a7ea87104cdea0613c70d08bb55220477":[41,0,173,32],
+"namespacevamp.html#a7fc061a75b951b6d1fb8ae29903e226d":[41,0,173,39],
 "namespacevamp.html#a7fdbecddc0b016a240acd6152be58294":[41,0,173,36],
 "namespacevamp.html#a8cb8caadf34b0bc496aeae335355f8bb":[41,0,173,43],
 "namespacevamp.html#aad7f5ed70166c04065c143c56397aa00":[41,0,173,27],
@@ -240,14 +249,5 @@ var NAVTREEINDEX47 =
 "nav__central_8py.html#a03a4b9afc936746d5950dc3dd6443176":[43,0,4,0,2,2,3,2],
 "nav__central_8py.html#a12f9b4e3d13bf93219b5c2a23513d755":[43,0,4,0,2,2,3,4],
 "nav__central_8py.html#a2b76521918c13d0a97e1ad8c5b97c1f4":[43,0,4,0,2,2,3,1],
-"nav__central_8py.html#a86af41de54cd576d3ea441a7bdf3cd20":[43,0,4,0,2,2,3,3],
-"nav__tasks_8py.html":[43,0,6,2,1,9],
-"nav__tasks_8py.html#a01944ff84bc8dc12cdf7a72c0dde883c":[43,0,6,2,1,9,4],
-"nav__tasks_8py.html#a06867581e22517934311749b093482d2":[43,0,6,2,1,9,5],
-"nav__tasks_8py.html#a564154d84694edae2c6fd15d69727e26":[43,0,6,2,1,9,6],
-"nav__tasks_8py.html#a9a2d4f87aa57336387019a4c212a4421":[43,0,6,2,1,9,1],
-"nav__tasks_8py.html#aaa6317693f3b134161888ffcfccb40a4":[43,0,6,2,1,9,2],
-"nav__tasks_8py.html#ac8dd71a92d881ab3f302428e124e2b6b":[43,0,6,2,1,9,7],
-"nav__tasks_8py.html#acc890b29dfb4b801e928d25ae0b12452":[43,0,6,2,1,9,3],
-"nav__ui_8py.html":[43,0,4,0,1,3,1]
+"nav__central_8py.html#a86af41de54cd576d3ea441a7bdf3cd20":[43,0,4,0,2,2,3,3]
 };

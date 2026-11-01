@@ -61,8 +61,10 @@ var test__pick__and__place_8py =
     [ "test_the_pour_picks_a_shape_object_with_gpd", "test__pick__and__place_8py.html#a0a61b542c5a6eca4ecbc8a3a9826510f", null ],
     [ "test_tilt_direction_defaults_positive_when_undetermined", "test__pick__and__place_8py.html#a1dc1d736578aa0ab769f27329a82989f", null ],
     [ "test_tilt_direction_follows_the_container", "test__pick__and__place_8py.html#aff35a6e48776100633fffdc4025f0f3a", null ],
+    [ "test_tilted_cylinder_is_placed_top_down_at_the_pick_height", "test__pick__and__place_8py.html#ae048ecb318961bcd0efff8b72a2fa59b", null ],
     [ "test_tip_offset_uses_the_per_strategy_parameter", "test__pick__and__place_8py.html#aee2ef90d2e69ac5ea5aef65153b1b674", null ],
     [ "test_trash_place_goes_to_the_pose_from_the_grasp_generator", "test__pick__and__place_8py.html#a53ce7cc0440f42f3186c5be55faa33b9", null ],
     [ "test_unknown_key_in_profile_is_rejected", "test__pick__and__place_8py.html#ac5a3b8b39165d32fd1ebb3a366a78f80", null ],
+    [ "tilted_pick", "test__pick__and__place_8py.html#a7f6786ce6a6b39b43bf0e53121fd1a2f", null ],
     [ "PROFILES_PATH", "test__pick__and__place_8py.html#a00f1fcafc09e09a517e6d047f9d5a516", null ]
 ];

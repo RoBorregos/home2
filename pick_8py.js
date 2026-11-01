@@ -21,6 +21,7 @@ var pick_8py =
     [ "_rotate_about_approach", "pick_8py.html#a5e542ff0cbf613ed8b0f32719d830457", null ],
     [ "_run_strategy", "pick_8py.html#aae8ec324d33e3f737d0c98985ff14593", null ],
     [ "_select_candidates", "pick_8py.html#a88e5e8e7143e76ec2648369beff4924f", null ],
+    [ "_top_down_pick_height", "pick_8py.html#aa12e73b9ddcca97f093178bb59a8c2c5", null ],
     [ "execute", "pick_8py.html#ac531bf60bb878f10174f266640f25ba9", null ],
     [ "CFG_PATHS", "pick_8py.html#aca25a291ae4e3facc46f03c6716055d0", null ],
     [ "DEFAULT_STARE_POSE", "pick_8py.html#a750133556028c7985279665f1072e97e", null ],

@@ -137,10 +137,12 @@ var NAVTREEINDEX34 =
 "geometric__grasps_8py.html#af9e8924f877525353381300aecb5eaf1":[43,0,3,0,4,2,1,38],
 "geometric__grasps_8py.html#afec75bad7586c78ff62f58a4d3f57793":[43,0,3,0,4,2,1,30],
 "geometry_8py.html":[43,0,3,0,5,1,1,2],
-"geometry_8py.html#a2e9a0b2da702b4a015e417f411b7d23d":[43,0,3,0,5,1,1,2,1],
-"geometry_8py.html#a35f9bc970277503247e658f3c221e675":[43,0,3,0,5,1,1,2,3],
+"geometry_8py.html#a1a8dd9dce06dfdeab5f2b2bbe975f379":[43,0,3,0,5,1,1,2,1],
+"geometry_8py.html#a2e9a0b2da702b4a015e417f411b7d23d":[43,0,3,0,5,1,1,2,2],
+"geometry_8py.html#a35f9bc970277503247e658f3c221e675":[43,0,3,0,5,1,1,2,4],
 "geometry_8py.html#a487048d9bd8f3c6bc2de5c3256acd25f":[43,0,3,0,5,1,1,2,0],
-"geometry_8py.html#ab6808c85a34ed048dfc8e449916d5bbd":[43,0,3,0,5,1,1,2,2],
+"geometry_8py.html#ab6808c85a34ed048dfc8e449916d5bbd":[43,0,3,0,5,1,1,2,3],
+"geometry_8py.html#afcb30d31f6421636477b648c27001a44":[43,0,3,0,5,1,1,2,5],
 "globals.html":[43,1,0],
 "globals_defs.html":[43,1,6],
 "globals_enum.html":[43,1,4],
@@ -247,7 +249,5 @@ var NAVTREEINDEX34 =
 "hand__task__manager_8py.html#a99cf5ff5956cbf1fe5d95cd0d41ba15e":[43,0,6,1,0,9,3],
 "heatmapPlace__Server_8py.html":[43,0,3,0,6,1,0],
 "heatmapPlace__Server_8py.html#a10435d751d9f6423cad540218af8f216":[43,0,3,0,6,1,0,2],
-"heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[43,0,3,0,6,1,0,1],
-"help__me__carry_8py.html":[43,0,6,1,0,10],
-"help__me__carry_8py.html#ab5e4a679e827451f1c0776fcf4137ac0":[43,0,6,1,0,10,2]
+"heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[43,0,3,0,6,1,0,1]
 };

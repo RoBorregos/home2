@@ -87,6 +87,7 @@ var manipulation__constants_8py =
     [ "SHELF_REACH_SLOPE", "manipulation__constants_8py.html#a9a1cee59e55b198168e8efe9a4b8acec", null ],
     [ "TOGGLE_SERVO_SERVICE", "manipulation__constants_8py.html#ab2f8c97db5ed38418102404a5fcdacc1", null ],
     [ "TOGGLE_SERVO_TOPIC", "manipulation__constants_8py.html#a6aaf2e16c447f7ca03df763bd4a0f754", null ],
+    [ "TOP_GRASP_DEPTH", "manipulation__constants_8py.html#abf39c0ae9daed5e6afad603aac759d52", null ],
     [ "TRASH_BIN_NAME", "manipulation__constants_8py.html#a5eb759b00b661c3ef19e217417323b4c", null ],
     [ "XARM_ALL_JOINTS_ID", "manipulation__constants_8py.html#a5108267149097acd78fdfdf07f41fdc0", null ],
     [ "XARM_CLEAN_ERROR_SERVICE", "manipulation__constants_8py.html#a340952326c50f0de5f8bb3c56fbd78c2", null ],

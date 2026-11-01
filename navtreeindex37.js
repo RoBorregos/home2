@@ -1,5 +1,8 @@
 var NAVTREEINDEX37 =
 {
+"md_docs_ai_navigation_architecture.html#autotoc_md229":[21,4,2],
+"md_docs_ai_navigation_architecture.html#autotoc_md231":[21,5],
+"md_docs_ai_navigation_architecture.html#autotoc_md232":[21,6],
 "md_docs_ai_navigation_architecture.html#autotoc_md233":[21,7],
 "md_docs_ai_navigation_architecture.html#autotoc_md234":[21,7,0],
 "md_docs_ai_navigation_architecture.html#autotoc_md235":[21,7,1],
@@ -246,8 +249,5 @@ var NAVTREEINDEX37 =
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md45":[3,3,0,1],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md46":[3,3,0,1,0],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md47":[3,3,0,1,1],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md48":[3,3,0,1,2],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md49":[3,3,1],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md50":[3,3,1,0],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md51":[3,3,1,1]
+"md_manipulation_packages_vamp_resources_README.html#autotoc_md48":[3,3,0,1,2]
 };
