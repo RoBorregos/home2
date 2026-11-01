@@ -101,7 +101,7 @@ class ManipulationCore(Node):
             execute_callback=self.manipulation_callback,
             cancel_callback=self._cancel_callback,
             callback_group=self.callback_group,
-            goal_callback=self.goal_callback
+            goal_callback=self.goal_callback,
         )
         self._go_to_hand_server = ActionServer(
             self,
@@ -109,14 +109,14 @@ class ManipulationCore(Node):
             GO_TO_HAND_ACTION_SERVER,
             execute_callback=self.go_to_hand_callback,
             callback_group=self.callback_group,
-            goal_callback=self.goal_callback
+            goal_callback=self.goal_callback,
         )
         self._fixed_distance_move_srv = self.create_service(
             FixedDistanceMove,
             FIXED_DISTANCE_MOVE_SERVICE,
             self._fixed_distance_move_cb,
             callback_group=self.callback_group,
-            goal_callback=self.goal_callback
+            goal_callback=self.goal_callback,
         )
         self._setup_follow()
 
@@ -187,7 +187,9 @@ class ManipulationCore(Node):
                 else:
                     goal_handle.abort()
             except PickHardwareError as exc:
-                self.get_logger().error(f"Manipulation task stopped, hardware fault: {exc}")
+                self.get_logger().error(
+                    f"Manipulation task stopped, hardware fault: {exc}"
+                )
                 goal_handle.abort()
             except Exception as exc:
                 self.get_logger().error(f"Manipulation task failed: {exc}")
@@ -195,7 +197,9 @@ class ManipulationCore(Node):
             finally:
                 self.arm.release_goal()
 
-            self.get_logger().info(f"[DONE] task {request.task_type} -> {result.success}")
+            self.get_logger().info(
+                f"[DONE] task {request.task_type} -> {result.success}"
+            )
             return result
         finally:
             self._task_lock.release()

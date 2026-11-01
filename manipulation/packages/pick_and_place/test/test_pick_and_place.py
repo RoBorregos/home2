@@ -636,7 +636,9 @@ def test_a_second_goal_is_rejected_once_one_is_accepted(core):
 
 def test_a_go_to_hand_goal_holds_the_same_lock(core):
     seen = []
-    core.arm.move_to_pose = lambda pose, **kwargs: seen.append(core.goal_callback(None)) or True
+    core.arm.move_to_pose = (
+        lambda pose, **kwargs: seen.append(core.goal_callback(None)) or True
+    )
     point = PointStamped()
     point.header.frame_id = "base_link"
     request = type("R", (), {"point": point, "hand_offset": 0.1})()
@@ -647,7 +649,11 @@ def test_a_go_to_hand_goal_holds_the_same_lock(core):
     assert not core._task_lock.locked()
 
 
-@pytest.mark.parametrize("outcome", [True, False, RuntimeError("boom")], ids=["success", "failure", "exception"])
+@pytest.mark.parametrize(
+    "outcome",
+    [True, False, RuntimeError("boom")],
+    ids=["success", "failure", "exception"],
+)
 def test_the_lock_is_released_however_a_task_ends(core, outcome):
     def pipeline(request):
         if isinstance(outcome, Exception):
