@@ -602,6 +602,10 @@ class HRITasks:
         use_keyword: bool = True,
         retries: int = 3,
         wait_between_retries: float = 5,
+        query: str = "",
+        context: str = "",
+        target: str = "",
+        hotwords: str = "",
     ):
         """
         Method to confirm a specific question. Could be used for deus ex machina, to confirm a specific action.
@@ -611,9 +615,14 @@ class HRITasks:
             use_keyword: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             wait_between_retries: the amount of time to wait between retries
+            query: if set, the user may correct the value being confirmed (e.g. "No, I said Andres"); the correction is extracted with this query. "yes" is still caught by the keyword filter while listening; a "no" waits for the rest of the reply to look for a correction.
+            context: context for the correction extraction
+            target: the value being confirmed, used to tell a correction apart from a repetition
+            hotwords: hotwords for the STT when listening for a correction
         Returns:
             Status: the status of the execution
-            str: "yes" (user confirms), "no" (user doesn't confirm), or "" (no response interpreted).
+            str: "yes" (user confirms), "no" (user doesn't confirm), "" (no response interpreted),
+                or the corrected value (only when query is set).
         """
         Logger.info(
             self.node,
@@ -623,10 +632,40 @@ class HRITasks:
         while current_attempt < retries:
             current_attempt += 1
 
-            # Say the question
             self.say(question)
 
-            if use_keyword:
+            if query:
+                self.keyword = ""
+                accepted_future = self.hear_streaming(
+                    timeout=wait_between_retries, hotwords=hotwords, silence_time=1.0
+                )
+                rclpy.spin_until_future_complete(
+                    self.node, accepted_future, timeout_sec=wait_between_retries + 1
+                )
+                goal_future = accepted_future.result().get_result_async()
+
+                heard_no = False
+                while not goal_future.done():
+                    words = format_transcription(self.current_transcription)
+                    if "no" in words or self.keyword == "no":
+                        # Keep listening: "No, I said Andres" carries the correction after the "no"
+                        heard_no = True
+                    elif not heard_no and ("yes" in words or self.keyword == "yes"):
+                        self.cancel_hear_action()
+                        return Status.EXECUTION_SUCCESS, "yes"
+                    rclpy.spin_once(self.node, timeout_sec=0.1)
+                self.cancel_hear_action()
+
+                text = goal_future.result().result.transcription.strip()
+                if text == self.last_hotwords.strip():
+                    text = ""
+                keyword = "no" if heard_no else self.keyword
+                answer = self._interpret_confirmation(
+                    text, target, query, context, hotwords, keyword=keyword
+                )
+                if answer:
+                    return Status.EXECUTION_SUCCESS, answer
+            elif use_keyword:
                 # self.say("Please confirm by saying yes or no")
 
                 s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
@@ -678,6 +717,97 @@ class HRITasks:
             "Confirmation timed out for: " + question,
         )
         return Status.TIMEOUT, ""
+
+    def _interpret_confirmation(
+        self,
+        text: str,
+        target: str,
+        query: str,
+        context: str = "",
+        hotwords: str = "",
+        keyword: str = "",
+    ) -> str:
+        """Classify a reply to "Did you say <target>?".
+
+        The yes/no keyword decides first; the query only turns a "no" (or a reply with no
+        keyword) into a correction when it extracts a value different from the target.
+
+        Args:
+            keyword: "yes"/"no" from the keyword spotter while listening, "" if none was heard.
+        Returns:
+            str: "yes", "no", "" (nothing heard) or the corrected value extracted with query.
+        """
+        text = (text or "").strip()
+        if text == hotwords.strip():
+            text = ""
+        words = format_transcription(text) if text else []
+
+        # The transcription's keyword wins over the keyword spotter, like interpret_keyword
+        if "no" in words:
+            keyword = "no"
+        elif contains_any(words, ["yes"]) or contains_any(words, self.positive):
+            keyword = "yes"
+
+        if keyword == "yes":
+            return "yes"
+        if not words or words == ["no"]:
+            return keyword
+
+        s, value = self.extract_data(query, text, context)
+        value = value.strip() if s == Status.EXECUTION_SUCCESS else ""
+        if value and remove_punctuation(value) != remove_punctuation(target):
+            return value
+        if keyword == "no":
+            return "no"
+        if value:
+            # shortcut: only a leading "not" negates a repeated target ("not coffee"), upgrade to an LLM classifier if replies get more varied
+            return "no" if words[0] == "not" else "yes"
+
+        s, positive = self.is_positive(text)
+        return "yes" if s == Status.EXECUTION_SUCCESS and positive else "no"
+
+    def _match_answer(
+        self, target_info: str, options: list[str] | None = None, remap: dict | None = None
+    ):
+        """Map an answer to the closest option and apply the remap.
+
+        Returns:
+            str: the matched (and remapped) answer
+            bool: whether an option was found (True when no options are given)
+            float: similarity to the matched option
+            bool: whether the match was exact
+        """
+        target_found = options is None
+        similarity = 1
+        found_exact = False
+        if options is not None:
+            normalized_target_info = remove_punctuation(target_info)
+            for option in options:
+                normalized_option = remove_punctuation(option)
+                if (
+                    normalized_option == normalized_target_info
+                    or normalized_option in normalized_target_info
+                ):
+                    target_info = option
+                    found_exact = True
+                    target_found = True
+                    break
+
+            if not found_exact:
+                s, similarity_list = self.find_closest(options, target_info)
+                if s == Status.EXECUTION_SUCCESS:
+                    target_found = True
+                    target_info = similarity_list.results[0]
+                    similarity = similarity_list.similarities[0]
+
+        if remap is not None:
+            normalized_target_info = remove_punctuation(target_info)
+            for remap_key, remap_value in remap.items():
+                if remove_punctuation(remap_key) == normalized_target_info:
+                    target_info = remap_value
+                    break
+
+        return target_info, target_found, similarity, found_exact
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_answer"))
     def ask_and_confirm(
@@ -745,29 +875,11 @@ class HRITasks:
                         target_found = True
 
                     # If extracted data options provided look for exact or closest match
-                    if options is not None:
-                        foundExact = False
-                        normalized_target_info = remove_punctuation(target_info)
-                        for option in options:
-                            normalized_option = remove_punctuation(option)
-                            if (
-                                normalized_option == normalized_target_info
-                                or normalized_option in normalized_target_info
-                            ):
-                                target_info = option
-                                foundExact = True
-                                target_found = True
-                                skip_confirmation = (
-                                    True  # Skip confirmation if an exact match is found
-                                )
-                                break
-
-                        if not foundExact:
-                            s, similarity_list = self.find_closest(options, target_info)
-                            if s == Status.EXECUTION_SUCCESS:
-                                target_found = True
-                                target_info = similarity_list.results[0]
-                                similarity = similarity_list.similarities[0]
+                    target_info, target_found, similarity, found_exact = self._match_answer(
+                        target_info, options
+                    )
+                    if found_exact:
+                        skip_confirmation = True  # Skip confirmation if an exact match is found
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
                     normalized_confidences = {
@@ -792,12 +904,7 @@ class HRITasks:
                         skip_confirmation = True
 
                     # Remap the target_info if a remap dictionary is provided
-                    if remap is not None:
-                        normalized_target_info = remove_punctuation(target_info)
-                        for remap_key, remap_value in remap.items():
-                            if remove_punctuation(remap_key) == normalized_target_info:
-                                target_info = remap_value
-                                break
+                    target_info = self._match_answer(target_info, remap=remap)[0]
 
                 except Exception as e:
                     print("Failed matching result:", e)
@@ -811,11 +918,33 @@ class HRITasks:
                 else:
                     confirmation_text = confirm_question
 
-                # Ask for confirmation
-                if target_info != "" and target_found:
-                    s, confirmation = self.confirm(confirmation_text, use_keyword, 3)
+                # Ask for confirmation, letting the user correct the value without repeating the question
+                for _ in range(retries):
+                    if target_info == "" or not target_found:
+                        break
+                    s, confirmation = self.confirm(
+                        confirmation_text,
+                        use_keyword,
+                        3,
+                        query="" if skip_extract_data else query,
+                        context=context,
+                        target=target_info,
+                        hotwords=hotwords,
+                    )
                     if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
                         return Status.EXECUTION_SUCCESS, target_info
+                    if s != Status.EXECUTION_SUCCESS or confirmation in ("no", ""):
+                        break
+                    Logger.info(self.node, f"User corrected the answer to: {confirmation}")
+                    try:
+                        target_info, target_found, _, _ = self._match_answer(
+                            confirmation, options, remap
+                        )
+                    except Exception as e:
+                        print("Failed matching result:", e)
+                        break
+                    if callable(confirm_question):
+                        confirmation_text = confirm_question(confirmation, target_info)
 
             # Wait for the minimum time between retries
             while (
