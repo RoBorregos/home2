@@ -615,7 +615,7 @@ class HRITasks:
             use_keyword: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             wait_between_retries: the amount of time to wait between retries
-            query: if set, the user may correct the value being confirmed (e.g. "No, I said Andres"); the correction is extracted with this query. Ignores use_keyword.
+            query: if set, the user may correct the value being confirmed (e.g. "No, I said Andres"); the correction is extracted with this query. "yes" is still caught by the keyword filter while listening; a "no" waits for the rest of the reply to look for a correction.
             context: context for the correction extraction
             target: the value being confirmed, used to tell a correction apart from a repetition
             hotwords: hotwords for the STT when listening for a correction
@@ -635,12 +635,34 @@ class HRITasks:
             self.say(question)
 
             if query:
-                _, text, _ = self.hear(
-                    hotwords=hotwords,
-                    silence_time=1.0,
-                    max_audio_length=wait_between_retries,
+                self.keyword = ""
+                accepted_future = self.hear_streaming(
+                    timeout=wait_between_retries, hotwords=hotwords, silence_time=1.0
                 )
-                answer = self._interpret_confirmation(text, target, query, context, hotwords)
+                rclpy.spin_until_future_complete(
+                    self.node, accepted_future, timeout_sec=wait_between_retries + 1
+                )
+                goal_future = accepted_future.result().get_result_async()
+
+                heard_no = False
+                while not goal_future.done():
+                    words = format_transcription(self.current_transcription)
+                    if "no" in words or self.keyword == "no":
+                        # Keep listening: "No, I said Andres" carries the correction after the "no"
+                        heard_no = True
+                    elif not heard_no and ("yes" in words or self.keyword == "yes"):
+                        self.cancel_hear_action()
+                        return Status.EXECUTION_SUCCESS, "yes"
+                    rclpy.spin_once(self.node, timeout_sec=0.1)
+                self.cancel_hear_action()
+
+                text = goal_future.result().result.transcription.strip()
+                if text == self.last_hotwords.strip():
+                    text = ""
+                keyword = "no" if heard_no else self.keyword
+                answer = self._interpret_confirmation(
+                    text, target, query, context, hotwords, keyword=keyword
+                )
                 if answer:
                     return Status.EXECUTION_SUCCESS, answer
             elif use_keyword:
@@ -697,30 +719,49 @@ class HRITasks:
         return Status.TIMEOUT, ""
 
     def _interpret_confirmation(
-        self, text: str, target: str, query: str, context: str = "", hotwords: str = ""
+        self,
+        text: str,
+        target: str,
+        query: str,
+        context: str = "",
+        hotwords: str = "",
+        keyword: str = "",
     ) -> str:
         """Classify a reply to "Did you say <target>?".
 
+        The yes/no keyword decides first; the query only turns a "no" (or a reply with no
+        keyword) into a correction when it extracts a value different from the target.
+
+        Args:
+            keyword: "yes"/"no" from the keyword spotter while listening, "" if none was heard.
         Returns:
             str: "yes", "no", "" (nothing heard) or the corrected value extracted with query.
         """
         text = (text or "").strip()
-        if not text or text == hotwords.strip():
-            return ""
+        if text == hotwords.strip():
+            text = ""
+        words = format_transcription(text) if text else []
 
-        words = format_transcription(text)
-        if words == ["no"]:
-            return "no"
-        if "no" not in words and (
-            contains_any(words, ["yes"]) or contains_any(words, self.positive)
-        ):
+        # The transcription's keyword wins over the keyword spotter, like interpret_keyword
+        if "no" in words:
+            keyword = "no"
+        elif contains_any(words, ["yes"]) or contains_any(words, self.positive):
+            keyword = "yes"
+
+        if keyword == "yes":
             return "yes"
+        if not words or words == ["no"]:
+            return keyword
 
         s, value = self.extract_data(query, text, context)
-        if s == Status.EXECUTION_SUCCESS and value.strip():
-            if remove_punctuation(value) != remove_punctuation(target):
-                return value
-            return "no" if words[0] in ("no", "not") else "yes"
+        value = value.strip() if s == Status.EXECUTION_SUCCESS else ""
+        if value and remove_punctuation(value) != remove_punctuation(target):
+            return value
+        if keyword == "no":
+            return "no"
+        if value:
+            # shortcut: only a leading "not" negates a repeated target ("not coffee"), upgrade to an LLM classifier if replies get more varied
+            return "no" if words[0] == "not" else "yes"
 
         s, positive = self.is_positive(text)
         return "yes" if s == Status.EXECUTION_SUCCESS and positive else "no"
