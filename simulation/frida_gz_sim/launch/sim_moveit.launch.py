@@ -17,7 +17,9 @@ from launch_ros.substitutions import FindPackageShare
 
 def launch_setup(context, *args, **kwargs):
     show_rviz = LaunchConfiguration("show_rviz")
-    moveit_config = build_moveit_config(context)
+    moveit_config = build_moveit_config(
+        context, LaunchConfiguration("planner").perform(context)
+    )
 
     moveit_common = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -44,6 +46,12 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("show_rviz", default_value="false"),
+            DeclareLaunchArgument(
+                "planner",
+                default_value="ompl",
+                choices=["ompl", "vamp"],
+                description="Default MoveIt planning pipeline",
+            ),
             OpaqueFunction(function=launch_setup),
         ]
     )

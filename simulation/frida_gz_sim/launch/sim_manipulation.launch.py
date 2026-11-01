@@ -8,8 +8,13 @@ from launch.actions import (
     IncludeLaunchDescription,
     OpaqueFunction,
 )
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import (
+    EqualsSubstitution,
+    LaunchConfiguration,
+    PathJoinSubstitution,
+)
 from launch_ros.actions import Node, SetParameter, SetRemap
 from launch_ros.substitutions import FindPackageShare
 
@@ -33,6 +38,12 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("show_rviz", default_value="false"),
+            DeclareLaunchArgument(
+                "planner",
+                default_value="ompl",
+                choices=["ompl", "vamp"],
+                description="Default MoveIt planning pipeline",
+            ),
             # pick_and_place.launch.py no longer takes a use_sim_time argument, so set it
             # for every node launched from here; they must read TF against /clock
             SetParameter(name="use_sim_time", value=True),
@@ -70,10 +81,25 @@ def generate_launch_description():
                             )
                         ),
                         launch_arguments={
-                            "show_rviz": LaunchConfiguration("show_rviz")
+                            "show_rviz": LaunchConfiguration("show_rviz"),
+                            "planner": LaunchConfiguration("planner"),
                         }.items(),
                     ),
                 ]
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("vamp_moveit_plugin"),
+                            "launch",
+                            "vamp_server.launch.py",
+                        ]
+                    )
+                ),
+                condition=IfCondition(
+                    EqualsSubstitution(LaunchConfiguration("planner"), "vamp")
+                ),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(

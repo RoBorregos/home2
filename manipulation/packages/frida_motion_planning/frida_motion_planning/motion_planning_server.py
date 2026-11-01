@@ -359,9 +359,6 @@ class MotionPlanningServer(Node):
             else 0.05
         )
 
-        original_planner = self.planner.moveit2.planner_id
-
-        # Try planning with requested planner
         was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
             pose=pose,
             target_link=target_link,
@@ -371,21 +368,6 @@ class MotionPlanningServer(Node):
         )
         if was_plan_successful and goal_handle.request.planner_id == "cartesian":
             self._slow_cartesian(trajectory_plan)
-
-        # Fallback to RRTConnect if requested planner (e.g. VAMP) fails
-        if not was_plan_successful and original_planner == "vamp":
-            self.get_logger().warn(
-                "VAMP planning failed, falling back to RRTConnect..."
-            )
-            self.planner.set_planner("RRTConnect")
-            was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
-                pose=pose,
-                target_link=target_link,
-                tolerance_position=tolerance_position,
-                tolerance_orientation=tolerance_orientation,
-            )
-            # Restore original planner setting
-            self.planner.set_planner(original_planner)
 
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
@@ -435,26 +417,12 @@ class MotionPlanningServer(Node):
         self._joint_goal_target_pub.publish(msg)
         self._call_ensure_arm_ready()
         self.get_logger().info("Planning joint goal...")
-        original_planner = self.planner.moveit2.planner_id
         was_plan_successful, trajectory_plan = self.planner.plan_joint_goal(
             joint_positions,
             joint_names,
             # wait=True,
             # set_mode=False,
         )
-
-        # Fallback to RRTConnect if requested planner (e.g. VAMP) fails
-        if not was_plan_successful and original_planner == "vamp":
-            self.get_logger().warn(
-                "VAMP planning failed, falling back to RRTConnect..."
-            )
-            self.planner.set_planner("RRTConnect")
-            was_plan_successful, trajectory_plan = self.planner.plan_joint_goal(
-                joint_positions,
-                joint_names,
-            )
-            # Restore original planner setting
-            self.planner.set_planner(original_planner)
 
         self.get_logger().info(f"Move Joints Result: {was_plan_successful}")
         if was_plan_successful:

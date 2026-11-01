@@ -1,0 +1,11 @@
+vamp_server:
+  ros__parameters:
+    # VAMP robot module built from resources/frida_real.hh
+    robot: frida_real
+    # Padding added to every obstacle (m); FCL rechecks the path afterwards, so keep it small for close grasps
+    collision_margin: 0.01
+    # End effector disagreement with MoveIt (m) that flags an outdated sphere model
+    model_tolerance: 0.01
+    # RRT-Connect settings (VAMP defaults)
+    range: 2.0
+    max_iterations: 100000

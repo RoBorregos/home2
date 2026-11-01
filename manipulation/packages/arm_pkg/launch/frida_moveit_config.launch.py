@@ -21,6 +21,7 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 from arm_pkg.moveit_configs_builder import MoveItConfigsBuilder
+from arm_pkg.vamp_pipeline import add_vamp_pipeline
 from uf_ros_lib.uf_robot_utils import generate_ros2_control_params_temp_file
 
 
@@ -38,6 +39,7 @@ def launch_setup(context, *args, **kwargs):
     default_gripper_baud = LaunchConfiguration("default_gripper_baud", default=2000000)
 
     show_rviz = LaunchConfiguration("show_rviz", default=True)
+    planner = LaunchConfiguration("planner").perform(context)
 
     dof = LaunchConfiguration("dof", default=6)
     robot_type = LaunchConfiguration("robot_type", default="xarm")
@@ -151,6 +153,22 @@ def launch_setup(context, *args, **kwargs):
         )
         .to_moveit_configs()
     )
+    vamp_launch = []
+    if planner == "vamp":
+        add_vamp_pipeline(moveit_config, default=True)
+        vamp_launch = [
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("vamp_moveit_plugin"),
+                            "launch",
+                            "vamp_server.launch.py",
+                        ]
+                    )
+                )
+            )
+        ]
 
     # robot description launch
     robot_description_launch = IncludeLaunchDescription(
@@ -265,6 +283,7 @@ def launch_setup(context, *args, **kwargs):
         ros2_control_launch,
         control_node,
         downsample_pcd,
+        *vamp_launch,
     ]
 
 
@@ -275,6 +294,12 @@ def generate_launch_description():
                 "debug",
                 default_value="false",
                 description="If true, sets log level to INFO to show more details. Default is false (WARN level) for cleaner output.",
+            ),
+            DeclareLaunchArgument(
+                "planner",
+                default_value="ompl",
+                choices=["ompl", "vamp"],
+                description="Default planning pipeline; vamp also starts the VAMP server and falls back to OMPL.",
             ),
             OpaqueFunction(function=launch_setup),
         ]

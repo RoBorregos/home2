@@ -1,0 +1,10 @@
+{
+    "name": "FRIDA_Real",
+    "urdf": "frida_real_spherized.urdf",
+    "srdf": "robot.srdf",
+    "end_effector": "link_eef",
+    "resolution": 32,
+    "template": "templates/fk_template.hh",
+    "subtemplates": [{"name": "ccfk", "template": "templates/ccfk_template.hh"}],
+    "output": "frida_real.hh"
+}
