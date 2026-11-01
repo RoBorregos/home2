@@ -94,7 +94,7 @@ GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Object-name sets consumed by the pick strategy classifier
 BOWL_NAME = "bowl"
-RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME, "cup"]
+RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME]
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
 
 GENERATE_GRASPS_SERVICE = "/manipulation/generate_grasps"

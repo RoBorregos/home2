@@ -575,7 +575,7 @@ class _Request:
             "P",
             (),
             {
-                "object_name": "cup",
+                "object_name": "basket",
                 "object_point": None,
                 "min_distance": 0.0,
                 "max_distance": 1.0,
@@ -761,7 +761,7 @@ def test_a_request_without_a_name_goes_to_gpd(name):
     [
         ("coke", False, PICK_STRATEGY_GEOMETRIC),
         ("coke", True, PICK_STRATEGY_GPD),
-        ("cup", True, PICK_STRATEGY_RIM),
+        ("basket", True, PICK_STRATEGY_RIM),
     ],
 )
 def test_force_gpd_only_overrides_the_geometric_default(name, force_gpd, expected):
