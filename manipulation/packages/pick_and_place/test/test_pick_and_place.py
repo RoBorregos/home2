@@ -33,7 +33,9 @@ from frida_constants.manipulation_constants import (
     SAFETY_HEIGHT_GEOMETRIC,
 )
 from frida_interfaces.msg import ManipulationTask, PlaceParams
+from geometry_msgs.msg import PointStamped
 from pathlib import Path
+from rclpy.action import GoalResponse
 from perception_3d.geometric_grasps import approaches
 from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import (
@@ -554,6 +556,7 @@ def core():
     node.get_logger = lambda: node._logger
     node._last_pick = PickOutcome()
     node._follow_lock = threading.Lock()
+    node._task_lock = threading.Lock()
     node._face = follow_pipeline.FaceState()
     node._person = follow_pipeline.PersonState()
     node._pipelines = {
@@ -607,6 +610,12 @@ class _GoalHandle:
         pass
 
 
+def _serve(core, callback, goal_handle):
+    """What the action server does: accept the goal, which takes the lock, then run it."""
+    assert core.goal_callback(goal_handle.request) == GoalResponse.ACCEPT
+    return asyncio.run(callback(goal_handle))
+
+
 def test_a_task_goal_stops_face_following_before_the_pipeline_runs(core, no_sleep):
     follow_pipeline.face_on(core.arm, core._face)
     seen = []
@@ -614,10 +623,49 @@ def test_a_task_goal_stops_face_following_before_the_pipeline_runs(core, no_slee
         list(core.arm.calls)
     )
 
-    asyncio.run(core.manipulation_callback(_GoalHandle(_Request())))
+    _serve(core, core.manipulation_callback, _GoalHandle(_Request()))
 
     assert "leave_joint_velocity_mode" in seen[0]
     assert not core._face.is_following_face_active
+
+
+def test_a_second_goal_is_rejected_once_one_is_accepted(core):
+    assert core.goal_callback(None) == GoalResponse.ACCEPT
+    assert core.goal_callback(None) == GoalResponse.REJECT
+
+
+def test_a_go_to_hand_goal_holds_the_same_lock(core):
+    seen = []
+    core.arm.move_to_pose = lambda pose, **kwargs: seen.append(core.goal_callback(None)) or True
+    point = PointStamped()
+    point.header.frame_id = "base_link"
+    request = type("R", (), {"point": point, "hand_offset": 0.1})()
+
+    _serve(core, core.go_to_hand_callback, _GoalHandle(request))
+
+    assert seen == [GoalResponse.REJECT]
+    assert not core._task_lock.locked()
+
+
+@pytest.mark.parametrize("outcome", [True, False, RuntimeError("boom")], ids=["success", "failure", "exception"])
+def test_the_lock_is_released_however_a_task_ends(core, outcome):
+    def pipeline(request):
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+    core._pipelines[ManipulationTask.PICK] = pipeline
+    _serve(core, core.manipulation_callback, _GoalHandle(_Request()))
+
+    assert not core._task_lock.locked()
+
+
+def test_the_lock_is_released_after_an_early_return(core):
+    core.arm._estop = True
+
+    _serve(core, core.manipulation_callback, _GoalHandle(_Request()))
+
+    assert not core._task_lock.locked()
 
 
 def test_every_task_type_has_a_pipeline(core):

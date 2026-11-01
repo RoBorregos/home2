@@ -30,7 +30,7 @@ from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import FixedDistanceMove, FollowFace
 from frida_motion_planning.utils.tf_utils import transform_point
 from geometry_msgs.msg import Point, PoseStamped, Twist
-from rclpy.action import ActionServer, CancelResponse
+from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from std_msgs.msg import Float64
@@ -64,6 +64,7 @@ class ManipulationCore(Node):
         # whole pick, so anything on the default mutually-exclusive group could
         # not be serviced while a task runs, and the node would deadlock.
         self.callback_group = ReentrantCallbackGroup()
+        self._task_lock = threading.Lock()
 
         # Physical properties of the gripper; the launch file overrides
         # ee_link_offset. Everything else tuned lives in pick_profiles.yaml.
@@ -100,6 +101,7 @@ class ManipulationCore(Node):
             execute_callback=self.manipulation_callback,
             cancel_callback=self._cancel_callback,
             callback_group=self.callback_group,
+            goal_callback=self.goal_callback
         )
         self._go_to_hand_server = ActionServer(
             self,
@@ -107,12 +109,14 @@ class ManipulationCore(Node):
             GO_TO_HAND_ACTION_SERVER,
             execute_callback=self.go_to_hand_callback,
             callback_group=self.callback_group,
+            goal_callback=self.goal_callback
         )
         self._fixed_distance_move_srv = self.create_service(
             FixedDistanceMove,
             FIXED_DISTANCE_MOVE_SERVICE,
             self._fixed_distance_move_cb,
             callback_group=self.callback_group,
+            goal_callback=self.goal_callback
         )
         self._setup_follow()
 
@@ -133,59 +137,68 @@ class ManipulationCore(Node):
     # ManipulationAction
     # ==================================================================
 
+    def goal_callback(self, goal_request):
+        if not self._task_lock.acquire(blocking=False):
+            self.get_logger().warn("Goal rejected: a task is already running")
+            return GoalResponse.REJECT
+        return GoalResponse.ACCEPT
+
     def _cancel_callback(self, goal_handle):
         self.get_logger().warn("Manipulation task cancellation requested")
         return CancelResponse.ACCEPT
 
     async def manipulation_callback(self, goal_handle):
-        """Dispatch one manipulation task to its pipeline."""
-        request = goal_handle.request
-        result = ManipulationAction.Result()
-        result.success = 0
-
-        if self.arm.estop_active:
-            self.get_logger().warn("E-stop active, aborting manipulation task")
-            goal_handle.abort()
-            return result
-
-        self._preempt_follow()
-
-        pipeline = self._pipelines.get(request.task_type)
-        if pipeline is None:
-            self.get_logger().error(f"Unknown task type: {request.task_type}")
-            goal_handle.abort()
-            return result
-
-        if request.scan_environment:
-            self.get_logger().info("Keeping octomap for environment-aware planning")
-        else:
-            self.arm.clear_octomap()
-
-        self.arm.bind_goal(goal_handle, ManipulationAction.Feedback)
         try:
-            success = pipeline(request)
-            result.success = int(success)
-            if success:
-                goal_handle.succeed()
-            else:
-                goal_handle.abort()
-        except PickAborted as exc:
-            self.get_logger().warn(f"Manipulation task aborted: {exc}")
-            if goal_handle.is_cancel_requested:
-                goal_handle.canceled()
-            else:
-                goal_handle.abort()
-        except PickHardwareError as exc:
-            self.get_logger().error(f"Manipulation task stopped, hardware fault: {exc}")
-            goal_handle.abort()
-        except Exception as exc:
-            self.get_logger().error(f"Manipulation task failed: {exc}")
-            goal_handle.abort()
-        finally:
-            self.arm.release_goal()
+            """Dispatch one manipulation task to its pipeline."""
+            request = goal_handle.request
+            result = ManipulationAction.Result()
+            result.success = 0
 
-        self.get_logger().info(f"[DONE] task {request.task_type} -> {result.success}")
-        return result
+            if self.arm.estop_active:
+                self.get_logger().warn("E-stop active, aborting manipulation task")
+                goal_handle.abort()
+                return result
+
+            self._preempt_follow()
+
+            pipeline = self._pipelines.get(request.task_type)
+            if pipeline is None:
+                self.get_logger().error(f"Unknown task type: {request.task_type}")
+                goal_handle.abort()
+                return result
+
+            if request.scan_environment:
+                self.get_logger().info("Keeping octomap for environment-aware planning")
+            else:
+                self.arm.clear_octomap()
+
+            self.arm.bind_goal(goal_handle, ManipulationAction.Feedback)
+            try:
+                success = pipeline(request)
+                result.success = int(success)
+                if success:
+                    goal_handle.succeed()
+                else:
+                    goal_handle.abort()
+            except PickAborted as exc:
+                self.get_logger().warn(f"Manipulation task aborted: {exc}")
+                if goal_handle.is_cancel_requested:
+                    goal_handle.canceled()
+                else:
+                    goal_handle.abort()
+            except PickHardwareError as exc:
+                self.get_logger().error(f"Manipulation task stopped, hardware fault: {exc}")
+                goal_handle.abort()
+            except Exception as exc:
+                self.get_logger().error(f"Manipulation task failed: {exc}")
+                goal_handle.abort()
+            finally:
+                self.arm.release_goal()
+
+            self.get_logger().info(f"[DONE] task {request.task_type} -> {result.success}")
+            return result
+        finally:
+            self._task_lock.release()
 
     # ==================================================================
     # Pipelines
@@ -257,6 +270,12 @@ class ManipulationCore(Node):
     # ==================================================================
 
     async def go_to_hand_callback(self, goal_handle):
+        try:
+            return self._go_to_hand(goal_handle)
+        finally:
+            self._task_lock.release()
+
+    def _go_to_hand(self, goal_handle):
         """Reach towards a person's hand to hand an object over."""
         self._preempt_follow()
         self.get_logger().info("Executing go to hand goal...")
