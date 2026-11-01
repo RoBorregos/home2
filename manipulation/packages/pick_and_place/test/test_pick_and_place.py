@@ -28,7 +28,6 @@ from fakes import (
 )
 from frida_constants.manipulation_constants import (
     BOWL_NAME,
-    GRIPPER_REACH,
     PRE_GRASP_DISTANCE,
     RIM_NAMES,
     SAFETY_HEIGHT_GEOMETRIC,
@@ -404,15 +403,12 @@ def tilted_pick(height=0.15):
     return PickOutcome(pick_pose=pose, object_pick_height=height, place_top_down=True)
 
 
-def test_tilted_cylinder_is_placed_top_down_over_the_place_point():
-    pick = tilted_pick()
-    pose = place_pipeline._top_down_cylinder_pose(
-        make_pose(x=0.4, y=0.0, z=0.7), pick.pick_pose, pick.object_pick_height
-    )
-    behind = GRIPPER_REACH - place_pipeline.TOP_DOWN_HOLD_BEHIND_TIP
+def test_tilted_cylinder_is_placed_top_down_at_the_pick_height():
+    arm = FakeArm()
+    assert run_place(arm, place_perception(), params(), tilted_pick())
+    pose = arm.poses["move_to_pose"][-1]
     assert approach_axis(pose) == pytest.approx([0.0, 0.0, -1.0], abs=1e-6)
-    assert pose.pose.position.x == pytest.approx(0.4)
-    assert pose.pose.position.z == pytest.approx(0.85 + behind * (1 - np.sqrt(0.5)))
+    assert pose.pose.position.z == pytest.approx(0.70 + 0.15)
 
 
 def test_trash_place_goes_to_the_pose_from_the_grasp_generator():
