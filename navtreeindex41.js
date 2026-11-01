@@ -1,5 +1,6 @@
 var NAVTREEINDEX41 =
 {
+"namespacefrida__constants_1_1vision__constants.html":[41,0,51,6],
 "namespacefrida__constants_1_1vision__constants.html#a033a5597e312e4e911732ea94d904b9c":[41,0,51,6,15],
 "namespacefrida__constants_1_1vision__constants.html#a038a886283e02ea812e2588402bd0bb2":[41,0,51,6,82],
 "namespacefrida__constants_1_1vision__constants.html#a03983d3f159310b7d5cd63db4c94cca2":[41,0,51,6,62],
@@ -248,6 +249,5 @@ var NAVTREEINDEX41 =
 "namespacelidar__setup.html":[41,0,80],
 "namespacelidar__setup.html#a270b8733299546018e10198255b2f9bf":[41,0,80,0],
 "namespacelidar__setup.html#a9990279d91c4caa156096d8ed443c567":[41,0,80,1],
-"namespacelocalization.html":[41,0,81],
-"namespacelocalization.html#a03aa809ae87723efe694476a74017b40":[41,0,81,0]
+"namespacelocalization.html":[41,0,81]
 };

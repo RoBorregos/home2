@@ -12,5 +12,6 @@ var add__primitives_8cpp =
       [ "Z", "add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5", null ]
     ] ],
     [ "main", "add__primitives_8cpp.html#adb27e16249dfa327ea178fe5a5462a66", null ],
-    [ "wait_for_future_with_timeout", "add__primitives_8cpp.html#a403677990f5903485dfa1d2871dd6bc9", null ]
+    [ "wait_for_future_with_timeout", "add__primitives_8cpp.html#a403677990f5903485dfa1d2871dd6bc9", null ],
+    [ "PLANE_THICKNESS", "add__primitives_8cpp.html#acbd4cc18426bad6c566d88a4ff21ef6c", null ]
 ];

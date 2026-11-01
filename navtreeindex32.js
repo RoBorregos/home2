@@ -1,5 +1,6 @@
 var NAVTREEINDEX32 =
 {
+"demo__becas_8py.html#a2151e9e7805453d113a17685d53121a5":[43,0,6,1,0,1,1],
 "demo__becas_8py.html#a9902a055b3e3fc3f06c3da078f398a47":[43,0,6,1,0,1,3],
 "demo__becas_8py.html#ace0e951cda34e5df0d988ac6e774c7a2":[43,0,6,1,0,1,2],
 "demo__ds4_8launch_8py.html":[43,0,3,0,1,2,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX32 =
 "ex__gripper_8py.html":[43,0,3,0,2,0,0],
 "ex__gripper_8py.html#a6be88f1664d375f6790226f8c67eec80":[43,0,3,0,2,0,0,0],
 "ex__joint__goal_8py.html":[43,0,3,0,2,0,1],
-"ex__joint__goal_8py.html#abaf27f3c9452030c3c49c26a423dff79":[43,0,3,0,2,0,1,0],
-"ex__pose__goal_8py.html":[43,0,3,0,2,0,3]
+"ex__joint__goal_8py.html#abaf27f3c9452030c3c49c26a423dff79":[43,0,3,0,2,0,1,0]
 };

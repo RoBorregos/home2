@@ -25,7 +25,7 @@ var classfakes_1_1FakeArm =
     [ "move_joints", "classfakes_1_1FakeArm.html#a450a2ad9a6d2851c644d191d0d3fa9b4", null ],
     [ "move_to_named_position", "classfakes_1_1FakeArm.html#ad191003c7376dafe3c4e76629a2d928b", null ],
     [ "move_to_pose", "classfakes_1_1FakeArm.html#a2a557e6d251ac8ec4d08d45426e6972a", null ],
-    [ "move_to_pregrasp", "classfakes_1_1FakeArm.html#abf6cf968c1136e1baa7c6908b1dda466", null ],
+    [ "move_to_pregrasp", "classfakes_1_1FakeArm.html#a5aae400a655da0a031f5f1fc20c96620", null ],
     [ "now", "classfakes_1_1FakeArm.html#ae69111773cdbdbface6d39145e0c69d7", null ],
     [ "object_height", "classfakes_1_1FakeArm.html#a1a8b50ac3c8381be5e4c9e025fbb7a76", null ],
     [ "object_pick_height", "classfakes_1_1FakeArm.html#a2ff54dee32abde6ef0b1a5b16a8192f5", null ],

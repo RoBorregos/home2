@@ -40,7 +40,7 @@ var classpick__and__place_1_1robot_1_1arm_1_1RobotArm =
     [ "move_joints", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a242ce12006c1fe489ce90ac605a978e7", null ],
     [ "move_to_named_position", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a754b19993eb2af07ae4077c74c6ab381", null ],
     [ "move_to_pose", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ab9449afd9e7539090b84971c523cb844", null ],
-    [ "move_to_pregrasp", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#acbff9470cadc730c3f1eeaf6735b30b9", null ],
+    [ "move_to_pregrasp", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ab61edd8e8687b265c820728868645040", null ],
     [ "now", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a16252ccd6acd7abc8053ada5b3a0743b", null ],
     [ "object_height", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a6f2b2793e53d0116812628da08a82b2e", null ],
     [ "object_pick_height", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ae0096c6e79f38e0608767f82b58f4ac0", null ],

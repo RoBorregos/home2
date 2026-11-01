@@ -1,5 +1,6 @@
 var NAVTREEINDEX40 =
 {
+"namespacefollow__person__node.html#ae66d60046d004ac46b9533d8a95636bc":[41,0,47,2],
 "namespacefollow__person__node.html#af3059a3dad952d77f7c8cfc496f0fbad":[41,0,47,9],
 "namespacefollow__person__node.html#af6451d851044b737000c8c1fb6ca5f82":[41,0,47,7],
 "namespacefollow__person__node_01copy.html":[41,0,48],
@@ -248,6 +249,5 @@ var NAVTREEINDEX40 =
 "namespacefrida__constants_1_1utils.html#a96ff95f105647bdc24dfcd4279d0bb53":[41,0,51,4,3],
 "namespacefrida__constants_1_1utils.html#a9b631b425573e8ac85d89568a5eda8b8":[41,0,51,4,1],
 "namespacefrida__constants_1_1utils.html#ae7b936491c8186fca21d1c7fc6354b97":[41,0,51,4,4],
-"namespacefrida__constants_1_1vision__classes.html":[41,0,51,5],
-"namespacefrida__constants_1_1vision__constants.html":[41,0,51,6]
+"namespacefrida__constants_1_1vision__classes.html":[41,0,51,5]
 };

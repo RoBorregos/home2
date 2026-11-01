@@ -1,5 +1,6 @@
 var NAVTREEINDEX48 =
 {
+"nav__central_8py.html#a86af41de54cd576d3ea441a7bdf3cd20":[43,0,4,0,2,2,3,3],
 "nav__tasks_8py.html":[43,0,6,2,1,9],
 "nav__tasks_8py.html#a01944ff84bc8dc12cdf7a72c0dde883c":[43,0,6,2,1,9,4],
 "nav__tasks_8py.html#a06867581e22517934311749b093482d2":[43,0,6,2,1,9,5],
@@ -248,6 +249,5 @@ var NAVTREEINDEX48 =
 "pointcloud_8py.html#a7e95b45bfcd709729756b30d41acde3f":[43,0,3,0,7,2,1,4,5],
 "pointcloud_8py.html#a9defb45c9e0b26c8f4e9fcd3dc2d2e3b":[43,0,3,0,7,2,1,4,0],
 "pointcloud_8py.html#aab5ce6b97d01d9bf687471cd9e5abcca":[43,0,3,0,7,2,1,4,4],
-"pointcloud_8py.html#aaec222885a172311bd040091f3cd960f":[43,0,3,0,7,2,1,4,9],
-"pointcloud_8py.html#ad31c715fb93fac9f07da25ae34bc3c89":[43,0,3,0,7,2,1,4,1]
+"pointcloud_8py.html#aaec222885a172311bd040091f3cd960f":[43,0,3,0,7,2,1,4,9]
 };

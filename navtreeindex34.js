@@ -1,5 +1,6 @@
 var NAVTREEINDEX34 =
 {
+"functions_vars.html":[42,3,2],
 "functions_vars.html":[42,3,2,0],
 "functions_vars_a.html":[42,3,2,1],
 "functions_vars_b.html":[42,3,2,2],
@@ -248,6 +249,5 @@ var NAVTREEINDEX34 =
 "hand__task__manager_8py.html#a91d2488b83a8d7b6e91bb400d9ff6b17":[43,0,6,1,0,9,2],
 "hand__task__manager_8py.html#a99cf5ff5956cbf1fe5d95cd0d41ba15e":[43,0,6,1,0,9,3],
 "heatmapPlace__Server_8py.html":[43,0,3,0,6,1,0],
-"heatmapPlace__Server_8py.html#a10435d751d9f6423cad540218af8f216":[43,0,3,0,6,1,0,2],
-"heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[43,0,3,0,6,1,0,1]
+"heatmapPlace__Server_8py.html#a10435d751d9f6423cad540218af8f216":[43,0,3,0,6,1,0,2]
 };

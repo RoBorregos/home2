@@ -1,5 +1,6 @@
 var NAVTREEINDEX35 =
 {
+"heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[43,0,3,0,6,1,0,1],
 "help__me__carry_8py.html":[43,0,6,1,0,10],
 "help__me__carry_8py.html#ab5e4a679e827451f1c0776fcf4137ac0":[43,0,6,1,0,10,2],
 "help__me__carry_8py.html#ac88fe056201780c2060003e5b20f4b6e":[43,0,6,1,0,10,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX35 =
 "manipulation__constants_8py.html#a026d1c697821a387163f0e34223630d9":[43,0,1,1,3,94],
 "manipulation__constants_8py.html#a05480f19a8f62082d5be5c02acc98f72":[43,0,1,1,3,0],
 "manipulation__constants_8py.html#a06e25fffe782d547f2a1fef8fbf115f7":[43,0,1,1,3,100],
-"manipulation__constants_8py.html#a0ac119f9f698cc539a4c2b3d92627549":[43,0,1,1,3,16],
-"manipulation__constants_8py.html#a0b7108a7f04682d83eb47aacc396c94b":[43,0,1,1,3,5]
+"manipulation__constants_8py.html#a0ac119f9f698cc539a4c2b3d92627549":[43,0,1,1,3,16]
 };

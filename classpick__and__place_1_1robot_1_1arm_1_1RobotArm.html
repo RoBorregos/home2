@@ -136,8 +136,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2cba0cd93f2cda190e6faa7b9b4d3692"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9449afd9e7539090b84971c523cb844"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ab9449afd9e7539090b84971c523cb844">move_to_pose</a> (self, pose, Optional[float] velocity=None, Optional[float] acceleration=None, float tolerance_position=0.005, float tolerance_orientation=0.02, str planner_id=PICK_PLANNER, str target_link=GRASP_LINK_FRAME, Optional[float] planning_time=None, Optional[int] planning_attempts=None, constraint=None)</td></tr>
 <tr class="separator:ab9449afd9e7539090b84971c523cb844"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acbff9470cadc730c3f1eeaf6735b30b9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#acbff9470cadc730c3f1eeaf6735b30b9">move_to_pregrasp</a> (self, pose, float velocity=PICK_VELOCITY)</td></tr>
-<tr class="separator:acbff9470cadc730c3f1eeaf6735b30b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab61edd8e8687b265c820728868645040"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ab61edd8e8687b265c820728868645040">move_to_pregrasp</a> (self, pose, float velocity=PICK_VELOCITY, bool allow_pose_goal=True)</td></tr>
+<tr class="separator:ab61edd8e8687b265c820728868645040"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a754b19993eb2af07ae4077c74c6ab381"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a754b19993eb2af07ae4077c74c6ab381">move_to_named_position</a> (self, str name, float velocity=0.75)</td></tr>
 <tr class="separator:a754b19993eb2af07ae4077c74c6ab381"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a242ce12006c1fe489ce90ac605a978e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a242ce12006c1fe489ce90ac605a978e7">move_joints</a> (self, joint_positions, float velocity=0.2)</td></tr>
@@ -1608,8 +1608,8 @@ from rest during a clean descent, so an absolute test false-trips.
 <pre class="fragment">Plan and execute straight to ``pose``. False if planning failed.</pre> 
 </div>
 </div>
-<a id="acbff9470cadc730c3f1eeaf6735b30b9" name="acbff9470cadc730c3f1eeaf6735b30b9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acbff9470cadc730c3f1eeaf6735b30b9">&#9670;&#160;</a></span>move_to_pregrasp()</h2>
+<a id="ab61edd8e8687b265c820728868645040" name="ab61edd8e8687b265c820728868645040"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab61edd8e8687b265c820728868645040">&#9670;&#160;</a></span>move_to_pregrasp()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1630,7 +1630,13 @@ from rest during a clean descent, so an absolute test false-trips.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>velocity</em> = <code>PICK_VELOCITY</code>&#160;</td>
+          <td class="paramname"><em>velocity</em> = <code>PICK_VELOCITY</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>allow_pose_goal</em> = <code>True</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
