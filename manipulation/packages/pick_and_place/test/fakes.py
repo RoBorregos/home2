@@ -136,7 +136,7 @@ class FakeArm:
         self.move_kwargs.append(kwargs)
         return self._next(self._move_to_pose_results, True)
 
-    def move_to_pregrasp(self, pose, velocity=None):
+    def move_to_pregrasp(self, pose, velocity=None, allow_pose_goal=True):
         self.calls.append("move_to_pregrasp")
         self.poses["move_to_pregrasp"].append(pose)
         return self._next(self._pregrasp_results, True)

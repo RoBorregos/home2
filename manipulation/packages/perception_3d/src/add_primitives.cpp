@@ -1,6 +1,8 @@
 #include "frida_constants/manipulation_constants_cpp.hpp"
 #include "rclcpp/rclcpp.hpp"
 // #include <Eigen/src/Geometry/Quaternion.h>
+#include <algorithm>
+#include <vector>
 #include <cstdint>
 
 #include <exception>
@@ -62,6 +64,8 @@ struct BoxPrimitiveParams {
 };
 
 using namespace std::chrono_literals;
+
+constexpr double PLANE_THICKNESS = 0.025;
 
 template <typename T>
 std::future_status wait_for_future_with_timeout(
@@ -609,8 +613,16 @@ public:
           (min_pt.x + max_pt.x) / 2.0;
       req2->collision_objects[0].pose.pose.position.y =
           (min_pt.y + max_pt.y) / 2.0;
+      // The median ignores the objects and noise left in the plane's cloud.
+      std::vector<float> heights;
+      heights.reserve(cloud->size());
+      for (const auto &point : cloud->points) {
+        heights.push_back(point.z);
+      }
+      auto middle = heights.begin() + heights.size() / 2;
+      std::nth_element(heights.begin(), middle, heights.end());
       req2->collision_objects[0].pose.pose.position.z =
-          (min_pt.z + max_pt.z) / 2.0;
+          *middle - PLANE_THICKNESS / 2.0;
 
       req2->collision_objects[0].pose.pose.orientation.x = 0.0;
       req2->collision_objects[0].pose.pose.orientation.y = 0.0;
@@ -619,7 +631,7 @@ public:
 
       req2->collision_objects[0].dimensions.x = max_pt.x - min_pt.x;
       req2->collision_objects[0].dimensions.y = max_pt.y - min_pt.y;
-      req2->collision_objects[0].dimensions.z = 0.025;
+      req2->collision_objects[0].dimensions.z = PLANE_THICKNESS;
 
       auto res = this->add_collision_object_client->async_send_request(
           req2,

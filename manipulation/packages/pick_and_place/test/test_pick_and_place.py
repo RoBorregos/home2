@@ -267,7 +267,7 @@ def test_a_failed_shape_pick_falls_back_to_gpd(strategies, candidates_fail):
     if candidates_fail:
         generated = FakeGenerateGraspsResponse(make_pose(z=0.3), object_type="box")
         generated.object.id = "fitted"
-        arm = FakeArm(pregrasp_results=[False] * 10)
+        arm = FakeArm(pregrasp_results=[False])
     perception = FakePerception(
         located_point=make_point(),
         cluster=make_cluster(),
