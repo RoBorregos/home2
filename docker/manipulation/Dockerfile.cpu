@@ -26,6 +26,10 @@ RUN chown -R ros:ros /workspace
 RUN chown -R ros:ros /installs
 
 RUN apt update && apt install -y ros-${ROS_DISTRO}-zed-msgs ros-${ROS_DISTRO}-moveit*
+
+COPY docker/manipulation/install_patched_fcl.sh docker/manipulation/fcl_empty_octree.patch /tmp/fcl/
+RUN /tmp/fcl/install_patched_fcl.sh && rm -rf /tmp/fcl
+
 # prebuild and more
 WORKDIR /installs
 RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install

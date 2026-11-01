@@ -4,6 +4,7 @@ tested without a robot or a ROS graph."""
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional
 
+from frida_interfaces.msg import CollisionObject
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 from pick_and_place.pipelines.errors import PickAborted
@@ -94,6 +95,7 @@ class FakeArm:
             "endpoint_self_collides": [],
         }
         self.descents: List[tuple] = []
+        self.approaches: List[tuple] = []
         self.move_kwargs: List[dict] = []
         self.close_settles: List[float] = []
         self.guards: List[Any] = []
@@ -108,6 +110,7 @@ class FakeArm:
             "ee_link_offset": -0.09,
             "rim_tip_offset": -0.18,
             "bowl_tip_offset": -0.12,
+            "geometric_tip_offset": -0.17,
         }
         self._move_to_pose_results = list(move_to_pose_results or [])
         self._pregrasp_results = list(pregrasp_results or [])
@@ -159,6 +162,16 @@ class FakeArm:
         self.descents.append((distance_m, speed_mm_s))
         return self._next(self._descent_results, True)
 
+    def cartesian_approach(
+        self, direction, distance_m, speed_mm_s, close_on_reach=False
+    ):
+        self.calls.append("cartesian_approach")
+        self.approaches.append((direction, distance_m, speed_mm_s))
+        reached = self._next(self._descent_results, True)
+        if reached and close_on_reach:
+            self.close_gripper(settle_s=0.0)
+        return reached
+
     def force_guarded_descent(self, guard):
         self.calls.append("force_guarded_descent")
         self.guards.append(guard)
@@ -170,7 +183,7 @@ class FakeArm:
         self.calls.append("wait_until_ready")
 
     @contextmanager
-    def cartesian_velocity_mode(self, label):
+    def cartesian_velocity_mode(self, label, on_mode1=None):
         self.calls.append("cartesian_velocity_mode")
         yield
 
@@ -204,7 +217,7 @@ class FakeArm:
         self.calls.append("close_gripper")
         self.close_settles.append(settle_s)
 
-    def clear_octomap(self, settle_s=0.3):
+    def clear_octomap(self, settle_s=0.0):
         self.calls.append("clear_octomap")
 
     def get_collision_objects(self):
@@ -231,6 +244,9 @@ class FakeArm:
         self.calls.append("detach_pick_objects")
         return True
 
+    def add_collision_object(self, obj):
+        self.calls.append("add_collision_object")
+
     def add_shelf_ceiling_guard(self, place_pose, table_height):
         self.calls.append("add_shelf_ceiling_guard")
 
@@ -247,8 +263,8 @@ class FakeArm:
 
     # --- state and observability --------------------------------------------
 
-    def tcp_z(self):
-        return 0.5
+    def tcp_xyz(self):
+        return (0.5, 0.0, 0.5)
 
     def now(self):
         # A real Time: message fields reject None on assignment.
@@ -335,7 +351,7 @@ class FakePerception:
         located_point: Optional[PointStamped] = None,
         cluster=None,
         grasps: Optional[List[tuple]] = None,
-        flat_response: Optional[Any] = None,
+        generated_grasps: Optional[Any] = None,
         heatmap_point: Optional[PointStamped] = None,
         surface_cloud: Optional[Any] = None,
     ):
@@ -344,8 +360,8 @@ class FakePerception:
         self._located_point = located_point
         self._cluster = cluster
         self._grasps = list(grasps or [])
-        self._flat_response = flat_response
-        self.flat_timeouts: List[float] = []
+        self._generated_grasps = generated_grasps
+        self.generate_timeouts: List[float] = []
         self.detect_timeouts: List[float] = []
         self.cluster_timeouts: List[float] = []
 
@@ -382,17 +398,22 @@ class FakePerception:
         self.calls.append("detect_grasps")
         return self._grasps.pop(0) if self._grasps else ([], [])
 
-    def estimate_flat_grasp(self, object_name, timeout=8.0):
-        self.calls.append("estimate_flat_grasp")
-        self.flat_timeouts.append(timeout)
-        return self._flat_response
+    def generate_grasps(self, object_name, timeout=8.0):
+        self.calls.append("generate_grasps")
+        self.generate_timeouts.append(timeout)
+        return self._generated_grasps
 
 
-class FakeFlatResponse:
-    """Stand-in for the flat-grasp estimator's reply."""
+class FakeGenerateGraspsResponse:
+    """Stand-in for the grasp generator's reply."""
 
-    def __init__(self, pose, samples_collected: int = 5):
+    def __init__(
+        self, pose, samples_collected: int = 5, grasps=None, object_type: str = ""
+    ):
         self.pose = pose
+        self.grasps = grasps or [pose]
+        self.scores = [1.0] * len(self.grasps)
+        self.object = CollisionObject(type=object_type)
         self.samples_collected = samples_collected
         self.success = True
         self.message = ""

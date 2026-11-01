@@ -89,11 +89,16 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
     # explicit slab there before planning the return.
     if place_params.is_shelf:
         arm.add_shelf_ceiling_guard(place_pose, place_params.table_height)
+    returned = False
     try:
         with arm.phase("return/table_stare"):
-            for _ in range(5):
+            for attempt in range(5):
+                # Keep the octomap on a shelf: it holds the compartment walls.
+                if attempt > 0 and not place_params.is_shelf:
+                    arm.clear_octomap()
                 if arm.move_to_named_position("table_stare", velocity=0.5):
                     log.info("Returned to position successfully")
+                    returned = True
                     break
                 log.info("Retry sending return joint goal")
     finally:
@@ -101,6 +106,11 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
         if place_params.is_shelf:
             arm.remove_shelf_ceiling_guard()
 
+    if reached and not returned:
+        log.error("Object released but could not return to table_stare")
+        # The core only clears the scene on success, and the object is gone.
+        arm.remove_all_collision_objects(attached=True)
+        return False
     return reached
 
 
@@ -477,7 +487,7 @@ def _apply_drop_height(
 
 def _trash_pose(perception) -> Optional[PoseStamped]:
     """Detect the trash bin; the estimator already offsets above it, top-down."""
-    response = perception.estimate_flat_grasp(TRASH_BIN_NAME, timeout=TRASH_TIMEOUT)
+    response = perception.generate_grasps(TRASH_BIN_NAME, timeout=TRASH_TIMEOUT)
     if response is None:
         perception.logger.error("Trash bin detection failed")
         return None
