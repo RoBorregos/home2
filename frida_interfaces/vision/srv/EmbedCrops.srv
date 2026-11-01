@@ -1,4 +1,4 @@
-time stamp
+builtin_interfaces/Time stamp
 frida_interfaces/ObjectDetection[] detections
 ---
 float32[] embeddings
