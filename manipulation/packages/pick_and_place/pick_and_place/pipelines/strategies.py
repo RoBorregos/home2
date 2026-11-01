@@ -240,7 +240,7 @@ class DirectGraspPick(PickStrategy):
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
         with arm.phase("move_to_grasp"):
-            if not arm.move_to_pose(candidate.pose):
+            if not arm.move_to_pregrasp(candidate.pose, allow_pose_goal=False):
                 raise PickAttemptFailed("grasp pose unreachable")
 
         with arm.phase("attach_object"):

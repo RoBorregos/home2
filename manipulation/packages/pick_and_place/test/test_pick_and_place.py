@@ -267,7 +267,7 @@ def test_a_failed_shape_pick_falls_back_to_gpd(strategies, candidates_fail):
     if candidates_fail:
         generated = FakeGenerateGraspsResponse(make_pose(z=0.3), object_type="box")
         generated.object.id = "fitted"
-        arm = FakeArm(pregrasp_results=[False] * 10)
+        arm = FakeArm(pregrasp_results=[False])
     perception = FakePerception(
         located_point=make_point(),
         cluster=make_cluster(),
@@ -590,7 +590,7 @@ class _Request:
             "P",
             (),
             {
-                "object_name": "cup",
+                "object_name": "basket",
                 "object_point": None,
                 "min_distance": 0.0,
                 "max_distance": 1.0,
@@ -776,7 +776,7 @@ def test_a_request_without_a_name_goes_to_gpd(name):
     [
         ("coke", False, PICK_STRATEGY_GEOMETRIC),
         ("coke", True, PICK_STRATEGY_GPD),
-        ("cup", True, PICK_STRATEGY_RIM),
+        ("basket", True, PICK_STRATEGY_RIM),
     ],
 )
 def test_force_gpd_only_overrides_the_geometric_default(name, force_gpd, expected):
