@@ -9,6 +9,7 @@ import os
 import time
 
 import rclpy
+from rclpy.signals import SignalHandlerOptions
 
 from pick_benchmark import CSV_HEADER, PickBenchmark
 
@@ -67,7 +68,8 @@ def main():
     if args.step == "log":
         run_log(args)
         return
-    rclpy.init()
+    # Keep the context alive on Ctrl+C so run_pick can reset pick_method.
+    rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
     node = PickBenchmark()
     try:
         (run_pick if args.step == "pick" else run_place)(node, args)

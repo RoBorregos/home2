@@ -14,6 +14,7 @@ from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
 
 from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
@@ -224,7 +225,8 @@ def main(args=None):
         parser.error("spatial needs --reference")
     parsed.place = parsed.place or parsed.mode in ("clutter", "spatial")
 
-    rclpy.init(args=ros_args)
+    # Keep the context alive on Ctrl+C so the finally below can reset pick_method.
+    rclpy.init(args=ros_args, signal_handler_options=SignalHandlerOptions.NO)
     node = PickBenchmark()
     node.set_method(parsed.method)
     os.makedirs(os.path.dirname(os.path.abspath(parsed.out)), exist_ok=True)
