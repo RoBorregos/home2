@@ -73,6 +73,8 @@ class ManipulationCore(Node):
         self.declare_parameter("geometric_tip_offset", -GRIPPER_REACH)
         # Points at an alternative profile file; empty means the installed one.
         self.declare_parameter("pick_profiles_file", "")
+        # Benchmark switch: auto, gpd, or geometric (no GPD fallback).
+        self.declare_parameter("pick_method", "auto")
 
         self.arm = RobotArm(self)
         self.perception = Perception(self)
@@ -193,12 +195,15 @@ class ManipulationCore(Node):
 
     def _run_pick(self, request) -> bool:
         params = request.pick_params
+        method = self.get_parameter("pick_method").value
         pick_request = pick_pipeline.PickRequest(
             object_name=params.object_name,
             object_point=params.object_point,
             min_distance=params.min_distance or 0.0,
             max_distance=params.max_distance or pick_pipeline.PICK_MAX_DISTANCE,
             is_shelf=request.scan_environment,
+            use_gpd=method == "gpd",
+            gpd_fallback=method != "geometric",
             in_configuration=params.in_configuration,
         )
 
