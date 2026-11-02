@@ -23,8 +23,8 @@ import cv2
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-# Board geometry (m). The printable board is config/charuco_7x5_30mm_DICT4X4_50_A4.pdf, rendered
-# from these constants: print it at 100%, check 210 x 150 mm with calipers, keep that one board.
+# Board geometry (m). The printable board is config/charuco_7x5_30mm_DICT4X4_50_Letter.pdf (US Letter
+# landscape) print it at 100%, check 210 x 150 mm with calipers,
 SQUARES_X, SQUARES_Y = 7, 5
 SQUARE_LEN, MARKER_LEN = 0.030, 0.022
 DICT_NAME = "DICT_4X4_50"
