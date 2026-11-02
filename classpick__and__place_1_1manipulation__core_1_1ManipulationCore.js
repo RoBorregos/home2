@@ -18,6 +18,7 @@ var classpick__and__place_1_1manipulation__core_1_1ManipulationCore =
     [ "_run_place", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a555dfdb95f9e10cee86654027e05d2a0", null ],
     [ "_run_pour", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a68b6e0ec559590ceef3d1bd5401168bd", null ],
     [ "_setup_follow", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#af38cbcb992b975bc6b4bf7c477043305", null ],
+    [ "_validate_parameters", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a856d39535182c6f090e7db6e7c8889b3", null ],
     [ "go_to_hand_callback", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac7c473d37ca27e0ba7997c832295bd35", null ],
     [ "manipulation_callback", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a0c63bb6640feabbe6b2931f008c19ce7", null ],
     [ "_face", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a6233460f5739aaf53e8c816b231a5b78", null ],

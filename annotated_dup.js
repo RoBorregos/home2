@@ -361,6 +361,9 @@ var annotated_dup =
         [ "perception", "namespacepick__and__place_1_1robot_1_1perception.html", [
           [ "Perception", "classpick__and__place_1_1robot_1_1perception_1_1Perception.html", "classpick__and__place_1_1robot_1_1perception_1_1Perception" ]
         ] ]
+      ] ],
+      [ "scene_overlay", "namespacepick__and__place_1_1scene__overlay.html", [
+        [ "SceneOverlay", "classpick__and__place_1_1scene__overlay_1_1SceneOverlay.html", "classpick__and__place_1_1scene__overlay_1_1SceneOverlay" ]
       ] ]
     ] ],
     [ "pickandplace_task_manager", "namespacepickandplace__task__manager.html", [

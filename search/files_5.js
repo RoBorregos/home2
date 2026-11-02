@@ -15,7 +15,8 @@ var searchData=
   ['example_5flaunch_2epy_12',['example_launch.py',['../example__launch_8py.html',1,'']]],
   ['example_5fnode_2epy_13',['example_node.py',['../example__node_8py.html',1,'']]],
   ['exampleaction_2eaction_14',['ExampleAction.action',['../ExampleAction_8action.html',1,'']]],
-  ['exploration_5fplanner_2epy_15',['exploration_planner.py',['../exploration__planner_8py.html',1,'']]],
-  ['expo_5fdemo_2emd_16',['expo_demo.md',['../expo__demo_8md.html',1,'']]],
-  ['extractinfo_2esrv_17',['ExtractInfo.srv',['../ExtractInfo_8srv.html',1,'']]]
+  ['experiment_5ftrial_2epy_15',['experiment_trial.py',['../experiment__trial_8py.html',1,'']]],
+  ['exploration_5fplanner_2epy_16',['exploration_planner.py',['../exploration__planner_8py.html',1,'']]],
+  ['expo_5fdemo_2emd_17',['expo_demo.md',['../expo__demo_8md.html',1,'']]],
+  ['extractinfo_2esrv_18',['ExtractInfo.srv',['../ExtractInfo_8srv.html',1,'']]]
 ];

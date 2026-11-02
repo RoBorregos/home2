@@ -92,7 +92,8 @@ $(document).ready(function(){initNavTree('namespacepick__and__place_1_1pick__ben
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">pick_and_place.pick_benchmark Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -104,22 +105,80 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a47132deb2b20d954142784abb51e5299"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pick__benchmark.html#a47132deb2b20d954142784abb51e5299">ask_yes</a> (prompt)</td></tr>
+<tr class="separator:a47132deb2b20d954142784abb51e5299"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade91eafc5c833b1ca226dbb5ea97352d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pick__benchmark.html#ade91eafc5c833b1ca226dbb5ea97352d">ask_failure</a> ()</td></tr>
+<tr class="separator:ade91eafc5c833b1ca226dbb5ea97352d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6aec3d007e8b2b75f5199e0f0ed216d2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pick__benchmark.html#a6aec3d007e8b2b75f5199e0f0ed216d2">git_sha</a> ()</td></tr>
+<tr class="separator:a6aec3d007e8b2b75f5199e0f0ed216d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd2bacd005192229d269016c7de8b723"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pick__benchmark.html#afd2bacd005192229d269016c7de8b723">run_trial</a> (node, args, writer, suite, scene, obj, trial, place_request, reference)</td></tr>
+<tr class="separator:afd2bacd005192229d269016c7de8b723"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81f331a3ea0ad61b1c9adc14f6c9e345"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pick__benchmark.html#a81f331a3ea0ad61b1c9adc14f6c9e345">main</a> (args=None)</td></tr>
 <tr class="separator:a81f331a3ea0ad61b1c9adc14f6c9e345"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a0208a21e425c23f8a2dcd53211702df6"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pick__benchmark.html#a0208a21e425c23f8a2dcd53211702df6">CSV_HEADER</a></td></tr>
+<tr class="separator:a0208a21e425c23f8a2dcd53211702df6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43173d1939ddb476a63ba0c08b7c5f56"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pick__benchmark.html#a43173d1939ddb476a63ba0c08b7c5f56">FAILURES</a> = {&quot;p&quot;: &quot;perception&quot;, &quot;l&quot;: &quot;planning&quot;, &quot;e&quot;: &quot;execution&quot;, &quot;o&quot;: &quot;other&quot;}</td></tr>
+<tr class="separator:a43173d1939ddb476a63ba0c08b7c5f56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a565361e52ba8cf604da8a7f7fec0902e"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pick__benchmark.html#a565361e52ba8cf604da8a7f7fec0902e">SPATIAL_POSITIONS</a> = [&quot;front&quot;, &quot;back&quot;, &quot;left&quot;, &quot;right&quot;, &quot;close&quot;]</td></tr>
+<tr class="separator:a565361e52ba8cf604da8a7f7fec0902e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Pick benchmark: run N trials per object and record success/retention rate.
+<div class="textblock"><pre class="fragment">Manipulation benchmark: trials go to an appended CSV, and an operator confirms each outcome.</pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="ade91eafc5c833b1ca226dbb5ea97352d" name="ade91eafc5c833b1ca226dbb5ea97352d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade91eafc5c833b1ca226dbb5ea97352d">&#9670;&#160;</a></span>ask_failure()</h2>
 
-Flat mode picks spoon/fork/knife from the table; shelf mode scans the
-levels once then picks the given objects (scan_environment=True). The operator
-resets the object and confirms each outcome, since the gripper bit is not a
-reliable retention signal. Results are printed and written to a CSV.
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.pick_benchmark.ask_failure </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
-Usage (inside the manipulation container, with the manip launch running):
-    python3 pick_benchmark.py --mode flat --trials 10
-    python3 pick_benchmark.py --mode shelf --objects blue_cereal_box --trials 10
-    python3 pick_benchmark.py --mode object --objects cup bowl --trials 10
-</pre> </div><h2 class="groupheader">Function Documentation</h2>
+</div>
+</div>
+<a id="a47132deb2b20d954142784abb51e5299" name="a47132deb2b20d954142784abb51e5299"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47132deb2b20d954142784abb51e5299">&#9670;&#160;</a></span>ask_yes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.pick_benchmark.ask_yes </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>prompt</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6aec3d007e8b2b75f5199e0f0ed216d2" name="a6aec3d007e8b2b75f5199e0f0ed216d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6aec3d007e8b2b75f5199e0f0ed216d2">&#9670;&#160;</a></span>git_sha()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.pick_benchmark.git_sha </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a81f331a3ea0ad61b1c9adc14f6c9e345" name="a81f331a3ea0ad61b1c9adc14f6c9e345"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a81f331a3ea0ad61b1c9adc14f6c9e345">&#9670;&#160;</a></span>main()</h2>
 
@@ -132,6 +191,140 @@ Usage (inside the manipulation container, with the manip launch running):
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>args</em> = <code>None</code></td><td>)</td>
           <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afd2bacd005192229d269016c7de8b723" name="afd2bacd005192229d269016c7de8b723"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd2bacd005192229d269016c7de8b723">&#9670;&#160;</a></span>run_trial()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.pick_benchmark.run_trial </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>node</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>args</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>writer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>suite</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>scene</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>obj</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>trial</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>place_request</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>reference</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Run one pick, plus a place when requested, and write its CSV row.</pre> 
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="a0208a21e425c23f8a2dcd53211702df6" name="a0208a21e425c23f8a2dcd53211702df6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0208a21e425c23f8a2dcd53211702df6">&#9670;&#160;</a></span>CSV_HEADER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list pick_and_place.pick_benchmark.CSV_HEADER</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  [</div>
+<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;timestamp&quot;</span>,</div>
+<div class="line"><span class="lineno">    3</span>    <span class="stringliteral">&quot;git_sha&quot;</span>,</div>
+<div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&quot;planner&quot;</span>,</div>
+<div class="line"><span class="lineno">    5</span>    <span class="stringliteral">&quot;method&quot;</span>,</div>
+<div class="line"><span class="lineno">    6</span>    <span class="stringliteral">&quot;suite&quot;</span>,</div>
+<div class="line"><span class="lineno">    7</span>    <span class="stringliteral">&quot;scene&quot;</span>,</div>
+<div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&quot;object&quot;</span>,</div>
+<div class="line"><span class="lineno">    9</span>    <span class="stringliteral">&quot;trial&quot;</span>,</div>
+<div class="line"><span class="lineno">   10</span>    <span class="stringliteral">&quot;action_success&quot;</span>,</div>
+<div class="line"><span class="lineno">   11</span>    <span class="stringliteral">&quot;retained&quot;</span>,</div>
+<div class="line"><span class="lineno">   12</span>    <span class="stringliteral">&quot;failure_source&quot;</span>,</div>
+<div class="line"><span class="lineno">   13</span>    <span class="stringliteral">&quot;pick_failure&quot;</span>,</div>
+<div class="line"><span class="lineno">   14</span>    <span class="stringliteral">&quot;pick_s&quot;</span>,</div>
+<div class="line"><span class="lineno">   15</span>    <span class="stringliteral">&quot;place_request&quot;</span>,</div>
+<div class="line"><span class="lineno">   16</span>    <span class="stringliteral">&quot;place_action_success&quot;</span>,</div>
+<div class="line"><span class="lineno">   17</span>    <span class="stringliteral">&quot;placed_ok&quot;</span>,</div>
+<div class="line"><span class="lineno">   18</span>    <span class="stringliteral">&quot;neighbour_moved&quot;</span>,</div>
+<div class="line"><span class="lineno">   19</span>    <span class="stringliteral">&quot;place_s&quot;</span>,</div>
+<div class="line"><span class="lineno">   20</span>    <span class="stringliteral">&quot;note&quot;</span>,</div>
+<div class="line"><span class="lineno">   21</span>]</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="a43173d1939ddb476a63ba0c08b7c5f56" name="a43173d1939ddb476a63ba0c08b7c5f56"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a43173d1939ddb476a63ba0c08b7c5f56">&#9670;&#160;</a></span>FAILURES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">dict pick_and_place.pick_benchmark.FAILURES = {&quot;p&quot;: &quot;perception&quot;, &quot;l&quot;: &quot;planning&quot;, &quot;e&quot;: &quot;execution&quot;, &quot;o&quot;: &quot;other&quot;}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a565361e52ba8cf604da8a7f7fec0902e" name="a565361e52ba8cf604da8a7f7fec0902e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a565361e52ba8cf604da8a7f7fec0902e">&#9670;&#160;</a></span>SPATIAL_POSITIONS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list pick_and_place.pick_benchmark.SPATIAL_POSITIONS = [&quot;front&quot;, &quot;back&quot;, &quot;left&quot;, &quot;right&quot;, &quot;close&quot;]</td>
         </tr>
       </table>
 </div><div class="memdoc">

@@ -4,9 +4,12 @@ var dir_d89c5ea1f1635b650fa16423f2851ead =
     [ "robot", "dir_525d5b5a8c0f7ee3752189b7d8f00c9c.html", "dir_525d5b5a8c0f7ee3752189b7d8f00c9c" ],
     [ "utils", "dir_221cdd99a5d6ba62c6b39037e72cc29e.html", "dir_221cdd99a5d6ba62c6b39037e72cc29e" ],
     [ "__init__.py", "manipulation_2packages_2pick__and__place_2pick__and__place_2____init_____8py.html", null ],
+    [ "experiment_trial.py", "experiment__trial_8py.html", "experiment__trial_8py" ],
     [ "fix_position_to_plane.py", "fix__position__to__plane_8py.html", "fix__position__to__plane_8py" ],
+    [ "generate_scenes.py", "generate__scenes_8py.html", "generate__scenes_8py" ],
     [ "keyboard_input.py", "keyboard__input_8py.html", "keyboard__input_8py" ],
     [ "manipulation_client.py", "manipulation__client_8py.html", "manipulation__client_8py" ],
     [ "manipulation_core.py", "manipulation__core_8py.html", "manipulation__core_8py" ],
-    [ "pick_benchmark.py", "pick__benchmark_8py.html", "pick__benchmark_8py" ]
+    [ "pick_benchmark.py", "pick__benchmark_8py.html", "pick__benchmark_8py" ],
+    [ "scene_overlay.py", "scene__overlay_8py.html", "scene__overlay_8py" ]
 ];

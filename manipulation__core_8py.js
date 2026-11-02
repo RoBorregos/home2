@@ -4,5 +4,6 @@ var manipulation__core_8py =
     [ "main", "manipulation__core_8py.html#a8186701a4f2197fd8462d338e413ed97", null ],
     [ "EXECUTOR_THREADS", "manipulation__core_8py.html#a514658d21d46ed2364d0ea9e266e92d2", null ],
     [ "FACE_LOOP_PERIOD", "manipulation__core_8py.html#aea5cebd50f27e2acec4e76711d70ac59", null ],
-    [ "HAND_APPROACH_ANGLES", "manipulation__core_8py.html#aead1614fba3c4bc4f148d9114cbf5706", null ]
+    [ "HAND_APPROACH_ANGLES", "manipulation__core_8py.html#aead1614fba3c4bc4f148d9114cbf5706", null ],
+    [ "PICK_METHODS", "manipulation__core_8py.html#a4810c7e4b9d5af6572ad6d9864a580d1", null ]
 ];
