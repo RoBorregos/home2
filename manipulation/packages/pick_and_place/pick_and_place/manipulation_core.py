@@ -15,6 +15,7 @@ import time
 
 import numpy as np
 import rclpy
+from rcl_interfaces.msg import SetParametersResult
 from frida_constants.manipulation_constants import (
     FIXED_DISTANCE_MOVE_SERVICE,
     FOLLOW_FACE_ARM_SERVICE,
@@ -57,6 +58,9 @@ FACE_LOOP_PERIOD = 0.1
 EXECUTOR_THREADS = 16
 
 
+PICK_METHODS = ("auto", "geometric", "gpd")
+
+
 class ManipulationCore(Node):
     def __init__(self):
         super().__init__("manipulation_core")
@@ -75,6 +79,7 @@ class ManipulationCore(Node):
         self.declare_parameter("pick_profiles_file", "")
         # Benchmark switch: auto, gpd, or geometric (no GPD fallback).
         self.declare_parameter("pick_method", "auto")
+        self.add_on_set_parameters_callback(self._validate_parameters)
 
         self.arm = RobotArm(self)
         self.perception = Perception(self)
@@ -192,6 +197,16 @@ class ManipulationCore(Node):
     # ==================================================================
     # Pipelines
     # ==================================================================
+
+    def _validate_parameters(self, parameters):
+        """Reject a pick_method typo instead of silently running auto."""
+        for parameter in parameters:
+            if parameter.name == "pick_method" and parameter.value not in PICK_METHODS:
+                return SetParametersResult(
+                    successful=False,
+                    reason=f"pick_method must be one of {PICK_METHODS}",
+                )
+        return SetParametersResult(successful=True)
 
     def _run_pick(self, request) -> bool:
         params = request.pick_params

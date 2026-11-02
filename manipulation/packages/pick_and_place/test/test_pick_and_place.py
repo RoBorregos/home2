@@ -668,6 +668,14 @@ def test_every_task_type_has_a_pipeline(core):
         assert task in core._pipelines
 
 
+@pytest.mark.parametrize(
+    "value, successful", [("auto", True), ("gpd", True), ("geometic", False)]
+)
+def test_only_known_pick_methods_are_accepted(core, value, successful):
+    parameter = SimpleNamespace(name="pick_method", value=value)
+    assert core._validate_parameters([parameter]).successful is successful
+
+
 def test_a_failed_pick_clears_the_remembered_outcome(core, monkeypatch):
     core._last_pick = PickOutcome(pick_pose=make_pose(), object_pick_height=0.12)
     monkeypatch.setattr(

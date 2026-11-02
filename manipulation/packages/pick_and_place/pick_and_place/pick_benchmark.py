@@ -117,16 +117,11 @@ class PickBenchmark(Node):
         goal.scan_environment = scan_environment
         return self.send_goal(goal)
 
-    def place(self, request, reference, spot=None):
-        """Place on a free spot, relative to reference, or at a forced (x, y, z) spot."""
+    def place(self, request, reference):
+        """Place on a free spot, or relative to reference when request is set."""
         goal = ManipulationAction.Goal()
         goal.task_type = ManipulationTask.PLACE
-        if spot:
-            forced = goal.place_params.forced_pose
-            forced.header.frame_id = "base_link"
-            forced.pose.position.x, forced.pose.position.y = spot[:2]
-            forced.pose.position.z = spot[2]
-        elif request:
+        if request:
             goal.place_params.special_request = json.dumps(
                 {"request": "close_by", "object": reference, "position": request}
             )
@@ -287,6 +282,9 @@ def main(args=None):
                     summary[obj] = (ok, parsed.trials)
         except KeyboardInterrupt:
             pass
+        finally:
+            # The method persists on the node, so never leave a benchmark value behind.
+            node.set_method("auto")
 
     print("\n=== SUMMARY ===")
     for obj, (ok, total) in summary.items():
