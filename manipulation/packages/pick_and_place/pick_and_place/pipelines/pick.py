@@ -90,6 +90,7 @@ class PickRequest:
     max_distance: float = PICK_MAX_DISTANCE
     is_shelf: bool = False
     use_gpd: bool = False
+    gpd_fallback: bool = True
     in_configuration: bool = False
     # False leaves the arm where the grasp ended, for callers that move on from
     # there themselves (the pour lifts straight up from the grasp).
@@ -193,7 +194,7 @@ def _pick(
 def _fall_back_or_fail(
     arm, perception, request: PickRequest, strategies, strategy, fitted=None
 ) -> Tuple[bool, PickOutcome]:
-    if not strategy.profile.fallback_to_gpd:
+    if not (strategy.profile.fallback_to_gpd and request.gpd_fallback):
         return False, PickOutcome()
     arm.logger.warn(
         f"'{request.object_name}': {strategy.name} pick failed, falling back to GPD"

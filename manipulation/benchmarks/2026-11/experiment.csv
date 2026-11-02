@@ -1,0 +1,164 @@
+timestamp,git_sha,planner,method,suite,scene,object,trial,action_success,retained,failure_source,pick_failure,pick_s,place_request,place_action_success,placed_ok,neighbour_moved,place_s,note
+2026-11-01T23:48:17,8f05b936+exp,ompl,geometric,pilot,,banana,1,1,1,,,10.0,,1,1,0,7.2,heatmap place; start pose set by hand
+2026-11-01T23:49:01,8f05b936+exp,ompl,gpd,pilot,,banana,2,0,0,stack,planning,6.7,,,,,,all 10 candidates unreachable; start at heatmap spot
+2026-11-01T23:50:38,8f05b936+exp,ompl,geometric,pilot,,banana,3,1,1,,,11.4,,1,1,0,5.7,"start moved by hand 5 cm; forced reset place, not a place result"
+2026-11-02T00:05:03,8f05b936+exp,ompl,geometric,pilot,,banana,1,1,1,,,9.7,,1,1,0,13.0,P1; TABLE_CLEARANCE 5 mm
+2026-11-02T00:07:13,8f05b936+exp,ompl,geometric,pilot,,banana,2,0,0,stack,planning,5.2,,,,,,P2; generator: gripper hits the table x49; TABLE_CLEARANCE 5 mm
+2026-11-02T00:07:13,8f05b936+exp,ompl,geometric,invalid,,banana,3,0,0,stack,planning,5.2,,,,,,banana not moved from P2; ran as P3
+2026-11-02T00:07:13,8f05b936+exp,ompl,geometric,invalid,,banana,4,0,0,stack,planning,5.2,,,,,,banana not moved from P2; ran as P4
+2026-11-02T00:07:13,8f05b936+exp,ompl,geometric,invalid,,banana,5,0,0,stack,planning,5.2,,,,,,banana not moved from P2; ran as P5
+2026-11-02T00:08:21,8f05b936+exp,ompl,geometric,pilot,,banana,3,0,0,stack,planning,5.1,,,,,,P3; generator: gripper hits the table x49; TABLE_CLEARANCE 5 mm
+2026-11-02T00:11:04,8f05b936+exp,ompl,geometric,pilot,,banana,4,1,1,,,9.6,,1,1,0,7.2,P4; TABLE_CLEARANCE 5 mm
+2026-11-02T00:11:04,8f05b936+exp,ompl,geometric,pilot,,banana,5,1,1,,,9.6,,1,1,0,12.4,P5; TABLE_CLEARANCE 5 mm
+2026-11-02T00:11:17,8f05b936+exp,ompl,gpd,object,,banana,1,0,0,stack,perception,1.7,,,,,,P1; No object cluster detected
+2026-11-02T00:11:45,8f05b936+exp,ompl,gpd,object,,banana,2,0,0,stack,planning,4.7,,,,,,P2; all 10 candidates failed
+2026-11-02T00:12:08,8f05b936+exp,ompl,gpd,object,,banana,3,0,0,stack,planning,4.2,,,,,,P3; all 10 candidates failed
+2026-11-02T00:12:49,8f05b936+exp,ompl,gpd,object,,banana,4,0,0,stack,planning,4.9,,,,,,P4; all 10 candidates failed
+2026-11-02T00:13:28,8f05b936+exp,ompl,gpd,object,,banana,5,0,0,stack,planning,6.1,,,,,,P5; all 10 candidates failed
+2026-11-02T00:15:40,8f05b936+exp,ompl,gpd,pilot,,apple,1,1,0,operator,execution,10.3,,1,,,7.4,"P1; operator: bad grasp, action reported success; operator restarted apple GPD after move_group crash"
+2026-11-02T00:25:10,8f05b936+exp,ompl,gpd,pilot,,apple,,,,,,,,,,,,"P1 rerun; verdict not recorded; 11.7 s pick, 8.8 s place"
+2026-11-02T00:25:10,8f05b936+exp,ompl,gpd,invalid,,apple,,0,0,stack,planning,34.0,,,,,,P2; move_group segfault during candidates
+2026-11-02T00:29:06,8f05b936+exp,ompl,gpd,object,,apple,1,1,1,,,12.5,,1,1,0,11.8,P1; times from logs
+2026-11-02T00:29:06,8f05b936+exp,ompl,gpd,object,,apple,2,1,0,operator,not_held,12.3,,1,,,8.1,P2
+2026-11-02T00:29:06,8f05b936+exp,ompl,gpd,object,,apple,3,1,1,,,12.4,,1,1,0,9.6,P3
+2026-11-02T00:29:06,8f05b936+exp,ompl,gpd,object,,apple,4,1,0,operator,not_held,15.2,,1,,,10.2,P4
+2026-11-02T00:29:06,8f05b936+exp,ompl,gpd,object,,apple,5,1,0,operator,not_held,11.1,,1,,,7.1,P5
+2026-11-02T00:30:58,8f05b936+exp,ompl,geometric,pilot,,apple,1,1,1,,,9.7,,1,1,0,7.5,P1; TABLE_CLEARANCE 5 mm
+2026-11-02T00:30:58,8f05b936+exp,ompl,geometric,pilot,,apple,2,1,0,operator,not_held,11.1,,1,,,12.0,P2; TABLE_CLEARANCE 5 mm
+2026-11-02T00:30:58,8f05b936+exp,ompl,geometric,pilot,,apple,3,0,0,stack,planning,5.8,,,,,,P3; all 5 candidates failed; TABLE_CLEARANCE 5 mm
+2026-11-02T00:32:12,8f05b936+exp,ompl,geometric,pilot,,apple,4,1,1,,,10.4,,1,1,0,12.8,P4; TABLE_CLEARANCE 5 mm
+2026-11-02T00:32:12,8f05b936+exp,ompl,geometric,pilot,,apple,5,1,1,,,10.0,,1,1,0,7.4,P5; TABLE_CLEARANCE 5 mm
+2026-11-02T00:35:10,8f05b936+exp,ompl,geometric,pilot,,coca_cola_can,1,1,1,,,8.9,,1,1,0,11.6,P1; TABLE_CLEARANCE 5 mm
+2026-11-02T00:35:10,8f05b936+exp,ompl,geometric,pilot,,coca_cola_can,2,1,1,,,10.0,,1,1,0,11.9,P2; TABLE_CLEARANCE 5 mm
+2026-11-02T00:35:10,8f05b936+exp,ompl,geometric,pilot,,coca_cola_can,3,1,1,,,10.1,,1,1,0,11.8,P3; TABLE_CLEARANCE 5 mm
+2026-11-02T00:35:10,8f05b936+exp,ompl,geometric,pilot,,coca_cola_can,4,1,0,operator,not_held,9.2,,1,,,11.7,P4; TABLE_CLEARANCE 5 mm
+2026-11-02T00:35:10,8f05b936+exp,ompl,geometric,excluded_vision,,coca_cola_can,5,0,0,stack,perception,5.2,,,,,,P5; generator: not detected; setup unconfirmed
+2026-11-02T00:35:24,8f05b936+exp,ompl,geometric,excluded_vision,,coca_cola_can,5,0,0,stack,perception,5.3,,,,,,P5 rerun; generator: not detected; operator confirmed position
+2026-11-02T00:36:45,8f05b936+exp,ompl,geometric,excluded_vision,,coca_cola_can,5,0,0,stack,perception,5.2,,,,,,"P5 third try; detector published soup_bar, not coca_cola_can"
+2026-11-02T00:37:51,8f05b936+exp,ompl,geometric,pilot,,coca_cola_can,5,1,1,,,8.9,,1,1,0,11.9,"P5; after 3 excluded_vision tries, can rotated; TABLE_CLEARANCE 5 mm"
+2026-11-02T00:39:47,8f05b936+exp,ompl,gpd,object,,coca_cola_can,1,1,0,operator,not_held,14.6,,1,,,9.7,P1
+2026-11-02T00:39:47,8f05b936+exp,ompl,gpd,object,,coca_cola_can,2,1,0,operator,not_held,14.8,,1,,,11.8,P2
+2026-11-02T00:39:47,8f05b936+exp,ompl,gpd,excluded_vision,,coca_cola_can,3,0,0,stack,perception,0.1,,,,,,P3; object not found by detector
+2026-11-02T00:41:11,8f05b936+exp,ompl,gpd,object,,coca_cola_can,3,1,0,operator,not_held,15.6,,1,,,8.8,P3
+2026-11-02T00:41:11,8f05b936+exp,ompl,gpd,rerun,,coca_cola_can,4,0,0,stack,perception,1.8,,,,,,P4; No object cluster detected; superseded by operator-chosen retry
+2026-11-02T00:42:17,8f05b936+exp,ompl,gpd,object,,coca_cola_can,4,1,0,operator,not_held,14.8,,1,,,10.9,P4 retry; official per operator
+2026-11-02T00:43:23,8f05b936+exp,ompl,gpd,object,,coca_cola_can,5,1,0,operator,not_held,13.4,,1,,,8.9,P5
+2026-11-02T00:45:34,8f05b936+exp,ompl,gpd,object,,soup_bar,1,1,1,,,13.0,,1,1,0,10.9,P1
+2026-11-02T00:45:34,8f05b936+exp,ompl,gpd,object,,soup_bar,2,1,0,operator,not_held,13.2,,0,,,1.1,P2; camera disconnected by accident during place
+2026-11-02T00:48:13,8f05b936+exp,ompl,gpd,object,,soup_bar,3,1,1,,,13.2,,1,1,0,12.4,P3
+2026-11-02T00:48:13,8f05b936+exp,ompl,gpd,object,,soup_bar,4,1,0,operator,not_held,17.7,,1,,,8.9,P4; object slipped on top approach
+2026-11-02T00:48:13,8f05b936+exp,ompl,gpd,object,,soup_bar,5,1,1,,,13.5,,1,1,0,11.5,P5
+2026-11-02T00:49:21,8f05b936+exp,ompl,geometric,pilot,,soup_bar,1,1,1,,,9.8,,1,1,0,12.1,P1; TABLE_CLEARANCE 5 mm
+2026-11-02T00:49:21,8f05b936+exp,ompl,geometric,pilot,,soup_bar,2,0,0,stack,planning,5.2,,,,,,P2; generator: gripper hits the table; TABLE_CLEARANCE 5 mm
+2026-11-02T00:50:28,8f05b936+exp,ompl,geometric,pilot,,soup_bar,3,1,1,,,10.2,,1,1,0,11.9,P3; TABLE_CLEARANCE 5 mm
+2026-11-02T00:50:28,8f05b936+exp,ompl,geometric,pilot,,soup_bar,4,0,0,stack,planning,5.2,,,,,,P4; generator: gripper hits the table; TABLE_CLEARANCE 5 mm
+2026-11-02T00:50:43,8f05b936+exp,ompl,geometric,pilot,,soup_bar,5,0,0,stack,planning,5.2,,,,,,P5; generator: gripper hits the table; TABLE_CLEARANCE 5 mm
+2026-11-02T00:55:17,8f05b936+exp+clear0,ompl,geometric,object,,soup_bar,5,1,1,,,13.1,,1,1,0,11.5,P5; first run with TABLE_CLEARANCE 0
+2026-11-02T00:58:17,8f05b936+exp+clear0,ompl,geometric,object,,soup_bar,1,1,1,,,9.1,,1,1,0,11.6,P1
+2026-11-02T00:58:17,8f05b936+exp+clear0,ompl,geometric,object,,soup_bar,2,1,1,,,10.0,,1,1,0,11.7,P2
+2026-11-02T00:58:17,8f05b936+exp+clear0,ompl,geometric,object,,soup_bar,3,1,1,,,10.2,,1,1,0,11.9,P3
+2026-11-02T00:58:17,8f05b936+exp+clear0,ompl,geometric,object,,soup_bar,4,1,0,operator,not_held,9.0,,1,,,11.7,P4
+2026-11-02T00:59:30,8f05b936+exp+clear0,ompl,geometric,object,,banana,1,1,1,,,10.8,,1,1,0,7.3,P1
+2026-11-02T00:59:30,8f05b936+exp+clear0,ompl,geometric,object,,banana,2,0,0,stack,planning,2.6,,,,,,P2; all 2 candidates failed
+2026-11-02T01:00:07,8f05b936+exp+clear0,ompl,geometric,object,,banana,3,0,0,stack,planning,3.8,,,,,,P3; all 4 candidates failed
+2026-11-02T01:00:43,8f05b936+exp+clear0,ompl,geometric,object,,banana,4,0,0,stack,planning,5.2,,,,,,P4; generator: gripper hits the table
+2026-11-02T01:00:57,8f05b936+exp+clear0,ompl,geometric,object,,banana,5,0,0,stack,planning,5.2,,,,,,P5; generator: gripper hits the table
+2026-11-02T01:04:19,8f05b936+exp+clear0,ompl,geometric,object,,apple,1,1,1,,,9.7,,1,1,0,7.7,P1
+2026-11-02T01:04:19,8f05b936+exp+clear0,ompl,geometric,object,,apple,2,1,0,operator,not_held,11.0,,1,,,12.3,P2
+2026-11-02T01:04:19,8f05b936+exp+clear0,ompl,geometric,object,,apple,3,1,1,,,11.0,,0,1,0,20.3,P3; object placed well; move_group segfault blocked the return
+2026-11-02T01:06:08,8f05b936+exp+clear0,ompl,geometric,object,,apple,4,1,1,,,11.7,,1,1,0,12.6,P4
+2026-11-02T01:06:08,8f05b936+exp+clear0,ompl,geometric,object,,apple,5,1,1,,,10.1,,1,1,0,7.3,P5
+2026-11-02T01:09:55,8f05b936+exp+clear0,ompl,geometric,object,,coca_cola_can,1,1,0,operator,not_held,8.8,,1,,,11.3,"P1; operator: object slipped, gripper possibly deformed"
+2026-11-02T01:09:55,8f05b936+exp+clear0,ompl,geometric,object,,coca_cola_can,2,1,0,operator,not_held,10.0,,1,,,11.6,"P2; operator: object slipped, gripper possibly deformed"
+2026-11-02T01:09:55,8f05b936+exp+clear0,ompl,geometric,object,,coca_cola_can,3,1,1,,,10.2,,1,1,0,11.5,P3
+2026-11-02T01:09:55,8f05b936+exp+clear0,ompl,geometric,object,,coca_cola_can,4,1,0,operator,not_held,8.8,,1,,,11.8,"P4; operator: object slipped, gripper possibly deformed"
+2026-11-02T01:09:55,8f05b936+exp+clear0,ompl,geometric,object,,coca_cola_can,5,1,0,operator,not_held,8.9,,1,,,11.8,"P5; operator: object slipped, gripper possibly deformed"
+2026-11-02T01:13:12,8f05b936+exp+clear0,ompl,geometric,object,,cornflakes,1,1,1,,,9.8,,1,1,0,12.1,P1
+2026-11-02T01:13:12,8f05b936+exp+clear0,ompl,geometric,object,,cornflakes,2,1,1,,,10.0,,1,1,0,11.5,P2
+2026-11-02T01:13:12,8f05b936+exp+clear0,ompl,geometric,object,,cornflakes,3,0,0,stack,planning,12.9,,,,,,P3; all 5 candidates failed
+2026-11-02T01:15:21,8f05b936+exp+clear0,ompl,geometric,excluded_vision,,cornflakes,4,0,0,stack,perception,8.0,,,,,,P4; generator: not detected
+2026-11-02T01:16:11,8f05b936+exp+clear0,ompl,geometric,object,,cornflakes,4,1,1,,,9.9,,1,1,0,7.9,P4
+2026-11-02T01:16:54,8f05b936+exp+clear0,ompl,geometric,object,,cornflakes,5,1,1,,,11.2,,1,1,0,6.9,P5
+2026-11-02T01:19:21,8f05b936+exp+clear0,ompl,gpd,object,,cornflakes,1,1,1,,,14.1,,1,1,0,10.4,P1
+2026-11-02T01:19:21,8f05b936+exp+clear0,ompl,gpd,object,,cornflakes,2,1,1,,,13.1,,1,1,0,10.9,P2
+2026-11-02T01:19:21,8f05b936+exp+clear0,ompl,gpd,object,,cornflakes,3,1,1,,,15.5,,1,1,0,10.9,P3
+2026-11-02T01:19:21,8f05b936+exp+clear0,ompl,gpd,object,,cornflakes,4,0,0,stack,perception,1.8,,,,,,P4; No object cluster detected
+2026-11-02T01:20:08,8f05b936+exp+clear0,ompl,gpd,object,,cornflakes,5,1,1,,,15.2,,1,1,0,10.6,P5
+2026-11-02T01:24:05,8f05b936+exp+clear0,ompl,gpd,object,,orange,1,1,1,,,11.4,,1,1,0,8.1,P1
+2026-11-02T01:24:05,8f05b936+exp+clear0,ompl,gpd,object,,orange,2,1,0,operator,not_held,11.7,,0,,,20.5,P2; move_group segfault blocked the return
+2026-11-02T01:25:51,8f05b936+exp+clear0,ompl,gpd,object,,orange,3,1,1,,,13.1,,1,1,0,7.5,P3
+2026-11-02T01:25:51,8f05b936+exp+clear0,ompl,gpd,object,,orange,4,0,0,stack,perception,1.8,,,,,,P4; No object cluster detected
+2026-11-02T01:27:15,8f05b936+exp+clear0,ompl,gpd,object,,orange,5,0,0,stack,planning,5.1,,,,,,P5; all 10 candidates failed
+2026-11-02T01:28:55,8f05b936+exp+clear0,ompl,geometric,object,,orange,1,1,1,,,9.7,,1,1,0,13.2,P1
+2026-11-02T01:28:55,8f05b936+exp+clear0,ompl,geometric,object,,orange,2,1,1,,,11.0,,1,1,0,9.4,P2
+2026-11-02T01:28:55,8f05b936+exp+clear0,ompl,geometric,object,,orange,3,0,0,stack,planning,5.9,,,,,,P3; all 5 candidates failed
+2026-11-02T01:30:17,8f05b936+exp+clear0,ompl,geometric,object,,orange,4,1,1,,,10.4,,1,1,0,12.8,P4
+2026-11-02T01:30:17,8f05b936+exp+clear0,ompl,geometric,object,,orange,5,1,1,,,10.2,,1,1,0,7.0,P5
+2026-11-02T01:33:05,8f05b936+exp+clear0,ompl,geometric,object,,cup,1,1,1,,,9.0,,1,1,0,11.4,P1
+2026-11-02T01:33:05,8f05b936+exp+clear0,ompl,geometric,object,,cup,2,1,1,,,9.8,,1,1,0,11.8,P2
+2026-11-02T01:33:05,8f05b936+exp+clear0,ompl,geometric,object,,cup,3,1,1,,,10.0,,1,1,0,11.5,P3
+2026-11-02T01:33:05,8f05b936+exp+clear0,ompl,geometric,object,,cup,4,1,1,,,8.8,,1,1,0,11.9,P4
+2026-11-02T01:33:05,8f05b936+exp+clear0,ompl,geometric,object,,cup,5,1,1,,,13.7,,1,1,0,11.7,P5
+2026-11-02T01:36:54,8f05b936+exp+clear0,ompl,gpd,object,,cup,1,1,0,operator,not_held,15.8,,1,,,11.3,P1
+2026-11-02T01:36:54,8f05b936+exp+clear0,ompl,gpd,object,,cup,2,1,0,operator,not_held,15.6,,1,,,9.2,P2
+2026-11-02T01:36:54,8f05b936+exp+clear0,ompl,gpd,object,,cup,3,1,0,operator,not_held,12.5,,1,,,8.7,P3
+2026-11-02T01:36:54,8f05b936+exp+clear0,ompl,gpd,object,,cup,4,1,1,,,14.2,,1,1,0,12.1,P4
+2026-11-02T01:36:54,8f05b936+exp+clear0,ompl,gpd,object,,cup,5,1,0,operator,not_held,13.2,,1,,,8.6,P5
+2026-11-02T01:38:49,8f05b936+exp+clear0,ompl,geometric,object,,spoon,1,1,1,,,28.3,,1,1,0,13.6,P1; flat strategy
+2026-11-02T01:38:49,8f05b936+exp+clear0,ompl,geometric,object,,spoon,2,0,0,stack,planning,20.7,,,,,,P2; flat strategy; all 12 candidates failed
+2026-11-02T01:40:15,8f05b936+exp+clear0,ompl,geometric,object,,spoon,3,0,0,stack,planning,18.0,,,,,,P3; flat strategy; all 12 candidates failed
+2026-11-02T01:44:08,8f05b936+exp+clear0,ompl,geometric,object,,spoon,4,1,0,operator,not_held,25.3,,1,,,13.5,P4; flat strategy
+2026-11-02T01:44:08,8f05b936+exp+clear0,ompl,geometric,object,,spoon,5,1,0,operator,not_held,28.5,,1,,,13.6,P5; flat strategy
+2026-11-02T01:59:34,8f05b936+exp+clear0,ompl,gpd,clutter,1,banana,1,0,0,stack,planning,5.2,,,,,,all 10 candidates failed
+2026-11-02T01:59:59,8f05b936+exp+clear0,ompl,gpd,clutter,1,apple,2,0,0,stack,planning,5.7,,,,,,all 10 candidates failed
+2026-11-02T02:03:40,8f05b936+exp+clear0,ompl,gpd,clutter,1,cup,3,1,0,operator,not_held,15.1,,1,,0,11.1,
+2026-11-02T02:03:40,8f05b936+exp+clear0,ompl,gpd,clutter,1,cornflakes,4,1,1,,,15.4,,1,1,0,12.5,
+2026-11-02T02:03:40,8f05b936+exp+clear0,ompl,gpd,clutter,1,coca_cola_can,5,1,1,,,15.3,,1,1,0,11.1,
+2026-11-02T02:10:54,8f05b936+exp+clear0,ompl,geometric,clutter,1,banana,1,1,1,,,11.3,,1,1,0,7.5,
+2026-11-02T02:10:54,8f05b936+exp+clear0,ompl,geometric,clutter,1,apple,2,1,1,,,9.8,,1,1,0,8.6,
+2026-11-02T02:10:54,8f05b936+exp+clear0,ompl,geometric,clutter,1,cup,3,1,1,,,10.1,,1,1,0,12.2,
+2026-11-02T02:10:54,8f05b936+exp+clear0,ompl,geometric,clutter,1,cornflakes,4,1,1,,,10.2,,1,1,0,11.1,
+2026-11-02T02:10:54,8f05b936+exp+clear0,ompl,geometric,clutter,1,coca_cola_can,5,1,0,operator,not_held,10.3,,1,,0,12.0,
+2026-11-02T02:12:32,8f05b936+exp+clear0,ompl,geometric,invalid,2,orange,2,0,0,stack,planning,37.1,,,,,,move_group segfault during pick; repeat
+2026-11-02T02:13:10,8f05b936+exp+clear0,ompl,geometric,clutter,2,soup_bar,1,1,1,,,9.2,,1,1,0,12.1,
+2026-11-02T02:16:43,8f05b936+exp+clear0,ompl,geometric,clutter,2,orange,2,1,1,,,9.7,,1,1,0,7.9,
+2026-11-02T02:16:43,8f05b936+exp+clear0,ompl,geometric,clutter,2,apple,3,1,1,,,10.4,,1,1,0,7.3,
+2026-11-02T02:16:43,8f05b936+exp+clear0,ompl,geometric,clutter,2,cup,4,1,1,,,9.8,,1,1,0,11.7,
+2026-11-02T02:16:43,8f05b936+exp+clear0,ompl,geometric,clutter,2,cornflakes,5,1,1,,,10.7,,1,1,0,13.2,
+2026-11-02T02:18:24,8f05b936+exp+clear0,ompl,gpd,clutter,2,soup_bar,1,1,0,operator,not_held,14.7,,1,,,12.7,
+2026-11-02T02:18:24,8f05b936+exp+clear0,ompl,gpd,clutter,2,orange,2,0,0,stack,planning,5.1,,,,,,all 10 candidates failed
+2026-11-02T02:20:48,8f05b936+exp+clear0,ompl,gpd,clutter,2,apple,3,1,0,operator,not_held,10.9,,1,,,8.3,
+2026-11-02T02:20:48,8f05b936+exp+clear0,ompl,gpd,clutter,2,cup,4,1,1,,,14.7,,1,1,,8.8,
+2026-11-02T02:20:48,8f05b936+exp+clear0,ompl,gpd,clutter,2,cornflakes,5,1,1,,,16.0,,1,1,,12.0,
+2026-11-02T02:25:05,8f05b936+exp+clear0,ompl,gpd,clutter,3,orange,1,1,1,,,15.6,,1,1,,11.8,
+2026-11-02T02:25:05,8f05b936+exp+clear0,ompl,gpd,clutter,3,soup_bar,2,1,1,,,14.6,,1,1,,11.5,
+2026-11-02T02:25:05,8f05b936+exp+clear0,ompl,gpd,clutter,3,banana,3,1,0,operator,wrong_object,14.4,,1,,,8.9,arm went for coca_cola_can instead of banana; can slipped
+2026-11-02T02:25:05,8f05b936+exp+clear0,ompl,gpd,invalid,3,coca_cola_can,4,0,0,stack,perception,0.2,,,,,,can had been removed by operator after wrong grasp; repeat
+2026-11-02T02:27:47,8f05b936+exp+clear0,ompl,gpd,clutter,3,coca_cola_can,4,1,0,operator,not_held,15.2,,1,,,9.0,repeat after wrong grasp
+2026-11-02T02:27:47,8f05b936+exp+clear0,ompl,gpd,clutter,3,cornflakes,5,1,1,,,14.4,,1,1,,9.0,
+2026-11-02T02:31:28,8f05b936+exp+clear0,ompl,geometric,clutter,3,orange,1,1,1,,,9.3,,1,1,,11.3,
+2026-11-02T02:31:28,8f05b936+exp+clear0,ompl,geometric,clutter,3,soup_bar,2,1,1,,,9.4,,1,1,,11.9,
+2026-11-02T02:31:28,8f05b936+exp+clear0,ompl,geometric,clutter,3,banana,3,1,1,,,10.7,,1,1,,10.4,
+2026-11-02T02:31:28,8f05b936+exp+clear0,ompl,geometric,clutter,3,coca_cola_can,4,1,0,operator,not_held,9.5,,1,,,11.9,
+2026-11-02T02:31:28,8f05b936+exp+clear0,ompl,geometric,clutter,3,cornflakes,5,1,1,,,9.9,,1,1,,11.0,
+2026-11-02T02:35:24,8f05b936+exp+clear0,ompl,geometric,clutter,4,coca_cola_can,1,1,0,operator,not_held,8.9,,1,,,11.9,
+2026-11-02T02:35:24,8f05b936+exp+clear0,ompl,geometric,clutter,4,orange,2,1,1,,,9.9,,1,1,,8.6,
+2026-11-02T02:35:24,8f05b936+exp+clear0,ompl,geometric,clutter,4,banana,3,1,1,,,11.7,,1,1,,13.4,
+2026-11-02T02:35:24,8f05b936+exp+clear0,ompl,geometric,clutter,4,cup,4,1,1,,,9.9,,1,1,,12.4,
+2026-11-02T02:35:24,8f05b936+exp+clear0,ompl,geometric,clutter,4,soup_bar,5,1,1,,,10.3,,1,1,,12.0,
+2026-11-02T02:35:46,8f05b936+exp+clear0,ompl,gpd,excluded_vision,4,coca_cola_can,1,0,0,stack,perception,0.2,,,,,,object not found by detector
+2026-11-02T02:39:01,8f05b936+exp+clear0,ompl,gpd,clutter,4,coca_cola_can,1,1,0,operator,not_held,14.5,,1,,,10.1,
+2026-11-02T02:39:01,8f05b936+exp+clear0,ompl,gpd,clutter,4,orange,2,1,1,,,13.5,,1,1,,11.7,
+2026-11-02T02:39:01,8f05b936+exp+clear0,ompl,gpd,excluded_vision,4,banana,3,0,0,stack,perception,0.1,,,,,,object not found by detector
+2026-11-02T02:41:41,8f05b936+exp+clear0,ompl,gpd,clutter,4,banana,3,1,0,operator,not_held,14.5,,1,,,9.1,repeat after excluded_vision
+2026-11-02T02:41:41,8f05b936+exp+clear0,ompl,gpd,clutter,4,cup,4,1,1,,,18.6,,1,1,,13.4,
+2026-11-02T02:41:41,8f05b936+exp+clear0,ompl,gpd,clutter,4,soup_bar,5,1,1,,,15.6,,1,1,,10.7,
+2026-11-02T02:44:01,8f05b936+exp+clear0,ompl,gpd,clutter,5,apple,1,1,0,operator,not_held,11.6,,1,,,7.9,
+2026-11-02T02:44:01,8f05b936+exp+clear0,ompl,gpd,clutter,5,banana,2,1,0,operator,wrong_object,14.3,,1,,,10.4,arm grasped cornflakes instead of banana; operator restored cornflakes
+2026-11-02T02:44:01,8f05b936+exp+clear0,ompl,gpd,excluded_vision,5,coca_cola_can,3,0,0,stack,perception,0.3,,,,,,object not found by detector
+2026-11-02T02:45:18,8f05b936+exp+clear0,ompl,gpd,clutter,5,orange,4,0,0,stack,planning,5.6,,,,,,all 10 candidates failed
+2026-11-02T02:45:59,8f05b936+exp+clear0,ompl,gpd,clutter,5,cornflakes,5,1,1,,,15.1,,1,1,,10.6,
+2026-11-02T02:48:06,8f05b936+exp+clear0,ompl,geometric,clutter,5,apple,1,1,1,,,9.7,,1,1,,8.1,
+2026-11-02T02:48:06,8f05b936+exp+clear0,ompl,geometric,clutter,5,banana,2,0,0,stack,planning,5.3,,,,,,generator: gripper hits the table
+2026-11-02T02:49:33,8f05b936+exp+clear0,ompl,geometric,clutter,5,orange,3,1,1,,,10.5,,1,1,,13.5,
+2026-11-02T02:49:33,8f05b936+exp+clear0,ompl,geometric,clutter,5,cornflakes,4,1,1,,,10.3,,1,1,,10.3,
