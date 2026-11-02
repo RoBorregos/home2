@@ -182,6 +182,8 @@ set(srv_files
   "vision/srv/PersonInside.srv"
   "vision/srv/PersonInsideReq.srv"
   "vision/srv/IsTalking.srv"
+  "vision/srv/EmbedText.srv"
+  "vision/srv/EmbedCrops.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)
