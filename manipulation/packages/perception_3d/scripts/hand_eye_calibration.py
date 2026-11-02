@@ -24,9 +24,10 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 # Board geometry (m). The printable board is config/charuco_7x5_30mm_DICT4X4_50_Letter.pdf (US Letter
-# landscape) print it at 100%, check 210 x 150 mm with calipers,
+# landscape), designed as 30 mm squares / 22 mm markers (210 x 150 mm). The printed copy in use came out
+# at ~96% (ruler: squares 29 mm, markers 21 mm, board ~200 x 145 mm), so the constants are the printed values.
 SQUARES_X, SQUARES_Y = 7, 5
-SQUARE_LEN, MARKER_LEN = 0.030, 0.022
+SQUARE_LEN, MARKER_LEN = 0.029, 0.021
 DICT_NAME = "DICT_4X4_50"
 GRIPPER, ZED_LINK = "gripper", "zed_camera_link"
 METHODS = {
