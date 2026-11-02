@@ -1,0 +1,5 @@
+numpy
+scikit-learn
+matplotlib
+pytest
+jellyfish

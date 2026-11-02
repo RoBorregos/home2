@@ -31,6 +31,12 @@ from frida_constants.hri_constants import (
     QUERY_ENTRY_SERVICE,
     RAG_SERVICE,
     RESPEAKER_LIGHT_TOPIC,
+    ASK_TO_REPEAT_TEXT,
+    CONFIDENCE_FIX_MATCHING,
+    CONFIDENCE_LOG_ENABLED,
+    CONFIDENCE_MODEL_PATH,
+    CONFIDENCE_POLICY,
+    CONFIDENCE_THRESHOLDS,
     SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
     SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
     SPEAK_SERVICE,
@@ -89,6 +95,7 @@ from task_manager.utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
+from task_manager.utils import confidence_policy
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
@@ -171,6 +178,7 @@ class HRITasks:
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
         self.initial_prompt = ""
+        self._setup_confidence_policy()
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
 
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
@@ -282,6 +290,31 @@ class HRITasks:
         if not self.mock_data:
             self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
+
+    def _setup_confidence_policy(self):
+        """Decision log + calibrated model for ask_and_confirm (#1384)."""
+        self.task_name = getattr(self.task, "name", str(self.task)).lower()
+        self.decision_logger = confidence_policy.DecisionLogger(
+            self.task_name, enabled=CONFIDENCE_LOG_ENABLED
+        )
+        model_path = CONFIDENCE_MODEL_PATH
+        if model_path and not os.path.isabs(model_path):
+            try:
+                model_path = os.path.join(
+                    get_package_share_directory("frida_constants"), "data", model_path
+                )
+            except Exception:
+                model_path = ""
+        self.confidence_model = confidence_policy.CalibratedModel.load(model_path)
+        if CONFIDENCE_POLICY != "legacy" and self.confidence_model is None:
+            Logger.warn(
+                self.node,
+                f"Confidence policy '{CONFIDENCE_POLICY}' needs a model at {model_path}, using legacy",
+            )
+        # Ordered STT output of the last hear() call (the word_confidences dict collapses repeated words)
+        self.last_stt_words = []
+        self.last_stt_confidences = []
+        self.last_stt_meta = {}
 
     def setup_services(self):
         """Initialize services and actions"""
@@ -494,6 +527,13 @@ class HRITasks:
             if result.words
             else {}
         )
+        self.last_stt_words = list(result.words) if heard_text else []
+        self.last_stt_confidences = list(result.confidences) if heard_text else []
+        self.last_stt_meta = {
+            key: getattr(result, key)
+            for key in ("avg_logprob", "no_speech_prob")
+            if hasattr(result, key)
+        }
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
@@ -679,6 +719,40 @@ class HRITasks:
         )
         return Status.TIMEOUT, ""
 
+    def _log_decision(
+        self,
+        question,
+        query,
+        transcription,
+        extracted_value,
+        features,
+        decision,
+        p_correct,
+        attempt_idx,
+        options,
+        confirm_answer=None,
+    ):
+        """One record of the ask_and_confirm decision log (#1384), see confidence_policy.DecisionLogger."""
+        self.decision_logger.log(
+            {
+                "task": self.task_name,
+                "policy": CONFIDENCE_POLICY,
+                "question": question,
+                "query": query,
+                "transcription": transcription,
+                "extracted_value": extracted_value,
+                "words": list(self.last_stt_words),
+                "confidences": [float(c) for c in self.last_stt_confidences],
+                "stt_meta": self.last_stt_meta,
+                "options": options,
+                "features": features,
+                "decision": decision,
+                "p_correct": p_correct,
+                "confirm_answer": confirm_answer,
+                "attempt_idx": attempt_idx,
+            }
+        )
+
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_answer"))
     def ask_and_confirm(
         self,
@@ -718,12 +792,17 @@ class HRITasks:
             str: answer to the question
         """
         current_attempt = 0
+        repeat_requested = False
         while current_attempt < retries:
             current_attempt += 1
 
             start_time = self.node.get_clock().now()
 
-            self.say(question)
+            # After "could you repeat?" listen again without asking the question again
+            if not repeat_requested:
+                self.say(question)
+            repeat_requested = False
+            self.last_stt_words, self.last_stt_confidences, self.last_stt_meta = [], [], {}
             hear_status, interpreted_text, word_confidences = self.hear(
                 hotwords=hotwords,
                 initial_prompt=initial_prompt,
@@ -735,18 +814,32 @@ class HRITasks:
                 target_info = interpreted_text
                 target_found = options is None
                 similarity = 1
+                foundExact = False
+                decision = confidence_policy.CONFIRM
+                p_correct = None
+                features = {}
                 try:
                     # If no options provided, directly extract the data without looking for matches
                     if not skip_extract_data and not options:
                         s, target_info = self.extract_data(query, interpreted_text, context)
                         if s != Status.EXECUTION_SUCCESS:
+                            self._log_decision(
+                                question,
+                                query,
+                                interpreted_text,
+                                "",
+                                {},
+                                "extract_failed",
+                                None,
+                                current_attempt,
+                                options,
+                            )
                             self.say("Sorry, I couldn't understand.")
                             continue
                         target_found = True
 
                     # If extracted data options provided look for exact or closest match
                     if options is not None:
-                        foundExact = False
                         normalized_target_info = remove_punctuation(target_info)
                         for option in options:
                             normalized_option = remove_punctuation(option)
@@ -757,9 +850,6 @@ class HRITasks:
                                 target_info = option
                                 foundExact = True
                                 target_found = True
-                                skip_confirmation = (
-                                    True  # Skip confirmation if an exact match is found
-                                )
                                 break
 
                         if not foundExact:
@@ -769,27 +859,26 @@ class HRITasks:
                                 target_info = similarity_list.results[0]
                                 similarity = similarity_list.similarities[0]
 
-                    # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
-                    normalized_confidences = {
-                        remove_punctuation(word): confidence
-                        for word, confidence in word_confidences.items()
-                    }
-                    target_words = remove_punctuation(target_info).split()
-                    matched_confidences = [
-                        normalized_confidences[w]
-                        for w in target_words
-                        if w in normalized_confidences
-                    ]
-                    avg_confidence = (
-                        sum(matched_confidences) / len(matched_confidences)
-                        if matched_confidences
-                        else 0
+                    # Accept / repeat / confirm depending on the similarity to an option and on transcription confidence
+                    features = confidence_policy.compute_features(
+                        target_info,
+                        interpreted_text,
+                        self.last_stt_words or list(word_confidences.keys()),
+                        self.last_stt_confidences or list(word_confidences.values()),
+                        similarity=similarity,
+                        exact_match=foundExact,
+                        options_used=options is not None,
+                        stt_meta=self.last_stt_meta,
                     )
-                    if (
-                        similarity > SKIP_CONFIRMATION_SIMILARITY_THRESHOLD
-                        and avg_confidence > SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD
-                    ):
-                        skip_confirmation = True
+                    decision, p_correct = confidence_policy.decide(
+                        features,
+                        CONFIDENCE_POLICY,
+                        CONFIDENCE_THRESHOLDS.get(self.task_name, CONFIDENCE_THRESHOLDS["default"]),
+                        self.confidence_model,
+                        SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
+                        SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
+                        CONFIDENCE_FIX_MATCHING,
+                    )
 
                     # Remap the target_info if a remap dictionary is provided
                     if remap is not None:
@@ -802,8 +891,41 @@ class HRITasks:
                 except Exception as e:
                     print("Failed matching result:", e)
 
-                if not always_confirm and skip_confirmation:
+                if always_confirm:
+                    decision = confidence_policy.CONFIRM
+                elif skip_confirmation:
+                    decision = confidence_policy.ACCEPT
+
+                if decision == confidence_policy.ACCEPT:
+                    self._log_decision(
+                        question,
+                        query,
+                        interpreted_text,
+                        target_info,
+                        features,
+                        decision,
+                        p_correct,
+                        current_attempt,
+                        options,
+                    )
                     return Status.EXECUTION_SUCCESS, target_info
+
+                # Free "please repeat" (not a non-essential question), unless it is the last attempt
+                if decision == confidence_policy.REPEAT and current_attempt < retries:
+                    self._log_decision(
+                        question,
+                        query,
+                        interpreted_text,
+                        target_info,
+                        features,
+                        decision,
+                        p_correct,
+                        current_attempt,
+                        options,
+                    )
+                    self.say(ASK_TO_REPEAT_TEXT)
+                    repeat_requested = True
+                    continue
 
                 # Determine the confirmation question
                 if callable(confirm_question):
@@ -812,10 +934,35 @@ class HRITasks:
                     confirmation_text = confirm_question
 
                 # Ask for confirmation
+                confirmation = ""
                 if target_info != "" and target_found:
                     s, confirmation = self.confirm(confirmation_text, use_keyword, 3)
-                    if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
-                        return Status.EXECUTION_SUCCESS, target_info
+                self._log_decision(
+                    question,
+                    query,
+                    interpreted_text,
+                    target_info,
+                    features,
+                    confidence_policy.CONFIRM,
+                    p_correct,
+                    current_attempt,
+                    options,
+                    confirmation,
+                )
+                if confirmation == "yes":
+                    return Status.EXECUTION_SUCCESS, target_info
+            else:
+                self._log_decision(
+                    question,
+                    query,
+                    interpreted_text,
+                    "",
+                    {},
+                    "not_heard",
+                    None,
+                    current_attempt,
+                    options,
+                )
 
             # Wait for the minimum time between retries
             while (

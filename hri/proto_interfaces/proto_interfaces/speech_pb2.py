@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dproto_interfaces/speech.proto\x12\x06speech\"L\n\x0c\x41udioRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\x12\x10\n\x08hotwords\x18\x02 \x01(\t\x12\x16\n\x0einitial_prompt\x18\x03 \x01(\t\"H\n\x08WordInfo\x12\x0c\n\x04word\x18\x01 \x01(\t\x12\x12\n\nconfidence\x18\x02 \x01(\x02\x12\r\n\x05start\x18\x03 \x01(\x02\x12\x0b\n\x03\x65nd\x18\x04 \x01(\x02\"=\n\x0cTextResponse\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x1f\n\x05words\x18\x02 \x03(\x0b\x32\x10.speech.WordInfo2I\n\rSpeechService\x12\x38\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponse2L\n\x0cSpeechStream\x12<\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponse(\x01\x30\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dproto_interfaces/speech.proto\x12\x06speech\"L\n\x0c\x41udioRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\x12\x10\n\x08hotwords\x18\x02 \x01(\t\x12\x16\n\x0einitial_prompt\x18\x03 \x01(\t\"H\n\x08WordInfo\x12\x0c\n\x04word\x18\x01 \x01(\t\x12\x12\n\nconfidence\x18\x02 \x01(\x02\x12\r\n\x05start\x18\x03 \x01(\x02\x12\x0b\n\x03\x65nd\x18\x04 \x01(\x02\"j\n\x0cTextResponse\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x1f\n\x05words\x18\x02 \x03(\x0b\x32\x10.speech.WordInfo\x12\x13\n\x0b\x61vg_logprob\x18\x03 \x01(\x02\x12\x16\n\x0eno_speech_prob\x18\x04 \x01(\x02\x32I\n\rSpeechService\x12\x38\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponse2L\n\x0cSpeechStream\x12<\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponse(\x01\x30\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,9 +36,9 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_WORDINFO']._serialized_start=119
   _globals['_WORDINFO']._serialized_end=191
   _globals['_TEXTRESPONSE']._serialized_start=193
-  _globals['_TEXTRESPONSE']._serialized_end=254
-  _globals['_SPEECHSERVICE']._serialized_start=256
-  _globals['_SPEECHSERVICE']._serialized_end=329
-  _globals['_SPEECHSTREAM']._serialized_start=331
-  _globals['_SPEECHSTREAM']._serialized_end=407
+  _globals['_TEXTRESPONSE']._serialized_end=299
+  _globals['_SPEECHSERVICE']._serialized_start=301
+  _globals['_SPEECHSERVICE']._serialized_end=374
+  _globals['_SPEECHSTREAM']._serialized_start=376
+  _globals['_SPEECHSTREAM']._serialized_end=452
 # @@protoc_insertion_point(module_scope)

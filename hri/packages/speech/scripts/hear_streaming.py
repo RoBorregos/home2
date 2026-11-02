@@ -67,6 +67,7 @@ class HearStreaming(Node):
         self.initial_prompt = ""
         self.current_transcription = ""
         self.current_words = []
+        self.current_scores = {}
         self.stop_flag = threading.Event()
         self.stop_flag.set()
         self.transcript_thread = None
@@ -198,6 +199,10 @@ class HearStreaming(Node):
                         {"word": w.word, "confidence": w.confidence}
                         for w in response.words
                     ]
+                    self.current_scores = {
+                        "avg_logprob": getattr(response, "avg_logprob", 0.0),
+                        "no_speech_prob": getattr(response, "no_speech_prob", 0.0),
+                    }
             except grpc.RpcError as e:
                 if "locally cancelled" not in e.details().lower():
                     self.get_logger().error(f"gRPC stream error: {e}")
@@ -216,6 +221,7 @@ class HearStreaming(Node):
         self.audio_buffer.clear()
         self.current_transcription = ""
         self.current_words = []
+        self.current_scores = {}
         self.prev_transcription = ""
         self.cancel_requested = False
         self._speaker_stopped = False
@@ -307,6 +313,11 @@ class HearStreaming(Node):
         if hasattr(result, "words"):
             result.words = [w["word"] for w in self.current_words]
             result.confidences = [w["confidence"] for w in self.current_words]
+        if hasattr(result, "avg_logprob"):
+            result.avg_logprob = float(self.current_scores.get("avg_logprob", 0.0))
+            result.no_speech_prob = float(
+                self.current_scores.get("no_speech_prob", 0.0)
+            )
         self.get_logger().info(f"Final transcription: {result.transcription}")
         if self.current_words:
             self.get_logger().info(

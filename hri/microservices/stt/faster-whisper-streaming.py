@@ -80,7 +80,9 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
                             for w in client.word_confidences
                         ]
 
-                        yield speech_pb2.TextResponse(text=text, words=word_infos)
+                        yield speech_pb2.TextResponse(
+                            text=text, words=word_infos, **client.segment_scores
+                        )
 
                 except Exception as e:
                     print(f"Error processing chunk: {str(e)}")

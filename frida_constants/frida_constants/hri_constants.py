@@ -105,4 +105,20 @@ VOWEL_FREQ_HIGH = 255
 # HRI Subtask Manager
 SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.7
 SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.7
+
+# Confidence-calibrated clarification policy (#1384)
+# "legacy": 0.7/0.7 rule above, "binary": calibrated accept/confirm, "three_way": accept/repeat/confirm
+CONFIDENCE_POLICY = "legacy"
+# Fall back to fuzzy/whole-transcription confidence when the extracted value is normalized ("coke" -> "Coca-Cola")
+CONFIDENCE_FIX_MATCHING = True
+CONFIDENCE_LOG_ENABLED = True
+# Exported by research/confidence_calibration/analyze.py (relative paths are resolved from frida_constants/data)
+CONFIDENCE_MODEL_PATH = "confidence_model.json"
+# p(correct) thresholds per task, chosen by research/confidence_calibration/policy_search.py
+CONFIDENCE_THRESHOLDS = {
+    "default": {"accept": 0.9, "repeat": 0.3},
+    "hric": {"accept": 0.9, "repeat": 0.3},
+    "gpsr": {"accept": 0.95, "repeat": 0.3},
+}
+ASK_TO_REPEAT_TEXT = "Sorry, I couldn't hear you, could you repeat?"
 TIMEOUT = 5.0

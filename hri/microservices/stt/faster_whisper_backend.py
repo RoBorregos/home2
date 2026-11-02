@@ -116,6 +116,7 @@ class ServeClientFasterWhisper(ServeClientBase):
 
         self.use_vad = use_vad
         self.word_confidences = []
+        self.segment_scores = {"avg_logprob": 0.0, "no_speech_prob": 0.0}
 
         # threading
         self.trans_thread = threading.Thread(target=self.speech_to_text)
@@ -253,6 +254,10 @@ class ServeClientFasterWhisper(ServeClientBase):
                                 "end": w.end,
                             }
                         )
+            self.segment_scores = {
+                "avg_logprob": sum(s.avg_logprob for s in result) / len(result),
+                "no_speech_prob": sum(s.no_speech_prob for s in result) / len(result),
+            }
             last_segment = self.update_segments(result, duration)
             segments = self.prepare_segments(last_segment)
 

@@ -32,4 +32,7 @@ message WordInfo {
 message TextResponse {
   string text = 1;
   repeated WordInfo words = 2;
+  // Segment-level Whisper scores, averaged over the transcribed segments
+  float avg_logprob = 3;
+  float no_speech_prob = 4;
 }

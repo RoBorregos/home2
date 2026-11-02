@@ -9,6 +9,8 @@ float32 start_silence_time
 string transcription
 string[] words
 float32[] confidences
+float32 avg_logprob
+float32 no_speech_prob
 ---
 #feedback
 string current_transcription
