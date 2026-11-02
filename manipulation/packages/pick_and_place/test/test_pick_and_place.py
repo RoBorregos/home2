@@ -12,6 +12,7 @@ import asyncio
 import inspect
 import numpy as np
 import threading
+from types import SimpleNamespace
 import pytest
 import yaml
 from contextlib import contextmanager
@@ -288,6 +289,27 @@ def test_a_failed_shape_pick_falls_back_to_gpd(strategies, candidates_fail):
         assert arm.calls.index("remove_collision_object") < stare_moves[1]
     else:
         assert "remove_collision_object" not in arm.calls
+
+
+def test_a_failed_shape_pick_keeps_out_of_gpd_when_the_fallback_is_off(strategies):
+    generated = FakeGenerateGraspsResponse(make_pose(z=0.3), object_type="box")
+    perception = FakePerception(
+        located_point=make_point(),
+        cluster=make_cluster(),
+        grasps=[([make_pose()], [0.9])] * 3,
+        generated_grasps=generated,
+    )
+
+    success, _ = run_pick(
+        FakeArm(pregrasp_results=[False]),
+        perception,
+        strategies,
+        object_name="coke",
+        gpd_fallback=False,
+    )
+
+    assert not success
+    assert "detect_grasps" not in perception.calls
 
 
 def test_an_unlisted_name_tries_the_geometric_generator_before_gpd(strategies):
@@ -567,6 +589,7 @@ def core():
     node.strategies = {}
     node._logger = FakeLogger()
     node.get_logger = lambda: node._logger
+    node.get_parameter = lambda name: SimpleNamespace(value="auto")
     node._last_pick = PickOutcome()
     node._follow_lock = threading.Lock()
     node._face = follow_pipeline.FaceState()
@@ -643,6 +666,14 @@ def test_every_task_type_has_a_pipeline(core):
         ManipulationTask.POUR,
     ):
         assert task in core._pipelines
+
+
+@pytest.mark.parametrize(
+    "value, successful", [("auto", True), ("gpd", True), ("geometic", False)]
+)
+def test_only_known_pick_methods_are_accepted(core, value, successful):
+    parameter = SimpleNamespace(name="pick_method", value=value)
+    assert core._validate_parameters([parameter]).successful is successful
 
 
 def test_a_failed_pick_clears_the_remembered_outcome(core, monkeypatch):

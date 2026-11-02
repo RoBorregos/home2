@@ -15,6 +15,7 @@ import time
 
 import numpy as np
 import rclpy
+from rcl_interfaces.msg import SetParametersResult
 from frida_constants.manipulation_constants import (
     FIXED_DISTANCE_MOVE_SERVICE,
     FOLLOW_FACE_ARM_SERVICE,
@@ -57,6 +58,9 @@ FACE_LOOP_PERIOD = 0.1
 EXECUTOR_THREADS = 16
 
 
+PICK_METHODS = ("auto", "geometric", "gpd")
+
+
 class ManipulationCore(Node):
     def __init__(self):
         super().__init__("manipulation_core")
@@ -73,6 +77,9 @@ class ManipulationCore(Node):
         self.declare_parameter("geometric_tip_offset", -GRIPPER_REACH)
         # Points at an alternative profile file; empty means the installed one.
         self.declare_parameter("pick_profiles_file", "")
+        # Benchmark switch: auto, gpd, or geometric (no GPD fallback).
+        self.declare_parameter("pick_method", "auto")
+        self.add_on_set_parameters_callback(self._validate_parameters)
 
         self.arm = RobotArm(self)
         self.perception = Perception(self)
@@ -191,14 +198,27 @@ class ManipulationCore(Node):
     # Pipelines
     # ==================================================================
 
+    def _validate_parameters(self, parameters):
+        """Reject a pick_method typo instead of silently running auto."""
+        for parameter in parameters:
+            if parameter.name == "pick_method" and parameter.value not in PICK_METHODS:
+                return SetParametersResult(
+                    successful=False,
+                    reason=f"pick_method must be one of {PICK_METHODS}",
+                )
+        return SetParametersResult(successful=True)
+
     def _run_pick(self, request) -> bool:
         params = request.pick_params
+        method = self.get_parameter("pick_method").value
         pick_request = pick_pipeline.PickRequest(
             object_name=params.object_name,
             object_point=params.object_point,
             min_distance=params.min_distance or 0.0,
             max_distance=params.max_distance or pick_pipeline.PICK_MAX_DISTANCE,
             is_shelf=request.scan_environment,
+            use_gpd=method == "gpd",
+            gpd_fallback=method != "geometric",
             in_configuration=params.in_configuration,
         )
 
