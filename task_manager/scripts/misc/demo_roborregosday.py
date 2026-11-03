@@ -256,17 +256,9 @@ class DemoRoborregosDay(Node):
 
         # ──────────────────── TURN_TO_PICK ─────────────────────────────
         elif self.current_state == DemoRoborregosDay.States.TURN_TO_PICK:
-            if not self._state_announced:
-                self.subtask_manager.manipulation.move_to_position("table_stare")
-                self.subtask_manager.hri.say(
-                    "I am scanning the table for your item.",
-                    wait=False,
-                )
-                Logger.info(self, f"Press Enter to pick. {HELP_TEXT}")
-                self._state_announced = True
-                return
-
+            Logger.info(self, f"Press Enter to pick. {HELP_TEXT}")
             if command == "confirm":
+                self.subtask_manager.manipulation.move_to_position("table_stare")
                 Logger.success(self, "Pick confirmed. Proceeding to pick.")
                 self._set_state(DemoRoborregosDay.States.PICK_OBJECT)
             elif command == "re_announce":
@@ -275,9 +267,7 @@ class DemoRoborregosDay(Node):
         # ─────────────────────── PICK_OBJECT ───────────────────────────
         elif self.current_state == DemoRoborregosDay.States.PICK_OBJECT:
             status = self._pick_with_retry(self.current_item)
-            if status == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say("I have the item!")
-            else:
+            if not status == Status.EXECUTION_SUCCESS:
                 Logger.error(self, "Pick failed even with deus ex machina.")
                 self.subtask_manager.hri.say("I was unable to pick the item. I am sorry.")
             self.subtask_manager.manipulation.move_to_position("table_stare")
@@ -302,22 +292,22 @@ class DemoRoborregosDay(Node):
 
         # ──────────────────── PLACE_OBJECT ─────────────────────────────
         elif self.current_state == DemoRoborregosDay.States.PLACE_OBJECT:
-            self.subtask_manager.manipulation.move_to_position("take_object")
-            self.subtask_manager.hri.say(
-                f"Here is your {self.current_item}! Please take it from my hand."
-            )
-            _, confirmation = self.subtask_manager.hri.confirm(
-                "Have you taken the item?",
-                retries=3,
-                wait_between_retries=5,
-            )
-            self.subtask_manager.manipulation.open_gripper()
-            if confirmation == "yes":
-                Logger.success(self, "Item delivered successfully.")
-            else:
-                Logger.warn(self, "No confirmation received, continuing anyway.")
-            self._set_state(DemoRoborregosDay.States.FAREWELL)
+            if self.subtask_manager.manipulation.move_to_position("take_object"):
+                self.subtask_manager.hri.say(
+                    f"Here is your {self.current_item}! Please take it from my hand."
+                )
+                _, confirmation = self.subtask_manager.hri.confirm(
+                    "Have you taken the item?",
+                    retries=3,
+                    wait_between_retries=5,
+                )
 
+                self.subtask_manager.manipulation.open_gripper()
+                if confirmation == "yes":
+                    Logger.success(self, "Item delivered successfully.")
+                else:
+                    Logger.warn(self, "No confirmation received, continuing anyway.")
+                self._set_state(DemoRoborregosDay.States.FAREWELL)
         # ─────────────────────── FAREWELL ──────────────────────────────
         elif self.current_state == DemoRoborregosDay.States.FAREWELL:
             self.subtask_manager.hri.say(
