@@ -5,7 +5,7 @@ set -e
 
 MODELS_DIR=/ollama
 MODEL_FILE="${LLAMA_MODEL_FILE:-qwen3-4b.Q4_K_M.gguf}"
-ALIAS="${LLAMA_ALIAS:-qwen3}"
+ALIAS="${LLAMA_ALIAS:-frida-llm}"
 CTX="${LLAMA_CTX_SIZE:-2048}"
 PORT="${BENCH_PORT:-11434}"
 
@@ -41,5 +41,5 @@ ollama create "$ALIAS" -f /tmp/Modelfile.bench
 curl -sf "http://localhost:$PORT/api/generate" \
     -d "{\"model\": \"$ALIAS\", \"keep_alive\": -1}" >/dev/null
 
-echo "Ollama bench server ready (model=$ALIAS, ctx=$CTX)."
+echo "Ollama bench server ready: $MODEL_FILE as '$ALIAS' (ctx=$CTX)."
 tail -f /dev/null

@@ -2,7 +2,12 @@
 
 import rclpy
 from embeddings.postgres_adapter import PostgresAdapter
-from nlp.assets.dialogs import clean_question_rag, get_answer_question_dialog
+from nlp.assets.dialogs import (
+    NO_THINKING,
+    clean_question_rag,
+    get_answer_question_dialog,
+    strip_thinking,
+)
 from openai import OpenAI
 from rclpy.node import Node
 
@@ -63,13 +68,11 @@ class RAGService(Node):
         messages = clean_question_rag(question)
 
         response = self.llm.beta.chat.completions.parse(
-            messages=messages, model="qwen2.5"
+            messages=messages, model=self.model_name, extra_body=NO_THINKING
         )
         cleaned_question = response.choices[0].message.content.strip()
-        if "</think>" in cleaned_question:
-            cleaned_question = cleaned_question.split("</think>")[-1].strip()
 
-        return cleaned_question
+        return strip_thinking(cleaned_question)
 
     def answer_question_callback(self, request, response):
         try:
@@ -110,12 +113,9 @@ class RAGService(Node):
                 model=self.model_name,
                 temperature=self.temperature,
                 messages=messages,
+                extra_body=NO_THINKING,
             )
-            assistant_response = completion.choices[0].message.content
-
-            if "</think>" in assistant_response:
-                assistant_response = assistant_response.split("</think>")[-1].strip()
-
+            assistant_response = strip_thinking(completion.choices[0].message.content)
             assistant_response = assistant_response.replace("*", "")
 
             response.success = True

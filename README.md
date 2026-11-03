@@ -12,6 +12,7 @@ ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Re
 - [Cyclone DDS Setup](#cyclone-dds-setup)
 - [AI Agent Setup](#ai-agent-setup)
 - [Documentation](#documentation)
+- [Related Repositories](#related-repositories)
 - [Video Demonstrations](#video-demonstrations)
 - [Team Members](#team-members)
 - [Past Contributors](#past-contributors)
@@ -49,6 +50,7 @@ The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) a
 ./run.sh navigation
 ./run.sh manipulation
 ./run.sh integration
+./run.sh simulation --nav
 
 # Run a competition task
 ./run.sh --gpsr
@@ -64,6 +66,7 @@ The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) a
 | `navigation` | Spins up the containers for navigation |
 | `hri` | Spins up the containers for human-robot interaction |
 | `integration` | Spins up the complete integration environment |
+| `simulation` | Gazebo simulation of FRIDA — `--manip` for pick and place, `--nav` for navigation (see [simulation/frida_gz_sim](simulation/frida_gz_sim/README.md)) |
 | `frida_interfaces` | Builds and configures FRIDA's custom interfaces/messages |
 
 ### Competition Tasks
@@ -137,10 +140,12 @@ For detailed configuration options, see the [CycloneDDS setup docs](docs/cyclone
 To set up personalized instructions for your AI development agent (Claude, Gemini, or Copilot), run the setup script:
 
 ```bash
-./scripts/setup-agent.sh [agent_type]
+./scripts/setup_agent.sh [agent_type]
 ```
 
 Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no argument is provided, the script will prompt you for a choice.
+
+All agent context lives in `docs/ai/` (e.g. `docs/ai/orin.md` — how to connect, test and sync code on the robot); the generated instructions file points every agent there.
 
 ## Documentation
 
@@ -149,6 +154,11 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 - [RoboCup @Home Rule Book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoBorregos/home2)
+
+## Related Repositories
+
+- [home-custom-base](https://github.com/RoBorregos/home-custom-base): firmware (STM32, ODrive S1 over CAN, on-MCU EKF) and ROS 2 dashboard for FRIDA's omnidirectional base.
+- [home-pipelines](https://github.com/RoBorregos/home-pipelines): Jupyter notebook pipelines for the HRI command interpreter and the vision object detector.
 
 ## Video Demonstrations
 

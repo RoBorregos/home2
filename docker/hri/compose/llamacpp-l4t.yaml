@@ -2,7 +2,7 @@ services:
   llama:
     profiles: [hric, gpsr, restaurant]
     container_name: home2-hri-llamacpp-l4t
-    image: ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin
+    image: ${LLAMA_CPP_IMAGE:-ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin}
     runtime: nvidia
     network_mode: host
     volumes:
@@ -13,6 +13,7 @@ services:
       ROLE: ${ROLE}
       LLAMA_MODEL_FILE: ${LLAMA_MODEL_FILE:-}
       LLAMA_ALIAS: ${LLAMA_ALIAS:-}
+      LLAMA_CACHE_TYPE: ${LLAMA_CACHE_TYPE:-}
       LLAMA_CTX_SIZE: ${LLAMA_CTX_SIZE:-2048}
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility

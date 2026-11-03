@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <world name="pnp_table">
+    <physics name="1ms" type="dart">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <gravity>0 0 -9.81</gravity>
+    <scene>
+      <ambient>0.6 0.6 0.6 1</ambient>
+      <background>0.8 0.85 0.9 1</background>
+      <shadows>true</shadows>
+    </scene>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.3 0.2 -0.9</direction>
+    </light>
+    <light type="point" name="ceiling">
+      <pose>0.8 0 2.6 0 0 0</pose>
+      <diffuse>0.6 0.6 0.6 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+      <attenuation><range>8</range><constant>0.5</constant><linear>0.05</linear><quadratic>0.01</quadratic></attenuation>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+          <material>
+            <ambient>0.7 0.7 0.68 1</ambient>
+            <diffuse>0.75 0.75 0.72 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Fixed overview camera for headless debugging (/sim/overview_camera/image) -->
+    <model name="overview_camera">
+      <static>true</static>
+      <pose>1.55 -1.05 1.75 0 0.55 2.45</pose>
+      <link name="link">
+        <sensor name="overview" type="camera">
+          <always_on>true</always_on>
+          <update_rate>2</update_rate>
+          <topic>overview_camera/image</topic>
+          <camera>
+            <horizontal_fov>1.1</horizontal_fov>
+            <image><width>800</width><height>600</height></image>
+            <clip><near>0.05</near><far>20</far></clip>
+          </camera>
+        </sensor>
+      </link>
+    </model>
+
+    <include>
+      <name>dining_table</name>
+      <uri>model://pnp_table</uri>
+      <pose>0.74 0 0 0 0 0</pose>
+    </include>
+
+    <!-- Side table on the robot's left where cleared objects are placed -->
+    <include>
+      <name>side_table</name>
+      <uri>model://pnp_side_table</uri>
+      <pose>-0.25 0.70 0 0 0 1.5708</pose>
+    </include>
+
+    <!-- Anchor for "place close to the bowl" on the side table -->
+    <include>
+      <name>bowl</name>
+      <uri>model://sim_bowl</uri>
+      <pose>0.02 0.74 0.551 0 0 0</pose>
+    </include>
+
+    <include>
+      <name>mustard_bottle</name>
+      <uri>model://sim_mustard_bottle</uri>
+      <pose>0.48 -0.22 0.751 0 0 1.5708</pose>
+    </include>
+    <include>
+      <name>mug</name>
+      <uri>model://sim_mug</uri>
+      <pose>0.60 0.13 0.751 0 0 2.6</pose>
+    </include>
+    <include>
+      <name>medicine_bottle</name>
+      <uri>model://sim_medicine_bottle</uri>
+      <pose>0.47 -0.01 0.751 0 0 0.4</pose>
+    </include>
+  </world>
+</sdf>

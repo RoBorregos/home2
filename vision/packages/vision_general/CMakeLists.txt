@@ -44,6 +44,13 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}/models
 )
 
+# Model weights — installed alongside the Python model modules
+file(GLOB MODEL_WEIGHTS models/*.task)
+install(FILES
+  ${MODEL_WEIGHTS}
+  DESTINATION lib/${PROJECT_NAME}/models
+)
+
 
 ######################### Testing  #########################
 ##For testing

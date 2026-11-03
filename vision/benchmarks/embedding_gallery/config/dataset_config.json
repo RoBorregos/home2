@@ -1,0 +1,6 @@
+{
+  "_comment": "Values below are calibrated for RCW2026_v2 (see README.md / git history). Editing THIS file (not the .py scripts) is how you adapt the benchmark to a new object set — see dataset_config.py's docstring for what each list means and how to derive it.",
+  "out_of_gallery_classes": ["mangostane", "rubiks_cube", "seaweed"],
+  "hard_negative_classes": ["fork", "knife", "spoon", "cup", "bowl", "plate", "red_bellpepper", "yellow_bellpepper", "apple", "peach"],
+  "known_limitation_classes": ["fork", "knife", "spoon", "cup", "bowl", "plate", "coke", "red_bull"]
+}

@@ -1,0 +1,50 @@
+# gz -> ROS topic map; ROS names match the real ZED wrapper topics in frida_constants
+- ros_topic_name: /clock
+  gz_topic_name: /clock
+  ros_type_name: rosgraph_msgs/msg/Clock
+  gz_type_name: gz.msgs.Clock
+  direction: GZ_TO_ROS
+
+- ros_topic_name: /zed/zed_node/rgb/color/rect/image
+  gz_topic_name: /zed_rgbd/image
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+
+- ros_topic_name: /zed/zed_node/rgb/image_rect_color
+  gz_topic_name: /zed_rgbd/image
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+
+- ros_topic_name: /zed/zed_node/depth/depth_registered
+  gz_topic_name: /zed_rgbd/depth_image
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+
+- ros_topic_name: /zed/zed_node/depth/camera_info
+  gz_topic_name: /zed_rgbd/camera_info
+  ros_type_name: sensor_msgs/msg/CameraInfo
+  gz_type_name: gz.msgs.CameraInfo
+  direction: GZ_TO_ROS
+
+- ros_topic_name: /zed/zed_node/rgb/camera_info
+  gz_topic_name: /zed_rgbd/camera_info
+  ros_type_name: sensor_msgs/msg/CameraInfo
+  gz_type_name: gz.msgs.CameraInfo
+  direction: GZ_TO_ROS
+
+- ros_topic_name: /zed_rgbd/points_raw
+  gz_topic_name: /zed_rgbd/points
+  ros_type_name: sensor_msgs/msg/PointCloud2
+  gz_type_name: gz.msgs.PointCloudPacked
+  direction: GZ_TO_ROS
+  lazy: true
+
+- ros_topic_name: /sim/overview_camera/image
+  gz_topic_name: /overview_camera/image
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+  lazy: true

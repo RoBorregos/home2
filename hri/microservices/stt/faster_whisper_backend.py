@@ -8,6 +8,7 @@ import ctranslate2
 from base import ServeClientBase
 from device_utils import detect_device_and_compute_type
 from huggingface_hub import snapshot_download
+from hotwords import normalize_hotwords
 from transcriber_faster_whisper import WhisperModel
 
 
@@ -85,8 +86,8 @@ class ServeClientFasterWhisper(ServeClientBase):
         self.model_size_or_path = model
         self.language = "en" if self.model_size_or_path.endswith("en") else language
         self.task = task
-        self.initial_prompt = initial_prompt
-        self.hotwords = hotwords
+        self.initial_prompt = initial_prompt.strip() if initial_prompt else None
+        self.hotwords = normalize_hotwords(hotwords) or None
         self.vad_parameters = {
             "threshold": 0.8,
         }
@@ -211,6 +212,9 @@ class ServeClientFasterWhisper(ServeClientBase):
             initial_prompt=self.initial_prompt,
             language=self.language,
             task=self.task,
+            # Streaming chunks are decoded repeatedly. Avoid feeding generated
+            # text back into later windows (also recommended for Distil-Whisper).
+            condition_on_previous_text=False,
             vad_filter=self.use_vad,
             vad_parameters=self.vad_parameters if self.use_vad else None,
             word_timestamps=True,
