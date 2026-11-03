@@ -130,6 +130,9 @@ case $TASK in
         # (slow speeds, long voxel persistence) + table docking.
         RUN="ros2 launch nav_main restaurant.launch.py"
         ;;
+    "--joy")
+        RUN="ros2 launch nav_main joy.launch.py"
+        ;;
     "--tagger")
         RUN="ros2 run map_context map_area_tagger.py"
         ;;

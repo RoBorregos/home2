@@ -15,6 +15,7 @@
   <depend>lifecycle_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>p9n_node</depend>
+  <exec_depend>joy</exec_depend>
   <depend>rclcpp_components</depend>
   <depend>nav2_bt_navigator</depend>
   <depend>nav2_mppi_controller</depend>
