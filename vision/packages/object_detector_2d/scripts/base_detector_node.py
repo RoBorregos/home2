@@ -153,8 +153,11 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             self.run_thread is None or not self.run_thread.is_alive()
         ):
             frame = copy.deepcopy(rgb)
+            # Pass depth + stamp of this frame: they change while run() is busy
             self.run_thread = threading.Thread(
-                target=self.run, args=(frame,), daemon=True
+                target=self.run,
+                args=(frame, self.depth_image, data.header.stamp),
+                daemon=True,
             )
             self.run_thread.start()
 
@@ -171,24 +174,22 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
     # ------------------------------------------------------------------ inference
 
     @abstractmethod
-    def run(self, frame): ...
+    def run(self, frame, depth_image, stamp): ...
 
     # ------------------------------------------------------------------ helpers
 
-    def extract_3d(self, detections):
+    def extract_3d(self, detections, depth_image):
         has_depth = (
-            self.depth_active
-            and len(self.depth_image) > 0
-            and self.camera_info is not None
+            self.depth_active and len(depth_image) > 0 and self.camera_info is not None
         )
         for det in detections:
             pt = PointStamped(header=Header(frame_id=self.camera_frame), point=Point())
             if has_depth:
                 p2d = get2DCentroid(
                     [det.bbox_.y1, det.bbox_.x1, det.bbox_.y2, det.bbox_.x2],
-                    self.depth_image,
+                    depth_image,
                 )
-                depth = get_depth(self.depth_image, p2d)
+                depth = get_depth(depth_image, p2d)
                 p3d = deproject_pixel_to_point(self.camera_info, p2d, depth)
                 pt.point.x, pt.point.y, pt.point.z = (
                     float(p3d[0]),

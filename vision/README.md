@@ -212,7 +212,14 @@ handles projection and visualization. `vision_general` has the same pattern in
 Each node has a fixed activation topic (`/vision/object_detector/active`,
 `/vision/gallery_detector/active`, `/vision/zero_shot_detector/active`) so a task manager
 can idle the GPU between steps. Pausing the gallery leaves YOLO untouched; its results drop
-out of `/vision/detections` after `GALLERY_MAX_AGE`.
+out of `/vision/detections` after `GALLERY_MAX_AGE`. `GalleryDetect2D` starts paused.
+
+| Want | How (at runtime) |
+| --- | --- |
+| YOLO only (default) | nothing |
+| YOLO + gallery | `ros2 topic pub --once /vision/gallery_detector/active std_msgs/Bool "data: true"` |
+| Gallery only | the above, plus `ros2 param set /ObjectDetect2D models "['']"` |
+| Back to YOLO | `ros2 param set /ObjectDetect2D models "['yolo_finetuned']"`, gallery `data: false` |
 
 #### Adding an object to the gallery (few-shot)
 

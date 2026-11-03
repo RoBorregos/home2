@@ -39,7 +39,7 @@ class GalleryDetectorNode(BaseDetectorNode):
 
     # ------------------------------------------------------------------ inference
 
-    def run(self, frame):
+    def run(self, frame, depth_image, stamp):
         if self.flip_image:
             frame = cv.rotate(frame, cv.ROTATE_180)
         visual = copy.deepcopy(frame)
@@ -55,7 +55,7 @@ class GalleryDetectorNode(BaseDetectorNode):
                     1 - det.bbox_.x2,
                 )
 
-        all_detections = self.extract_3d(detections_2d)
+        all_detections = self.extract_3d(detections_2d, depth_image)
         all_detections = self.filter_by_distance(all_detections)
 
         self.publish_3d_markers(all_detections)
@@ -63,7 +63,7 @@ class GalleryDetectorNode(BaseDetectorNode):
 
         ros_detections = self.to_ros(all_detections)
         for det in ros_detections:
-            det.point3d.header.stamp = self.curr_clock
+            det.point3d.header.stamp = stamp
 
         self.latest_detections = ros_detections
         self.pub_detections.publish(ObjectDetectionArray(detections=ros_detections))
