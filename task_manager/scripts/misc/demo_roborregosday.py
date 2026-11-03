@@ -31,7 +31,7 @@ from task_manager.utils.status import Status
 
 ATTEMPT_LIMIT = 3
 
-MENU_ITEMS = ["apple", "peach", "snack"]
+MENU_ITEMS = ["apple", "banana", "snack"]
 
 TERMINAL_COMMANDS = {
     "o": "open_gripper",
