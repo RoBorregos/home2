@@ -372,8 +372,6 @@ class EvidenceRecorder:
         for f in files.values():
             f.close()
 
-    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
-
 
 class DisplayRosNode(Node):
     def __init__(self, signals: DisplaySignals):
