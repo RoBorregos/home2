@@ -1,0 +1,21 @@
+{
+  "_comment": "Scripted participants for exp2 (use with --offline: names from data/schedule_backup.example.json). Each utterance answers the next hear() or yes/no question.",
+  "sessions": [
+    {
+      "utterances": ["My name is Luis Angel Rosales Salazar", "Los Robotines", "When is my interview?", "yes", "When is my next round?", "yes", "Who will interview me?", "no"],
+      "survey": {"got_info": 5, "clear": 5, "easy_identify": 4, "prefer": 4, "likeable": 5, "intelligent": 4, "natural": 4, "comfortable": 5, "robot_experience": "Never"}
+    },
+    {
+      "utterances": ["Luis", "Voltaje Norte", "Who is on my team?", "yes", "What are all my rounds?", "no"],
+      "survey": {"got_info": 4, "clear": 4, "easy_identify": 3, "prefer": 3, "likeable": 4, "intelligent": 4, "natural": 3, "comfortable": 4, "robot_experience": "Once or twice"}
+    },
+    {
+      "utterances": ["Valeria Cazares", "Las Chispas", "Valeria Cázares Leal from team Las Chispas", "Do I have an interview already?", "no"],
+      "survey": {"got_info": 3, "clear": 4, "easy_identify": 2, "prefer": 3, "likeable": 4, "intelligent": 3, "natural": 3, "comfortable": 4, "robot_experience": "Never"}
+    },
+    {
+      "utterances": ["Pedro Páramo", "no team", "Juan Rulfo", "no team", "Octavio Paz", "no team"],
+      "survey": {"got_info": 1, "clear": 3, "easy_identify": 1, "prefer": 2, "likeable": 3, "intelligent": 2, "natural": 2, "comfortable": 4, "robot_experience": "Never"}
+    }
+  ]
+}

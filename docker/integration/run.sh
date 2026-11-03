@@ -73,6 +73,16 @@ case $TASK in
     "--demo-becas")
         RUN="ros2 run task_manager demo_becas.py"
         ;;
+    # HRI experiments (task_manager/benchmarks/README.md). Extra args via EXP_ARGS.
+    "--exp-basic")
+        RUN="ros2 run task_manager exp1_basic.py ${EXP_ARGS:-}"
+        ;;
+    "--exp-schedule")
+        RUN="ros2 run task_manager exp2_schedule.py ${EXP_ARGS:-}"
+        ;;
+    "--exp-agent")
+        RUN="ros2 run task_manager exp3_agent.py ${EXP_ARGS:-}"
+        ;;
     *)
         RUN="bash"
         ;;

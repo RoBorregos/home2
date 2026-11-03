@@ -1,0 +1,57 @@
+{
+  "sessions": [
+    {
+      "utterances": [
+        "My name is Robin",
+        "We are Los Robotines",
+        "I really like playing soccer"
+      ],
+      "survey": {
+        "understood": 5,
+        "attention": 4,
+        "again": 5,
+        "likeable": 5,
+        "intelligent": 4,
+        "natural": 4,
+        "comfortable": 5,
+        "robot_experience": "Never"
+      }
+    },
+    {
+      "utterances": [
+        "Ana Sofía de la Garza",
+        "Las Chispas",
+        "pizza and video games"
+      ],
+      "survey": {
+        "understood": 4,
+        "attention": 3,
+        "again": 4,
+        "likeable": 4,
+        "intelligent": 4,
+        "natural": 3,
+        "comfortable": 4,
+        "robot_experience": "Once or twice"
+      }
+    },
+    {
+      "utterances": [
+        "",
+        "Charlie",
+        "",
+        "Voltaje Norte",
+        "drawing"
+      ],
+      "survey": {
+        "understood": 2,
+        "attention": 3,
+        "again": 3,
+        "likeable": 4,
+        "intelligent": 3,
+        "natural": 2,
+        "comfortable": 4,
+        "robot_experience": "Never"
+      }
+    }
+  ]
+}

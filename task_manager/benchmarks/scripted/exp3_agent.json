@@ -1,0 +1,30 @@
+{
+  "_comment": "Scripted participants for exp3 (use with --offline: data from data/schedule_backup.example.json). 'expect' is checked by report.py: phrases the robot must say and tools it must call.",
+  "sessions": [
+    {
+      "utterances": ["Hi, I'm Luis Rosales from Los Robotines, when is my interview?", "And when is my next round?", "No, that's all, thank you"],
+      "expect": {"mentions": ["10:30"], "tools": ["get_candidate"]},
+      "survey": {"got_info": 5, "understood_goal": 5, "flow": 4, "satisfied": 5, "likeable": 5, "intelligent": 5, "natural": 4, "comfortable": 5, "robot_experience": "Never"}
+    },
+    {
+      "utterances": ["When are my rounds?", "Valeria Cazares", "Las Chispas", "The second one, Valeria Cázares Leal", "Thanks, bye"],
+      "expect": {"mentions": ["not"], "tools": ["get_candidate"]},
+      "survey": {"got_info": 3, "understood_goal": 4, "flow": 3, "satisfied": 3, "likeable": 4, "intelligent": 4, "natural": 3, "comfortable": 4, "robot_experience": "Once or twice"}
+    },
+    {
+      "utterances": ["Who is on team Voltaje Norte?", "When is Camila's interview?", "Goodbye"],
+      "expect": {"mentions": ["Camila", "1:30"], "tools": ["get_team"]},
+      "survey": {"got_info": 4, "understood_goal": 4, "flow": 4, "satisfied": 4, "likeable": 4, "intelligent": 4, "natural": 4, "comfortable": 5, "robot_experience": "Many times"}
+    },
+    {
+      "utterances": ["What's the weather like today?", "Ok. When is the interview of Pedro Paramo?", "Goodbye"],
+      "expect": {"mentions": [], "tools": ["search_candidate"], "forbidden": ["AM", "PM"]},
+      "survey": {"got_info": 2, "understood_goal": 3, "flow": 3, "satisfied": 2, "likeable": 4, "intelligent": 3, "natural": 3, "comfortable": 4, "robot_experience": "Never"}
+    },
+    {
+      "utterances": ["My name is Luisa Morales", "I don't have a team", "Do I have an interview?", "No thanks, bye"],
+      "expect": {"mentions": ["not"], "tools": ["get_candidate"]},
+      "survey": {"got_info": 4, "understood_goal": 4, "flow": 4, "satisfied": 4, "likeable": 4, "intelligent": 4, "natural": 4, "comfortable": 4, "robot_experience": "Never"}
+    }
+  ]
+}

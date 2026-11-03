@@ -23,9 +23,10 @@ file(GLOB UTIL_NODES scripts/util_nodes/*.py)
 file(GLOB TEST_SUBTASK_MANAGERS scripts/test/*.py)
 file(GLOB MISC_NODES scripts/misc/*.py)
 file(GLOB CONFIG scripts/config/*.py)
+file(GLOB BENCHMARKS scripts/benchmarks/*.py)
 
 # Make all python scripts executable (needed for --symlink-install)
-foreach(script ${TASK_MANAGERS} ${UTIL_NODES} ${TEST_SUBTASK_MANAGERS} ${MISC_NODES} ${CONFIG})
+foreach(script ${TASK_MANAGERS} ${UTIL_NODES} ${TEST_SUBTASK_MANAGERS} ${MISC_NODES} ${CONFIG} ${BENCHMARKS})
   execute_process(COMMAND chmod +x ${script})
 endforeach()
 
@@ -43,6 +44,10 @@ install(PROGRAMS ${TEST_SUBTASK_MANAGERS}
 )
 
 install(PROGRAMS ${MISC_NODES}
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(PROGRAMS ${BENCHMARKS}
   DESTINATION lib/${PROJECT_NAME}
 )
 

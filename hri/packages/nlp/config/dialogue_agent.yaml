@@ -1,0 +1,8 @@
+dialogue_agent:
+  ros__parameters:
+    base_url: "http://localhost:11434/v1"
+    temperature: 0.2
+    max_tool_calls: 4
+    max_history_messages: 30
+    request_timeout: 60.0
+    CONVESATION_SERVICE: REPLACE

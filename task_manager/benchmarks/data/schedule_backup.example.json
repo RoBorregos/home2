@@ -1,0 +1,155 @@
+{
+  "_comment": "FICTIONAL example data for testing. Same shape as the Robot API with lang=en.",
+  "edition": 2026,
+  "timezone": "America/Monterrey",
+  "generated_at": "2026-10-15T00:00:00Z",
+  "teams": [
+    {
+      "id": "ex-team-robotines",
+      "name": "Los Robotines",
+      "track": "BEGINNER",
+      "challenge": null,
+      "members": [
+        {
+          "id": "ex-luis-rosales",
+          "name": "Luis Ángel Rosales Salazar",
+          "interview": {
+            "at": "2026-10-15T16:30:00.000Z",
+            "local": "Thursday, October 15 at 10:30 AM",
+            "area": "PROGRAMMING",
+            "areaLabel": "Programming",
+            "interviewer": "Fernando",
+            "location": null
+          }
+        },
+        {
+          "id": "ex-ana-garza",
+          "name": "Ana Sofía de la Garza",
+          "interview": {
+            "at": "2026-10-15T17:00:00.000Z",
+            "local": "Thursday, October 15 at 11:00 AM",
+            "area": "MECHANICS",
+            "areaLabel": "Mechanics",
+            "interviewer": "Diego",
+            "location": null
+          }
+        },
+        {
+          "id": "ex-pablo-ruiz",
+          "name": "Pablo Ruiz Treviño",
+          "interview": null
+        }
+      ],
+      "rounds": [
+        {
+          "round": 1,
+          "challenges": [
+            {
+              "track": "Track A",
+              "at": "2026-10-17T15:00:00.000Z",
+              "local": "Saturday, October 17 at 9:00 AM",
+              "location": null
+            },
+            {
+              "track": "Track B",
+              "at": "2026-10-17T16:00:00.000Z",
+              "local": "Saturday, October 17 at 10:00 AM",
+              "location": null
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "challenges": [
+            {
+              "track": "Track C",
+              "at": "2026-10-17T21:30:00.000Z",
+              "local": "Saturday, October 17 at 3:30 PM",
+              "location": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ex-team-chispas",
+      "name": "Las Chispas",
+      "track": "BEGINNER",
+      "challenge": null,
+      "members": [
+        {
+          "id": "ex-valeria-cazares",
+          "name": "Valeria Cázares",
+          "interview": {
+            "at": "2026-10-15T21:15:00.000Z",
+            "local": "Thursday, October 15 at 3:15 PM",
+            "area": "ELECTRONICS",
+            "areaLabel": "Electronics",
+            "interviewer": "Ana",
+            "location": null
+          }
+        },
+        {
+          "id": "ex-valeria-cazares-leal",
+          "name": "Valeria Cázares Leal",
+          "interview": null
+        }
+      ],
+      "rounds": []
+    },
+    {
+      "id": "ex-team-voltaje",
+      "name": "Voltaje Norte",
+      "track": "ADVANCED",
+      "challenge": "Line follower",
+      "members": [
+        {
+          "id": "ex-luis-mendez",
+          "name": "Luis Méndez Orozco",
+          "interview": {
+            "at": "2026-10-16T19:00:00.000Z",
+            "local": "Friday, October 16 at 1:00 PM",
+            "area": "PROGRAMMING",
+            "areaLabel": "Programming",
+            "interviewer": "Sofía",
+            "location": null
+          }
+        },
+        {
+          "id": "ex-camila-vega",
+          "name": "Camila Vega Ríos",
+          "interview": {
+            "at": "2026-10-16T19:30:00.000Z",
+            "local": "Friday, October 16 at 1:30 PM",
+            "area": "ELECTRONICS",
+            "areaLabel": "Electronics",
+            "interviewer": "Sofía",
+            "location": null
+          }
+        }
+      ],
+      "rounds": [
+        {
+          "round": 1,
+          "challenges": [
+            {
+              "track": "Track A",
+              "at": "2026-10-17T18:30:00.000Z",
+              "local": "Saturday, October 17 at 12:30 PM",
+              "location": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "candidates_without_team": [
+    {
+      "id": "ex-luisa-morales",
+      "name": "Luisa Morales Treviño",
+      "track": "BEGINNER",
+      "challenge": null,
+      "interview": null
+    }
+  ]
+}
