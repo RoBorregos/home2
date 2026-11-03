@@ -508,7 +508,6 @@ class DisplayRosNode(Node):
             keyword = data.get("keyword")
             if keyword:
                 self._emit_message("keyword", str(keyword))
-                self.signals.message_received.emit("keyword", str(keyword))
         except (json.JSONDecodeError, AttributeError) as e:
             self.get_logger().warn(f"Error parsing KWS message: {e}")
 
