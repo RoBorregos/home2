@@ -309,7 +309,6 @@ class DisplaySignals(QObject):
     command_index_changed = pyqtSignal(int)
     heard_buffered = pyqtSignal(str)  # "heard" text held back while listening
     capture_added = pyqtSignal(str, QImage)  # label, snapshot
-    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
     survey_received = pyqtSignal(dict)  # empty dict closes the survey
 
 
@@ -522,7 +521,6 @@ class DisplayRosNode(Node):
             if keyword:
                 self._emit_message("keyword", str(keyword))
                 self.signals.message_received.emit("keyword", str(keyword))
-                self.signals.keyword_detected.emit(str(keyword))
         except (json.JSONDecodeError, AttributeError) as e:
             self.get_logger().warn(f"Error parsing KWS message: {e}")
 
@@ -811,14 +809,6 @@ class AudioOverlay(QWidget):
         )
         layout.addWidget(self.heard_label)
 
-        self.keyword_label = QLabel()
-        self.keyword_label.setStyleSheet(
-            f"color: {ORANGE}; background-color: rgba(232,137,90,50);"
-            "border-radius: 12px; padding: 6px 16px; font-size: 22px; font-weight: bold;"
-        )
-        self.keyword_label.hide()
-        layout.addWidget(self.keyword_label, 0, Qt.AlignCenter)
-
         self.hide()
 
     def show_state(self, text: str):
@@ -829,14 +819,6 @@ class AudioOverlay(QWidget):
 
     def show_heard(self, text: str):
         self.heard_label.setText(text)
-
-    def show_keyword(self, keyword: str):
-        # Only while the overlay is up; otherwise the label would stay visible
-        # and reappear with a stale keyword on the next listening state.
-        if not self.isVisible():
-            return
-        self.keyword_label.setText(f"{MESSAGE_ICONS['keyword']} {keyword}")
-        self.keyword_label.show()
 
     def set_vad_level(self, level: float):
         level = max(0.0, min(level, 1.0))
@@ -850,7 +832,6 @@ class AudioOverlay(QWidget):
     def clear(self):
         self.hide()
         self.heard_label.setText("")
-        self.keyword_label.hide()
         self.set_vad_level(0.0)
 
 
@@ -1401,7 +1382,6 @@ class BaseWindow(QMainWindow):
         ros_node.signals.audio_state_changed.connect(self._on_audio_state)
         ros_node.signals.vad_level_changed.connect(self.audio_overlay.set_vad_level)
         ros_node.signals.heard_buffered.connect(self.audio_overlay.show_heard)
-        ros_node.signals.keyword_detected.connect(self.audio_overlay.show_keyword)
 
         self.survey_overlay = SurveyOverlay(self._central)
         self.survey_overlay.finished.connect(ros_node.publish_survey_answers)
