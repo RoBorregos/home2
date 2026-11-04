@@ -116,7 +116,6 @@ class ManipulationCore(Node):
             FIXED_DISTANCE_MOVE_SERVICE,
             self._fixed_distance_move_cb,
             callback_group=self.callback_group,
-            goal_callback=self.goal_callback,
         )
         self._setup_follow()
 
