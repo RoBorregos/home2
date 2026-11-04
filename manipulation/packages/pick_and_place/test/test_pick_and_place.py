@@ -623,7 +623,7 @@ def test_a_task_goal_stops_face_following_before_the_pipeline_runs(core, no_slee
         list(core.arm.calls)
     )
 
-    _serve(core, core.manipulation_callback, _GoalHandle(_Request()))
+    _serve(core, core.general_manipulation_callback, _GoalHandle(_Request()))
 
     assert "leave_joint_velocity_mode" in seen[0]
     assert not core._face.is_following_face_active
@@ -661,7 +661,7 @@ def test_the_lock_is_released_however_a_task_ends(core, outcome):
         return outcome
 
     core._pipelines[ManipulationTask.PICK] = pipeline
-    _serve(core, core.manipulation_callback, _GoalHandle(_Request()))
+    _serve(core, core.general_manipulation_callback, _GoalHandle(_Request()))
 
     assert not core._task_lock.locked()
 
@@ -669,7 +669,7 @@ def test_the_lock_is_released_however_a_task_ends(core, outcome):
 def test_the_lock_is_released_after_an_early_return(core):
     core.arm._estop = True
 
-    _serve(core, core.manipulation_callback, _GoalHandle(_Request()))
+    _serve(core, core.general_manipulation_callback, _GoalHandle(_Request()))
 
     assert not core._task_lock.locked()
 

@@ -98,7 +98,7 @@ class ManipulationCore(Node):
             self,
             ManipulationAction,
             MANIPULATION_ACTION_SERVER,
-            execute_callback=self.manipulation_callback,
+            execute_callback=self.general_manipulation_callback,
             cancel_callback=self._cancel_callback,
             callback_group=self.callback_group,
             goal_callback=self.goal_callback,
@@ -147,59 +147,58 @@ class ManipulationCore(Node):
         return CancelResponse.ACCEPT
 
     async def manipulation_callback(self, goal_handle):
-        try:
-            """Dispatch one manipulation task to its pipeline."""
-            request = goal_handle.request
-            result = ManipulationAction.Result()
-            result.success = 0
+        """Dispatch one manipulation task to its pipeline."""
+        request = goal_handle.request
+        result = ManipulationAction.Result()
+        result.success = 0
 
-            if self.arm.estop_active:
-                self.get_logger().warn("E-stop active, aborting manipulation task")
-                goal_handle.abort()
-                return result
-
-            self._preempt_follow()
-
-            pipeline = self._pipelines.get(request.task_type)
-            if pipeline is None:
-                self.get_logger().error(f"Unknown task type: {request.task_type}")
-                goal_handle.abort()
-                return result
-
-            if request.scan_environment:
-                self.get_logger().info("Keeping octomap for environment-aware planning")
-            else:
-                self.arm.clear_octomap()
-
-            self.arm.bind_goal(goal_handle, ManipulationAction.Feedback)
-            try:
-                success = pipeline(request)
-                result.success = int(success)
-                if success:
-                    goal_handle.succeed()
-                else:
-                    goal_handle.abort()
-            except PickAborted as exc:
-                self.get_logger().warn(f"Manipulation task aborted: {exc}")
-                if goal_handle.is_cancel_requested:
-                    goal_handle.canceled()
-                else:
-                    goal_handle.abort()
-            except PickHardwareError as exc:
-                self.get_logger().error(
-                    f"Manipulation task stopped, hardware fault: {exc}"
-                )
-                goal_handle.abort()
-            except Exception as exc:
-                self.get_logger().error(f"Manipulation task failed: {exc}")
-                goal_handle.abort()
-            finally:
-                self.arm.release_goal()
-
-            self.get_logger().info(
-                f"[DONE] task {request.task_type} -> {result.success}"
-            )
+        if self.arm.estop_active:
+            self.get_logger().warn("E-stop active, aborting manipulation task")
+            goal_handle.abort()
             return result
+
+        self._preempt_follow()
+
+        pipeline = self._pipelines.get(request.task_type)
+        if pipeline is None:
+            self.get_logger().error(f"Unknown task type: {request.task_type}")
+            goal_handle.abort()
+            return result
+
+        if request.scan_environment:
+            self.get_logger().info("Keeping octomap for environment-aware planning")
+        else:
+            self.arm.clear_octomap()
+
+        self.arm.bind_goal(goal_handle, ManipulationAction.Feedback)
+        try:
+            success = pipeline(request)
+            result.success = int(success)
+            if success:
+                goal_handle.succeed()
+            else:
+                goal_handle.abort()
+        except PickAborted as exc:
+            self.get_logger().warn(f"Manipulation task aborted: {exc}")
+            if goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+            else:
+                goal_handle.abort()
+        except PickHardwareError as exc:
+            self.get_logger().error(f"Manipulation task stopped, hardware fault: {exc}")
+            goal_handle.abort()
+        except Exception as exc:
+            self.get_logger().error(f"Manipulation task failed: {exc}")
+            goal_handle.abort()
+        finally:
+            self.arm.release_goal()
+
+        self.get_logger().info(f"[DONE] task {request.task_type} -> {result.success}")
+        return result
+
+    async def general_manipulation_callback(self, goal_handle):
+        try:
+            return await self.manipulation_callback(goal_handle)
         finally:
             self._task_lock.release()
 
