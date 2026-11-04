@@ -75,16 +75,17 @@ RouDi reserves shared memory in two segments:
 - `IOX_MAX_CHUNKS_HELD_PER_SUBSCRIBER_SIMULTANEOUSLY=2048`
 - `IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS=1024`
 
-**`ros` (~219 MB)** — data pools defined in `roudi_config.toml`:
+**`ros` (~1 GB)** — data pools defined in `roudi_config.toml`:
 
 | Pool size | Count   | Subtotal | Use case                              |
 | --------- | ------- | -------- | ------------------------------------- |
-| 128 B     | 100,000 | ~12 MB   | Parameter events, tf, small services  |
+| 128 B     | 100,000 | ~13 MB   | Parameter events, tf, small services  |
 | 1 KB      | 20,000  | ~20 MB   | Sensor data, joint states, detections |
 | 16 KB     | 500     | ~8 MB    | Camera info, compressed data          |
-| 512 KB    | 50      | ~25 MB   | Depth maps, smaller frames            |
-| 2 MB      | 30      | ~60 MB   | Full camera frames (960x540 BGR)      |
-| 8 MB      | 10      | ~80 MB   | HD1080 full resolution (~6 MB)        |
+| 512 KB    | 50      | ~26 MB   | Depth maps, smaller frames            |
+| 2 MB      | 60      | ~126 MB  | Full camera frames (960x540 BGR)      |
+| 4 MB      | 80      | ~336 MB  | Depth / pointcloud (~3.5 MB)          |
+| 8 MB      | 60      | ~503 MB  | HD1080 full resolution (~6 MB)        |
 
 ### ZED SHM Workarounds
 
@@ -92,7 +93,7 @@ When SHM is enabled, the ZED camera node requires special handling to avoid `TOO
 
 - `zed_shm_override.yaml` — disables `start_parameter_event_publisher` for all nodes
 - `zed_shm_launch.py` — patches the ZED launch file to inject `--ros-args -p start_parameter_event_publisher:=false` into the composable node container
-- `robot_state_publisher` runs with a separate no-SHM CycloneDDS config (`cyclonedds_noshm.xml`)
+- `robot_state_publisher` runs without SHM: `CYCLONEDDS_URI='file:///etc/cyclonedds.xml,<SharedMemory><Enable>false</Enable></SharedMemory>'`, so it keeps the same network interface as the rest of the container
 
 ## Files
 
@@ -106,10 +107,10 @@ When SHM is enabled, the ZED camera node requires special handling to avoid `TOO
 | `roudi_config.toml`                  | Iceoryx memory pool configuration                                                       |
 | `docker/<area>/Dockerfile.*`         | Each area builds iceoryx + CycloneDDS with `-DENABLE_SHM=ON`                            |
 | `docker/<area>/docker-compose*.yaml` | Passes `CYCLONE_INTERFACE` and `CYCLONE_SHM` to container                               |
-| `docker/<area>/run.sh`               | Reads `/etc/cyclonedds.env` from host                                                   |
+| `docker/<area>/run.sh`               | Writes the interface from `resolve_cyclone_interface` (`lib.sh`) to `.env`              |
 | `zed_shm_override.yaml`              | Disables parameter events for ZED (SHM workaround)                                      |
 | `zed_shm_launch.py`                  | Patches ZED launch file for SHM compatibility                                           |
-| `lib.sh`                             | `ensure_roudi()` starts RouDi; `run_area()` conditionally calls it when `CYCLONE_SHM=1` |
+| `lib.sh`                             | `ensure_roudi()` starts RouDi; `run_area()` conditionally calls it when `CYCLONE_SHM=1`; `resolve_cyclone_interface()` picks the interface |
 
 ## Usage
 
@@ -172,6 +173,22 @@ unset RMW_IMPLEMENTATION CYCLONEDDS_URI
 ```bash
 CYCLONE_INTERFACE=wlan0 bash run.sh navigation cpu
 ```
+
+`resolve_cyclone_interface()` in `lib.sh` picks the interface for every area:
+
+1. `CYCLONE_INTERFACE` from the environment, if set (an empty value means autodetermine).
+2. Otherwise `CYCLONE_INTERFACE` from `/etc/cyclonedds.env`.
+3. If that interface has no IPv4 address, `lo` instead, with a warning.
+
+### Running Without the Router
+
+The interface in `/etc/cyclonedds.env` (e.g. `end0` on the Orin) gets its address from the router's DHCP. Without the router it has no address, and CycloneDDS would abort every node with `does not match an available interface` / `failed to create domain`. `run.sh` then falls back to `lo` and prints:
+
+```
+[CycloneDDS] WARNING: end0 has no IPv4 address (router disconnected?). Using lo: only this machine will see ROS topics.
+```
+
+On `lo`, areas on the same machine (zed, vision, navigation, display) still talk to each other; other machines (e.g. hri on the second Orin, a laptop) cannot reach them. The interface is chosen when an area starts, so restart areas after connecting or disconnecting the router; areas on different interfaces don't see each other.
 
 ## What It Configures
 
