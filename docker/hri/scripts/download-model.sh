@@ -24,6 +24,7 @@ echo "  4) nomic-embed-text (embeddings via Ollama)"
 echo "  5) DeepFilterNet3"
 echo "  6) ei-door          (Door detection)"
 echo "  7) ei-kws           (Keyword detection)"
+echo "  8) efficientat      (EfficientAT mn10_as AudioSet tagger, door events)"
 echo "  a) all"
 echo "  n) none"
 printf "Enter choices separated by spaces [default: all]: "
@@ -86,6 +87,17 @@ if ask_for_model DeepFilterNet3 5; then
     else
         echo "DeepFilterNet3 model already exists. Skipping download."
     fi
+fi
+
+FAILED_MODELS=""
+
+# EfficientAT mn10_as AudioSet tagger for door_event_detection.py (doorbell/knock)
+if ask_for_model efficientat 8; then
+    mkdir -p "$DF_MODEL_DIR/efficientat"
+    download_gguf "efficientat" \
+        "https://github.com/fschmid56/EfficientAT/releases/download/v0.0.1/mn10_as_mAP_471.pt" \
+        "$DF_MODEL_DIR/efficientat/mn10_as_mAP_471.pt" \
+        || FAILED_MODELS="$FAILED_MODELS efficientat"
 fi
 
 # ── Edge Impulse model downloads ──────────────────────────────────────────────
@@ -189,8 +201,6 @@ download_ei_model() {
     docker stop "$CONTAINER_ID" 2>/dev/null
     docker rm "$CONTAINER_ID" 2>/dev/null
 }
-
-FAILED_MODELS=""
 
 if ask_for_model ei-door 6; then
     download_ei_model "door" "${EI_API_KEY_DOOR:-}" "1337" || FAILED_MODELS="$FAILED_MODELS ei-door"
