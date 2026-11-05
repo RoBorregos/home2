@@ -1,0 +1,215 @@
+{
+  "seed": 2027,
+  "scenes": [
+    {
+      "id": 1,
+      "objects": [
+        "banana",
+        "apple",
+        "cup",
+        "cornflakes",
+        "coca_cola_can"
+      ],
+      "cells": [
+        "near-left",
+        "near-right",
+        "far-left",
+        "far-center",
+        "far-right"
+      ],
+      "method_order": [
+        "gpd",
+        "geometric"
+      ]
+    },
+    {
+      "id": 2,
+      "objects": [
+        "soup_bar",
+        "orange",
+        "apple",
+        "cup",
+        "cornflakes"
+      ],
+      "cells": [
+        "near-left",
+        "near-center",
+        "near-right",
+        "far-left",
+        "far-center"
+      ],
+      "method_order": [
+        "geometric",
+        "gpd"
+      ]
+    },
+    {
+      "id": 3,
+      "objects": [
+        "orange",
+        "soup_bar",
+        "banana",
+        "coca_cola_can",
+        "cornflakes"
+      ],
+      "cells": [
+        "near-left",
+        "near-center",
+        "far-left",
+        "far-center",
+        "far-right"
+      ],
+      "method_order": [
+        "gpd",
+        "geometric"
+      ]
+    },
+    {
+      "id": 4,
+      "objects": [
+        "coca_cola_can",
+        "orange",
+        "banana",
+        "cup",
+        "soup_bar"
+      ],
+      "cells": [
+        "near-center",
+        "near-right",
+        "far-left",
+        "far-center",
+        "far-right"
+      ],
+      "method_order": [
+        "geometric",
+        "gpd"
+      ]
+    },
+    {
+      "id": 5,
+      "objects": [
+        "apple",
+        "banana",
+        "coca_cola_can",
+        "orange",
+        "cornflakes"
+      ],
+      "cells": [
+        "near-center",
+        "near-right",
+        "far-left",
+        "far-center",
+        "far-right"
+      ],
+      "method_order": [
+        "gpd",
+        "geometric"
+      ]
+    },
+    {
+      "id": 6,
+      "objects": [
+        "apple",
+        "cup",
+        "soup_bar",
+        "orange",
+        "coca_cola_can"
+      ],
+      "cells": [
+        "near-left",
+        "near-center",
+        "near-right",
+        "far-left",
+        "far-center"
+      ],
+      "method_order": [
+        "gpd",
+        "geometric"
+      ]
+    },
+    {
+      "id": 7,
+      "objects": [
+        "cup",
+        "soup_bar",
+        "apple",
+        "cornflakes",
+        "banana"
+      ],
+      "cells": [
+        "near-left",
+        "near-center",
+        "near-right",
+        "far-left",
+        "far-right"
+      ],
+      "method_order": [
+        "geometric",
+        "gpd"
+      ]
+    },
+    {
+      "id": 8,
+      "objects": [
+        "soup_bar",
+        "apple",
+        "coca_cola_can",
+        "cornflakes",
+        "orange"
+      ],
+      "cells": [
+        "near-left",
+        "near-center",
+        "far-left",
+        "far-center",
+        "far-right"
+      ],
+      "method_order": [
+        "geometric",
+        "gpd"
+      ]
+    },
+    {
+      "id": 9,
+      "objects": [
+        "banana",
+        "cup",
+        "coca_cola_can",
+        "apple",
+        "soup_bar"
+      ],
+      "cells": [
+        "near-center",
+        "near-right",
+        "far-left",
+        "far-center",
+        "far-right"
+      ],
+      "method_order": [
+        "geometric",
+        "gpd"
+      ]
+    },
+    {
+      "id": 10,
+      "objects": [
+        "cup",
+        "banana",
+        "orange",
+        "cornflakes",
+        "apple"
+      ],
+      "cells": [
+        "near-center",
+        "near-right",
+        "far-left",
+        "far-center",
+        "far-right"
+      ],
+      "method_order": [
+        "gpd",
+        "geometric"
+      ]
+    }
+  ]
+}

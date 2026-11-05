@@ -18,6 +18,7 @@ from task_manager.utils.baml_client.types import (
     GuidePersonTo,
 )
 from task_manager.utils.status import Status
+from task_manager.utils.logger import Logger
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
 
@@ -35,6 +36,19 @@ FOLLOW_RELOCK_ATTEMPTS = 3
 FIND_PERSON_MAX_ROUNDS = 4
 # Scan points closer than this (map frame, meters) count as the same person across rounds.
 FIND_PERSON_VISITED_RADIUS = 0.75
+# Degrees to rotate the base between rounds in find_person: full coverage
+# across all rounds (e.g. 4 rounds -> 90 deg each -> 360 deg total).
+FIND_PERSON_ROTATION_DEG = 360 / FIND_PERSON_MAX_ROUNDS
+
+# Continuous arm pan sweep used while searching, instead of discrete stops.
+SEARCH_PAN_RANGE_DEG = 65  # scan from -RANGE to +RANGE
+SEARCH_SWEEP_VELOCITY = 0.2  # MoveIt velocity scaling factor (0-1)
+SEARCH_POLL_PERIOD = 0.1  # s between person checks while the sweep is in flight
+
+# Continuous arm pan sweep used while searching, instead of discrete stops.
+SEARCH_PAN_RANGE_DEG = 65  # scan from -RANGE to +RANGE
+SEARCH_SWEEP_VELOCITY = 0.2  # MoveIt velocity scaling factor (0-1)
+SEARCH_POLL_PERIOD = 0.1  # s between person checks while the sweep is in flight
 
 
 class GPSRTask(GenericTask):
@@ -696,6 +710,26 @@ class GPSRTask(GenericTask):
         )
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
+    def _iter_search_poses(self):
+        """Sweeps the arm in one motion, yielding every SEARCH_POLL_PERIOD so the
+        caller can check for a person and break early. Call pan_to(0) after."""
+        manipulation = self.subtask_manager.manipulation
+        manipulation.pan_to(-SEARCH_PAN_RANGE_DEG)
+        goal_handle = manipulation.pan_sweep_start(
+            SEARCH_PAN_RANGE_DEG, velocity=SEARCH_SWEEP_VELOCITY
+        )
+        if goal_handle is None:
+            return
+        result_future = goal_handle.get_result_async()
+        try:
+            while not manipulation.pan_sweep_poll(result_future):
+                yield
+                time.sleep(SEARCH_POLL_PERIOD)
+        finally:
+            # Also runs if the caller breaks early (via GeneratorExit) to stop the arm.
+            if not result_future.done():
+                manipulation.pan_sweep_cancel(goal_handle)
+
     def _approach_with_arm(self, point) -> bool:
         """Drive to a person point with the arm tucked (nav_pose), then look
         at them (front_stare) ready for the interaction that follows.
@@ -745,6 +779,8 @@ class GPSRTask(GenericTask):
             self.subtask_manager.vision.track_person(False)
 
     def find_person(self, command: FindPersonByName):
+        """Sweep the arm for the attribute; if nothing confirmed, rotate the
+        base and retry for up to FIND_PERSON_MAX_ROUNDS rounds."""
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
@@ -782,44 +818,66 @@ class GPSRTask(GenericTask):
             f"Searching for {value}.",
         )
 
-        for degree in self.pan_angles:
-            self.subtask_manager.manipulation.pan_to(degree)
+        confirmed = False
+        for round_idx in range(FIND_PERSON_MAX_ROUNDS):
+            found = False
+            for _ in self._iter_search_poses():
+                if command.attribute_value == "":
+                    status, count = self.subtask_manager.vision.count_by_pose(Poses.STANDING.value)
+                elif is_value_in_enum(value, Gestures):
+                    status, count = self.subtask_manager.vision.count_by_gesture(value)
+                elif is_value_in_enum(value, Poses):
+                    status, count = self.subtask_manager.vision.count_by_pose(value)
+                else:
+                    if cache_color is None or cache_cloth is None:
+                        s, color_match = self.subtask_manager.hri.find_closest(
+                            self.color_list, command.attribute_value
+                        )
+                        cache_color = color_match.results[0]
+                        s, cloth_match = self.subtask_manager.hri.find_closest(
+                            self.clothe_list, command.attribute_value
+                        )
+                        cache_cloth = cloth_match.results[0]
 
-            if command.attribute_value == "":
-                status, count = self.subtask_manager.vision.count_by_pose(Poses.STANDING.value)
-            elif is_value_in_enum(value, Gestures):
-                status, count = self.subtask_manager.vision.count_by_gesture(value)
-            elif is_value_in_enum(value, Poses):
-                status, count = self.subtask_manager.vision.count_by_pose(value)
-            else:
-                if cache_color is None or cache_cloth is None:
-                    s, color_match = self.subtask_manager.hri.find_closest(
-                        self.color_list, command.attribute_value
+                    status, count = self.subtask_manager.vision.count_by_color(
+                        cache_color, cache_cloth
                     )
-                    cache_color = color_match.results[0]
-                    s, cloth_match = self.subtask_manager.hri.find_closest(
-                        self.clothe_list, command.attribute_value
+
+                # If next command is "go_to" dont ask to approach robot
+                if status == Status.EXECUTION_SUCCESS and count > 0:
+                    found = True
+                    self.subtask_manager.hri.say(
+                        f"I found a {command.attribute_value}.",
                     )
-                    cache_cloth = cloth_match.results[0]
+                    if not self._approach_found_person():
+                        self.subtask_manager.hri.say("Please approach me.")
+                    # Confirm instead of assuming: the match could be someone else
+                    # with the same attribute.
+                    s, answer = self.subtask_manager.hri.confirm(
+                        "Is this the person you were looking for?",
+                        use_keyword=True,
+                        retries=2,
+                    )
+                    confirmed = answer == "yes"
+                    break
 
-                status, count = self.subtask_manager.vision.count_by_color(cache_color, cache_cloth)
-
-            # If next command is "go_to" dont ask to approach robot
-            if status == Status.EXECUTION_SUCCESS and count > 0:
-                self.subtask_manager.hri.say(
-                    f"I found a {command.attribute_value}.",
-                )
-                if not self._approach_found_person():
-                    self.subtask_manager.hri.say("Please approach me.")
+            self.subtask_manager.manipulation.pan_to(0)
+            if confirmed:
                 break
+            # Not found, or found but rejected: rotate to a new heading and
+            # sweep again, unless this was the last round.
+            if round_idx < FIND_PERSON_MAX_ROUNDS - 1:
+                if found:
+                    self.subtask_manager.hri.say("Sorry, let me keep looking.")
+                self.subtask_manager.nav.rotate_in_place(FIND_PERSON_ROTATION_DEG)
 
-            elif status == Status.TARGET_NOT_FOUND:
-                self.subtask_manager.hri.say(
-                    f"I didn't find any person with {command.attribute_value}.",
-                )
-                self.subtask_manager.hri.say(
-                    "Please approach me.",
-                )
+        if not confirmed:
+            self.subtask_manager.hri.say(
+                f"I didn't find any person with {command.attribute_value}.",
+            )
+            self.subtask_manager.hri.say(
+                "Please approach me.",
+            )
 
         return Status.EXECUTION_SUCCESS, "found" + command.attribute_value
 
@@ -956,13 +1014,11 @@ class GPSRTask(GenericTask):
         person class), filters them to the robot's current room polygon and
         deprojects each to a camera-frame 3D point. Those points are projected
         to the map HERE, while the camera still holds the scan pose, so they
-        stay valid after the arm moves. Pans through self.pan_angles when
-        nobody is in the front view. Returns map-frame PointStamped list,
-        nearest person first."""
-        for pan in [0] + list(self.pan_angles):
-            if pan:
-                self.subtask_manager.manipulation.pan_to(pan)
-                time.sleep(1.0)
+        stay valid after the arm moves. Sweeps the arm pan range in one
+        continuous motion (_iter_search_poses) and stops the instant
+        somebody is seen. Returns map-frame PointStamped list, nearest
+        person first."""
+        for _ in self._iter_search_poses():
             s, _count = self.subtask_manager.vision.count_person()
             points = list(self.subtask_manager.vision.last_person_points)
             points.sort(key=lambda p: p.point.x**2 + p.point.y**2 + p.point.z**2)
@@ -976,8 +1032,12 @@ class GPSRTask(GenericTask):
                 mp.point.x, mp.point.y = xy
                 map_points.append(mp)
             if map_points:
-                if pan:
-                    self.subtask_manager.manipulation.pan_to(0)
+                # Breaking here stops the in-flight sweep (_iter_search_poses).
+                Logger.success(
+                    self.subtask_manager.manipulation.node,
+                    f"Person found mid-sweep -- stopping search ({len(map_points)} seen)",
+                )
+                self.subtask_manager.manipulation.pan_to(0)
                 return map_points
         self.subtask_manager.manipulation.pan_to(0)
         return []

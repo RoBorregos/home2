@@ -108,7 +108,7 @@ class HRIC_TM(Node):
             step_name = new_state.lower()
             if new_state == HRIC_TM.TaskStates.LEAVE_BAG:
                 step_name = "take_bag_deliver"
-            if new_state not in [HRIC_TM.TaskStates.END, HRIC_TM.TaskStates.DEBUG]:
+            if new_state != HRIC_TM.TaskStates.DEBUG:
                 self.subtask_manager.hri.publish_display_step(step_name)
 
         current_time = datetime.now()
@@ -413,6 +413,9 @@ class HRIC_TM(Node):
             self.timeout(0.5)
             self.subtask_manager.manipulation.close_gripper()
             self.carrying_bag = True
+            self.subtask_manager.hri.publish_display_capture(
+                f"Bag taken from {self.get_current_guest().name}"
+            )
             self.timeout(3)
             guest_1 = self.guests[FIRST_GUEST_IDX]
             self.subtask_manager.hri.say(
@@ -472,6 +475,11 @@ class HRIC_TM(Node):
                 f"Thanks for taking a seat {guest_2.name}. Allow me to introduce you to {guest_1.name}, their favorite drink is {guest_1.drink}.",
                 wait=True,
             )
+            self.subtask_manager.hri.publish_display_capture(
+                f"Introduced {guest_1.name} to {guest_2.name}",
+                FACE_RECOGNITION_IMAGE,
+                {"guest": guest_1.name, "drink": guest_1.drink},
+            )
             self.subtask_manager.manipulation.follow_face(False)
 
             # Second: look at guest 1 and introduce guest 2
@@ -488,6 +496,9 @@ class HRIC_TM(Node):
                 for _ in range(ATTEMPT_LIMIT):
                     if self.subtask_manager.vision.isPerson(guest_1.name):
                         guest_1_found = True
+                        self.subtask_manager.hri.publish_display_capture(
+                            f"Identified {guest_1.name} for introduction", FACE_RECOGNITION_IMAGE
+                        )
                         break
 
                     self.timeout(1)
@@ -614,6 +625,7 @@ class HRIC_TM(Node):
             self.subtask_manager.manipulation.place_on_floor(
                 named_position="scan_floor_carry_bag_pose"
             )
+            self.subtask_manager.hri.publish_display_capture("Bag placed on the floor")
             self.carrying_bag = False
             self.subtask_manager.manipulation.move_to_position("nav_pose")
             self.current_state = HRIC_TM.TaskStates.END

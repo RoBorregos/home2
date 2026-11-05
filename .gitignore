@@ -37,8 +37,10 @@ CLAUDE.md
 GEMINI.md
 .github/copilot-instructions.md
 **/trt_cache
+vision/packages/vision_general/models/*.task
 manipulation/packages/contact_graspnet/
 restaurant_runs/
 gpsr_runs/
 hri/benchmarks/*/results/*
 !hri/benchmarks/*/results/.gitkeep
+logs/evidence/

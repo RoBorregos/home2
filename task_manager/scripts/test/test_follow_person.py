@@ -56,7 +56,7 @@ class TestFollowPerson(Node):
         # When True, this test also drives the vision tracker (track_person).
         # Set False if you select the target elsewhere (e.g. the vision UI).
         self.track = self.declare_parameter("track", True).value
-        # When True, also drive the xArm follow (follow_person_controller via
+        # When True, also drive the xArm follow (manipulation_core via
         # the /follow_person service). Set False for base-only follow.
         self.arm = self.declare_parameter("arm", True).value
         # When True, drive the base/nav follow (nav_central). Set False to test
