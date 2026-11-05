@@ -35,6 +35,8 @@ from vision_runtime import VisionRuntime, spin
 
 MAX_DEGREE = 1
 TALKING_CROP_MARGIN = 0.25
+# Longest crop side sent to is_talking; keeps 50 crops under the 8 MB iceoryx chunk.
+TALKING_CROP_MAX_SIZE = 192
 TALKER_POLL_PERIOD = 0.5
 PACKAGE_PATH = get_package_share_directory("vision_general")
 KNOWN_FACES_PATH = PACKAGE_PATH + "/utils/known_faces"
@@ -191,8 +193,13 @@ class FaceRecognition(VisionRuntime):
                     crop = frame[
                         max(y1 - mh, 0) : min(y2 + mh, height),
                         max(x1 - mw, 0) : min(x2 + mw, width),
-                    ].copy()
-                    track["crops"].append(crop)
+                    ]
+                    scale = TALKING_CROP_MAX_SIZE / max(*crop.shape[:2], 1)
+                    if scale < 1:
+                        crop = cv2.resize(
+                            crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA
+                        )
+                    track["crops"].append(crop.copy())
 
         return tracks
 
