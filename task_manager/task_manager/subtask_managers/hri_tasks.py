@@ -756,7 +756,11 @@ class HRITasks:
         s, value = self.extract_data(query, text, context)
         value = value.strip() if s == Status.EXECUTION_SUCCESS else ""
         if value and remove_punctuation(value) != remove_punctuation(target):
-            return value
+            target_words = set(format_transcription(target))
+            corrected = " ".join(
+                w for w in value.split() if remove_punctuation(w) not in target_words
+            )
+            return corrected or value
         if keyword == "no":
             return "no"
         if value:
