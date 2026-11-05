@@ -263,10 +263,12 @@ class HRITasks:
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
-            positive = json.load(file)
-        self.positive = positive["affirmations"]
-        self.affirmation_words = set(positive["affirmation_words"])
-        self.negation_words = set(positive["negation_words"])
+            self.positive = json.load(file)["affirmations"]
+        file_path = os.path.join(package_share_directory, "data/negative.json")
+        with open(file_path, "r") as file:
+            self.negation_words = set(json.load(file)["negations"])
+        # Phrases like "thats right" never equal a single word, so they are harmless here
+        self.affirmation_words = set(self.positive)
 
         file_path = os.path.join(package_share_directory, "data/hand_items.json")
         with open(file_path, "r") as file:
@@ -685,14 +687,14 @@ class HRITasks:
                 goal_future = accepted_future.result().get_result_async()
 
                 while not goal_future.done():
-                    if contains_any(
-                        format_transcription(self.current_transcription), self.positive
-                    ):
-                        self.cancel_hear_action()
-                        return Status.EXECUTION_SUCCESS, "yes"
-                    if "no" in format_transcription(self.current_transcription):
+                    words = format_transcription(self.current_transcription)
+                    # Negations first, so "not sure" is a no
+                    if self.negation_words.intersection(words):
                         self.cancel_hear_action()
                         return Status.EXECUTION_SUCCESS, "no"
+                    if contains_any(words, self.positive):
+                        self.cancel_hear_action()
+                        return Status.EXECUTION_SUCCESS, "yes"
                     rclpy.spin_once(self.node, timeout_sec=0.1)
 
                 # Add an extra second to ensure the action server has enough time to process the request
@@ -706,11 +708,9 @@ class HRITasks:
                     len(goal_future.result().result.transcription.strip()) > 0
                     and goal_future.result().result.transcription != self.last_hotwords
                 ):
-                    if (
-                        contains_any(
-                            format_transcription(self.current_transcription),
-                            self.positive,
-                        )
+                    words = format_transcription(self.current_transcription)
+                    if not self.negation_words.intersection(words) and (
+                        contains_any(words, self.positive)
                         or self.is_positive(self.current_transcription)[1]
                     ):
                         return Status.EXECUTION_SUCCESS, "yes"
@@ -750,7 +750,7 @@ class HRITasks:
         # The transcription's keyword wins over the keyword spotter, like interpret_keyword
         if self.negation_words.intersection(words):
             keyword = "no"
-        elif self.affirmation_words.intersection(words) or contains_any(words, self.positive):
+        elif self.affirmation_words.intersection(words):
             keyword = "yes"
 
         if keyword == "yes":
