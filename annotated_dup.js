@@ -114,6 +114,9 @@ var annotated_dup =
       [ "FakeTFBuffer", "classfakes_1_1FakeTFBuffer.html", "classfakes_1_1FakeTFBuffer" ],
       [ "ServiceStub", "classfakes_1_1ServiceStub.html", "classfakes_1_1ServiceStub" ]
     ] ],
+    [ "finals_commands", "namespacefinals__commands.html", [
+      [ "FinalsCommandsNode", "classfinals__commands_1_1FinalsCommandsNode.html", "classfinals__commands_1_1FinalsCommandsNode" ]
+    ] ],
     [ "finetune_arcface", "namespacefinetune__arcface.html", [
       [ "ArcFaceHead", "classfinetune__arcface_1_1ArcFaceHead.html", "classfinetune__arcface_1_1ArcFaceHead" ]
     ] ],

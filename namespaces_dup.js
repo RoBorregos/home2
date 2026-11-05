@@ -120,6 +120,10 @@ var namespaces_dup =
       [ "STANDARD_MODELS", "namespacefetch__models.html#a56e10b2b63b27f2d3d42eea93b554d25", null ],
       [ "URL_MODELS", "namespacefetch__models.html#acec60494aa88eb183efa2afaee230bb4", null ]
     ] ],
+    [ "finals_commands", "namespacefinals__commands.html", "namespacefinals__commands" ],
+    [ "finals_launch", "namespacefinals__launch.html", [
+      [ "generate_launch_description", "namespacefinals__launch.html#a01a23ef4f313696a4346f41d9e5e5a8d", null ]
+    ] ],
     [ "finetune_arcface", "namespacefinetune__arcface.html", "namespacefinetune__arcface" ],
     [ "finetune_head", "namespacefinetune__head.html", "namespacefinetune__head" ],
     [ "flying_sphere", "namespaceflying__sphere.html", [

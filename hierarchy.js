@@ -412,6 +412,7 @@ var hierarchy =
       [ "vision_runtime.VisionRuntime", "classvision__runtime_1_1VisionRuntime.html", [
         [ "customer_node.CustomerNode", "classcustomer__node_1_1CustomerNode.html", null ],
         [ "face_recognition_node.FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", null ],
+        [ "finals_commands.FinalsCommandsNode", "classfinals__commands_1_1FinalsCommandsNode.html", null ],
         [ "gpsr_commands.GPSRCommands", "classgpsr__commands_1_1GPSRCommands.html", null ],
         [ "hric_commands.HRICCommands", "classhric__commands_1_1HRICCommands.html", null ],
         [ "restaurant_commands.RESTAURANTCommands", "classrestaurant__commands_1_1RESTAURANTCommands.html", null ],

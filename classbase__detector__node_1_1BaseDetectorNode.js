@@ -33,6 +33,7 @@ var classbase__detector__node_1_1BaseDetectorNode =
     [ "pub_detections", "classbase__detector__node_1_1BaseDetectorNode.html#aa691f2eec60a5b3d083b1f87079eb527", null ],
     [ "pub_image", "classbase__detector__node_1_1BaseDetectorNode.html#a38aaa2a0dcad3f94b043968f92b5e6f0", null ],
     [ "pub_poses", "classbase__detector__node_1_1BaseDetectorNode.html#ad675c4395a70f25bdafb4ac2447bc52d", null ],
+    [ "run_header", "classbase__detector__node_1_1BaseDetectorNode.html#a2c855150f4979c7673b90fd7407d0029", null ],
     [ "run_thread", "classbase__detector__node_1_1BaseDetectorNode.html#aa20853307d288ea71376dd65d5d32256", null ],
     [ "skip_frames", "classbase__detector__node_1_1BaseDetectorNode.html#a752636fb7fd97361946ca1d68a0ca045", null ],
     [ "target_frame", "classbase__detector__node_1_1BaseDetectorNode.html#ada4c4266b2581dc605ddd5a4d405b552", null ],

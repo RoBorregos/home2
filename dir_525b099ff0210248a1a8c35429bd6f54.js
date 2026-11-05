@@ -2,6 +2,7 @@ var dir_525b099ff0210248a1a8c35429bd6f54 =
 [
     [ "dlc_launch.py", "dlc__launch_8py.html", "dlc__launch_8py" ],
     [ "example_launch.py", "example__launch_8py.html", "example__launch_8py" ],
+    [ "finals_launch.py", "finals__launch_8py.html", "finals__launch_8py" ],
     [ "gpsr_launch.py", "gpsr__launch_8py.html", "gpsr__launch_8py" ],
     [ "hric_launch.py", "hric__launch_8py.html", "hric__launch_8py" ],
     [ "ppc_launch.py", "ppc__launch_8py.html", "ppc__launch_8py" ],
