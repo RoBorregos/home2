@@ -880,7 +880,11 @@ class HRITasks:
                     # If no options provided, directly extract the data without looking for matches
                     if not skip_extract_data and not options:
                         s, target_info = self.extract_data(query, interpreted_text, context)
-                        if s != Status.EXECUTION_SUCCESS:
+                        yes_no = self.negation_words | self.affirmation_words
+                        target_info = " ".join(
+                            w for w in target_info.split() if remove_punctuation(w) not in yes_no
+                        )
+                        if s != Status.EXECUTION_SUCCESS or not target_info:
                             self.say("Sorry, I couldn't understand.")
                             continue
                         target_found = True
