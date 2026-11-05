@@ -222,6 +222,7 @@ class HearStreaming(Node):
 
         start_time = time.time()
         last_word_time = start_time
+        speech_start_time = None
 
         if goal_handle.request.hotwords:
             self.hotwords = goal_handle.request.hotwords
@@ -242,7 +243,8 @@ class HearStreaming(Node):
                 not goal_handle.is_cancel_requested
                 and not self.cancel_requested
                 and not self._speaker_stopped
-                and time.time() - start_time < goal_handle.request.timeout
+                and time.time() - (speech_start_time or start_time)
+                < goal_handle.request.timeout
                 and (
                     (
                         time.time() - start_time
@@ -257,6 +259,8 @@ class HearStreaming(Node):
             ):
                 if self.prev_transcription != self.current_transcription:
                     last_word_time = time.time()
+                    if speech_start_time is None:
+                        speech_start_time = last_word_time
                     self.prev_transcription = self.current_transcription
                     self.get_logger().info(
                         f"New transcription: {self.current_transcription}"
@@ -281,7 +285,10 @@ class HearStreaming(Node):
                 f"Silence detected for more than {goal_handle.request.silence_time}s, stopping transcription."
             )
             reason = "silence"
-        elif time.time() - start_time >= goal_handle.request.timeout:
+        elif (
+            time.time() - (speech_start_time or start_time)
+            >= goal_handle.request.timeout
+        ):
             self.get_logger().info(
                 f"Timeout of {goal_handle.request.timeout} seconds reached, stopping transcription."
             )
