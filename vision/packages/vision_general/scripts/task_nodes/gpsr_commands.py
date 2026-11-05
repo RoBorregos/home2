@@ -143,6 +143,8 @@ class GPSRCommands(VisionRuntime):
         # Save every annotated detection result for post-run review (same
         # pattern as restaurant_commands): one jpg per service call.
         self.declare_parameter("save_dir", "/workspace/src/gpsr_runs")
+        # Set to false to skip the map areas lookup (2 s wait per call when navigation is not running)
+        self.declare_parameter("use_map_areas", True)
         self.save_dir = self.get_parameter("save_dir").value
         try:
             os.makedirs(self.save_dir, exist_ok=True)
@@ -294,9 +296,6 @@ class GPSRCommands(VisionRuntime):
 
         frame = self.image
         self.output_image = frame.copy()
-        self.people = self.get_detections(0)
-
-        self.people = self._filter_people(frame, self.people)
 
         gesture_requested = request.pose_requested
 
@@ -540,14 +539,15 @@ class GPSRCommands(VisionRuntime):
 
     def _get_areas(self):
         """Fetch the active map's areas from nav_central (cached after first call)."""
+        if not self.get_parameter("use_map_areas").value:
+            return None
         if self.areas is None:
             self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
         return self.areas
 
-    def _current_room(self):
+    def _current_room(self, areas):
         """Name of the areas.json room whose polygon contains the robot's
         current map position, or None when outside every polygon / no TF."""
-        areas = self._get_areas()
         if not areas:
             return None
         try:
@@ -569,7 +569,8 @@ class GPSRCommands(VisionRuntime):
         # (a person seen through a doorway must not be counted/approached).
         # Falls back to whole-house filtering when the robot is outside every
         # polygon or areas/TF are unavailable.
-        room = self._current_room()
+        areas = self._get_areas()
+        room = self._current_room(areas)
         rooms = [room] if room else None
         if room:
             self.get_logger().info(f"Filtering people to room: {room}")
@@ -581,7 +582,7 @@ class GPSRCommands(VisionRuntime):
             self.camera_info,
             self.depth_image,
             self.tf_buffer,
-            self._get_areas(),
+            areas,
             CAMERA_FRAME,
         )
         self._draw_people(filtered)
