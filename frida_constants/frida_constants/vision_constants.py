@@ -25,6 +25,13 @@ ZERO_SHOT_DETECTIONS_POSES_TOPIC = "/vision/zero_shot_detections_poses"
 ZERO_SHOT_DETECTIONS_3D_TOPIC = "/vision/zero_shot_detections_3d"
 ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
+
+# EMBEDDING GALLERY OBJECT DETECTOR TOPICS
+GALLERY_DETECTIONS_TOPIC = "/vision/gallery_detections"
+GALLERY_DETECTIONS_IMAGE_TOPIC = "/vision/gallery_detections_image"
+GALLERY_DETECTIONS_POSES_TOPIC = "/vision/gallery_detections_poses"
+GALLERY_DETECTIONS_3D_TOPIC = "/vision/gallery_detections_3d"
+GALLERY_DETECTIONS_ACTIVE_TOPIC = "/vision/gallery_detections_active"
 DETECTIONS_ACTIVE_TOPIC = "asd"
 DEBUG_IMAGE_TOPIC = "asd"
 ZERO_SHOT_DEFAULT_CLASSES = [
