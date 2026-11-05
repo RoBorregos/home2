@@ -601,7 +601,7 @@ class HRITasks:
         question: str,
         use_keyword: bool = True,
         retries: int = 3,
-        wait_between_retries: float = 5,
+        wait_between_retries: float = 10,
         query: str = "",
         context: str = "",
         target: str = "",
