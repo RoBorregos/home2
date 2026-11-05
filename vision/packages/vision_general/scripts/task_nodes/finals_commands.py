@@ -2,15 +2,17 @@
 
 import rclpy
 import numpy as np
+from cv_bridge import CvBridgeError
 from collections import deque
 from PIL import Image
 from frida_interfaces.srv import EmbedText, EmbedCrops
 from vision_runtime import VisionRuntime, spin
 from frida_constants.vision_constants import (
     CLIP_EMBEDDING_MODEL,
-    EMBED_TEXT_TOPIC,
-    EMBED_CROPS_TOPIC,
+    EMBED_TEXT_SERVICE,
+    EMBED_CROPS_SERVICE,
     FINALS_BUFFER_SECONDS,
+    FINALS_BUFFER_MAX_FRAMES,
 )
 from utils.models.image_embedder import ImageEmbedder
 import threading
@@ -25,19 +27,19 @@ class FinalsCommandsNode(VisionRuntime):
         self.embedder = ImageEmbedder(CLIP_EMBEDDING_MODEL).load()
         self.embedder_lock = threading.Lock()
 
-        self.frames = deque()
+        self.frames = deque(maxlen=FINALS_BUFFER_MAX_FRAMES)
         self.frames_lock = threading.Lock()
 
         self.create_service(
             EmbedText,
-            EMBED_TEXT_TOPIC,
+            EMBED_TEXT_SERVICE,
             self.embed_text_callback,
             callback_group=self.callback_group,
         )
 
         self.create_service(
             EmbedCrops,
-            EMBED_CROPS_TOPIC,
+            EMBED_CROPS_SERVICE,
             self.embed_crops_callback,
             callback_group=self.callback_group,
         )
@@ -45,11 +47,13 @@ class FinalsCommandsNode(VisionRuntime):
         self.get_logger().info("Finals commands ready")
 
     def _image_callback(self, msg):
-        super()._image_callback(msg)
-        if self.image_header is not msg.header:
+        try:
+            frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        except CvBridgeError as e:
+            self.get_logger().warn(f"Image conversion error: {e}")
             return
         with self.frames_lock:
-            self.frames.append((msg.header.stamp, self.image))
+            self.frames.append((msg.header.stamp, frame))
             while self.frames[0][0].sec < msg.header.stamp.sec - FINALS_BUFFER_SECONDS:
                 self.frames.popleft()
 
@@ -88,8 +92,13 @@ class FinalsCommandsNode(VisionRuntime):
                 Image.fromarray(np.ascontiguousarray(frame[y1:y2, x1:x2, ::-1]))
             )
 
-        with self.embedder_lock:
-            vectors = self.embedder.embed_batch(crops, normalize=True)
+        try:
+            with self.embedder_lock:
+                vectors = self.embedder.embed_batch(crops, normalize=True)
+        except Exception as e:
+            self.get_logger().error(f"EmbedCrops failed: {e}")
+            response.success = False
+            return response
         response.embeddings = vectors.reshape(-1).tolist()
         response.success = True
         return response

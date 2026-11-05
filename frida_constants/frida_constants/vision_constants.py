@@ -181,8 +181,9 @@ DISHWASHER_TABLET_DETECTION_TOPIC = "/vision/dishwasher/tablet_detection"
 DISHWASHER_DEBUG_IMAGE_TOPIC = "/vision/dishwasher/debug_image"
 
 # Semantic mapping
-EMBED_TEXT_TOPIC = "/vision/embed_text"
-EMBED_CROPS_TOPIC = "/vision/embed_crops"
+EMBED_TEXT_SERVICE = "/vision/embed_text"
+EMBED_CROPS_SERVICE = "/vision/embed_crops"
 
 CLIP_EMBEDDING_MODEL = "clip:ViT-B/32"
 FINALS_BUFFER_SECONDS = 3
+FINALS_BUFFER_MAX_FRAMES = 150  # safety cap: ZED can publish up to ~30 fps
