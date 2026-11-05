@@ -1,0 +1,13 @@
+ARG BASE_IMAGE=ubuntu:24.04
+FROM ${BASE_IMAGE}
+
+# LFM2.5-VL needs transformers 5.x; on l4t, pip-install-reqs skips the pins the base already provides (torch).
+RUN printf '%s\n' "transformers==5.20.2" accelerate Pillow "grpcio==1.71.0" "protobuf==5.29.1" > /tmp/requirements.txt \
+    && if command -v pip-install-reqs >/dev/null; then pip-install-reqs /tmp/requirements.txt; \
+       else pip install -r /tmp/requirements.txt; fi \
+    && rm /tmp/requirements.txt
+
+WORKDIR /workspace
+# Keep model downloads in the mounted, writable cache volume.
+ENV HF_HOME=/home/ros/.cache/huggingface \
+	HF_HUB_CACHE=/home/ros/.cache/huggingface
