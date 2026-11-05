@@ -12,6 +12,7 @@ import asyncio
 import inspect
 import numpy as np
 import threading
+from types import SimpleNamespace
 import pytest
 import yaml
 from contextlib import contextmanager
@@ -33,7 +34,9 @@ from frida_constants.manipulation_constants import (
     SAFETY_HEIGHT_GEOMETRIC,
 )
 from frida_interfaces.msg import ManipulationTask, PlaceParams
+from geometry_msgs.msg import PointStamped
 from pathlib import Path
+from rclpy.action import GoalResponse
 from perception_3d.geometric_grasps import approaches
 from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import (
@@ -267,7 +270,7 @@ def test_a_failed_shape_pick_falls_back_to_gpd(strategies, candidates_fail):
     if candidates_fail:
         generated = FakeGenerateGraspsResponse(make_pose(z=0.3), object_type="box")
         generated.object.id = "fitted"
-        arm = FakeArm(pregrasp_results=[False] * 10)
+        arm = FakeArm(pregrasp_results=[False])
     perception = FakePerception(
         located_point=make_point(),
         cluster=make_cluster(),
@@ -288,6 +291,27 @@ def test_a_failed_shape_pick_falls_back_to_gpd(strategies, candidates_fail):
         assert arm.calls.index("remove_collision_object") < stare_moves[1]
     else:
         assert "remove_collision_object" not in arm.calls
+
+
+def test_a_failed_shape_pick_keeps_out_of_gpd_when_the_fallback_is_off(strategies):
+    generated = FakeGenerateGraspsResponse(make_pose(z=0.3), object_type="box")
+    perception = FakePerception(
+        located_point=make_point(),
+        cluster=make_cluster(),
+        grasps=[([make_pose()], [0.9])] * 3,
+        generated_grasps=generated,
+    )
+
+    success, _ = run_pick(
+        FakeArm(pregrasp_results=[False]),
+        perception,
+        strategies,
+        object_name="coke",
+        gpd_fallback=False,
+    )
+
+    assert not success
+    assert "detect_grasps" not in perception.calls
 
 
 def test_an_unlisted_name_tries_the_geometric_generator_before_gpd(strategies):
@@ -567,8 +591,10 @@ def core():
     node.strategies = {}
     node._logger = FakeLogger()
     node.get_logger = lambda: node._logger
+    node.get_parameter = lambda name: SimpleNamespace(value="auto")
     node._last_pick = PickOutcome()
     node._follow_lock = threading.Lock()
+    node._task_lock = threading.Lock()
     node._face = follow_pipeline.FaceState()
     node._person = follow_pipeline.PersonState()
     node._pipelines = {
@@ -590,7 +616,7 @@ class _Request:
             "P",
             (),
             {
-                "object_name": "cup",
+                "object_name": "basket",
                 "object_point": None,
                 "min_distance": 0.0,
                 "max_distance": 1.0,
@@ -622,6 +648,12 @@ class _GoalHandle:
         pass
 
 
+def _serve(core, callback, goal_handle):
+    """What the action server does: accept the goal, which takes the lock, then run it."""
+    assert core.goal_callback(goal_handle.request) == GoalResponse.ACCEPT
+    return asyncio.run(callback(goal_handle))
+
+
 def test_a_task_goal_stops_face_following_before_the_pipeline_runs(core, no_sleep):
     follow_pipeline.face_on(core.arm, core._face)
     seen = []
@@ -629,10 +661,55 @@ def test_a_task_goal_stops_face_following_before_the_pipeline_runs(core, no_slee
         list(core.arm.calls)
     )
 
-    asyncio.run(core.manipulation_callback(_GoalHandle(_Request())))
+    _serve(core, core.general_manipulation_callback, _GoalHandle(_Request()))
 
     assert "leave_joint_velocity_mode" in seen[0]
     assert not core._face.is_following_face_active
+
+
+def test_a_second_goal_is_rejected_once_one_is_accepted(core):
+    assert core.goal_callback(None) == GoalResponse.ACCEPT
+    assert core.goal_callback(None) == GoalResponse.REJECT
+
+
+def test_a_go_to_hand_goal_holds_the_same_lock(core):
+    seen = []
+    core.arm.move_to_pose = (
+        lambda pose, **kwargs: seen.append(core.goal_callback(None)) or True
+    )
+    point = PointStamped()
+    point.header.frame_id = "base_link"
+    request = type("R", (), {"point": point, "hand_offset": 0.1})()
+
+    _serve(core, core.go_to_hand_callback, _GoalHandle(request))
+
+    assert seen == [GoalResponse.REJECT]
+    assert not core._task_lock.locked()
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    [True, False, RuntimeError("boom")],
+    ids=["success", "failure", "exception"],
+)
+def test_the_lock_is_released_however_a_task_ends(core, outcome):
+    def pipeline(request):
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+    core._pipelines[ManipulationTask.PICK] = pipeline
+    _serve(core, core.general_manipulation_callback, _GoalHandle(_Request()))
+
+    assert not core._task_lock.locked()
+
+
+def test_the_lock_is_released_after_an_early_return(core):
+    core.arm._estop = True
+
+    _serve(core, core.general_manipulation_callback, _GoalHandle(_Request()))
+
+    assert not core._task_lock.locked()
 
 
 def test_every_task_type_has_a_pipeline(core):
@@ -643,6 +720,14 @@ def test_every_task_type_has_a_pipeline(core):
         ManipulationTask.POUR,
     ):
         assert task in core._pipelines
+
+
+@pytest.mark.parametrize(
+    "value, successful", [("auto", True), ("gpd", True), ("geometic", False)]
+)
+def test_only_known_pick_methods_are_accepted(core, value, successful):
+    parameter = SimpleNamespace(name="pick_method", value=value)
+    assert core._validate_parameters([parameter]).successful is successful
 
 
 def test_a_failed_pick_clears_the_remembered_outcome(core, monkeypatch):
@@ -776,7 +861,7 @@ def test_a_request_without_a_name_goes_to_gpd(name):
     [
         ("coke", False, PICK_STRATEGY_GEOMETRIC),
         ("coke", True, PICK_STRATEGY_GPD),
-        ("cup", True, PICK_STRATEGY_RIM),
+        ("basket", True, PICK_STRATEGY_RIM),
     ],
 )
 def test_force_gpd_only_overrides_the_geometric_default(name, force_gpd, expected):

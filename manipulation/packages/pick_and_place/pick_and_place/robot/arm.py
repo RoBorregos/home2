@@ -387,7 +387,9 @@ class RobotArm:
         # goal acceptance, which is fast.
         return bool(goal_handle.get_result().result.success)
 
-    def move_to_pregrasp(self, pose, velocity: float = PICK_VELOCITY) -> bool:
+    def move_to_pregrasp(
+        self, pose, velocity: float = PICK_VELOCITY, allow_pose_goal: bool = True
+    ) -> bool:
         """Move to a pre-grasp via the nearest IK solution.
 
         A free pose goal lets the planner wind joint 1 almost 360 degrees around
@@ -399,7 +401,7 @@ class RobotArm:
             pose,
             latest_joint_state=self._latest_joint_state,
             velocity=velocity,
-            fallback_move_to_pose=self._move_to_pose_pair,
+            fallback_move_to_pose=self._move_to_pose_pair if allow_pose_goal else None,
             logger=self._log,
         )
 

@@ -15,6 +15,7 @@ import time
 
 import numpy as np
 import rclpy
+from rcl_interfaces.msg import SetParametersResult
 from frida_constants.manipulation_constants import (
     FIXED_DISTANCE_MOVE_SERVICE,
     FOLLOW_FACE_ARM_SERVICE,
@@ -30,7 +31,7 @@ from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import FixedDistanceMove, FollowFace
 from frida_motion_planning.utils.tf_utils import transform_point
 from geometry_msgs.msg import Point, PoseStamped, Twist
-from rclpy.action import ActionServer, CancelResponse
+from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from std_msgs.msg import Float64
@@ -57,6 +58,9 @@ FACE_LOOP_PERIOD = 0.1
 EXECUTOR_THREADS = 16
 
 
+PICK_METHODS = ("auto", "geometric", "gpd")
+
+
 class ManipulationCore(Node):
     def __init__(self):
         super().__init__("manipulation_core")
@@ -64,6 +68,7 @@ class ManipulationCore(Node):
         # whole pick, so anything on the default mutually-exclusive group could
         # not be serviced while a task runs, and the node would deadlock.
         self.callback_group = ReentrantCallbackGroup()
+        self._task_lock = threading.Lock()
 
         # Physical properties of the gripper; the launch file overrides
         # ee_link_offset. Everything else tuned lives in pick_profiles.yaml.
@@ -73,6 +78,9 @@ class ManipulationCore(Node):
         self.declare_parameter("geometric_tip_offset", -GRIPPER_REACH)
         # Points at an alternative profile file; empty means the installed one.
         self.declare_parameter("pick_profiles_file", "")
+        # Benchmark switch: auto, gpd, or geometric (no GPD fallback).
+        self.declare_parameter("pick_method", "auto")
+        self.add_on_set_parameters_callback(self._validate_parameters)
 
         self.arm = RobotArm(self)
         self.perception = Perception(self)
@@ -97,9 +105,10 @@ class ManipulationCore(Node):
             self,
             ManipulationAction,
             MANIPULATION_ACTION_SERVER,
-            execute_callback=self.manipulation_callback,
+            execute_callback=self.general_manipulation_callback,
             cancel_callback=self._cancel_callback,
             callback_group=self.callback_group,
+            goal_callback=self.goal_callback,
         )
         self._go_to_hand_server = ActionServer(
             self,
@@ -107,6 +116,7 @@ class ManipulationCore(Node):
             GO_TO_HAND_ACTION_SERVER,
             execute_callback=self.go_to_hand_callback,
             callback_group=self.callback_group,
+            goal_callback=self.goal_callback,
         )
         self._fixed_distance_move_srv = self.create_service(
             FixedDistanceMove,
@@ -132,6 +142,12 @@ class ManipulationCore(Node):
     # ==================================================================
     # ManipulationAction
     # ==================================================================
+
+    def goal_callback(self, goal_request):
+        if not self._task_lock.acquire(blocking=False):
+            self.get_logger().warn("Goal rejected: a task is already running")
+            return GoalResponse.REJECT
+        return GoalResponse.ACCEPT
 
     def _cancel_callback(self, goal_handle):
         self.get_logger().warn("Manipulation task cancellation requested")
@@ -187,18 +203,37 @@ class ManipulationCore(Node):
         self.get_logger().info(f"[DONE] task {request.task_type} -> {result.success}")
         return result
 
+    async def general_manipulation_callback(self, goal_handle):
+        try:
+            return await self.manipulation_callback(goal_handle)
+        finally:
+            self._task_lock.release()
+
     # ==================================================================
     # Pipelines
     # ==================================================================
 
+    def _validate_parameters(self, parameters):
+        """Reject a pick_method typo instead of silently running auto."""
+        for parameter in parameters:
+            if parameter.name == "pick_method" and parameter.value not in PICK_METHODS:
+                return SetParametersResult(
+                    successful=False,
+                    reason=f"pick_method must be one of {PICK_METHODS}",
+                )
+        return SetParametersResult(successful=True)
+
     def _run_pick(self, request) -> bool:
         params = request.pick_params
+        method = self.get_parameter("pick_method").value
         pick_request = pick_pipeline.PickRequest(
             object_name=params.object_name,
             object_point=params.object_point,
             min_distance=params.min_distance or 0.0,
             max_distance=params.max_distance or pick_pipeline.PICK_MAX_DISTANCE,
             is_shelf=request.scan_environment,
+            use_gpd=method == "gpd",
+            gpd_fallback=method != "geometric",
             in_configuration=params.in_configuration,
         )
 
@@ -257,6 +292,12 @@ class ManipulationCore(Node):
     # ==================================================================
 
     async def go_to_hand_callback(self, goal_handle):
+        try:
+            return self._go_to_hand(goal_handle)
+        finally:
+            self._task_lock.release()
+
+    def _go_to_hand(self, goal_handle):
         """Reach towards a person's hand to hand an object over."""
         self._preempt_follow()
         self.get_logger().info("Executing go to hand goal...")

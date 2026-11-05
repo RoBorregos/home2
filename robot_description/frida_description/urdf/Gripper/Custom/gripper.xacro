@@ -116,7 +116,7 @@
 
   <link name="zed"  />
   <joint name="ZED" type="fixed">
-    <origin xyz="0.0082 -0.0871 0.0025" rpy="0.0061 -0.7922 -1.5632" />
+    <origin xyz="0 -0.095626 -0.005" rpy="0 -0.7854 -1.5708" />
     <parent link="gripper" />
     <child link="zed" />
     <axis xyz="0 0 1"/>

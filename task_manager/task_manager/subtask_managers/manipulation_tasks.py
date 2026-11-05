@@ -359,7 +359,7 @@ class ManipulationTasks:
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
 
-        if future.result() is None:
+        if future.result() is None or not future.result().accepted:
             Logger.error(self.node, "Failed to send pick request")
             return Status.EXECUTION_ERROR
 
@@ -369,6 +369,7 @@ class ManipulationTasks:
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
         if not result_future.done():
             Logger.error(self.node, "Action timed out after 60s")
+            future.result().cancel_goal_async()
             return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Pick result: {result}")
@@ -400,7 +401,7 @@ class ManipulationTasks:
         goal_msg.place_params.is_trash = is_trash
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-        if future.result() is None:
+        if future.result() is None or not future.result().accepted:
             Logger.error(self.node, "Failed to send place request")
             return Status.EXECUTION_ERROR
         Logger.info(self.node, "Place request sent")
@@ -409,6 +410,7 @@ class ManipulationTasks:
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
         if not result_future.done():
             Logger.error(self.node, "Action timed out after 60s")
+            future.result().cancel_goal_async()
             return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Place result: {result}")
@@ -561,7 +563,7 @@ class ManipulationTasks:
             goal_msg.place_params.table_height_tolerance = tolerance
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-        if future.result() is None:
+        if future.result() is None or not future.result().accepted:
             Logger.error(self.node, "Failed to send place request")
             return Status.EXECUTION_ERROR
         Logger.info(self.node, "Place in shelf request sent")
@@ -575,6 +577,7 @@ class ManipulationTasks:
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=SHELF_PLACE_TIMEOUT)
         if not result_future.done():
             Logger.error(self.node, f"Action timed out after {SHELF_PLACE_TIMEOUT}s")
+            future.result().cancel_goal_async()
             return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Place in shelf result: {result}")
@@ -596,7 +599,7 @@ class ManipulationTasks:
         goal_msg.pour_params.object_already_grasped = object_already_grasped
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-        if future.result() is None:
+        if future.result() is None or not future.result().accepted:
             Logger.error(self.node, "Failed to send pour request")
             return Status.EXECUTION_ERROR
         Logger.info(self.node, "Pour request sent")
@@ -605,6 +608,7 @@ class ManipulationTasks:
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
         if not result_future.done():
             Logger.error(self.node, "Action timed out after 60s")
+            future.result().cancel_goal_async()
             return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Pour result: {result}")
@@ -843,7 +847,7 @@ class ManipulationTasks:
 
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-        if future.result() is None:
+        if future.result() is None or not future.result().accepted:
             Logger.error(self.node, "Failed to send place_in_point request")
             return Status.EXECUTION_ERROR
 
@@ -851,6 +855,7 @@ class ManipulationTasks:
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
         if not result_future.done():
             Logger.error(self.node, "Action timed out after 60s")
+            future.result().cancel_goal_async()
             return Status.EXECUTION_ERROR
         result = result_future.result().result
         if result.success:
