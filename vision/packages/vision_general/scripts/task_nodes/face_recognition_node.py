@@ -117,6 +117,8 @@ class FaceRecognition(VisionRuntime):
         self.talker_lock = threading.Lock()
         self.last_talker = None
         self.talker_gen = 0
+        # Face followed last tick in "area" mode; kept instead of re-picking the largest.
+        self.area_target = None
 
         self.pbar.update(1)
         self.get_logger().info("Face Recognition Ready")
@@ -171,12 +173,13 @@ class FaceRecognition(VisionRuntime):
                 x1, y1, x2, y2 = face.bbox.astype(int)
                 cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
 
+                # Scale with face size so a moving close face stays one track.
+                threshold = max(TRACK_THRESHOLD, (x2 - x1) / 2)
                 track = next(
                     (
                         t
                         for t in tracks
-                        if abs(t["x"] - cx) < TRACK_THRESHOLD
-                        and abs(t["y"] - cy) < TRACK_THRESHOLD
+                        if abs(t["x"] - cx) < threshold and abs(t["y"] - cy) < threshold
                     ),
                     None,
                 )
@@ -348,6 +351,7 @@ class FaceRecognition(VisionRuntime):
         # Face in this frame matching the cached talker: by name, else nearest by position.
         talker_params, talker_name, talker_face = None, "", None
         talker_by_name, talker_dist = False, None
+        sticky_params, sticky_name, sticky_dist = None, "", None
         detected = False
 
         for ins_face in detected_faces:
@@ -406,12 +410,20 @@ class FaceRecognition(VisionRuntime):
                 largest_face_name = name
             if self.follow_name == name:
                 follow_face_params = (left, top, right, bottom)
+            # Faces move between ticks (and the camera turns), so match by face size.
+            threshold = max(TRACK_THRESHOLD, x2 - x1)
+            if self.area_target is not None:
+                dist = abs(self.area_target[0] - xc) + abs(self.area_target[1] - yc)
+                if dist < threshold and (sticky_dist is None or dist < sticky_dist):
+                    sticky_dist = dist
+                    sticky_params = (left, top, right, bottom)
+                    sticky_name = name
             if talker is not None and not talker_by_name:
                 dx = abs(talker["x"] - centerx)
                 dy = abs(talker["y"] - centery)
                 if talker["name"] != "Unknown" and talker["name"] == name:
                     talker_by_name = True
-                elif not (dx < TRACK_THRESHOLD and dy < TRACK_THRESHOLD):
+                elif not (dx < threshold and dy < threshold):
                     continue
                 elif talker_dist is not None and dx + dy >= talker_dist:
                     continue
@@ -456,38 +468,41 @@ class FaceRecognition(VisionRuntime):
                 target_name = self.follow_name
             else:
                 detected = False
-        elif talker is not None:
-            if talker_params:
-                left, top, right, bottom = talker_params
-                xc = left + (right - left) / 2.0
-                yc = top + (bottom - top) / 2.0
-                target_name = talker_name
-                cv2.putText(
-                    annotated,
-                    "TALKING",
-                    (left + 6, max(top - 8, 20)),
-                    cv2.FONT_HERSHEY_DUPLEX,
-                    0.8,
-                    (0, 255, 0),
-                    2,
-                )
-                # Refresh the cache so the talker is followed while moving,
-                # unless the background loop replaced it meanwhile.
-                with self.talker_lock:
-                    if self.last_talker is talker:
-                        tx, ty, bbox = talker_face
-                        self.last_talker = {
-                            "name": talker_name
-                            if talker_name != "Unknown"
-                            else talker["name"],
-                            "x": tx,
-                            "y": ty,
-                            "bbox": bbox,
-                        }
-            else:
-                # Talker out of view: report no target but keep the cache.
-                detected = False
+        elif talker is not None and talker_params:
+            left, top, right, bottom = talker_params
+            xc = left + (right - left) / 2.0
+            yc = top + (bottom - top) / 2.0
+            target_name = talker_name
+            cv2.putText(
+                annotated,
+                "TALKING",
+                (left + 6, max(top - 8, 20)),
+                cv2.FONT_HERSHEY_DUPLEX,
+                0.8,
+                (0, 255, 0),
+                2,
+            )
+            # Refresh the cache so the talker is followed while moving,
+            # unless the background loop replaced it meanwhile.
+            with self.talker_lock:
+                if self.last_talker is talker:
+                    tx, ty, bbox = talker_face
+                    self.last_talker = {
+                        "name": talker_name
+                        if talker_name != "Unknown"
+                        else talker["name"],
+                        "x": tx,
+                        "y": ty,
+                        "bbox": bbox,
+                    }
+        elif sticky_params:
+            # No talker, or it is out of view (cache kept): stay on the last followed face.
+            left, top, right, bottom = sticky_params
+            xc = left + (right - left) / 2.0
+            yc = top + (bottom - top) / 2.0
+            target_name = sticky_name
 
+        self.area_target = (xc, yc) if detected and self.follow_name == "area" else None
         self.prev_faces = self.curr_faces
         self.annotated_frame = annotated
 
