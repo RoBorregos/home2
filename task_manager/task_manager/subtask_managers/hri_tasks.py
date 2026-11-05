@@ -7,6 +7,7 @@ HRI Subtask manager
 import json
 import os
 import re
+import time
 
 # from datetime import datetime
 from typing import List, Union
@@ -655,7 +656,9 @@ class HRITasks:
                 goal_future = accepted_future.result().get_result_async()
 
                 heard_no = False
-                while not goal_future.done():
+                # Deadline in case the STT server dies mid-listen and never resolves the goal
+                deadline = time.monotonic() + wait_between_retries + 1
+                while not goal_future.done() and time.monotonic() < deadline:
                     words = format_transcription(self.current_transcription)
                     if self.negation_words.intersection(words) or self.keyword == "no":
                         # Keep listening: "No, I said Andres" carries the correction after the "no"
@@ -668,7 +671,9 @@ class HRITasks:
                     rclpy.spin_once(self.node, timeout_sec=0.1)
                 self.cancel_hear_action()
 
-                text = goal_future.result().result.transcription.strip()
+                text = (
+                    goal_future.result().result.transcription.strip() if goal_future.done() else ""
+                )
                 if text == self.last_hotwords.strip():
                     text = ""
                 keyword = "no" if heard_no else self.keyword
@@ -691,7 +696,8 @@ class HRITasks:
                 )
                 goal_future = accepted_future.result().get_result_async()
 
-                while not goal_future.done():
+                deadline = time.monotonic() + wait_between_retries + 1
+                while not goal_future.done() and time.monotonic() < deadline:
                     words = format_transcription(self.current_transcription)
                     # Negations first, so "not sure" is a no
                     if self.negation_words.intersection(words):
@@ -702,15 +708,12 @@ class HRITasks:
                         return Status.EXECUTION_SUCCESS, "yes"
                     rclpy.spin_once(self.node, timeout_sec=0.1)
 
-                # Add an extra second to ensure the action server has enough time to process the request
-                rclpy.spin_until_future_complete(
-                    self.node, goal_future, timeout_sec=wait_between_retries + 1
-                )
                 self.cancel_hear_action()
 
                 # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
                 if (
-                    len(goal_future.result().result.transcription.strip()) > 0
+                    goal_future.done()
+                    and len(goal_future.result().result.transcription.strip()) > 0
                     and goal_future.result().result.transcription.strip()
                     != self.last_hotwords.strip()
                 ):
