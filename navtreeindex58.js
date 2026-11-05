@@ -1,5 +1,6 @@
 var NAVTREEINDEX58 =
 {
+"vision__constants_8py.html#a73766a2152da42541ebfcd6b8340ef76":[44,0,1,1,7,7],
 "vision__constants_8py.html#a7de5488b3061c6029e51ae3732b3e1d1":[44,0,1,1,7,84],
 "vision__constants_8py.html#a81be31e6afbd7a14c0fc60f163a1b3e3":[44,0,1,1,7,59],
 "vision__constants_8py.html#a81cbe5d1b77fa24c3b9197d8d0c9748c":[44,0,1,1,7,33],

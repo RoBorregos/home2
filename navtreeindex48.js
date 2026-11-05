@@ -1,5 +1,6 @@
 var NAVTREEINDEX48 =
 {
+"namespacevamp_1_1typing.html#aa15b02e295307acf3fe308d20a94f019":[42,0,173,12,3],
 "namespacevamp_1_1typing.html#ab4ef6070ea276ae6f66318703ab112e7":[42,0,173,12,4],
 "namespacevamp_1_1typing.html#ad7955226b612d6c71588c96bb7752dee":[42,0,173,12,1],
 "namespacevamp_1_1typing.html#af15d9ebbe21fadaec9354447098d897d":[42,0,173,12,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX48 =
 "person__goal__smoother_8py.html#a502512a931e8d0e022160d27df7dc9d5":[44,0,4,0,2,2,5,9],
 "person__goal__smoother_8py.html#a71fa39f13e98861dc6f335a050b0a7d1":[44,0,4,0,2,2,5,3],
 "person__goal__smoother_8py.html#abbc3a8a31ea54de193e27155836aa066":[44,0,4,0,2,2,5,4],
-"person__goal__smoother_8py.html#abcb2932c0c35c453a04999d05e29394f":[44,0,4,0,2,2,5,7],
-"person__goal__smoother_8py.html#ac0c4ad80a4d192ac860131b051633a38":[44,0,4,0,2,2,5,1]
+"person__goal__smoother_8py.html#abcb2932c0c35c453a04999d05e29394f":[44,0,4,0,2,2,5,7]
 };

@@ -1,5 +1,6 @@
 var NAVTREEINDEX50 =
 {
+"receptionist__task__manager_8py.html":[44,0,6,1,0,12],
 "receptionist__task__manager_8py.html#a190fa117b34e8f98afa854494e664047":[44,0,6,1,0,12,4],
 "receptionist__task__manager_8py.html#ab6e6d47fc4ae90351efa864eacc5c880":[44,0,6,1,0,12,3],
 "record__joints__node_8py.html":[44,0,3,1,1,1,0,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX50 =
 "sphere__heightfield_8hh.html":[44,0,3,1,7,2,0,0,1,10],
 "sphere__heightfield_8hh.html#a47cc8ee002cf64e4bcc0433164338cd6":[44,0,3,1,7,2,0,0,1,10,0],
 "sphere__heightfield_8hh_source.html":[44,0,3,1,7,2,0,0,1,10],
-"sphere__sphere_8hh.html":[44,0,3,1,7,2,0,0,1,11],
-"sphere__sphere_8hh.html#a102a267ff272d2dcd44c3cd51cb36b97":[44,0,3,1,7,2,0,0,1,11,2]
+"sphere__sphere_8hh.html":[44,0,3,1,7,2,0,0,1,11]
 };

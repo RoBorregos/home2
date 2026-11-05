@@ -1,5 +1,6 @@
 var NAVTREEINDEX45 =
 {
+"namespacesafety__task__manager.html#a207642360aafef76971e5142db35e75c":[42,0,130,3],
 "namespaceself__collision__utils.html":[42,0,131],
 "namespaceself__collision__utils.html#ad75c962b15bb9c25c399069936671bb1":[42,0,131,2],
 "namespaceself__collision__utils.html#adacc1b236355b90fa16f716b067a337d":[42,0,131,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX45 =
 "namespacetest__copyright.html#a156f4f961887d49bfb4cc9f6e7f6af0a":[42,0,149,0],
 "namespacetest__describe__person.html":[42,0,150],
 "namespacetest__describe__person.html#a17c9748292aa3eca41ec6491e86000be":[42,0,150,1],
-"namespacetest__env.html":[42,0,151],
-"namespacetest__env.html#a0d88c2075e691d0fe1872f8c78bc5bea":[42,0,151,1]
+"namespacetest__env.html":[42,0,151]
 };

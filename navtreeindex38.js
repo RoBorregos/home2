@@ -1,5 +1,6 @@
 var NAVTREEINDEX38 =
 {
+"md_manipulation_packages_vamp_README.html#autotoc_md28":[3,0,6],
 "md_manipulation_packages_vamp_README.html#autotoc_md29":[3,1],
 "md_manipulation_packages_vamp_README.html#autotoc_md30":[3,2],
 "md_manipulation_packages_vamp_README.html#autotoc_md31":[3,3],
@@ -248,6 +249,5 @@ var NAVTREEINDEX38 =
 "namespacearm__pkg_1_1utils.html#ae9eb22e558e6f2b39ff28482a2960667":[42,0,4,2,2],
 "namespaceattachments.html":[42,0,5],
 "namespaceattachments.html#a43331084867eb005f9f5b0b783163757":[42,0,5,0],
-"namespaceattachments.html#a44fc122e75f579cd0867fb20ff7d47a7":[42,0,5,2],
-"namespaceattachments.html#ab1ede0b50eb7ba27402ea374f857a7f0":[42,0,5,3]
+"namespaceattachments.html#a44fc122e75f579cd0867fb20ff7d47a7":[42,0,5,2]
 };
