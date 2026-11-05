@@ -1,0 +1,6 @@
+# Max seconds to collect frames before giving up
+float32 timeout
+---
+bool success
+# Only the people detected as talking (name, x, y and bbox filled in)
+frida_interfaces/Person[] people

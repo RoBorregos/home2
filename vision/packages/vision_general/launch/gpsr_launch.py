@@ -63,5 +63,12 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            Node(
+                package="vision_general",
+                executable="talking_detection_node.py",
+                name="talking_detection",
+                output="screen",
+                emulate_tty=True,
+            ),
         ]
     )
