@@ -483,7 +483,9 @@ class HRITasks:
         goal_future = accepted_future.result().get_result_async()
 
         # Add an extra second to ensure the action server has enough time to process the request
-        rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=max_audio_length + 1)
+        rclpy.spin_until_future_complete(
+            self.node, goal_future, timeout_sec=start_silence_time + max_audio_length + 1
+        )
         self.cancel_hear_action()
 
         result = goal_future.result().result
