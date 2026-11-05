@@ -1,5 +1,9 @@
 var NAVTREEINDEX45 =
 {
+"namespaceself__collision__utils.html":[42,0,131],
+"namespaceself__collision__utils.html#ad75c962b15bb9c25c399069936671bb1":[42,0,131,2],
+"namespaceself__collision__utils.html#adacc1b236355b90fa16f716b067a337d":[42,0,131,0],
+"namespaceself__collision__utils.html#adc0819160793aeeeaaf2e2880945f843":[42,0,131,1],
 "namespacesemantic__nav__node.html":[42,0,132],
 "namespacesemantic__nav__node.html#a5df644a86550cda5bdea6f1b010110d7":[42,0,132,2],
 "namespacesemantic__nav__node.html#aa2e6eac0f48753088bf6690568f79b67":[42,0,132,1],
@@ -245,9 +249,5 @@ var NAVTREEINDEX45 =
 "namespacetest__describe__person.html":[42,0,150],
 "namespacetest__describe__person.html#a17c9748292aa3eca41ec6491e86000be":[42,0,150,1],
 "namespacetest__env.html":[42,0,151],
-"namespacetest__env.html#a0d88c2075e691d0fe1872f8c78bc5bea":[42,0,151,1],
-"namespacetest__face__rec.html":[42,0,152],
-"namespacetest__face__rec.html#a1c5ad2dbe7780f42aa1fea4be45222ca":[42,0,152,4],
-"namespacetest__face__rec.html#a621e28b270153b5ad2a3cc33a7ad5cbb":[42,0,152,5],
-"namespacetest__face__rec.html#abce8dee854fc7ff14af009f4c5b701f5":[42,0,152,3]
+"namespacetest__env.html#a0d88c2075e691d0fe1872f8c78bc5bea":[42,0,151,1]
 };

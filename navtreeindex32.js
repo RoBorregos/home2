@@ -52,7 +52,9 @@ var NAVTREEINDEX32 =
 "demo__manager_8py.html#a891f55a494f20d29760d6fd74a348244":[44,0,6,1,0,2,2],
 "demo__manager_8py.html#ab66bcf0b1e73374f9ca70e16f7a3d5c3":[44,0,6,1,0,2,7],
 "demo__roborregosday_8py.html":[44,0,6,1,0,3],
-"demo__roborregosday_8py.html#acd82569527c62414a42ff3f09ebd357b":[44,0,6,1,0,3,4],
+"demo__roborregosday_8py.html#a456ab396fad9364f47fa9aa4d351f170":[44,0,6,1,0,3,6],
+"demo__roborregosday_8py.html#a5851e9646d54492449c8313f95f15e40":[44,0,6,1,0,3,4],
+"demo__roborregosday_8py.html#acd82569527c62414a42ff3f09ebd357b":[44,0,6,1,0,3,5],
 "demo__roborregosday_8py.html#aef364237443cdc672f0fdf820f1bf866":[44,0,6,1,0,3,2],
 "demo__roborregosday_8py.html#af18329abe6c10ff0c8cbbd8bf2b0d922":[44,0,6,1,0,3,3],
 "dir_03ebd3e1ad7486c28e469001073a5928.html":[44,0,3,1,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX32 =
 "ds4__demo_8py.html":[44,0,3,1,1,0,3],
 "ds4__demo_8py.html#a4c6991237427da870d97ade2a44fdfec":[44,0,3,1,1,0,3,3],
 "ds4__demo_8py.html#a9537b385d440de90c55689e7d09e9b5d":[44,0,3,1,1,0,3,2],
-"ds4__demo_8py.html#a9ee64277947c3be58860b6df419273bd":[44,0,3,1,1,0,3,1],
-"egsr__cut_8py.html":[44,0,6,1,0,4],
-"egsr__cut_8py.html#a0e686aa3fb80c3b83bd276c99727c65e":[44,0,6,1,0,4,5]
+"ds4__demo_8py.html#a9ee64277947c3be58860b6df419273bd":[44,0,3,1,1,0,3,1]
 };

@@ -1,5 +1,9 @@
 var NAVTREEINDEX41 =
 {
+"namespacefrida__constants_1_1navigation__constants.html#a051097ea78c5f327e8cfa2177d1780db":[42,0,51,3,13],
+"namespacefrida__constants_1_1navigation__constants.html#a055ca79bba0b2a17fee6639437a4a945":[42,0,51,3,34],
+"namespacefrida__constants_1_1navigation__constants.html#a09730e96816f9c5404ebec337307c85f":[42,0,51,3,8],
+"namespacefrida__constants_1_1navigation__constants.html#a0a4af566d54624f333d55154c259116e":[42,0,51,3,49],
 "namespacefrida__constants_1_1navigation__constants.html#a0c539f7d23dbcc6c9137ec5379fb528f":[42,0,51,3,32],
 "namespacefrida__constants_1_1navigation__constants.html#a12d3925bb26fd88e4d40d4bd1f2e5726":[42,0,51,3,53],
 "namespacefrida__constants_1_1navigation__constants.html#a19da80c20445976caecaecc96e78881f":[42,0,51,3,24],
@@ -245,9 +249,5 @@ var NAVTREEINDEX41 =
 "namespacehric__commands.html":[42,0,73],
 "namespacehric__commands.html#a19297de37a6bae70e0adcd79a9f3d19e":[42,0,73,10],
 "namespacehric__commands.html#a1a0e3f0c859c7561246de2440181ff63":[42,0,73,1],
-"namespacehric__commands.html#a295f86308e2091a1cafb49a1abbadfe9":[42,0,73,2],
-"namespacehric__commands.html#a2ff6673c8134c479a43231dd19a5b8f1":[42,0,73,5],
-"namespacehric__commands.html#a36beb79351df54403135ea9f8da7d6de":[42,0,73,13],
-"namespacehric__commands.html#a3ab9b8e783f16ed1b5159856ba0fc831":[42,0,73,11],
-"namespacehric__commands.html#a3cca12f77741a3bca2925462cc5e244c":[42,0,73,4]
+"namespacehric__commands.html#a295f86308e2091a1cafb49a1abbadfe9":[42,0,73,2]
 };

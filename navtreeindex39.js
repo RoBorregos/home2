@@ -1,5 +1,7 @@
 var NAVTREEINDEX39 =
 {
+"namespaceattachments.html#ae313171c75da313de1e55b0eb505e17b":[42,0,5,1],
+"namespacebase__detector__node.html":[42,0,6],
 "namespacebenchmark__vamp.html":[42,0,7],
 "namespacebenchmark__vamp.html#a186b0c38ab4698ef0b34c529dc33a197":[42,0,7,5],
 "namespacebenchmark__vamp.html#a9b0d761583c11cecee33ee66344bfdd9":[42,0,7,2],
@@ -146,7 +148,9 @@ var NAVTREEINDEX39 =
 "namespacedemo__manager.html#a891f55a494f20d29760d6fd74a348244":[42,0,20,1],
 "namespacedemo__manager.html#ab66bcf0b1e73374f9ca70e16f7a3d5c3":[42,0,20,6],
 "namespacedemo__roborregosday.html":[42,0,21],
-"namespacedemo__roborregosday.html#acd82569527c62414a42ff3f09ebd357b":[42,0,21,3],
+"namespacedemo__roborregosday.html#a456ab396fad9364f47fa9aa4d351f170":[42,0,21,5],
+"namespacedemo__roborregosday.html#a5851e9646d54492449c8313f95f15e40":[42,0,21,3],
+"namespacedemo__roborregosday.html#acd82569527c62414a42ff3f09ebd357b":[42,0,21,4],
 "namespacedemo__roborregosday.html#aef364237443cdc672f0fdf820f1bf866":[42,0,21,1],
 "namespacedemo__roborregosday.html#af18329abe6c10ff0c8cbbd8bf2b0d922":[42,0,21,2],
 "namespacedetectors.html":[42,0,22],
@@ -245,9 +249,5 @@ var NAVTREEINDEX39 =
 "namespaceface__recognition__node.html#a3064558ca546a28feddfddc19858d9ae":[42,0,40,4],
 "namespaceface__recognition__node.html#a4b2d182930304b364cdc2af6f6b32bef":[42,0,40,2],
 "namespaceface__recognition__node.html#a56617f4391f49f52c38a3bdabc308aad":[42,0,40,3],
-"namespaceface__recognition__node.html#abe2d04ddc5e2378a7b776a096ca9c278":[42,0,40,1],
-"namespacefakes.html":[42,0,41],
-"namespacefakes.html#a2132794781f5d0e74bcad64799d40aba":[42,0,41,9],
-"namespacefakes.html#a2f2dad6f43b6c730b802e6f636eabe4c":[42,0,41,8],
-"namespacefakes.html#a822384887380295d84d67b6051fb4c70":[42,0,41,10]
+"namespaceface__recognition__node.html#abe2d04ddc5e2378a7b776a096ca9c278":[42,0,40,1]
 };

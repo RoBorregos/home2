@@ -134,8 +134,8 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a5649bd1f886a5632db45b46b4f4bb4c4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdemo__roborregosday_1_1DemoRoborregosDay.html#a5649bd1f886a5632db45b46b4f4bb4c4">_joy_callback</a> (self, Joy msg)</td></tr>
-<tr class="separator:a5649bd1f886a5632db45b46b4f4bb4c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07d90225eecff4789a00fa2b1ad8daad"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdemo__roborregosday_1_1DemoRoborregosDay.html#a07d90225eecff4789a00fa2b1ad8daad">_read_terminal</a> (self)</td></tr>
+<tr class="separator:a07d90225eecff4789a00fa2b1ad8daad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac76fb5f524872094c8665d66a950e9d1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdemo__roborregosday_1_1DemoRoborregosDay.html#ac76fb5f524872094c8665d66a950e9d1">_set_state</a> (self, str state)</td></tr>
 <tr class="separator:ac76fb5f524872094c8665d66a950e9d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69dd894830e6b12d73ae7b98199a3543"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdemo__roborregosday_1_1DemoRoborregosDay.html#a69dd894830e6b12d73ae7b98199a3543">_deus_pick</a> (self, str object_name)</td></tr>
@@ -236,42 +236,6 @@ Protected Attributes</h2></td></tr>
 <pre class="fragment">Ask the operator to take the object from the gripper.</pre> 
 </div>
 </div>
-<a id="a5649bd1f886a5632db45b46b4f4bb4c4" name="a5649bd1f886a5632db45b46b4f4bb4c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5649bd1f886a5632db45b46b4f4bb4c4">&#9670;&#160;</a></span>_joy_callback()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">def demo_roborregosday.DemoRoborregosDay._joy_callback </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Joy&#160;</td>
-          <td class="paramname"><em>msg</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="a214daaf2c94354960c8b3fbfef1c9df3" name="a214daaf2c94354960c8b3fbfef1c9df3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a214daaf2c94354960c8b3fbfef1c9df3">&#9670;&#160;</a></span>_pick_with_retry()</h2>
 
@@ -332,6 +296,32 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <pre class="fragment">Place with ATTEMPT_LIMIT retries then deus ex machina.</pre> 
+</div>
+</div>
+<a id="a07d90225eecff4789a00fa2b1ad8daad" name="a07d90225eecff4789a00fa2b1ad8daad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07d90225eecff4789a00fa2b1ad8daad">&#9670;&#160;</a></span>_read_terminal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def demo_roborregosday.DemoRoborregosDay._read_terminal </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Turn each typed line into a command for the FSM.</pre> 
 </div>
 </div>
 <a id="a1e4ec3ae967b6272f8914e2def827bdf" name="a1e4ec3ae967b6272f8914e2def827bdf"></a>
