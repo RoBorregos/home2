@@ -75,7 +75,7 @@ ZED_OFFSET = np.array([-0.096, 0.0, 0.041])
 STARE_POSES = {
     PICK_STRATEGY_RIM: "look_side_stare",
     PICK_STRATEGY_PEAK: "look_side_stare",
-    PICK_STRATEGY_FLAT: "flat_stare",
+    PICK_STRATEGY_FLAT: "pick_stare_at_table",
 }
 DEFAULT_STARE_POSE = "table_stare"
 
