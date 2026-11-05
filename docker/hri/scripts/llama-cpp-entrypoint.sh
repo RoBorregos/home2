@@ -19,7 +19,7 @@ wait_for_server() {
     local port=$1
     local alias=$2
     local model=$3
-    local max_attempts=30
+    local max_attempts=${4:-30}
     local attempt=0
     debug_log "Waiting for llama-server ($alias) on port $port..."
     while ! curl -sf "http://localhost:$port/health" >/dev/null 2>&1; do
@@ -78,11 +78,13 @@ if [ "$ROLE" = "gpsr" ]; then
         -ngl 99 \
         --flash-attn on \
         --parallel 1 \
+        --jinja \
+        --reasoning off \
         --alias rbrgs \
-        --temp 1.5 \
-        --min-p 0.1 \
+        --temp 0 \
         &
-    wait_for_server 11435 rbrgs rbrgs.F16.gguf
+    # 27B Q8_0 takes minutes to load on the Orin
+    wait_for_server 11435 rbrgs rbrgs.F16.gguf 150
 fi
 
 wait

@@ -188,9 +188,10 @@ You are a command interpreter for a robot. Your task is to interpret the user's 
 
 function GenerateCommandList(request: string) -> CommandListLLM {
   client LOCAL_FINETUNED_NEW
+  // Must match the fine-tuning system prompt exactly
   prompt #"
     {{ _.role("system") }}
-    You are a command interpreter for a robot. Your task is to interpret the user's command and convert it into a structured format that the robot can understand.
+    You are a command interpreter for a robot. Your task is to interpret the user's command and convert it into a structured format that the robot can understand. the format is a list of commands, each with an action, complement, and characteristic. The action is the main verb of the command, the complement is an object or location related to the action, and the characteristic is optional additional information about the action.
 
     {{ _.role("user") }}
     {{ request }}
