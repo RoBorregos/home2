@@ -17,6 +17,7 @@ from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     ANSWER_PUBLISHER,
     COMMAND_INTERPRETER_SERVICE,
+    DEFAULT_HOTWORDS,
     DISPLAY_CAPTURE_TOPIC,
     DISPLAY_IMAGE_TOPIC,
     DISPLAY_MAP_TOPIC,
@@ -550,7 +551,7 @@ class HRITasks:
         goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
         goal_msg.initial_prompt = initial_prompt
-        self.last_hotwords = hotwords
+        self.last_hotwords = hotwords or DEFAULT_HOTWORDS
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
 
@@ -708,7 +709,7 @@ class HRITasks:
                 # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
                 if (
                     len(goal_future.result().result.transcription.strip()) > 0
-                    and goal_future.result().result.transcription != self.last_hotwords
+                    and goal_future.result().result.transcription.strip() != self.last_hotwords.strip()
                 ):
                     words = format_transcription(self.current_transcription)
                     if not self.negation_words.intersection(words) and (
