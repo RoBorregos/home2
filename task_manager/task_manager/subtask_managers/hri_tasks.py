@@ -263,7 +263,10 @@ class HRITasks:
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
-            self.positive = json.load(file)["affirmations"]
+            positive = json.load(file)
+        self.positive = positive["affirmations"]
+        self.affirmation_words = set(positive["affirmation_words"])
+        self.negation_words = set(positive["negation_words"])
 
         file_path = os.path.join(package_share_directory, "data/hand_items.json")
         with open(file_path, "r") as file:
@@ -647,10 +650,12 @@ class HRITasks:
                 heard_no = False
                 while not goal_future.done():
                     words = format_transcription(self.current_transcription)
-                    if "no" in words or self.keyword == "no":
+                    if self.negation_words.intersection(words) or self.keyword == "no":
                         # Keep listening: "No, I said Andres" carries the correction after the "no"
                         heard_no = True
-                    elif not heard_no and ("yes" in words or self.keyword == "yes"):
+                    elif not heard_no and (
+                        self.affirmation_words.intersection(words) or self.keyword == "yes"
+                    ):
                         self.cancel_hear_action()
                         return Status.EXECUTION_SUCCESS, "yes"
                     rclpy.spin_once(self.node, timeout_sec=0.1)
@@ -743,18 +748,20 @@ class HRITasks:
         words = format_transcription(text) if text else []
 
         # The transcription's keyword wins over the keyword spotter, like interpret_keyword
-        if "no" in words:
+        if self.negation_words.intersection(words):
             keyword = "no"
-        elif contains_any(words, ["yes"]) or contains_any(words, self.positive):
+        elif self.affirmation_words.intersection(words) or contains_any(words, self.positive):
             keyword = "yes"
 
         if keyword == "yes":
             return "yes"
-        if not words or words == ["no"]:
+        if not words or self.negation_words.issuperset(words):
             return keyword
 
         s, value = self.extract_data(query, text, context)
         value = value.strip() if s == Status.EXECUTION_SUCCESS else ""
+        yes_no = self.negation_words | self.affirmation_words
+        value = " ".join(w for w in value.split() if remove_punctuation(w) not in yes_no)
         if value and remove_punctuation(value) != remove_punctuation(target):
             target_words = set(format_transcription(target))
             corrected = " ".join(
@@ -764,8 +771,7 @@ class HRITasks:
         if keyword == "no":
             return "no"
         if value:
-            # shortcut: only a leading "not" negates a repeated target ("not coffee"), upgrade to an LLM classifier if replies get more varied
-            return "no" if words[0] == "not" else "yes"
+            return "yes"
 
         s, positive = self.is_positive(text)
         return "yes" if s == Status.EXECUTION_SUCCESS and positive else "no"
