@@ -2,7 +2,10 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -11,12 +14,21 @@ def generate_launch_description():
     )
     return LaunchDescription(
         [
+            # start_active:=true runs face_recognition without the task manager.
+            DeclareLaunchArgument("start_active", default_value="false"),
             Node(
                 package="vision_general",
                 executable="face_recognition_node.py",
                 name="face_recognition",
                 output="screen",
                 emulate_tty=True,
+                parameters=[
+                    {
+                        "start_active": ParameterValue(
+                            LaunchConfiguration("start_active"), value_type=bool
+                        )
+                    }
+                ],
             ),
             Node(
                 package="vision_general",

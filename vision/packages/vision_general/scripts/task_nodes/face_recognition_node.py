@@ -104,8 +104,8 @@ class FaceRecognition(VisionRuntime):
         self.prev_faces: list = []
         self.curr_faces: list = []
         self.follow_name = "area"
-        # Idle until the task manager activates it.
-        self.active = False
+        # Idle until the task manager activates it, unless launched with start_active.
+        self.active = self.declare_parameter("start_active", False).value
         self.is_processing = False
         self.id = None
         self.processing_id = rclpy.duration.Infinite
