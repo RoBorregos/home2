@@ -740,7 +740,7 @@ class HRITasks:
         Args:
             keyword: "yes"/"no" from the keyword spotter while listening, "" if none was heard.
         Returns:
-            str: "yes", "no", "" (nothing heard) or the corrected value extracted with query.
+            str: "yes", "no", "" (nothing heard or unclear, ask again) or the corrected value.
         """
         text = (text or "").strip()
         if text == hotwords.strip():
@@ -773,8 +773,7 @@ class HRITasks:
         if value:
             return "yes"
 
-        s, positive = self.is_positive(text)
-        return "yes" if s == Status.EXECUTION_SUCCESS and positive else "no"
+        return ""
 
     def _match_answer(
         self, target_info: str, options: list[str] | None = None, remap: dict | None = None
