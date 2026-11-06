@@ -36,7 +36,7 @@ home2/
 │   │   │   ├── parameters_gallery.yaml    # GalleryDetect2D params
 │   │   │   └── parameters_zero_shot.yaml  # ZeroShotDetect2D params
 │   │   ├── launch/
-│   │   │   ├── object_detector_node.launch.py       # image_orienter + ObjectDetect2D + GalleryDetect2D
+│   │   │   ├── object_detector_node.launch.py       # image_orienter + ObjectDetect2D (+ GalleryDetect2D)
 │   │   │   ├── zero_shot_object_detector_node.launch.py
 │   │   │   └── object_detector_combined.launch.py   # both detectors at once
 │   │   ├── models/                        # Custom weights (robocup2026_v1.pt, tmr2025.pt)
@@ -206,13 +206,20 @@ handles projection and visualization. `vision_general` has the same pattern in
 | Node | Purpose | Key interfaces |
 | --- | --- | --- |
 | `ObjectDetect2D` | Runs the models listed under `models:` in `config/parameters.yaml` continuously and IoU-dedupes across them; merges `GalleryDetect2D` results younger than `GALLERY_MAX_AGE` (YOLO wins on overlap) | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory` |
-| `GalleryDetect2D` | Few-shot `embedding_gallery` at its own rate (~1 Hz on the Orin) | pubs `/vision/gallery_detections*` |
+| `GalleryDetect2D` | Optional few-shot `embedding_gallery` at its own rate (~1 Hz on the Orin) | pubs `/vision/gallery_detections*` |
 | `ZeroShotDetect2D` | YOLOE open-vocabulary detection for classes not in the finetuned model | pubs `/vision/zero_shot_detections*`; srv `SetDetectorClasses` |
 
 Each node has a fixed activation topic (`/vision/object_detector/active`,
 `/vision/gallery_detector/active`, `/vision/zero_shot_detector/active`) so a task manager
 can idle the GPU between steps. Pausing the gallery leaves YOLO untouched; its results drop
 out of `/vision/detections` after `GALLERY_MAX_AGE`. `GalleryDetect2D` starts paused.
+
+The gallery process is not started by default because loading DINOv2 and YOLOE reserves
+substantial VRAM. Start it explicitly with:
+
+```bash
+ros2 launch object_detector_2d object_detector_node.launch.py enable_gallery:=true
+```
 
 | Want | How (at runtime) |
 | --- | --- |

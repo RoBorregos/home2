@@ -1,10 +1,14 @@
 import os
 from ament_index_python.packages import get_package_share_directory
+from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch import LaunchDescription
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    enable_gallery = LaunchConfiguration("enable_gallery")
     config = os.path.join(
         get_package_share_directory("object_detector_2d"), "config", "parameters.yaml"
     )
@@ -15,6 +19,11 @@ def generate_launch_description():
     )
     return LaunchDescription(
         [
+            DeclareLaunchArgument(
+                "enable_gallery",
+                default_value="false",
+                description="Start the embedding gallery detector",
+            ),
             Node(
                 package="vision_general",
                 executable="image_orienter.py",
@@ -39,6 +48,7 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 parameters=[config_gallery],
+                condition=IfCondition(enable_gallery),
             ),
         ]
     )

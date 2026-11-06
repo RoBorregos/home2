@@ -3,11 +3,13 @@ from launch_ros.actions import Node
 
 import os
 from ament_index_python.packages import get_package_share_directory
-from launch.actions import IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
+    enable_gallery = LaunchConfiguration("enable_gallery")
     detector_launch_file = os.path.join(
         get_package_share_directory("object_detector_2d"),
         "launch",
@@ -15,6 +17,11 @@ def generate_launch_description():
     )
     return LaunchDescription(
         [
+            DeclareLaunchArgument(
+                "enable_gallery",
+                default_value="false",
+                description="Start the embedding gallery detector",
+            ),
             # trash_detection_node removed: no task_manager client for its TRASHCAN
             # service exists (detect_trash() uses moondream instead).
             # hric_commands serves CHAIRS_TO_REMOVE_SERVICE, which the
@@ -27,7 +34,10 @@ def generate_launch_description():
                 emulate_tty=True,
             ),
             IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(detector_launch_file)
+                PythonLaunchDescriptionSource(detector_launch_file),
+                launch_arguments={
+                    "enable_gallery": enable_gallery,
+                }.items(),
             ),
             Node(
                 package="moondream_run",
