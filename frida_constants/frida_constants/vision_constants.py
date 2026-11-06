@@ -32,6 +32,7 @@ GALLERY_DETECTIONS_IMAGE_TOPIC = "/vision/gallery_detections_image"
 GALLERY_DETECTIONS_POSES_TOPIC = "/vision/gallery_detections_poses"
 GALLERY_DETECTIONS_3D_TOPIC = "/vision/gallery_detections_3d"
 GALLERY_DETECTIONS_ACTIVE_TOPIC = "/vision/gallery_detections_active"
+GALLERY_DETECTOR_ACTIVE_TOPIC = "/vision/gallery_detector/active"
 DETECTIONS_ACTIVE_TOPIC = "asd"
 DEBUG_IMAGE_TOPIC = "asd"
 ZERO_SHOT_DEFAULT_CLASSES = [

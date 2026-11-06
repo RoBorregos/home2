@@ -6,6 +6,7 @@ import copy
 import cv2 as cv
 import rclpy
 from frida_constants.vision_constants import (
+    GALLERY_DETECTOR_ACTIVE_TOPIC,
     GALLERY_DETECTIONS_3D_TOPIC,
     GALLERY_DETECTIONS_ACTIVE_TOPIC,
     GALLERY_DETECTIONS_IMAGE_TOPIC,
@@ -28,7 +29,7 @@ class GalleryDetectorNode(BaseDetectorNode):
             default_det_poses_topic=GALLERY_DETECTIONS_POSES_TOPIC,
             default_det_3d_topic=GALLERY_DETECTIONS_3D_TOPIC,
             default_active_topic=GALLERY_DETECTIONS_ACTIVE_TOPIC,
-            fixed_active_topic="/vision/gallery_detector/active",
+            fixed_active_topic=GALLERY_DETECTOR_ACTIVE_TOPIC,
         )
 
         self.model = ModelRegistry.get("embedding_gallery")
