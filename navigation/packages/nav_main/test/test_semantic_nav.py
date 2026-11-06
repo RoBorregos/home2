@@ -14,6 +14,7 @@ import pytest
 NAV_MAIN = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, NAV_MAIN)
 
+from nav_main.semantic.areas import area_for_point, nearest_sublocations  # noqa: E402
 from nav_main.semantic.route import (  # noqa: E402
     order_by_staleness,
     order_route,
@@ -29,6 +30,7 @@ from nav_main.semantic.viewpoints import (  # noqa: E402
     Grid,
     is_area_free,
     validate_viewpoints,
+    with_planned_poses,
 )
 
 AREAS_DIR = os.path.join(NAV_MAIN, "..", "map_context", "maps", "areas")
@@ -319,3 +321,57 @@ def test_pose_with_nowhere_to_go_is_dropped():
     report = validate_viewpoints([vp()], grid_with_block(-5.0, 5.0, -5.0, 5.0))
     assert report.kept == []
     assert report.dropped == ["kitchen/table"]
+
+
+def test_relocated_viewpoint_is_scanned_where_the_robot_actually_stands():
+    tagged = vp(x=0.0, y=0.0, yaw=0.0)
+    other = vp("sofa", x=-3.0, y=-3.0)
+    # Walls off the tagged side, so the robot has to face the furniture from behind.
+    grid = grid_with_block(-1.0, 0.5, -2.0, 2.0)
+    moved = validate_viewpoints([tagged], grid).kept[0]
+    assert angle_difference(moved.yaw, tagged.yaw) > YAW_TOL
+
+    def stop_at(viewpoints):
+        log = ScanLog()
+        observe(log, viewpoints, moved.x, moved.y, moved.yaw, 0.0)
+        return observe(log, viewpoints, moved.x, moved.y, moved.yaw, 2.0)
+
+    assert stop_at([tagged, other]) is None
+    updated = with_planned_poses([tagged, other], [moved])
+    assert updated == [moved, other]
+    assert stop_at(updated) == "kitchen/table"
+
+
+# ---------------------------------------------------------------- area lookup
+
+
+def furniture_map():
+    """Two pieces of furniture: each robot pose is nearer the other's furniture."""
+    east = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  # stands at x=0, furniture at x=0.8
+    west = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]  # stands at x=1, furniture at x=0.2
+    return {
+        "kitchen": {
+            "polygon": [[-5, -5], [5, -5], [5, 5], [-5, 5]],
+            "safe_place": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            "east_table": east,
+            "west_table": west,
+        },
+        "entrance": {"safe_place": [9.0, 9.0, 0.0, 0.0, 0.0, 0.0, 1.0]},
+    }
+
+
+def test_sublocations_rank_by_distance_to_the_furniture_not_the_robot_pose():
+    names, distances = nearest_sublocations(furniture_map(), "kitchen", 0.75, 0.0)
+    assert names == ["east_table", "west_table"]
+    assert distances[0] == pytest.approx(0.05)
+
+
+def test_sublocation_without_heading_uses_its_position():
+    areas = {"kitchen": {"table": [1.0, 0.0]}}
+    assert nearest_sublocations(areas, "kitchen", 1.0, 0.0) == (["table"], [0.0])
+
+
+def test_area_for_point_inside_and_outside():
+    area, names, _, in_house = area_for_point(furniture_map(), 0.75, 0.0)
+    assert (area, names[0], in_house) == ("kitchen", "east_table", True)
+    assert area_for_point(furniture_map(), 50.0, 50.0) == ("", [], [], False)

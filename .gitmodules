@@ -26,3 +26,6 @@
 [submodule "navigation/packages/ira_laser_tools"]
 	path = navigation/packages/ira_laser_tools
 	url = https://github.com/ryanpennings/ira_laser_tools
+[submodule "vision/packages/vision_general/third_party/semantic_map"]
+	path = vision/packages/vision_general/third_party/semantic_map
+	url = https://github.com/RoBorregos/Semantic-Map.git

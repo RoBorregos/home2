@@ -49,7 +49,7 @@ from frida_interfaces.srv import MapAreas, PlanPatrol
 from nav_main.semantic.route import order_by_staleness, order_route, route_length
 from nav_main.semantic.staleness import ScanLog
 from nav_main.semantic.surfaces import load_viewpoints
-from nav_main.semantic.viewpoints import Grid, validate_viewpoints
+from nav_main.semantic.viewpoints import Grid, validate_viewpoints, with_planned_poses
 
 MAP_FRAME = "map"
 BASE_FRAME = "base_link"
@@ -436,6 +436,7 @@ class SemanticNav(Node):
         if report.relocated or report.dropped:
             self.get_logger().warn(f"Plan_patrol -> costmap check: {report.summary}")
         viewpoints = report.kept
+        self.viewpoints = with_planned_poses(self.viewpoints, viewpoints)
         if not viewpoints:
             response.error = "every viewpoint is blocked in the costmap"
             self.get_logger().error(f"Plan_patrol -> {response.error}")
