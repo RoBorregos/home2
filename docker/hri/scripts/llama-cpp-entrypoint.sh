@@ -88,6 +88,7 @@ if [ "$ROLE" = "gpsr" ]; then
         --reasoning off \
         --alias rbrgs \
         --temp 0 \
+        --metrics \
         &
     # 27B Q8_0 takes minutes to load on the Orin
     wait_for_server 11435 rbrgs "$RBRGS_MODEL" 150
