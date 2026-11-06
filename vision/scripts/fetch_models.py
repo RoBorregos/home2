@@ -245,6 +245,18 @@ def warmup(dest: Path):
         print(f"[warmup] embedding backbone warmup skipped: {e}")
 
     try:
+        from frida_constants.vision_constants import CLIP_EMBEDDING_MODEL
+        from utils.models.image_embedder import ImageEmbedder
+
+        print(f"[warmup] fetching {CLIP_EMBEDDING_MODEL} for the semantic map ...")
+        ImageEmbedder(CLIP_EMBEDDING_MODEL).load()
+        print("[warmup] CLIP ready")
+    except Exception as e:
+        print(
+            f"[warmup] CLIP warmup FAILED, --finals needs internet on first start: {e}"
+        )
+
+    try:
         import numpy as np
         from insightface.app import FaceAnalysis
 

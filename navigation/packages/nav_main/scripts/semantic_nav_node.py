@@ -49,7 +49,7 @@ from frida_interfaces.srv import MapAreas, PlanPatrol
 from nav_main.semantic.route import order_by_staleness, order_route, route_length
 from nav_main.semantic.staleness import ScanLog
 from nav_main.semantic.surfaces import load_viewpoints
-from nav_main.semantic.viewpoints import Grid, validate_viewpoints
+from nav_main.semantic.viewpoints import Grid, validate_viewpoints, with_planned_poses
 
 MAP_FRAME = "map"
 BASE_FRAME = "base_link"
@@ -66,7 +66,9 @@ class SemanticNav(Node):
         self.scan_yaw_tolerance = math.radians(
             self._param("scan_yaw_tolerance_deg", PATROL_SCAN_YAW_TOLERANCE)
         )
-        self.scan_check_period = self._param("scan_check_period", 1.0)
+        self.scan_check_period = self._param("scan_check_period", 0.25)
+        self.scan_still_radius = self._param("scan_still_radius", 0.15)
+        self.scan_dwell_fraction = self._param("scan_dwell_fraction", 0.7)
         self.snapshot_period = self._param("snapshot_period", 10.0)
         self.marker_period = self._param("marker_period", 2.0)
         self.quick_mode_per_area = self._param("quick_mode_per_area", 1)
@@ -242,11 +244,11 @@ class SemanticNav(Node):
     def _now(self) -> float:
         return self.get_clock().now().nanoseconds / 1e9
 
-    def _robot_pose(self):
+    def _robot_pose(self, timeout: float = 0.5):
         """(x, y, yaw) in the map frame, or None when TF is not available."""
         try:
             tf = self.tf_buffer.lookup_transform(
-                MAP_FRAME, BASE_FRAME, rclpy.time.Time(), timeout=Duration(seconds=0.5)
+                MAP_FRAME, BASE_FRAME, rclpy.time.Time(), timeout=Duration(seconds=timeout)
             )
         except Exception:
             return None
@@ -263,16 +265,19 @@ class SemanticNav(Node):
     def _scan_timer(self):
         if not self.viewpoints:
             return
-        pose = self._robot_pose()
+        # No TF wait: this timer is faster than the default timeout, and overlapping
+        # callbacks on the reentrant group would starve the executor's threads.
+        pose = self._robot_pose(timeout=0.0)
         if pose is None:
             return
         x, y, yaw = pose
-        marked = self.scan_log.mark_if_at(
+        marked = self.scan_log.observe(
             self.viewpoints, x, y, yaw, self._now(),
             self.scan_radius, self.scan_yaw_tolerance,
+            self.scan_still_radius, self.scan_dwell_fraction,
         )
         if marked:
-            self.get_logger().info(f"Scanned {marked[0]}", throttle_duration_sec=5.0)
+            self.get_logger().info(f"Scanned {marked}")
             self._publish_staleness()
 
     def _snapshot_timer(self):
@@ -431,6 +436,7 @@ class SemanticNav(Node):
         if report.relocated or report.dropped:
             self.get_logger().warn(f"Plan_patrol -> costmap check: {report.summary}")
         viewpoints = report.kept
+        self.viewpoints = with_planned_poses(self.viewpoints, viewpoints)
         if not viewpoints:
             response.error = "every viewpoint is blocked in the costmap"
             self.get_logger().error(f"Plan_patrol -> {response.error}")

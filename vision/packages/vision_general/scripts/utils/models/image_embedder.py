@@ -143,7 +143,10 @@ class ImageEmbedder:
         import clip
 
         name = self.model_id.removeprefix(CLIP_PREFIX)
-        self._model, self._transform = clip.load(name, device=self._device)
+        # Default is ~/.cache, lost with the container; competitions have no internet.
+        self._model, self._transform = clip.load(
+            name, device=self._device, download_root=str(tensorrt_cache_dir() / "clip")
+        )
 
     def _load_timm(self) -> None:
         # Same cache fetch_models.py downloads into, or a fresh container finds

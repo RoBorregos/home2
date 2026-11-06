@@ -42,6 +42,7 @@ services:
       QT_DEBUG_PLUGINS: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
       CYCLONE_SHM: "${CYCLONE_SHM:-0}"
+      MAP_NAME: ${MAP_NAME:-}
     tty: true
     stdin_open: true    
     working_dir: /workspace

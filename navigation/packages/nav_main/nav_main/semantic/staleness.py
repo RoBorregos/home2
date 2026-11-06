@@ -26,6 +26,11 @@ class ScanLog:
         self.path = path
         self.scans: dict[str, float] = {}
         self._dirty = False
+        # The stop being timed: viewpoint key, when it began, where the robot was.
+        self._stop_key: str | None = None
+        self._stop_since = 0.0
+        self._stop_anchor = (0.0, 0.0)
+        self._stop_reported = False
 
     # ------------------------------------------------------------------ updates
 
@@ -33,7 +38,7 @@ class ScanLog:
         self.scans[key] = stamp
         self._dirty = True
 
-    def mark_if_at(
+    def observe(
         self,
         viewpoints: list[Viewpoint],
         x: float,
@@ -42,12 +47,18 @@ class ScanLog:
         stamp: float,
         radius: float,
         yaw_tolerance_rad: float,
-        closest_only: bool = True,
-    ) -> list[str]:
-        """Mark the viewpoint the robot is currently standing at and facing.
+        still_radius: float,
+        dwell_fraction: float = 1.0,
+    ) -> str | None:
+        """Feed one robot pose; mark a viewpoint once the robot has stopped at it.
 
-        Scanned = within `radius` of the tagged pose and `yaw_tolerance_rad` of its heading.
-        `closest_only` marks just the nearest match.
+        Scanned = the robot stayed within `still_radius` of one spot, within `radius`
+        of the viewpoint and `yaw_tolerance_rad` of its heading, for `dwell_fraction`
+        of the viewpoint's dwell. Being in range is not enough: crossing a 1 m radius
+        at walking speed takes longer than a dwell, and vision saw nothing.
+
+        Returns the key the first time a stop qualifies, else ``None``. The timestamp
+        keeps refreshing while the robot stays, so age counts from when it left.
         """
         candidates = [
             vp
@@ -56,12 +67,25 @@ class ScanLog:
             and angle_difference(yaw, vp.yaw) <= yaw_tolerance_rad
         ]
         if not candidates:
-            return []
-        if closest_only:
-            candidates = [min(candidates, key=lambda vp: vp.distance_to(x, y))]
-        for vp in candidates:
-            self.mark(vp.key, stamp)
-        return [vp.key for vp in candidates]
+            self._stop_key = None
+            return None
+        vp = min(candidates, key=lambda v: v.distance_to(x, y))
+
+        moved = math.hypot(x - self._stop_anchor[0], y - self._stop_anchor[1])
+        # stamp < since: the ROS clock jumped back (bag replay, sim restart)
+        if vp.key != self._stop_key or moved > still_radius or stamp < self._stop_since:
+            self._stop_key = vp.key
+            self._stop_since = stamp
+            self._stop_anchor = (x, y)
+            self._stop_reported = False
+
+        if stamp - self._stop_since < vp.dwell_s * dwell_fraction:
+            return None
+        self.mark(vp.key, stamp)
+        if self._stop_reported:
+            return None
+        self._stop_reported = True
+        return vp.key
 
     def age(self, key: str, now: float, never: float = float("inf")) -> float:
         stamp = self.scans.get(key)

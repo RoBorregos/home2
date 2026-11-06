@@ -7,10 +7,15 @@ semantic_nav:
     # Retry until nav_central serves the areas
     areas_retry_period: 10.0
 
-    # Scanned = within scan_radius of the tagged pose and facing it within the yaw tolerance
+    # Scanned = stopped within scan_radius of the tagged pose, facing it within the yaw
+    # tolerance, without leaving a scan_still_radius circle for scan_dwell_fraction of its dwell
     scan_radius: 1.0
     scan_yaw_tolerance_deg: 35.0
-    scan_check_period: 1.0
+    scan_still_radius: 0.15
+    # Below 1 so a caller that waits exactly dwell_s still gets the mark, given
+    # up to two scan_check_period of sampling delay
+    scan_dwell_fraction: 0.7
+    scan_check_period: 0.25
 
     # Scan log. "" -> /workspace/log/semantic_nav, else ~/.ros/semantic_nav
     snapshot_dir: ""

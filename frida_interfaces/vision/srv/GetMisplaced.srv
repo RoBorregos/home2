@@ -1,0 +1,7 @@
+# Objects whose category does not match the surface they were found on.
+---
+bool success
+string error
+SemanticObject[] objects
+string[] expected_areas          # same order as objects
+string[] expected_sublocations   # same order as objects

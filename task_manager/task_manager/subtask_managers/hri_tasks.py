@@ -259,6 +259,7 @@ class HRITasks:
             Task.DOING_LAUNDRY: all_services,
             Task.DEMO: all_services,
             Task.RESTAURANT: all_services,
+            Task.FINALS: all_services,
             Task.DEBUG: all_services,
         }
 

@@ -15,6 +15,10 @@ import rclpy
 from frida_constants.hri_constants import DISPLAY_CAPTURE_TOPIC
 from frida_constants.vision_classes import BBOX
 from frida_constants.vision_constants import (
+    SEMANTIC_GET_MISPLACED_SERVICE,
+    SEMANTIC_QUERY_OBJECTS_SERVICE,
+    SEMANTIC_RESET_SERVICE,
+    SEMANTIC_RESOLVE_COMMAND_SERVICE,
     CHAIR_REMOVAL_IMAGE_TOPIC,
     CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
@@ -61,6 +65,9 @@ from frida_interfaces.srv import (
     SaveName,
     DetectHand,
     CustomerTables,
+    GetMisplaced,
+    QueryObjects,
+    ResolveCommand,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.node import Node
@@ -75,6 +82,8 @@ from task_manager.utils.task import Task
 
 TIMEOUT = 8.0
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
+# The semantic map may call the LLM, which it gives up on after 30 s.
+TIMEOUT_RESOLVE_COMMAND = 40.0
 IS_TRACKING_TOPIC = "/vision/is_tracking"
 CAPTURE_THROTTLE_S = 2.0
 
@@ -149,6 +158,17 @@ class VisionTasks:
 
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
+        self.query_objects_client = self.node.create_client(
+            QueryObjects, SEMANTIC_QUERY_OBJECTS_SERVICE
+        )
+        self.resolve_command_client = self.node.create_client(
+            ResolveCommand, SEMANTIC_RESOLVE_COMMAND_SERVICE
+        )
+        self.get_misplaced_client = self.node.create_client(
+            GetMisplaced, SEMANTIC_GET_MISPLACED_SERVICE
+        )
+        self.reset_semantic_map_client = self.node.create_client(Trigger, SEMANTIC_RESET_SERVICE)
+
         self.services = {
             Task.HRIC: {
                 "detect_person": {"client": self.detect_person_client, "type": "service"},
@@ -210,6 +230,15 @@ class VisionTasks:
                 },
                 "customer": {"client": self.customer_client, "type": "service"},
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
+            },
+            Task.FINALS: {
+                "query_objects": {"client": self.query_objects_client, "type": "service"},
+                "resolve_command": {"client": self.resolve_command_client, "type": "service"},
+                "get_misplaced": {"client": self.get_misplaced_client, "type": "service"},
+                "reset_semantic_map": {
+                    "client": self.reset_semantic_map_client,
+                    "type": "service",
+                },
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -277,6 +306,94 @@ class VisionTasks:
         self._capture_pub.publish(
             String(data=json.dumps({"label": label, "topic": topic, "data": data}))
         )
+
+    # ── Semantic map (issue #1268) ──
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
+    @service_check("query_objects_client", (Status.SERVICE_CHECK, []), TIMEOUT)
+    def query_objects(
+        self,
+        label: str = "",
+        category: str = "",
+        area: str = "",
+        sublocation: str = "",
+        max_age_s: float = 0.0,
+        min_confidence: float = 0.0,
+    ) -> tuple[int, list]:
+        """Objects in the semantic map. Every filter is optional.
+
+        Returns (Status, [frida_interfaces/SemanticObject]).
+        """
+        request = QueryObjects.Request(
+            label=label,
+            category=category,
+            area=area,
+            sublocation=sublocation,
+            max_age_s=float(max_age_s),
+            min_confidence=float(min_confidence),
+        )
+        status, result = self._call(self.query_objects_client, request, name="query_objects")
+        if status is not None:
+            return status, []
+        if not result.success:
+            Logger.warn(self.node, f"query_objects: {result.error}")
+            return Status.EXECUTION_ERROR, []
+        return Status.EXECUTION_SUCCESS, list(result.objects)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "not_found", []))
+    @service_check("resolve_command_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)
+    def resolve_command(self, text: str) -> tuple[int, str, list]:
+        """Resolve free text ("where is the red drink") to objects in the semantic map.
+
+        Returns (Status, answer, objects). `answer` is "found" (one object), "list"
+        (everything that matches) or "not_found", which is a valid answer.
+        """
+        status, result = self._call(
+            self.resolve_command_client,
+            ResolveCommand.Request(text=text),
+            TIMEOUT_RESOLVE_COMMAND,
+            "resolve_command",
+        )
+        if status is not None:
+            return status, "", []
+        if not result.success:
+            Logger.warn(self.node, f"resolve_command: {result.error}")
+            return Status.EXECUTION_ERROR, "", []
+        return Status.EXECUTION_SUCCESS, result.status, list(result.objects)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
+    @service_check("get_misplaced_client", (Status.SERVICE_CHECK, []), TIMEOUT)
+    def get_misplaced(self) -> tuple[int, list]:
+        """Objects not where their category belongs.
+
+        Returns (Status, [(SemanticObject, expected_area, expected_sublocation)]).
+        """
+        status, result = self._call(
+            self.get_misplaced_client, GetMisplaced.Request(), name="get_misplaced"
+        )
+        if status is not None:
+            return status, []
+        if not result.success:
+            Logger.warn(self.node, f"get_misplaced: {result.error}")
+            return Status.EXECUTION_ERROR, []
+        return (
+            Status.EXECUTION_SUCCESS,
+            list(zip(result.objects, result.expected_areas, result.expected_sublocations)),
+        )
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check("reset_semantic_map_client", Status.SERVICE_CHECK, TIMEOUT)
+    def reset_semantic_map(self) -> int:
+        """Forget every object in the semantic map, for a new run."""
+        status, result = self._call(
+            self.reset_semantic_map_client, Trigger.Request(), name="reset_semantic_map"
+        )
+        if status is not None:
+            return status
+        if not result.success:
+            Logger.warn(self.node, f"reset_semantic_map: {result.message}")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
 
     @mockable()
     def activate_face_recognition(self):

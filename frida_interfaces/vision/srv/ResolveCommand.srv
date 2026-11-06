@@ -1,0 +1,8 @@
+# Resolve free text ("bring me the red drink", "what is next to the bed") to objects.
+# May take seconds: it can call the LLM.
+string text
+---
+bool success
+string error
+string status              # "found" (one object), "list" (all that match), "not_found"
+SemanticObject[] objects
