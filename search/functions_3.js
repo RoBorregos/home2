@@ -97,7 +97,7 @@ var searchData=
   ['computeik2_94',['ComputeIk2',['../xarm6__ikfast61_8cpp.html#a0657832109f0b05edc3d2b70d8ecc5ac',1,'xarm6_ikfast61.cpp']]],
   ['concatenate_5fmatrices_95',['concatenate_matrices',['../namespacevamp_1_1transformations.html#ab7dda04d7b52070bd6b6db337c19e9e2',1,'vamp::transformations']]],
   ['configure_5frobot_5fand_5fplanner_5fwith_5fkwargs_96',['configure_robot_and_planner_with_kwargs',['../namespacevamp.html#acf6508e61800f8f3f08c90c7ae129595',1,'vamp']]],
-  ['confirm_97',['confirm',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aaf3af43816f6588d91ab4df64026ab26',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['confirm_97',['confirm',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#adb53eb6b04d5c1465fdae5acc6b2f325',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['confirm_5fcommand_98',['confirm_command',['../namespacegpsr__task__manager.html#a23b5ba849244f6bd8e68e40c1d190696',1,'gpsr_task_manager.confirm_command()'],['../namespacedemo__manager.html#a891f55a494f20d29760d6fd74a348244',1,'demo_manager.confirm_command()'],['../namespaceegsr__cut.html#a4aeb00c58259adbdc77b491d53265b82',1,'egsr_cut.confirm_command()']]],
   ['confirm_5fpreference_99',['confirm_preference',['../namespacetest__hri__manager.html#a66dffd1e474ea9bb91b2de082c4e4e42',1,'test_hri_manager.confirm_preference()'],['../namespacetest__start__button.html#a3fd1d1efe1e66a95ad7bed4a0864d03c',1,'test_start_button.confirm_preference()']]],
   ['confirm_5fquery_100',['confirm_query',['../namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#acb3de2e45c2ebfe133179c42b0b983e1',1,'task_manager::subtask_managers::hri_tasks']]],

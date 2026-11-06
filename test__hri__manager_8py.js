@@ -24,6 +24,7 @@ var test__hri__manager_8py =
     [ "TEST_CATEGORIZE_SHELVES", "test__hri__manager_8py.html#a7257db83f899b3514ec9da39b9875697", null ],
     [ "TEST_COMMAND_INTERPRETER", "test__hri__manager_8py.html#a6126879bbfe70d91a45d5c99e98ac3f9", null ],
     [ "TEST_COMMAND_INTERPRETER_BAML", "test__hri__manager_8py.html#acba16bc04fcf4b594f5c4335ff8f9239", null ],
+    [ "TEST_CONFIRM", "test__hri__manager_8py.html#a0f6e2e534ce6c660fc7e187d7fc8a1e8", null ],
     [ "TEST_DATA_EXTRACTOR", "test__hri__manager_8py.html#a5b93f7cb6e796bceeecdee57dc3c7aac", null ],
     [ "TEST_DOOR", "test__hri__manager_8py.html#aa088235952c6afdf84049733a3d8e6d7", null ],
     [ "TEST_FALLBACK_RESUME", "test__hri__manager_8py.html#ad1afdc4bd1aac351029411361b8c7f38", null ],

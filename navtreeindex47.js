@@ -1,5 +1,16 @@
 var NAVTREEINDEX47 =
 {
+"namespacetest__vision__manager.html#a50077b770d7d6500636e165e10d6919d":[42,0,170,16],
+"namespacetest__vision__manager.html#a536a3e59f6442113cd05d5249e26084d":[42,0,170,20],
+"namespacetest__vision__manager.html#a562634ebb531d0eb03599af8dae72e9c":[42,0,170,19],
+"namespacetest__vision__manager.html#a5633e05f4c19857101b6e982ea704ac5":[42,0,170,13],
+"namespacetest__vision__manager.html#a56f8869a119aa738f2697bd21b5eb71c":[42,0,170,2],
+"namespacetest__vision__manager.html#a5af7fcb61586f0325548838066cec24b":[42,0,170,1],
+"namespacetest__vision__manager.html#a5f1d20d8476bf2bfc6ca6aa05cd9e64f":[42,0,170,18],
+"namespacetest__vision__manager.html#a6e14626b0d579caa34fb251781dac471":[42,0,170,4],
+"namespacetest__vision__manager.html#a6effd3c7c745e462fbe9796f08cd1798":[42,0,170,3],
+"namespacetest__vision__manager.html#a70bf6240e365350eae9558110247b52c":[42,0,170,14],
+"namespacetest__vision__manager.html#a7c2b895cd7460d6eb48d05ecf35bedb1":[42,0,170,10],
 "namespacetest__vision__manager.html#a95859fe4d8197f3094f784bda2c98ca7":[42,0,170,24],
 "namespacetest__vision__manager.html#aa4a099d17985e21d17ac00d446e659cb":[42,0,170,5],
 "namespacetest__vision__manager.html#aa4a8c9f9b5f9f0beb286c87e1085394e":[42,0,170,8],
@@ -238,16 +249,5 @@ var NAVTREEINDEX47 =
 "namespacevamp_1_1redirect__stream.html":[42,0,175,8],
 "namespacevamp_1_1rng.html":[42,0,175,9],
 "namespacevamp_1_1robots.html":[42,0,175,10],
-"namespacevamp_1_1transformations.html":[42,0,175,11],
-"namespacevamp_1_1transformations.html#a023d57476eaf320114617eb382661568":[42,0,175,11,17],
-"namespacevamp_1_1transformations.html#a0972e69b413582a0cd3af93457d682f9":[42,0,175,11,26],
-"namespacevamp_1_1transformations.html#a09a32241e19c7e7715efca27f00627e7":[42,0,175,11,20],
-"namespacevamp_1_1transformations.html#a1afebe0e7c70e9a31034a1207618cf6c":[42,0,175,11,28],
-"namespacevamp_1_1transformations.html#a206e0a0d0aa292b9fa0e70043a50a3dd":[42,0,175,11,34],
-"namespacevamp_1_1transformations.html#a22baca1313c728b421da4913a199bf70":[42,0,175,11,18],
-"namespacevamp_1_1transformations.html#a31c7b102559b264030b4fd78ed29d34b":[42,0,175,11,21],
-"namespacevamp_1_1transformations.html#a3d64a9bb17f49578cf4c2e0478e1a4d7":[42,0,175,11,14],
-"namespacevamp_1_1transformations.html#a3f371080836cc97d80a03effd3d224b4":[42,0,175,11,42],
-"namespacevamp_1_1transformations.html#a47f0854f822d7851ab07d6e7bb3f60ca":[42,0,175,11,38],
-"namespacevamp_1_1transformations.html#a4899ca7233a918bd24f566774dbebe29":[42,0,175,11,27]
+"namespacevamp_1_1transformations.html":[42,0,175,11]
 };

@@ -127,8 +127,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad31537c8a7a75d5f328f7ac43ffbdbd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1b31eabd97610051e90e4217988bd47"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aa1b31eabd97610051e90e4217988bd47">set_light_state</a> (self, <a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html">AudioStates</a> state, bool play_chime=True)</td></tr>
 <tr class="separator:aa1b31eabd97610051e90e4217988bd47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaf3af43816f6588d91ab4df64026ab26"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aaf3af43816f6588d91ab4df64026ab26">confirm</a> (self, str question, bool use_keyword=True, int retries=3, float wait_between_retries=5)</td></tr>
-<tr class="separator:aaf3af43816f6588d91ab4df64026ab26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb53eb6b04d5c1465fdae5acc6b2f325"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#adb53eb6b04d5c1465fdae5acc6b2f325">confirm</a> (self, str question, bool use_keyword=True, int retries=3, float wait_between_retries=10, str query=&quot;&quot;, str context=&quot;&quot;, str target=&quot;&quot;, str hotwords=&quot;&quot;)</td></tr>
+<tr class="separator:adb53eb6b04d5c1465fdae5acc6b2f325"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40899ed5d3de7545da4e3c11c06151a3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a40899ed5d3de7545da4e3c11c06151a3">ask_and_confirm</a> (self, str question, str query, str context=&quot;&quot;, Union[str, callable] confirm_question=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#acb3de2e45c2ebfe133179c42b0b983e1">confirm_query</a>, bool use_keyword=True, hotwords=&quot;&quot;, int retries=3, float min_wait_between_retries=5, bool skip_extract_data=False, bool skip_confirmation=False, bool always_confirm=False, list[str] options=None, dict remap=None, str <a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a254e622abfcc0b799388add32b2ead19">initial_prompt</a>=&quot;&quot;, float silence_time=1.0, float max_audio_length=13.0)</td></tr>
 <tr class="separator:a40899ed5d3de7545da4e3c11c06151a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa87abb42b344847655a079d3d296f24a"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aa87abb42b344847655a079d3d296f24a">interpret_keyword</a> (self, list[str] keywords, float timeout, bool play_chime=True)</td></tr>
@@ -270,6 +270,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a6dd66e6587899edb974fd9a69b2a2671"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6176dc242a4e998b0839cb675ac1a356"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a6176dc242a4e998b0839cb675ac1a356">positive</a></td></tr>
 <tr class="separator:a6176dc242a4e998b0839cb675ac1a356"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f4f9476b6a98eac399f17331192b80a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a6f4f9476b6a98eac399f17331192b80a">negation_words</a></td></tr>
+<tr class="separator:a6f4f9476b6a98eac399f17331192b80a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a5a9845f81f08c7638c438c6745f52e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a1a5a9845f81f08c7638c438c6745f52e">affirmation_words</a></td></tr>
+<tr class="separator:a1a5a9845f81f08c7638c438c6745f52e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d569c5fdc0b4cbe9d39359268dab9e9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a8d569c5fdc0b4cbe9d39359268dab9e9">hand_items</a></td></tr>
 <tr class="separator:a8d569c5fdc0b4cbe9d39359268dab9e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acaddc3526f459e72190e8d349686402e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#acaddc3526f459e72190e8d349686402e">objects_data</a></td></tr>
@@ -292,6 +296,10 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a1283e95e2ee2b1e84dbb1c292aa62afa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43f3b2a039dca0cad1b1aa0b8b8e298c"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a43f3b2a039dca0cad1b1aa0b8b8e298c">_get_door_event</a> (self, String msg)</td></tr>
 <tr class="separator:a43f3b2a039dca0cad1b1aa0b8b8e298c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb7b6c6f3bbc96405d91a202709691ff"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#acb7b6c6f3bbc96405d91a202709691ff">_interpret_confirmation</a> (self, str text, str target, str query, str context=&quot;&quot;, str hotwords=&quot;&quot;, str <a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#ae5c294eb45ec75f1040ca12a64e10372">keyword</a>=&quot;&quot;)</td></tr>
+<tr class="separator:acb7b6c6f3bbc96405d91a202709691ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88de831b545abfdb95a4adca5d6899c9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a88de831b545abfdb95a4adca5d6899c9">_match_answer</a> (self, str target_info, list[str]|None options=None, dict|None remap=None)</td></tr>
+<tr class="separator:a88de831b545abfdb95a4adca5d6899c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a608a04fe397bd1a587523501a0e64ff2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a608a04fe397bd1a587523501a0e64ff2">_call_add_entry</a> (self, str collection, list documents, dict metadata=None)</td></tr>
 <tr class="separator:a608a04fe397bd1a587523501a0e64ff2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4da690eb244e5e52a902bea7239767b1"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4da690eb244e5e52a902bea7239767b1">_call_query_entry</a> (self, str collection, list query_texts, int top_k, dict metadata=None)</td></tr>
@@ -527,6 +535,136 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="acb7b6c6f3bbc96405d91a202709691ff" name="acb7b6c6f3bbc96405d91a202709691ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb7b6c6f3bbc96405d91a202709691ff">&#9670;&#160;</a></span>_interpret_confirmation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> str task_manager.subtask_managers.hri_tasks.HRITasks._interpret_confirmation </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>text</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>target</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>query</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>context</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>hotwords</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>keyword</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Classify a reply to "Did you say &lt;target&gt;?".
+
+The yes/no keyword decides first; the query only turns a "no" (or a reply with no
+keyword) into a correction when it extracts a value different from the target.
+
+Args:
+    keyword: "yes"/"no" from the keyword spotter while listening, "" if none was heard.
+Returns:
+    str: "yes", "no", "" (nothing heard or unclear, ask again) or the corrected value.
+</pre> 
+</div>
+</div>
+<a id="a88de831b545abfdb95a4adca5d6899c9" name="a88de831b545abfdb95a4adca5d6899c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a88de831b545abfdb95a4adca5d6899c9">&#9670;&#160;</a></span>_match_answer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.hri_tasks.HRITasks._match_answer </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>target_info</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[str] | None &#160;</td>
+          <td class="paramname"><em>options</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">dict | None &#160;</td>
+          <td class="paramname"><em>remap</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Map an answer to the closest option and apply the remap.
+
+Returns:
+    str: the matched (and remapped) answer
+    bool: whether an option was found (True when no options are given)
+    float: similarity to the matched option
+    bool: whether the match was exact
+</pre> 
 </div>
 </div>
 <a id="ad0cf4e9442b285e54d308c9e2c669d28" name="ad0cf4e9442b285e54d308c9e2c669d28"></a>
@@ -1076,8 +1214,8 @@ If is_async is True, returns a Future object that can be used to get the result 
 </pre> 
 </div>
 </div>
-<a id="aaf3af43816f6588d91ab4df64026ab26" name="aaf3af43816f6588d91ab4df64026ab26"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf3af43816f6588d91ab4df64026ab26">&#9670;&#160;</a></span>confirm()</h2>
+<a id="adb53eb6b04d5c1465fdae5acc6b2f325" name="adb53eb6b04d5c1465fdae5acc6b2f325"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb53eb6b04d5c1465fdae5acc6b2f325">&#9670;&#160;</a></span>confirm()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1110,7 +1248,31 @@ If is_async is True, returns a Future object that can be used to get the result 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>wait_between_retries</em> = <code>5</code>&#160;</td>
+          <td class="paramname"><em>wait_between_retries</em> = <code>10</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>query</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>context</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>target</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>hotwords</em> = <code>&quot;&quot;</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1126,9 +1288,14 @@ Args:
     use_keyword: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
     retries: the amount of times to try before returning false
     wait_between_retries: the amount of time to wait between retries
+    query: if set, the user may correct the value being confirmed (e.g. "No, I said Andres"); the correction is extracted with this query. "yes" is still caught by the keyword filter while listening; a "no" waits for the rest of the reply to look for a correction.
+    context: context for the correction extraction
+    target: the value being confirmed, used to tell a correction apart from a repetition
+    hotwords: hotwords for the STT when listening for a correction
 Returns:
     Status: the status of the execution
-    str: "yes" (user confirms), "no" (user doesn't confirm), or "" (no response interpreted).
+    str: "yes" (user confirms), "no" (user doesn't confirm), "" (no response interpreted),
+        or the corrected value (only when query is set).
 </pre> 
 </div>
 </div>
@@ -2345,6 +2512,20 @@ Returns:
 
 </div>
 </div>
+<a id="a1a5a9845f81f08c7638c438c6745f52e" name="a1a5a9845f81f08c7638c438c6745f52e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a5a9845f81f08c7638c438c6745f52e">&#9670;&#160;</a></span>affirmation_words</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.hri_tasks.HRITasks.affirmation_words</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a35a11963ac464375e69315f8cfabd334" name="a35a11963ac464375e69315f8cfabd334"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a35a11963ac464375e69315f8cfabd334">&#9670;&#160;</a></span>answer_question_service</h2>
 
@@ -2781,6 +2962,20 @@ Returns:
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.hri_tasks.HRITasks.names_hotwords</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6f4f9476b6a98eac399f17331192b80a" name="a6f4f9476b6a98eac399f17331192b80a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f4f9476b6a98eac399f17331192b80a">&#9670;&#160;</a></span>negation_words</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.hri_tasks.HRITasks.negation_words</td>
         </tr>
       </table>
 </div><div class="memdoc">

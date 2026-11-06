@@ -1,5 +1,17 @@
 var NAVTREEINDEX57 =
 {
+"test__pick__and__place_8py.html#ae08be74622150a5b45cc0f649c616765":[44,0,3,1,5,2,2,8],
+"test__pick__and__place_8py.html#ae960aee0f7cda5365ab59f8cdc62d59e":[44,0,3,1,5,2,2,46],
+"test__pick__and__place_8py.html#aec6f4b3ea08526d1f8f0205f51940c49":[44,0,3,1,5,2,2,35],
+"test__pick__and__place_8py.html#aee2ef90d2e69ac5ea5aef65153b1b674":[44,0,3,1,5,2,2,69],
+"test__pick__and__place_8py.html#af1f4a5f9b4fbe902c9850dd58a46e492":[44,0,3,1,5,2,2,55],
+"test__pick__and__place_8py.html#af27d2be1a75e0c7fe8fd37c541e43305":[44,0,3,1,5,2,2,15],
+"test__pick__and__place_8py.html#af4115fe1130c1f90b0b2b0b21d1344b4":[44,0,3,1,5,2,2,31],
+"test__pick__and__place_8py.html#af46db663aedbc0269bece84940421bfa":[44,0,3,1,5,2,2,36],
+"test__pick__and__place_8py.html#afca66e029ec6db7c513821db3796ff40":[44,0,3,1,5,2,2,58],
+"test__pick__and__place_8py.html#afd89d26449c4f8b27c1ad8666680eec2":[44,0,3,1,5,2,2,41],
+"test__pick__and__place_8py.html#afdb5b2e7c450788f35ba55898eecf99d":[44,0,3,1,5,2,2,59],
+"test__pick__and__place_8py.html#aff2374613e3a874501d82567cd9484ac":[44,0,3,1,5,2,2,61],
 "test__pick__and__place_8py.html#aff35a6e48776100633fffdc4025f0f3a":[44,0,3,1,5,2,2,67],
 "test__pick__and__place_8py.html#aff8e970ea2b61136419edecab0002536":[44,0,3,1,5,2,2,49],
 "test__plan__parser_8py.html":[44,0,6,1,1,14],
@@ -237,17 +249,5 @@ var NAVTREEINDEX57 =
 "vision__classes_8py.html":[44,0,1,1,6],
 "vision__constants_8py.html":[44,0,1,1,7],
 "vision__constants_8py.html#a033a5597e312e4e911732ea94d904b9c":[44,0,1,1,7,16],
-"vision__constants_8py.html#a038a886283e02ea812e2588402bd0bb2":[44,0,1,1,7,87],
-"vision__constants_8py.html#a03983d3f159310b7d5cd63db4c94cca2":[44,0,1,1,7,67],
-"vision__constants_8py.html#a08788090ff3ee499ea9e3d5b9e674c51":[44,0,1,1,7,6],
-"vision__constants_8py.html#a0d56be9f622f8bf3676601342a24238f":[44,0,1,1,7,39],
-"vision__constants_8py.html#a0d9e36475a3e1aba0ac82d421424b504":[44,0,1,1,7,14],
-"vision__constants_8py.html#a0ee93128ca3f488e86be2a695dea0211":[44,0,1,1,7,34],
-"vision__constants_8py.html#a0f1e21b2876c5aff0a6ce0bb081cd000":[44,0,1,1,7,61],
-"vision__constants_8py.html#a117bc4f96aeae7e3e3cdbc2860b532cd":[44,0,1,1,7,36],
-"vision__constants_8py.html#a13af2ecf98043daced224061e46f2b18":[44,0,1,1,7,46],
-"vision__constants_8py.html#a14b244fc490c19ebfc44d3b8f4cdcbc5":[44,0,1,1,7,15],
-"vision__constants_8py.html#a15b691c9b0f78ffb57bf59f0907fd2c7":[44,0,1,1,7,13],
-"vision__constants_8py.html#a181ff6edba78fa4bcb8532368721f561":[44,0,1,1,7,27],
-"vision__constants_8py.html#a1901c8225f986727655559dcabf1747b":[44,0,1,1,7,77]
+"vision__constants_8py.html#a038a886283e02ea812e2588402bd0bb2":[44,0,1,1,7,87]
 };

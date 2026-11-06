@@ -1,5 +1,15 @@
 var NAVTREEINDEX37 =
 {
+"manipulation__tasks_8py.html#ad2c48d09d4fd7a7a4470eab00d2a31fa":[44,0,6,2,1,8,4],
+"manipulation__tasks_8py.html#af100c45ca0837aa8dcea64c1673a8fb5":[44,0,6,2,1,8,11],
+"map__area__tagger_8py.html":[44,0,4,0,1,3,0],
+"map__area__tagger_8py.html#a0a8c16661fedc07a4d89252f175f3fde":[44,0,4,0,1,3,0,4],
+"map__area__tagger_8py.html#a33c0e02922d99d9405848a521fad78ab":[44,0,4,0,1,3,0,3],
+"map__area__tagger_8py.html#a5ff188d3d9297ca930d16ba3349e0f0d":[44,0,4,0,1,3,0,6],
+"map__area__tagger_8py.html#a8b8e125ab7b5ed1f090345e6c568893f":[44,0,4,0,1,3,0,7],
+"map__area__tagger_8py.html#a9c0f1fffca59ee4d50efdcc6d8995046":[44,0,4,0,1,3,0,8],
+"map__area__tagger_8py.html#aa3c45ff1720560f65c705d5b80511313":[44,0,4,0,1,3,0,2],
+"map__area__tagger_8py.html#aa51966e06f7d42b83f9394fc912a38ab":[44,0,4,0,1,3,0,5],
 "map__service_8cpp.html":[44,0,4,0,1,4,0],
 "map__service_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627":[44,0,4,0,1,4,0,2],
 "map__service_8cpp.html#aa016ff104ce1b9e5361e03e3dc22c0a0":[44,0,4,0,1,4,0,1],
@@ -239,15 +249,5 @@ var NAVTREEINDEX37 =
 "md_manipulation_README.html#autotoc_md124":[8,4],
 "md_manipulation_README.html#autotoc_md125":[8,5],
 "md_manipulation_README.html#autotoc_md126":[8,5,0],
-"md_manipulation_README.html#autotoc_md128":[8,6],
-"md_manipulation_README.html#autotoc_md130":[8,7],
-"md_manipulation_README.html#autotoc_md132":[8,8],
-"md_manipulation_README.html#autotoc_md134":[8,9],
-"md_manipulation_README.html#autotoc_md135":[8,9,0],
-"md_manipulation_README.html#autotoc_md136":[8,9,1],
-"md_manipulation_README.html#autotoc_md137":[8,9,2],
-"md_manipulation_README.html#autotoc_md138":[8,9,3],
-"md_manipulation_README.html#autotoc_md140":[8,10],
-"md_manipulation_benchmarks_2026_11_README.html":[1],
-"md_manipulation_benchmarks_2026_11_README.html#autotoc_md1":[1,0]
+"md_manipulation_README.html#autotoc_md128":[8,6]
 };

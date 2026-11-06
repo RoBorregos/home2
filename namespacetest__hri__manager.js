@@ -24,6 +24,7 @@ var namespacetest__hri__manager =
     [ "TEST_CATEGORIZE_SHELVES", "namespacetest__hri__manager.html#a7257db83f899b3514ec9da39b9875697", null ],
     [ "TEST_COMMAND_INTERPRETER", "namespacetest__hri__manager.html#a6126879bbfe70d91a45d5c99e98ac3f9", null ],
     [ "TEST_COMMAND_INTERPRETER_BAML", "namespacetest__hri__manager.html#acba16bc04fcf4b594f5c4335ff8f9239", null ],
+    [ "TEST_CONFIRM", "namespacetest__hri__manager.html#a0f6e2e534ce6c660fc7e187d7fc8a1e8", null ],
     [ "TEST_DATA_EXTRACTOR", "namespacetest__hri__manager.html#a5b93f7cb6e796bceeecdee57dc3c7aac", null ],
     [ "TEST_DOOR", "namespacetest__hri__manager.html#aa088235952c6afdf84049733a3d8e6d7", null ],
     [ "TEST_FALLBACK_RESUME", "namespacetest__hri__manager.html#ad1afdc4bd1aac351029411361b8c7f38", null ],

@@ -1,5 +1,15 @@
 var NAVTREEINDEX45 =
 {
+"namespacereceptionist__task__manager.html":[42,0,121],
+"namespacereceptionist__task__manager.html#a190fa117b34e8f98afa854494e664047":[42,0,121,3],
+"namespacereceptionist__task__manager.html#ab6e6d47fc4ae90351efa864eacc5c880":[42,0,121,2],
+"namespacerecord__joints__node.html":[42,0,122],
+"namespacerecord__joints__node.html#affacd92dfdac1d2fd31eb665364dfa8e":[42,0,122,1],
+"namespacerecord__relative__pose.html":[42,0,123],
+"namespacerecord__relative__pose.html#a5b8f44ea816afb929415be7362869603":[42,0,123,1],
+"namespaceremove__collision__object.html":[42,0,124],
+"namespaceremove__collision__object.html#a86366d327b8fa51f26394d0524fdc193":[42,0,124,0],
+"namespacerestaurant.html":[42,0,125],
 "namespacerestaurant.html#a3a3467e7dd94d1932f122f55c14d21c4":[42,0,125,1],
 "namespacerestaurant.html#a90267738e600fcd32bced0afc020e437":[42,0,125,0],
 "namespacerestaurant__commands.html":[42,0,126],
@@ -239,15 +249,5 @@ var NAVTREEINDEX45 =
 "namespacetask__manager_1_1utils_1_1decorators.html":[42,0,146,2,1],
 "namespacetask__manager_1_1utils_1_1decorators.html#a026a1029f1cd63d148cea86009000db0":[42,0,146,2,1,0],
 "namespacetask__manager_1_1utils_1_1decorators.html#a71d32900d7390409fe37451aa09c2cf0":[42,0,146,2,1,1],
-"namespacetask__manager_1_1utils_1_1exploration__planner.html":[42,0,146,2,2],
-"namespacetask__manager_1_1utils_1_1grasp__confirmation.html":[42,0,146,2,3],
-"namespacetask__manager_1_1utils_1_1grasp__confirmation.html#a0b0ea83c89356b143d30bdd16c3f9cb0":[42,0,146,2,3,0],
-"namespacetask__manager_1_1utils_1_1grasp__confirmation.html#a1724a5c718a48965095e5db46e11be09":[42,0,146,2,3,1],
-"namespacetask__manager_1_1utils_1_1grasp__confirmation.html#a9c1f5a890db47e81cde48d2933c10c9e":[42,0,146,2,3,2],
-"namespacetask__manager_1_1utils_1_1logger.html":[42,0,146,2,4],
-"namespacetask__manager_1_1utils_1_1shelf__pick__logic.html":[42,0,146,2,5],
-"namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a1605b8ce3208c001ce1aa390c8e79457":[42,0,146,2,5,2],
-"namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a25bd3616227490a4a759d28c9e481dc4":[42,0,146,2,5,6],
-"namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a336d06af6805292b50d76d3348d6eee1":[42,0,146,2,5,5],
-"namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a3eec59f41f4d590d73db45552e7db4bd":[42,0,146,2,5,1]
+"namespacetask__manager_1_1utils_1_1exploration__planner.html":[42,0,146,2,2]
 };
