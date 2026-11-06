@@ -1087,10 +1087,11 @@ class Nav_Central(Node):
         return response
 
     def check_for_topics(self, topics):
-        topic_names_and_types = self.get_topic_names_and_types()
-        active_topics = {t[0] for t in topic_names_and_types}
-        topics_ready = topics.issubset(active_topics)
-        return topics_ready
+        # A topic counts only with a live source: /cmd_vel needs the base driver
+        # subscribed, every other one a publisher. Subscribers alone keep a dead
+        # topic in the graph (the costmaps keep /scan listed after the merger dies).
+        return all((self.count_subscribers(t) if t == '/cmd_vel' else self.count_publishers(t)) > 0
+                   for t in topics)
 
     def wait_for_requirements(self):
         """Function to wait until requirements are available"""
