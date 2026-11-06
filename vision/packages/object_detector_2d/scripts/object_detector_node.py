@@ -8,7 +8,6 @@ import os
 import cv2 as cv
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from rcl_interfaces.msg import SetParametersResult
 from rclpy.time import Time
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
@@ -50,7 +49,6 @@ class ObjectDetectorNode(BaseDetectorNode):
         self.models = [ModelRegistry.get(n) for n in model_names if n]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
         self.yolo_service_model = ModelRegistry.get("yolo_generic")
-        self.add_on_set_parameters_callback(self.on_set_parameters)
 
         # Latest GalleryDetect2D output, merged into our detections while fresh
         self.gallery_max_age = self.declare_param("GALLERY_MAX_AGE", 3.5).double_value
@@ -84,19 +82,6 @@ class ObjectDetectorNode(BaseDetectorNode):
 
     def box_color(self, det):
         return (0, 0, 255) if det.label_text.startswith("trash/") else (0, 255, 0)
-
-    def on_set_parameters(self, params):
-        """Swap models at runtime: ros2 param set /ObjectDetect2D models ..."""
-        for param in params:
-            if param.name != "models":
-                continue
-            try:
-                models = [ModelRegistry.get(n) for n in param.value if n]
-            except Exception as e:
-                return SetParametersResult(successful=False, reason=str(e))
-            self.models = models
-            self.get_logger().info(f"Models set to: {[m.name for m in models]}")
-        return SetParametersResult(successful=True)
 
     def gallery_cb(self, msg):
         self.gallery = msg.detections
