@@ -249,9 +249,18 @@ tracking, TF, the debug publisher and a non-spinning `call_service`. Subclasses 
 its own subscriptions.
 
 `scripts/task_nodes/` holds the runtime and every node that subclasses it:
-`gpsr_commands`, `hric_commands`, `restaurant_commands`, `customer_node` and
-`face_recognition_node`. They all install flat into `lib/vision_general/`, so
-`from vision_runtime import ...` resolves in both the source and the installed tree.
+`gpsr_commands`, `hric_commands`, `restaurant_commands`, `customer_node`,
+`face_recognition_node` and `semantic_map_node`. They all install flat into
+`lib/vision_general/`, so `from vision_runtime import ...` resolves in both the source
+and the installed tree.
+
+`semantic_map_node` keeps where every object seen is, in the `map` frame, for `--finals`.
+It folds in `/vision/detections` with crops embedded by `finals_commands`, and answers on
+`/vision/semantic_map/{query_objects,resolve_command,get_misplaced,reset}`. An object
+answers queries after 3 detections and is forgotten after being looked at, with the camera
+still, without being detected. Thresholds and the per-arena `category_to_furniture_json`
+are in `config/semantic_map.yaml`. The logic is a library copied into
+[`third_party/semantic_map`](packages/vision_general/third_party/semantic_map/README.md).
 
 `tracker_node` deliberately stays out: it needs a different QoS per stream (BEST_EFFORT
 colour, RELIABLE depth) and a separate callback group per subscription so its 20 Hz
