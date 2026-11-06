@@ -42,6 +42,7 @@ TEST_CMD="rm -rf /tmp/rbrgs_bench && mkdir -p /tmp/rbrgs_bench \
     && sed -i 's#http://[0-9.]*:$PORT#http://localhost:$PORT#' /tmp/rbrgs_bench/baml_src/client.baml \
     && cd /tmp/rbrgs_bench && baml-cli test --from baml_src/ --parallel 1"
 run_tests() { docker exec "$ROS_CONTAINER" bash -c "$TEST_CMD"; }
+TOTAL_TESTS=$(cat "$REPO_ROOT"/task_manager/task_manager/utils/baml_src/*.baml | grep -c '^test ' || true)
 
 mkdir -p "$RESULTS_DIR"
 STAMP=$(date +%Y%m%d_%H%M%S)
@@ -77,7 +78,13 @@ for m in "${MODELS[@]}"; do
     for ((r = 1; r <= RUNS; r++)); do
         log="$RESULTS_DIR/rbrgs_${m%.gguf}_${STAMP}_r${r}.log"
         echo "  run $r/$RUNS -> $(basename "$log")"
-        run_tests > "$log" 2>&1 || true
+        # Full output to the log; one live line per finished test to the terminal.
+        run_tests 2>&1 | tee "$log" | sed -u 's/\x1b\[[0-9;]*m//g' | awk -v total="$TOTAL_TESTS" '
+            /Test results:/ { s = 1 }
+            !s && ($2 == "PASSED" || $2 == "FAILED") && $3 ~ /^GenerateCommandList::/ {
+                name = $3; sub(/^GenerateCommandList::/, "", name)
+                printf "    [%2d/%d] %-6s %8s  %s\n", ++i, total, $2, $1, name; fflush()
+            }' || true
         # Only the summary block after "Test results:" has one line per test.
         sed 's/\x1b\[[0-9;]*m//g' "$log" | awk -v m="$m" -v r="$r" '
             /Test results:/ { s = 1; next }
@@ -88,6 +95,8 @@ for m in "${MODELS[@]}"; do
     done
 done
 
+SUMMARY="$RESULTS_DIR/rbrgs_summary_${STAMP}.txt"
+{
 echo
 echo "Summary (latency is per command, sequential):"
 awk -F'\t' 'NR > 1 {
@@ -119,3 +128,5 @@ awk -F'\t' -v models="${MODELS[*]}" 'NR > 1 { c[$3 SUBSEP $1] += ($4 == "PASSED"
 
 echo
 echo "Raw results: $TSV"
+} | tee "$SUMMARY"
+echo "Summary saved: $SUMMARY"
