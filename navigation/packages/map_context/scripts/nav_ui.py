@@ -32,14 +32,12 @@ from frida_constants.navigation_constants import (
     MOVE_LOCATION_SERVICE,
     DOCK_SERVICE,
     DOCK_TABLE_SERVICE,
-    DEFAULT_DOCK_OFFSET,
 )
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QGroupBox, QSplitter, QToolBar,
     QStatusBar, QCheckBox, QComboBox, QFileDialog, QMessageBox,
-    QDoubleSpinBox
 )
 from PyQt5.QtCore import Qt, QPointF, QTimer, QSize, pyqtSignal, QObject
 from PyQt5.QtGui import (
@@ -193,9 +191,9 @@ class NavRosNode(Node):
             self._areas_client = self.create_client(MapAreas, AREAS_SERVICE)
             self._move_client = self.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
             self._dock_client = self.create_client(Trigger, DOCK_SERVICE)
-            # nav_central's DockTable wrapper: sets the per-call front_offset on
-            # table_docker before triggering the approach — lets the UI test
-            # different offsets. Falls back to the raw Trigger dock if absent.
+            # nav_central's DockTable wrapper: passes the surface type to
+            # table_docker before triggering the planned approach. Falls back to
+            # the raw Trigger dock if absent.
             self._dock_table_client = self.create_client(DockTable, DOCK_TABLE_SERVICE)
 
         # Mapping mode: the map-save client depends on the SLAM backend.
@@ -530,13 +528,12 @@ class NavRosNode(Node):
                 on_done(False, str(e))
         threading.Thread(target=_worker, daemon=True).start()
 
-    def dock_async(self, on_done, offset: float = 0.0):
+    def dock_async(self, on_done, surface_type: str = "default"):
         """Approach the table in a background thread.
 
-        Prefers nav_central's DockTable service so `offset` (front_offset, m)
-        is applied per-call on table_docker — offset <= 0 means "use the
-        default" (DEFAULT_DOCK_OFFSET). Falls back to the raw Trigger
-        DOCK_SERVICE (offset ignored) when nav_central is not running.
+        Prefers nav_central's DockTable service so `surface_type` selects the
+        reach band table_docker plans in. Falls back to the raw Trigger
+        DOCK_SERVICE (last-set request on the docker) when nav_central is not running.
         """
         import time
         from frida_interfaces.srv import DockTable
@@ -552,7 +549,7 @@ class NavRosNode(Node):
             try:
                 if self._dock_table_client.wait_for_service(timeout_sec=2.0):
                     req = DockTable.Request()
-                    req.offset = float(offset)
+                    req.surface_type = surface_type
                     future = self._dock_table_client.call_async(req)
                     if not _wait(future, 90.0):
                         on_done(False, "Dock timed out")
@@ -560,7 +557,7 @@ class NavRosNode(Node):
                     res = future.result()
                     on_done(res.success, res.error)
                     return
-                # nav_central not up — raw table_docker trigger (no offset).
+                # nav_central not up — raw table_docker trigger (default surface).
                 if not self._dock_client.wait_for_service(timeout_sec=5.0):
                     on_done(False, "Dock service not available")
                     return
@@ -1077,26 +1074,18 @@ class NavUI(QMainWindow):
         loc_btn_row.addWidget(self.btn_refresh_loc)
         loc_btn_row.addWidget(self.btn_go_loc)
         loc_layout.addLayout(loc_btn_row)
-        # Approach with a testable front_offset (m): the spinbox value is sent
-        # per-call through nav_central's DockTable service, so different
-        # offsets can be tried without editing configs or `ros2 param set`.
+        # Approach as a surface TYPE: table_docker plans the base pose inside that
+        # type's reach band (nav_main/config/approach_profiles.yaml).
         approach_row = QHBoxLayout()
         self.btn_approach = QPushButton("Approach Table")
         self.btn_approach.setStyleSheet("QPushButton { background: #8e44ad; } QPushButton:hover { background: #9b59b6; }")
         self.btn_approach.clicked.connect(self._on_approach)
         approach_row.addWidget(self.btn_approach, stretch=1)
-        self.spin_dock_offset = QDoubleSpinBox()
-        self.spin_dock_offset.setRange(0.0, 1.0)
-        self.spin_dock_offset.setSingleStep(0.01)
-        self.spin_dock_offset.setDecimals(2)
-        self.spin_dock_offset.setValue(DEFAULT_DOCK_OFFSET)
-        self.spin_dock_offset.setSuffix(" m")
-        self.spin_dock_offset.setToolTip(
-            "front_offset for the approach (m): distance from base_link to the "
-            "robot's front-most point (arm). 0.00 = use the default "
-            f"({DEFAULT_DOCK_OFFSET} m)."
-        )
-        approach_row.addWidget(self.spin_dock_offset)
+        self.combo_surface = QComboBox()
+        self.combo_surface.addItems(self._surface_types())
+        self.combo_surface.setToolTip(
+            "Surface type to dock at; distances come from approach_profiles.yaml")
+        approach_row.addWidget(self.combo_surface)
         loc_layout.addLayout(approach_row)
         nav_layout.addWidget(loc_group)
         # Populate shortly after startup (services need a moment to come up).
@@ -1371,16 +1360,27 @@ class NavUI(QMainWindow):
         if not success:
             QMessageBox.warning(self, "Move Failed", msg or "unknown error")
 
+    @staticmethod
+    def _surface_types():
+        try:
+            import yaml
+            path = os.path.join(get_package_share_directory('nav_main'), 'config',
+                                'approach_profiles.yaml')
+            with open(path) as f:
+                return list((yaml.safe_load(f) or {}).get('surfaces', {})) or ['default']
+        except Exception:
+            return ['default']
+
     def _on_approach(self):
         self.btn_approach.setEnabled(False)
-        offset = float(self.spin_dock_offset.value())
-        self.status.showMessage(f"Approaching surface (offset={offset:.2f} m) ...")
+        surface = self.combo_surface.currentText()
+        self.status.showMessage(f"Approaching surface ({surface}) ...")
 
         def on_done(success, msg):
             self._approach_result = (success, msg)
             QTimer.singleShot(0, self._on_approach_done)
 
-        self.ros_node.dock_async(on_done, offset=offset)
+        self.ros_node.dock_async(on_done, surface_type=surface)
 
     def _on_approach_done(self):
         self.btn_approach.setEnabled(True)

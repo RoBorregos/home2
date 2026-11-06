@@ -41,7 +41,7 @@ PATROL_SCAN_YAW_TOLERANCE = 35.0  # deg of heading error still counted as scanne
 ### Move to location service
 MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
 
-### Dock to table/shelf service (nav_central -> table_docker), with desired offset
+### Dock to table/shelf service (nav_central -> table_docker): surface type + optional target
 DOCK_TABLE_SERVICE = "/navigation/dock_table"
 GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 
@@ -114,8 +114,6 @@ FOLLOW_GOAL_UPDATE_TIMEOUT = (
 )
 FOLLOW_ACTION_SERVER_TIMEOUT = 3.0  # Wait for NavigateToPose action server
 
-# Default docking offset (table_docker front_offset).
-DEFAULT_DOCK_OFFSET = 0.16
 
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
