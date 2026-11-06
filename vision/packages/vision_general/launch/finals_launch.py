@@ -13,6 +13,9 @@ def generate_launch_description():
         "launch",
         "object_detector_node.launch.py",
     )
+    semantic_map_config = os.path.join(
+        get_package_share_directory("vision_general"), "config", "semantic_map.yaml"
+    )
     return LaunchDescription(
         [
             IncludeLaunchDescription(
@@ -24,6 +27,15 @@ def generate_launch_description():
                 name="finals_commands",
                 output="screen",
                 emulate_tty=True,
+            ),
+            Node(
+                package="vision_general",
+                executable="semantic_map_node.py",
+                name="semantic_map_node",
+                output="screen",
+                emulate_tty=True,
+                respawn=True,
+                parameters=[semantic_map_config],
             ),
         ]
     )

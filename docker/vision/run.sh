@@ -63,6 +63,8 @@ if [ -z "${CYCLONE_SHM:-}" ]; then
 fi
 add_or_update_variable .env "CYCLONE_SHM" "$CYCLONE_SHM"
 
+add_or_update_variable .env "MAP_NAME" "$(resolve_map_name "lab_23_march.db")"
+
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
