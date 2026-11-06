@@ -118,6 +118,8 @@ Look at `gallery_photos/<object_name>/_crops/` afterwards: if a crop is not the 
 
 Then restart `GalleryDetect2D`. If it is not already running, start it explicitly with
 `ros2 launch object_detector_2d object_detector_node.launch.py enable_gallery:=true`.
+The gallery starts active when launched; publish `data: false` to
+`/vision/gallery_detector/active` if you need to pause it during testing.
 No code change or rebuild is needed, and `ObjectDetect2D` merges its results into
 `/vision/detections`. Takes ~30 s on the Orin. After a fresh setup the first node start also
 builds the TensorRT engine, which takes several minutes: run `./run.sh vision --warmup`

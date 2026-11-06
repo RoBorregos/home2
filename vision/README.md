@@ -214,7 +214,7 @@ Each node has a fixed activation topic (`/vision/object_detector/active`,
 `/vision/gallery_detector/active`, `/vision/zero_shot_detector/active`) so a task manager
 can idle the GPU between steps. Pausing the gallery leaves YOLO untouched; its results drop
 out of `/vision/detections` after `GALLERY_MAX_AGE`. When enabled, `GalleryDetect2D` starts
-paused.
+active; it can still be paused through `/vision/gallery_detector/active`.
 
 The gallery process is not started by default because loading DINOv2 and YOLOE reserves
 substantial VRAM. Start it explicitly with:
@@ -226,7 +226,7 @@ ros2 launch object_detector_2d object_detector_node.launch.py enable_gallery:=tr
 | Want | How (at runtime) |
 | --- | --- |
 | YOLO only (default) | nothing |
-| YOLO + gallery | `ros2 topic pub --once /vision/gallery_detector/active std_msgs/Bool "data: true"` |
+| YOLO + gallery | launch with `enable_gallery:=true` |
 | Gallery only | set `models: []` in `parameters.yaml`, restart, and launch with `enable_gallery:=true` |
 | Back to YOLO | stop the launch with the gallery and restart `object_detector_node.launch.py` without `enable_gallery` |
 

@@ -9,8 +9,8 @@ GalleryDetect2D:
     DETECTIONS_3D_TOPIC: /vision/gallery_detections_3d
     DETECTIONS_ACTIVE_TOPIC: /vision/gallery_detections_active
     TARGET_FRAME: base_link
-    # Starts paused; enable with /vision/gallery_detector/active
-    USE_ACTIVE_FLAG: True
+    # Starts active when the gallery node is launched; the fixed topic can still pause it.
+    USE_ACTIVE_FLAG: False
     DEPTH_ACTIVE: True
     VERBOSE: False
     FLIP_IMAGE: False
