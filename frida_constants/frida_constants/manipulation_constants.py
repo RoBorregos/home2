@@ -76,6 +76,8 @@ GRIPPER_FINGER_THICKNESS = 0.03
 GRIPPER_BODY_CORNERS = ((-0.091, -0.099, 0.0), (0.039, 0.099, 0.081))
 PRE_GRASP_DISTANCE = 0.06
 PICK_MIN_HEIGHT = 0.04
+# ZED depth reads ~1.4% short
+ZED_DEPTH_SCALE = 1.014
 # Objects the grasp generator treats as flat. toothpaste/sponge/dishwasher_tab are
 # low, flat items GPD fails to grasp from above (PPC run 2026-07-02: toothpaste 0/2).
 # These are detector labels -- they must match what the vision model publishes.

@@ -151,6 +151,7 @@ install(PROGRAMS
   scripts/record_relative_pose.py
   scripts/dock_to_handle.py
   scripts/grasp_generator.py
+  scripts/hand_eye_calibration.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
