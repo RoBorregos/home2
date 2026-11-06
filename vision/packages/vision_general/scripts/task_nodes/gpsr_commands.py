@@ -34,6 +34,7 @@ from frida_constants.vision_constants import (
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
+    LFM_CROP_QUERY_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
     YOLO_DETECTION_TOPIC,
 )
@@ -61,6 +62,25 @@ package_share_dir = get_package_share_directory("vision_general")
 # annotated frame on IMAGE_TOPIC for this long; afterwards fall back to the
 # live camera so the display feed is never a stale frozen frame.
 ANNOTATION_HOLD_SECONDS = 6.0
+
+# Multiple-choice prompts for LFM2.5-VL; one call per person, the letter maps to the choice lists below
+GESTURE_PROMPT = (
+    "Look at the main person in the image. Which option best describes their arms and hands?\n"
+    "A) Raising a hand or arm above their head\n"
+    "B) Waving hello with an open hand\n"
+    "C) Pointing at something with an extended arm or finger\n"
+    "D) No gesture: arms down, resting, or holding or using something\n"
+    "Answer with the letter only."
+)
+GESTURE_CHOICES = ["raising", "waving", "pointing", "none"]
+POSE_PROMPT = "Is the main person A) standing, B) sitting, or C) lying down? Answer with the letter only."
+POSE_CHOICES = [Poses.STANDING, Poses.SITTING, Poses.LYING_DOWN]
+SIDED_GESTURES = {
+    ("raising", "left"): Gestures.RAISING_LEFT_ARM,
+    ("raising", "right"): Gestures.RAISING_RIGHT_ARM,
+    ("pointing", "left"): Gestures.POINTING_LEFT,
+    ("pointing", "right"): Gestures.POINTING_RIGHT,
+}
 
 
 class GPSRCommands(VisionRuntime):
@@ -123,6 +143,8 @@ class GPSRCommands(VisionRuntime):
         # Save every annotated detection result for post-run review (same
         # pattern as restaurant_commands): one jpg per service call.
         self.declare_parameter("save_dir", "/workspace/src/gpsr_runs")
+        # Set to false to skip the map areas lookup (2 s wait per call when navigation is not running)
+        self.declare_parameter("use_map_areas", True)
         self.save_dir = self.get_parameter("save_dir").value
         try:
             os.makedirs(self.save_dir, exist_ok=True)
@@ -135,6 +157,9 @@ class GPSRCommands(VisionRuntime):
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
+        )
+        self.lfm_client = self.create_client(
+            CropQuery, LFM_CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
 
         # Areas of the active map
@@ -244,29 +269,15 @@ class GPSRCommands(VisionRuntime):
             self._save_annotated("pose_no_people")
             return response
 
-        # replace underscore with space in the pose_requested
-        pose_requested = pose_requested.replace("_", "  ")
-        pose_requested = pose_requested.replace("_", "", 1)
-
         for person in self.people:
-            x1, y1, x2, y2 = person["bbox"]
-
-            prompt = f"Reply only with 1 if the person is {pose_requested}. Otherwise, reply only with 0."
-            status, response_q = self.moondream_crop_query(
-                prompt, [float(y1), float(x1), float(y2), float(x2)]
-            )
-            if status:
-                print(response_q)
-                response_clean = response_q.strip()
-                if response_clean == "1":
-                    pose_count[pose_requested_enum] += 1
-                    pt = self._person_point(person["bbox"])
-                    if pt is not None:
-                        response.points.append(pt)
-                    self._highlight_person(person["bbox"], pose_requested)
-                    self.get_logger().info(f"Person is {pose_requested}.")
-                elif response_clean != "0":
-                    self.get_logger().warn(f"Unexpected response: {response_clean}")
+            pose = self.person_pose(person["bbox"])
+            pose_count[pose] += 1
+            if pose == pose_requested_enum:
+                pt = self._person_point(person["bbox"])
+                if pt is not None:
+                    response.points.append(pt)
+                self._highlight_person(person["bbox"], pose_requested)
+                self.get_logger().info(f"Person is {pose_requested}.")
 
         response.success = True
         response.count = pose_count[pose_requested_enum]
@@ -285,9 +296,6 @@ class GPSRCommands(VisionRuntime):
 
         frame = self.image
         self.output_image = frame.copy()
-        self.people = self.get_detections(0)
-
-        self.people = self._filter_people(frame, self.people)
 
         gesture_requested = request.pose_requested
 
@@ -338,12 +346,7 @@ class GPSRCommands(VisionRuntime):
 
         # Detect gestures for each detected person
         for person in self.people:
-            x1, y1, x2, y2 = person["bbox"]
-
-            # Crop the frame to the bounding box of the person
-            cropped_frame = frame[y1:y2, x1:x2]
-
-            gesture = self.pose_detection.detectGesture(cropped_frame)
+            gesture = self.person_gesture(frame, person["bbox"])
 
             # Increment the gesture count based on detected gesture
             if gesture in gesture_count:
@@ -461,27 +464,15 @@ class GPSRCommands(VisionRuntime):
 
         # Detect gesture for the person with the biggest bounding box
         biggest_person = max(self.people, key=lambda p: p["area"], default=None)
-        x1, y1, x2, y2 = biggest_person["bbox"]
-        cropped_frame = frame[y1:y2, x1:x2]
-
-        # Crop the frame to the bounding box of the person
         type_requested = request.type_requested
 
         if type_requested == DetectBy.POSES.value:
-            prompt = "Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
-            status, response_q = self.moondream_crop_query(
-                prompt, [float(y1), float(x1), float(y2), float(x2)]
-            )
-
-            if status:
-                self.get_logger().info(f"The person is {response_q}.")
-                response_clean = response_q.replace(" ", "_")
-                response_clean = response_clean.replace("_", "", 1)
-
+            response_clean = self.person_pose(biggest_person["bbox"]).value
+            self.get_logger().info(f"The person is {response_clean}.")
             response.result = response_clean
 
         elif type_requested == DetectBy.GESTURES.value:
-            gesture = self.detect_gesture(cropped_frame)
+            gesture = self.detect_gesture(frame, biggest_person["bbox"])
             response.result = gesture
             response_clean = gesture
             self.get_logger().info(f"The person is {gesture}")
@@ -530,25 +521,9 @@ class GPSRCommands(VisionRuntime):
         except Exception as e:
             self.get_logger().warn(f"Could not save detection image: {e}")
 
-    def detect_gesture(self, cropped_frame):
-        """Detect the gesture in the image."""
-        gestures = [
-            Gestures.UNKNOWN,
-            Gestures.WAVING,
-            Gestures.RAISING_LEFT_ARM,
-            Gestures.RAISING_RIGHT_ARM,
-            Gestures.POINTING_LEFT,
-            Gestures.POINTING_RIGHT,
-        ]
-
-        self.people = self.get_detections(0)
-
-        gesture = self.pose_detection.detectGesture(cropped_frame)
-
-        if gesture in gestures:
-            return gesture.value
-
-        return Gestures.UNKNOWN.value
+    def detect_gesture(self, frame, bbox) -> str:
+        """Detect the gesture of the person in bbox."""
+        return self.person_gesture(frame, bbox).value
 
     def _dicts_to_detection_msgs(self, detections: list):
         from frida_interfaces.msg import Detection
@@ -564,14 +539,15 @@ class GPSRCommands(VisionRuntime):
 
     def _get_areas(self):
         """Fetch the active map's areas from nav_central (cached after first call)."""
+        if not self.get_parameter("use_map_areas").value:
+            return None
         if self.areas is None:
             self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
         return self.areas
 
-    def _current_room(self):
+    def _current_room(self, areas):
         """Name of the areas.json room whose polygon contains the robot's
         current map position, or None when outside every polygon / no TF."""
-        areas = self._get_areas()
         if not areas:
             return None
         try:
@@ -593,7 +569,8 @@ class GPSRCommands(VisionRuntime):
         # (a person seen through a doorway must not be counted/approached).
         # Falls back to whole-house filtering when the robot is outside every
         # polygon or areas/TF are unavailable.
-        room = self._current_room()
+        areas = self._get_areas()
+        room = self._current_room(areas)
         rooms = [room] if room else None
         if room:
             self.get_logger().info(f"Filtering people to room: {room}")
@@ -605,7 +582,7 @@ class GPSRCommands(VisionRuntime):
             self.camera_info,
             self.depth_image,
             self.tf_buffer,
-            self._get_areas(),
+            areas,
             CAMERA_FRAME,
         )
         self._draw_people(filtered)
@@ -683,6 +660,12 @@ class GPSRCommands(VisionRuntime):
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
+        return self._crop_query(self.moondream_client, prompt, bbox, "Moondream")
+
+    def _crop_query(
+        self, client, prompt: str, bbox: list[float], name: str
+    ) -> tuple[int, str]:
+        """Query a crop (bbox = [ymin, xmin, ymax, xmax] in pixels) on a CropQuery service."""
         self.get_logger().info(f"Querying image with prompt: {prompt}")
 
         height, width = self.image.shape[:2]
@@ -699,15 +682,57 @@ class GPSRCommands(VisionRuntime):
         request.ymax = ymax
         request.xmax = xmax
 
-        future = self.moondream_client.call_async(request)
+        future = client.call_async(request)
         future = wait_for_future(future, 15)
         result = future.result()
         if result is None:
-            self.get_logger().error("Moondream service returned None.")
+            self.get_logger().error(f"{name} service returned None.")
             return 0, "0"
         if result.success:
-            self.get_logger().info(f"Moondream result: {result.result}")
+            self.get_logger().info(f"{name} result: {result.result}")
             return 1, result.result
+        return 0, ""
+
+    def classify_person(self, bbox, prompt: str, choices: list):
+        """Ask LFM2.5-VL a multiple-choice question about the person in bbox
+        (x1, y1, x2, y2); returns the matching choice or None."""
+        x1, y1, x2, y2 = bbox
+        status, answer = self._crop_query(
+            self.lfm_client,
+            prompt,
+            [float(y1), float(x1), float(y2), float(x2)],
+            "LFM",
+        )
+        if not status:
+            return None
+        index = ord(answer.strip().lstrip("(").upper()[:1] or "?") - ord("A")
+        if 0 <= index < len(choices):
+            return choices[index]
+        self.get_logger().warn(f"Unexpected LFM answer: {answer!r}")
+        return None
+
+    def person_pose(self, bbox) -> Poses:
+        """Pose of the person in bbox from LFM2.5-VL."""
+        return self.classify_person(bbox, POSE_PROMPT, POSE_CHOICES) or Poses.UNKNOWN
+
+    def person_gesture(self, frame, bbox) -> Gestures:
+        """Gesture of the person in bbox: LFM2.5-VL picks the gesture, keypoints pick
+        the side; falls back to the keypoint rules if LFM does not answer."""
+        x1, y1, x2, y2 = bbox
+        cropped_frame = frame[y1:y2, x1:x2]
+        gesture = self.classify_person(bbox, GESTURE_PROMPT, GESTURE_CHOICES)
+        if gesture == "waving":
+            return Gestures.WAVING
+        if gesture == "none":
+            return Gestures.UNKNOWN
+        side = (
+            self.pose_detection.gesture_side(cropped_frame, gesture)
+            if gesture is not None
+            else None
+        )
+        if side is None:
+            return self.pose_detection.detectGesture(cropped_frame)
+        return SIDED_GESTURES[(gesture, side)]
 
 
 def main(args=None):
