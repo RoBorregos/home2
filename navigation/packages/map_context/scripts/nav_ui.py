@@ -19,6 +19,7 @@ from nav_msgs.msg import OccupancyGrid, Path
 from nav_msgs.srv import GetMap
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from std_srvs.srv import Empty
+from visualization_msgs.msg import Marker, MarkerArray
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -32,14 +33,15 @@ from frida_constants.navigation_constants import (
     MOVE_LOCATION_SERVICE,
     DOCK_SERVICE,
     DOCK_TABLE_SERVICE,
-    DEFAULT_DOCK_OFFSET,
+    DOCK_PREVIEW_SERVICE,
+    UNDOCK_SERVICE,
 )
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QGroupBox, QSplitter, QToolBar,
     QStatusBar, QCheckBox, QComboBox, QFileDialog, QMessageBox,
-    QDoubleSpinBox
+    QDoubleSpinBox,
 )
 from PyQt5.QtCore import Qt, QPointF, QTimer, QSize, pyqtSignal, QObject
 from PyQt5.QtGui import (
@@ -106,6 +108,7 @@ class RosSignals(QObject):
     local_costmap_updated = pyqtSignal()
     global_costmap_updated = pyqtSignal()
     robot_pose_updated = pyqtSignal(float, float, float)  # x, y, yaw
+    dock_overlay_updated = pyqtSignal()  # approach_planner candidates / path
 
 
 class NavRosNode(Node):
@@ -193,10 +196,20 @@ class NavRosNode(Node):
             self._areas_client = self.create_client(MapAreas, AREAS_SERVICE)
             self._move_client = self.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
             self._dock_client = self.create_client(Trigger, DOCK_SERVICE)
-            # nav_central's DockTable wrapper: sets the per-call front_offset on
-            # table_docker before triggering the approach — lets the UI test
-            # different offsets. Falls back to the raw Trigger dock if absent.
+            # nav_central's DockTable wrapper: passes the surface type to
+            # table_docker before triggering the planned approach. Falls back to
+            # the raw Trigger dock if absent.
             self._dock_table_client = self.create_client(DockTable, DOCK_TABLE_SERVICE)
+            self._preview_client = self.create_client(Trigger, DOCK_PREVIEW_SERVICE)
+            self._undock_client = self.create_client(Trigger, UNDOCK_SERVICE)
+            # approach_planner overlay: candidate base poses + the planned path
+            # (published by table_docker, in its odom frame; shown on the map).
+            self.dock_candidates = []  # (x, y, r, g, b, valid) in the map frame
+            self.dock_path = []        # (x, y) in the map frame
+            self.create_subscription(
+                MarkerArray, '/approach_planner/candidates', self.dock_candidates_callback, 1)
+            self.create_subscription(
+                Path, '/approach_planner/path', self.dock_path_callback, 1)
 
         # Mapping mode: the map-save client depends on the SLAM backend.
         if self.ui_mode == 'mapping':
@@ -259,6 +272,47 @@ class NavRosNode(Node):
             f"nav_ui: loaded static map via /map_server/map service "
             f"({grid.info.width}x{grid.info.height} @ {grid.info.resolution} m/px)")
         self._static_map_timer.cancel()
+
+    def _to_map(self, frame, pts):
+        """Transform 2D points from `frame` to the map frame (None if no TF)."""
+        if frame in ('', 'map'):
+            return list(pts)
+        try:
+            t = self.tf_buffer.lookup_transform('map', frame, rclpy.time.Time())
+        except TransformException:
+            return None
+        q = t.transform.rotation
+        yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        c, s = math.cos(yaw), math.sin(yaw)
+        tx, ty = t.transform.translation.x, t.transform.translation.y
+        return [(tx + c * x - s * y, ty + s * x + c * y) for x, y in pts]
+
+    def dock_candidates_callback(self, msg):
+        for m in msg.markers:
+            if m.type != Marker.SPHERE_LIST or m.action == Marker.DELETEALL:
+                continue
+            mapped = self._to_map(m.header.frame_id, [(p.x, p.y) for p in m.points])
+            if mapped is None:
+                return
+            cands = []
+            for (x, y), col in zip(mapped, m.colors):
+                valid = not (abs(col.r - 0.25) < 1e-3 and abs(col.g - 0.25) < 1e-3)
+                cands.append((x, y, col.r, col.g, col.b, valid))
+            self.dock_candidates = cands
+            self.signals.dock_overlay_updated.emit()
+
+    def dock_path_callback(self, msg):
+        mapped = self._to_map(msg.header.frame_id,
+                              [(p.pose.position.x, p.pose.position.y) for p in msg.poses])
+        if mapped is None:
+            return
+        self.dock_path = mapped
+        self.signals.dock_overlay_updated.emit()
+
+    def clear_dock_overlay(self):
+        self.dock_candidates = []
+        self.dock_path = []
+        self.signals.dock_overlay_updated.emit()
 
     def path_callback(self, msg):
         self.path_data = msg
@@ -530,13 +584,40 @@ class NavRosNode(Node):
                 on_done(False, str(e))
         threading.Thread(target=_worker, daemon=True).start()
 
-    def dock_async(self, on_done, offset: float = 0.0):
+    def trigger_async(self, client, on_done):
+        """Call a std_srvs/Trigger service in a background thread."""
+        import time
+
+        def _worker():
+            try:
+                if not client.wait_for_service(timeout_sec=3.0):
+                    on_done(False, "Service not available")
+                    return
+                future = client.call_async(Trigger.Request())
+                elapsed = 0.0
+                while not future.done() and elapsed < 30.0:
+                    time.sleep(0.1)
+                    elapsed += 0.1
+                if not future.done():
+                    on_done(False, "Timed out")
+                    return
+                res = future.result()
+                on_done(res.success, res.message)
+            except Exception as e:
+                on_done(False, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def dock_async(self, on_done, surface_type: str = "default", target=None,
+                   check_reach: bool = False):
         """Approach the table in a background thread.
 
-        Prefers nav_central's DockTable service so `offset` (front_offset, m)
-        is applied per-call on table_docker — offset <= 0 means "use the
-        default" (DEFAULT_DOCK_OFFSET). Falls back to the raw Trigger
-        DOCK_SERVICE (offset ignored) when nav_central is not running.
+        Prefers nav_central's DockTable service so `surface_type` selects the
+        reach band table_docker plans in. Falls back to the raw Trigger
+        DOCK_SERVICE (last-set request on the docker) when nav_central is not running.
+
+        `target` = (x, y, z) in base_link of the object to work on; with
+        `check_reach` the docker verifies the candidates with the arm's IK.
+        on_done(success, message, response) - response is None on the fallback.
         """
         import time
         from frida_interfaces.srv import DockTable
@@ -552,15 +633,20 @@ class NavRosNode(Node):
             try:
                 if self._dock_table_client.wait_for_service(timeout_sec=2.0):
                     req = DockTable.Request()
-                    req.offset = float(offset)
+                    req.surface_type = surface_type
+                    if target is not None:
+                        req.target.header.frame_id = 'base_link'
+                        req.target.point.x, req.target.point.y, req.target.point.z = (
+                            float(v) for v in target)
+                        req.check_reach = bool(check_reach)
                     future = self._dock_table_client.call_async(req)
                     if not _wait(future, 90.0):
                         on_done(False, "Dock timed out")
                         return
                     res = future.result()
-                    on_done(res.success, res.error)
+                    on_done(res.success, res.error, res)
                     return
-                # nav_central not up — raw table_docker trigger (no offset).
+                # nav_central not up — raw table_docker trigger (default surface).
                 if not self._dock_client.wait_for_service(timeout_sec=5.0):
                     on_done(False, "Dock service not available")
                     return
@@ -661,6 +747,10 @@ class NavCanvas(QWidget):
 
         # Path
         self.path_points = []
+
+        # approach_planner overlay (map frame): candidate poses + planned path
+        self.dock_candidates = []
+        self.dock_path = []
 
         # Visibility
         self.show_local_costmap = True
@@ -888,6 +978,31 @@ class NavCanvas(QWidget):
                 poly.append(QPointF(px, py))
             painter.drawPolyline(poly)
 
+        # approach_planner: planned dock path + candidate base poses (green =
+        # best score, red = worst, grey = blocked); the best one is ringed.
+        if len(self.dock_path) > 1:
+            painter.setPen(QPen(QColor(0, 200, 255, 220), 2.0 / self.zoom, Qt.DashLine))
+            poly = QPolygonF()
+            for mx, my in self.dock_path:
+                px, py = self.map_to_pixel(mx, my)
+                poly.append(QPointF(px, py))
+            painter.drawPolyline(poly)
+        if self.dock_candidates:
+            r = max(1.5, 0.03 / self.map_resolution)
+            best = max((c for c in self.dock_candidates if c[5]),
+                       key=lambda c: c[3] - c[2], default=None)
+            painter.setPen(Qt.NoPen)
+            for x, y, cr, cg, cb, valid in self.dock_candidates:
+                px, py = self.map_to_pixel(x, y)
+                painter.setBrush(QBrush(QColor(int(cr * 255), int(cg * 255), int(cb * 255), 230)
+                                        if valid else QColor(120, 120, 120, 150)))
+                painter.drawEllipse(QPointF(px, py), r, r)
+            if best is not None:
+                px, py = self.map_to_pixel(best[0], best[1])
+                painter.setPen(QPen(QColor(255, 255, 255), 2.0 / self.zoom))
+                painter.setBrush(Qt.NoBrush)
+                painter.drawEllipse(QPointF(px, py), r * 2.5, r * 2.5)
+
         # Goal
         if self.current_goal:
             gx, gy, gyaw = self.current_goal
@@ -1077,27 +1192,68 @@ class NavUI(QMainWindow):
         loc_btn_row.addWidget(self.btn_refresh_loc)
         loc_btn_row.addWidget(self.btn_go_loc)
         loc_layout.addLayout(loc_btn_row)
-        # Approach with a testable front_offset (m): the spinbox value is sent
-        # per-call through nav_central's DockTable service, so different
-        # offsets can be tried without editing configs or `ros2 param set`.
+        # Approach as a surface TYPE: table_docker plans the base pose inside that
+        # type's reach band (nav_main/config/approach_profiles.yaml).
         approach_row = QHBoxLayout()
         self.btn_approach = QPushButton("Approach Table")
         self.btn_approach.setStyleSheet("QPushButton { background: #8e44ad; } QPushButton:hover { background: #9b59b6; }")
         self.btn_approach.clicked.connect(self._on_approach)
         approach_row.addWidget(self.btn_approach, stretch=1)
-        self.spin_dock_offset = QDoubleSpinBox()
-        self.spin_dock_offset.setRange(0.0, 1.0)
-        self.spin_dock_offset.setSingleStep(0.01)
-        self.spin_dock_offset.setDecimals(2)
-        self.spin_dock_offset.setValue(DEFAULT_DOCK_OFFSET)
-        self.spin_dock_offset.setSuffix(" m")
-        self.spin_dock_offset.setToolTip(
-            "front_offset for the approach (m): distance from base_link to the "
-            "robot's front-most point (arm). 0.00 = use the default "
-            f"({DEFAULT_DOCK_OFFSET} m)."
-        )
-        approach_row.addWidget(self.spin_dock_offset)
+        self.combo_surface = QComboBox()
+        self.combo_surface.addItems(self._surface_types())
+        self.combo_surface.setToolTip(
+            "Surface type to dock at; distances come from approach_profiles.yaml")
+        approach_row.addWidget(self.combo_surface)
         loc_layout.addLayout(approach_row)
+
+        # Optional object to work on (base_link) + arm reach check. The side panel
+        # is narrow, so the target takes two rows and the buttons use a grid.
+        self.chk_target = QCheckBox("Target (base_link)")
+        self.chk_target.setToolTip(
+            "Stand in front of this object instead of the centre of the surface. "
+            "x forward, y left, z up (m).")
+        self.chk_target.toggled.connect(self._on_target_toggled)
+        loc_layout.addWidget(self.chk_target)
+        target_row = QHBoxLayout()
+        self.spin_target = []
+        for name, val, lo, hi in (("x", 0.90, 0.0, 3.0), ("y", 0.0, -2.0, 2.0),
+                                  ("z", 0.75, 0.0, 2.5)):
+            sp = QDoubleSpinBox()
+            sp.setRange(lo, hi)
+            sp.setSingleStep(0.05)
+            sp.setDecimals(2)
+            sp.setValue(val)
+            sp.setPrefix(f"{name} ")
+            sp.setButtonSymbols(QDoubleSpinBox.NoButtons)
+            sp.setToolTip(f"Target {name} in base_link (m)")
+            sp.setEnabled(False)
+            target_row.addWidget(sp)
+            self.spin_target.append(sp)
+        loc_layout.addLayout(target_row)
+        self.chk_reach = QCheckBox("Check reach (arm IK)")
+        self.chk_reach.setToolTip("Verify the candidates with MoveIt /compute_ik (needs move_group)")
+        self.chk_reach.setEnabled(False)
+        loc_layout.addWidget(self.chk_reach)
+
+        # Preview (no motion) / undock / clear the planner overlay.
+        self.btn_preview = QPushButton("Preview Dock")
+        self.btn_preview.setToolTip("Detect + plan, draw the candidate poses. No motion.")
+        self.btn_preview.clicked.connect(self._on_preview)
+        self.btn_undock = QPushButton("Undock")
+        self.btn_undock.clicked.connect(self._on_undock)
+        self.btn_clear_overlay = QPushButton("Clear")
+        self.btn_clear_overlay.setToolTip("Hide the candidate poses and planned path")
+        self.btn_clear_overlay.clicked.connect(self.ros_node.clear_dock_overlay)
+        loc_layout.addWidget(self.btn_preview)
+        aux_row = QHBoxLayout()
+        aux_row.addWidget(self.btn_undock)
+        aux_row.addWidget(self.btn_clear_overlay)
+        loc_layout.addLayout(aux_row)
+
+        self.lbl_dock_result = QLabel("Dock result: -")
+        self.lbl_dock_result.setWordWrap(True)
+        self.lbl_dock_result.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        loc_layout.addWidget(self.lbl_dock_result)
         nav_layout.addWidget(loc_group)
         # Populate shortly after startup (services need a moment to come up).
         QTimer.singleShot(1500, self._on_refresh_locations)
@@ -1213,6 +1369,7 @@ class NavUI(QMainWindow):
         signals.local_costmap_updated.connect(self.on_local_costmap_update)
         signals.global_costmap_updated.connect(self.on_global_costmap_update)
         signals.robot_pose_updated.connect(self.on_robot_pose)
+        signals.dock_overlay_updated.connect(self.on_dock_overlay)
         # ROS spins before the window exists; a latched /map that arrived during a
         # slow window build (e.g. X11 over ssh) emitted with no slot connected.
         self.on_map_update()
@@ -1371,23 +1528,100 @@ class NavUI(QMainWindow):
         if not success:
             QMessageBox.warning(self, "Move Failed", msg or "unknown error")
 
+    @staticmethod
+    def _surface_types():
+        try:
+            import yaml
+            path = os.path.join(get_package_share_directory('nav_main'), 'config',
+                                'approach_profiles.yaml')
+            with open(path) as f:
+                return list((yaml.safe_load(f) or {}).get('surfaces', {})) or ['default']
+        except Exception:
+            return ['default']
+
+    def _on_target_toggled(self, on):
+        for sp in self.spin_target:
+            sp.setEnabled(on)
+        self.chk_reach.setEnabled(on)
+        if not on:
+            self.chk_reach.setChecked(False)
+
+    def on_dock_overlay(self):
+        node = self.ros_node
+        self.canvas.dock_candidates = getattr(node, 'dock_candidates', [])
+        self.canvas.dock_path = getattr(node, 'dock_path', [])
+        self.canvas.update()
+
     def _on_approach(self):
         self.btn_approach.setEnabled(False)
-        offset = float(self.spin_dock_offset.value())
-        self.status.showMessage(f"Approaching surface (offset={offset:.2f} m) ...")
+        surface = self.combo_surface.currentText()
+        target = None
+        if self.chk_target.isChecked():
+            target = tuple(sp.value() for sp in self.spin_target)
+        check_reach = self.chk_reach.isChecked() and target is not None
+        self.status.showMessage(
+            f"Approaching surface ({surface})" + (" with target" if target else "") + " ...")
+        self.lbl_dock_result.setText("Dock result: running ...")
 
-        def on_done(success, msg):
-            self._approach_result = (success, msg)
+        def on_done(success, msg, res=None):
+            self._approach_result = (success, msg, res)
             QTimer.singleShot(0, self._on_approach_done)
 
-        self.ros_node.dock_async(on_done, offset=offset)
+        self.ros_node.dock_async(on_done, surface_type=surface, target=target,
+                                 check_reach=check_reach)
+
+    @staticmethod
+    def _format_dock_result(success, msg, res):
+        """One-paragraph summary of a DockTable response (the hardware evidence)."""
+        head = "OK" if success else f"FAILED: {msg or 'unknown error'}"
+        if res is None:
+            return f"Dock result: {head}"
+        parts = [head, f"reach: {res.reach or '-'}",
+                 f"lateral error: {res.lateral_error * 100:+.1f} cm (+ = left)"]
+        if res.target_blocked:
+            parts.append(f"BLOCKED by something on the {res.blocker_side or '?'} "
+                         f"(map x={res.blocker.point.x:.2f}, y={res.blocker.point.y:.2f})")
+        return "Dock result: " + " | ".join(parts)
 
     def _on_approach_done(self):
         self.btn_approach.setEnabled(True)
-        success, msg = self._approach_result
+        success, msg, res = self._approach_result
+        self.lbl_dock_result.setText(self._format_dock_result(success, msg, res))
         self.status.showMessage(("Docked" if success else "Approach failed") + (f": {msg}" if msg else ""))
         if not success:
             QMessageBox.warning(self, "Approach Failed", msg or "unknown error")
+
+    def _on_preview(self):
+        self.btn_preview.setEnabled(False)
+        self.status.showMessage("Planning dock (no motion) ...")
+
+        def on_done(success, msg):
+            self._preview_result = (success, msg)
+            QTimer.singleShot(0, self._on_preview_done)
+
+        self.ros_node.trigger_async(self.ros_node._preview_client, on_done)
+
+    def _on_preview_done(self):
+        self.btn_preview.setEnabled(True)
+        success, msg = self._preview_result
+        self.status.showMessage(("Preview ready" if success else "Preview failed")
+                                + (f": {msg}" if msg else ""))
+
+    def _on_undock(self):
+        self.btn_undock.setEnabled(False)
+        self.status.showMessage("Undocking ...")
+
+        def on_done(success, msg):
+            self._undock_result = (success, msg)
+            QTimer.singleShot(0, self._on_undock_done)
+
+        self.ros_node.trigger_async(self.ros_node._undock_client, on_done)
+
+    def _on_undock_done(self):
+        self.btn_undock.setEnabled(True)
+        success, msg = self._undock_result
+        self.status.showMessage(("Undocked" if success else "Undock failed")
+                                + (f": {msg}" if msg else ""))
 
     def check_canvas_actions(self):
         # Check for pending goal send
