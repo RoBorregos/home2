@@ -80,6 +80,7 @@ import tf2_ros
 import json
 import time as t
 import math
+import statistics
 import yaml
 import re
 
@@ -113,14 +114,16 @@ def params_from_yaml(yaml_path, node_name):
     return [make_param(k, v) for k, v in ros_params.items()]
 
 
-def door_window_avg(ranges, lo, hi, sensor_min, far_value):
-    """Mean range over beam indices lo..hi (wraps past the end when lo > hi).
+def door_window_median(ranges, lo, hi, sensor_min, far_value):
+    """Median range over beam indices lo..hi (wraps past the end when lo > hi).
     inf/over-range beams count as far_value (door open -> beam passes through);
-    nan/under-range beams are ignored. None when no beam is valid."""
+    nan/under-range beams are ignored. None when no beam is valid. Median, not
+    mean: the merged /scan leaves a few empty (inf) bins even in front of a
+    closed door, and at far_value each one drags a mean past DOOR_DISTANCE."""
     window = list(ranges[lo:]) + list(ranges[:hi + 1]) if lo > hi else list(ranges[lo:hi + 1])
     pts = [far_value if (math.isinf(r) or r > far_value) else r for r in window
            if math.isinf(r) or not (math.isnan(r) or r < sensor_min)]
-    return sum(pts) / len(pts) if pts else None
+    return statistics.median(pts) if pts else None
 
 
 class Nav_Central(Node):
@@ -563,12 +566,12 @@ class Nav_Central(Node):
             while (self.get_clock().now() - start_time) < Duration(seconds=DOOR_CHECK.TIMEOUT_TO_OPEN.value):
                 self.nav_logger("info", "Check_door -> Waiting for door to open")
                 msg = self.lidar_msg
-                avg = door_window_avg(
+                dist = door_window_median(
                     msg.ranges, DOOR_CHECK.LIDAR_RANGE_MIN.value, DOOR_CHECK.LIDAR_RANGE_MAX.value,
                     max(msg.range_min, 0.0), msg.range_max if msg.range_max > 0.0 else 12.0)
-                if avg is not None:
-                    self.nav_logger("info", f"Check_door -> Window avg distance: {avg:.2f} m")
-                    if avg > DOOR_CHECK.DOOR_DISTANCE.value:
+                if dist is not None:
+                    self.nav_logger("info", f"Check_door -> Window median distance: {dist:.2f} m")
+                    if dist > DOOR_CHECK.DOOR_DISTANCE.value:
                         self.nav_logger("info", "Check_door -> Door opened")
                         response.status = True
                         return response
