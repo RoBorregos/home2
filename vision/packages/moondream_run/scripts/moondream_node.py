@@ -124,15 +124,16 @@ class MoondreamNode(Node):
     def crop_query_callback(self, request, response):
         """Callback to query a crop of the image with Moondream."""
         self.get_logger().info("Executing service Crop query")
-        return self._crop_query(self.stub, request, response)
+        return self._crop_query(self.stub, request, response, encode=True)
 
     def lfm_crop_query_callback(self, request, response):
         """Callback to query a crop of the image with LFM2.5-VL."""
         self.get_logger().info("Executing service LFM Crop query")
-        return self._crop_query(self.lfm_stub, request, response)
+        return self._crop_query(self.lfm_stub, request, response, encode=False)
 
-    def _crop_query(self, stub, request, response):
-        """Crop the current image to the normalized bbox and query it on the given server."""
+    def _crop_query(self, stub, request, response, encode: bool):
+        """Crop the current image to the normalized bbox and query it on the given server.
+        encode: run EncodeImage first (Moondream); LFM takes the JPEG directly in Query."""
         if self.image is None:
             response.result = "No image received yet."
             response.success = False
@@ -171,12 +172,13 @@ class MoondreamNode(Node):
         image_bytes = image_bytes.tobytes()
 
         try:
-            encoded = stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
-            )
+            if encode:
+                image_bytes = stub.EncodeImage(
+                    moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+                ).encoded_image
             query_response = stub.Query(
                 moondream_proto_pb2.QueryRequest(
-                    encoded_image=encoded.encoded_image, query=request.query
+                    encoded_image=image_bytes, query=request.query
                 )
             )
 

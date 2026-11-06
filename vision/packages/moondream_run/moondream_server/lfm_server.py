@@ -22,13 +22,8 @@ class LfmServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
         ).eval()
         self.max_new_tokens = max_new_tokens
 
-    def EncodeImage(self, request, context):
-        # LFM has no separate image encoding step, so the JPEG bytes are passed back as-is
-        return moondream_proto_pb2.EncodedImageResponse(
-            encoded_image=request.image_data
-        )
-
     def Query(self, request, context):
+        # encoded_image carries the raw JPEG crop; LFM encodes the image inside generate()
         image = Image.open(io.BytesIO(request.encoded_image)).convert("RGB")
         conversation = [
             {
