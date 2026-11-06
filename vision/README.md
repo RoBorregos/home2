@@ -129,9 +129,10 @@ must therefore never start two `image_orienter` instances — the per-task launc
 | `embedding_box_proposer` | `yoloe-11l-seg-pf.pt` | `yolo_e` | 0.25 |
 | `embedding_gallery` | DINOv2 ViT-B/14 + `gallery/` | `embedding` | per-object similarity floor |
 
-`ObjectDetect2D` runs the models listed under `models:` in `config/parameters.yaml`
-(currently `yolo_finetuned`). `embedding_gallery` runs in its own node, `GalleryDetect2D`,
-because it is ~45x slower than YOLO and would otherwise hold back `/vision/detections`.
+`ObjectDetect2D` loads the models listed under `models:` in `config/parameters.yaml`
+(currently `yolo_finetuned`) when it starts. Changing that list requires restarting the node.
+`embedding_gallery` runs in its own node, `GalleryDetect2D`, because it is ~45x slower than
+YOLO and would otherwise hold back `/vision/detections`.
 `embedding_box_proposer` is not a detector on its own: `embedding_gallery` calls it to get
 class-agnostic boxes.
 
@@ -212,7 +213,8 @@ handles projection and visualization. `vision_general` has the same pattern in
 Each node has a fixed activation topic (`/vision/object_detector/active`,
 `/vision/gallery_detector/active`, `/vision/zero_shot_detector/active`) so a task manager
 can idle the GPU between steps. Pausing the gallery leaves YOLO untouched; its results drop
-out of `/vision/detections` after `GALLERY_MAX_AGE`. `GalleryDetect2D` starts paused.
+out of `/vision/detections` after `GALLERY_MAX_AGE`. When enabled, `GalleryDetect2D` starts
+paused.
 
 The gallery process is not started by default because loading DINOv2 and YOLOE reserves
 substantial VRAM. Start it explicitly with:
@@ -225,8 +227,8 @@ ros2 launch object_detector_2d object_detector_node.launch.py enable_gallery:=tr
 | --- | --- |
 | YOLO only (default) | nothing |
 | YOLO + gallery | `ros2 topic pub --once /vision/gallery_detector/active std_msgs/Bool "data: true"` |
-| Gallery only | the above, plus `ros2 param set /ObjectDetect2D models "['']"` |
-| Back to YOLO | `ros2 param set /ObjectDetect2D models "['yolo_finetuned']"`, gallery `data: false` |
+| Gallery only | set `models: []` in `parameters.yaml`, restart, and launch with `enable_gallery:=true` |
+| Back to YOLO | stop the launch with the gallery and restart `object_detector_node.launch.py` without `enable_gallery` |
 
 #### Adding an object to the gallery (few-shot)
 

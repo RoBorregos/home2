@@ -116,7 +116,12 @@ mkdir -p gallery_photos/<object_name>    # then copy the photos in (.jpg, .jpeg 
 
 Look at `gallery_photos/<object_name>/_crops/` afterwards: if a crop is not the object, retake that photo with the object front and centre.
 
-Then restart `GalleryDetect2D`. No code change or rebuild is needed (it is already started by `object_detector_2d/launch/object_detector_node.launch.py`, and `ObjectDetect2D` merges its results into `/vision/detections`). Takes ~30 s on the Orin. After a fresh setup the first node start also builds the TensorRT engine, which takes several minutes: run `./run.sh vision --warmup` beforehand to avoid it.
+Then restart `GalleryDetect2D`. If it is not already running, start it explicitly with
+`ros2 launch object_detector_2d object_detector_node.launch.py enable_gallery:=true`.
+No code change or rebuild is needed, and `ObjectDetect2D` merges its results into
+`/vision/detections`. Takes ~30 s on the Orin. After a fresh setup the first node start also
+builds the TensorRT engine, which takes several minutes: run `./run.sh vision --warmup`
+beforehand to avoid it.
 
 `add_object.sh`:
 1. Builds the entry into `$TENSORRT_CACHE_DIR/gallery` (default `/workspace/trt_cache/gallery`, on the host `docker/vision/trt_cache/gallery/`), a mount that persists across containers and fresh clones. `gallery/` in the source tree is gitignored, so writing there would leave a fresh checkout with zero objects.
