@@ -45,7 +45,7 @@
 
         sensors:
             publish_imu_tf: false # [overwritten by launch file options] enable/disable the IMU TF broadcasting
-            sensors_image_sync: true # Synchronize Sensors messages with latest published video/depth message
+            sensors_image_sync: false # Synchronize Sensors messages with latest published video/depth message (true crashes wrapper v5.4.1 on ZED2: stereolabs/zed-ros2-wrapper#459)
             sensors_pub_rate: 30. # frequency of publishing of sensors data. MAX: 400. - MIN: grab rate
 
         region_of_interest:
