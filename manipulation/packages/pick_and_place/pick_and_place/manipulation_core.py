@@ -31,7 +31,7 @@ from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import FixedDistanceMove, FollowFace
 from frida_motion_planning.utils.tf_utils import transform_point
 from geometry_msgs.msg import Point, PoseStamped, Twist
-from rclpy.action import ActionServer, CancelResponse
+from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from std_msgs.msg import Float64
@@ -68,6 +68,7 @@ class ManipulationCore(Node):
         # whole pick, so anything on the default mutually-exclusive group could
         # not be serviced while a task runs, and the node would deadlock.
         self.callback_group = ReentrantCallbackGroup()
+        self._task_lock = threading.Lock()
 
         # Physical properties of the gripper; the launch file overrides
         # ee_link_offset. Everything else tuned lives in pick_profiles.yaml.
@@ -104,9 +105,10 @@ class ManipulationCore(Node):
             self,
             ManipulationAction,
             MANIPULATION_ACTION_SERVER,
-            execute_callback=self.manipulation_callback,
+            execute_callback=self.general_manipulation_callback,
             cancel_callback=self._cancel_callback,
             callback_group=self.callback_group,
+            goal_callback=self.goal_callback,
         )
         self._go_to_hand_server = ActionServer(
             self,
@@ -114,6 +116,7 @@ class ManipulationCore(Node):
             GO_TO_HAND_ACTION_SERVER,
             execute_callback=self.go_to_hand_callback,
             callback_group=self.callback_group,
+            goal_callback=self.goal_callback,
         )
         self._fixed_distance_move_srv = self.create_service(
             FixedDistanceMove,
@@ -139,6 +142,12 @@ class ManipulationCore(Node):
     # ==================================================================
     # ManipulationAction
     # ==================================================================
+
+    def goal_callback(self, goal_request):
+        if not self._task_lock.acquire(blocking=False):
+            self.get_logger().warn("Goal rejected: a task is already running")
+            return GoalResponse.REJECT
+        return GoalResponse.ACCEPT
 
     def _cancel_callback(self, goal_handle):
         self.get_logger().warn("Manipulation task cancellation requested")
@@ -193,6 +202,12 @@ class ManipulationCore(Node):
 
         self.get_logger().info(f"[DONE] task {request.task_type} -> {result.success}")
         return result
+
+    async def general_manipulation_callback(self, goal_handle):
+        try:
+            return await self.manipulation_callback(goal_handle)
+        finally:
+            self._task_lock.release()
 
     # ==================================================================
     # Pipelines
@@ -277,6 +292,12 @@ class ManipulationCore(Node):
     # ==================================================================
 
     async def go_to_hand_callback(self, goal_handle):
+        try:
+            return self._go_to_hand(goal_handle)
+        finally:
+            self._task_lock.release()
+
+    def _go_to_hand(self, goal_handle):
         """Reach towards a person's hand to hand an object over."""
         self._preempt_follow()
         self.get_logger().info("Executing go to hand goal...")

@@ -91,7 +91,9 @@ class ZeroShotDetectorNode(BaseDetectorNode):
             det.point3d.header.stamp = self.curr_clock
 
         self.latest_detections = ros_detections
-        self.pub_detections.publish(ObjectDetectionArray(detections=ros_detections))
+        self.pub_detections.publish(
+            ObjectDetectionArray(header=self.run_header, detections=ros_detections)
+        )
         self.detections_frame = self.visualize(visual, ros_detections)
 
         if self.verbose:
