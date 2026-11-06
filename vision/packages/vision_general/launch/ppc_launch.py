@@ -26,8 +26,11 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            # POSE_SERVICE: ObjectDetect2D also serves the shared yolo11m-pose
+            # (DetectPose) used by hric_commands.
             IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(detector_launch_file)
+                PythonLaunchDescriptionSource(detector_launch_file),
+                launch_arguments={"pose_service": "true"}.items(),
             ),
             Node(
                 package="moondream_run",

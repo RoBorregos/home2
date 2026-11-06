@@ -12,7 +12,6 @@ import queue
 import time
 import rclpy
 from builtin_interfaces.msg import Time
-from utils.trt_utils import load_yolo_trt
 
 from frida_interfaces.srv import (
     ChairsToRemove,
@@ -38,6 +37,7 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
 )
 from ament_index_python.packages import get_package_share_directory
+from models.pose_detection import PoseDetection
 from utils.area_check import filter_detections_in_house
 from utils.debug_pub import DebugImagePublisher
 from vision_runtime import VisionRuntime, spin
@@ -52,10 +52,6 @@ KP_CONF = 0.3
 # and treat wrists within this depth difference as a tie (pick the higher one).
 HAND_MIN_DEPTH = 0.15
 HAND_DEPTH_TIE_M = 0.15
-
-
-def _load_yolo_pose(model_name="yolo11m-pose.pt"):
-    return load_yolo_trt(model_name, task="pose")
 
 
 PERCENTAGE = 0.3
@@ -116,8 +112,9 @@ class HRICCommands(VisionRuntime):
             2.0, self._poll_areas, callback_group=self.callback_group
         )
 
-        # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
-        self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
+        # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy.
+        # yolo11m-pose runs in ObjectDetect2D; this is the DetectPose client.
+        self.pose_detection = PoseDetection(self, self.callback_group)
 
         self.detect_hand_service = self.create_service(
             DetectHand,
@@ -156,20 +153,15 @@ class HRICCommands(VisionRuntime):
         )
 
     def run_hand_inference(self):
-        """Detect hand position using YOLO pose wrist keypoints (TensorRT accelerated)."""
+        """Detect hand position using YOLO pose wrist keypoints (shared DetectPose service)."""
         if self.image is None:
             return
 
         frame = self.image
         h, w = frame.shape[:2]
-        results = self.pose_model(frame, verbose=False)
+        people = self.pose_detection.detect_people(frame, conf=0.0)
 
-        if (
-            not results
-            or results[0].keypoints is None
-            or results[0].keypoints.xy is None
-            or len(results[0].keypoints.xy) == 0
-        ):
+        if not people:
             self.get_logger().info("No hand detected")
             return None
 
@@ -179,19 +171,12 @@ class HRICCommands(VisionRuntime):
 
         # The guest interacting with the robot is the LARGEST person in frame,
         # not whichever detection the network happens to list first.
-        person_idx = 0
-        boxes = results[0].boxes
-        if boxes is not None and len(boxes) > 1:
-            xyxy = boxes.xyxy.cpu().numpy()
-            areas = (xyxy[:, 2] - xyxy[:, 0]) * (xyxy[:, 3] - xyxy[:, 1])
-            person_idx = int(areas.argmax())
-
-        points = results[0].keypoints.xy[person_idx].cpu().numpy()  # pixel coords
-        conf = (
-            results[0].keypoints.conf[person_idx].cpu().numpy()
-            if results[0].keypoints.conf is not None
-            else np.ones(17, dtype=np.float32)
+        person = max(
+            people,
+            key=lambda p: (p["bbox"][2] - p["bbox"][0]) * (p["bbox"][3] - p["bbox"][1]),
         )
+        points = person["keypoints_xy"]  # pixel coords
+        conf = person["kp_conf"]
 
         # Candidate wrists: confident enough and inside the image.
         candidates = []

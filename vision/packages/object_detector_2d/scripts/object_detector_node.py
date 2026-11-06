@@ -1,11 +1,18 @@
 #! /usr/bin/env python3
-"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo services."""
+"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo services.
+
+With POSE_SERVICE=true it also owns the single yolo11m-pose instance and serves
+it through DetectPose, so hric/gpsr/tracker/customer/pointing do not each load
+their own copy (vision_general models/pose_detection.py is the client).
+"""
 
 import copy
 import json
 import os
+import time
 
 import cv2 as cv
+import numpy as np
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_constants import (
@@ -15,12 +22,23 @@ from frida_constants.vision_constants import (
     DETECTIONS_IMAGE_TOPIC,
     DETECTIONS_POSES_TOPIC,
     DETECTIONS_TOPIC,
+    POSE_DETECTION_SERVICE,
     TRASH_SERVICE_CATEGORY,
     YOLO_DETECTION_TOPIC,
     YOLO_DETECTIONS_PUBLISHER_TOPIC,
 )
-from frida_interfaces.msg import Detection, ObjectDetectionArray
-from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
+from frida_interfaces.msg import (
+    Detection,
+    ObjectDetectionArray,
+    PersonPose,
+    PoseResult,
+)
+from frida_interfaces.srv import (
+    DetectionHandler,
+    DetectPose,
+    SetTrashCategory,
+    YoloDetect,
+)
 from sensor_msgs.msg import Image
 from detectors.registry import ModelRegistry
 from detectors.utils import iou_deduplicate
@@ -69,6 +87,21 @@ class ObjectDetectorNode(BaseDetectorNode):
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV, self.detection_handler
         )
         self.create_service(YoloDetect, YOLO_DETECTION_TOPIC, self.yolo_detect)
+
+        # Shared pose model. Served from the executor thread only (the
+        # detection loop runs on run_thread with other models), so requests
+        # are handled one at a time and never touch the engine concurrently.
+        self.pose_model = None
+        if self.declare_param("POSE_SERVICE", False).bool_value:
+            start = time.time()
+            self.pose_model = ModelRegistry.get("yolo_pose")
+            # Warm-up so the first request does not pay the engine start-up.
+            self.pose_model.estimate(np.zeros((480, 640, 3), dtype=np.uint8))
+            self.create_service(DetectPose, POSE_DETECTION_SERVICE, self.detect_pose)
+            self.get_logger().info(
+                f"Pose service ready on {POSE_DETECTION_SERVICE} "
+                f"({time.time() - start:.1f}s)"
+            )
 
     def box_color(self, det):
         return (0, 0, 255) if det.label_text.startswith("trash/") else (0, 255, 0)
@@ -147,6 +180,62 @@ class ObjectDetectorNode(BaseDetectorNode):
         response.success = True
         response.detections = ros_dets
         return response
+
+    def detect_pose(self, request, response):
+        try:
+            frame = self.bridge.imgmsg_to_cv2(request.image, "bgr8")
+        except Exception as e:
+            self.get_logger().error(f"Invalid image in DetectPose request: {e}")
+            response.success = False
+            return response
+
+        if len(request.rois) % 4 != 0:
+            self.get_logger().error("DetectPose rois must be groups of 4 values")
+            response.success = False
+            return response
+
+        h, w = frame.shape[:2]
+        rois = [tuple(request.rois[i : i + 4]) for i in range(0, len(request.rois), 4)]
+        for x1, y1, x2, y2 in rois or [(0, 0, w, h)]:
+            x1, x2 = max(0, x1), min(w, x2)
+            y1, y2 = max(0, y1), min(h, y2)
+            result = PoseResult()
+            if x2 > x1 and y2 > y1:
+                pose = self.pose_model.estimate(frame[y1:y2, x1:x2], request.conf)
+                result.people = self._pose_to_msgs(pose)
+            response.results.append(result)
+
+        response.success = True
+        return response
+
+    @staticmethod
+    def _pose_to_msgs(result) -> list:
+        if result is None:
+            return []
+        boxes, kps = result.boxes, result.keypoints
+        if boxes is None or kps is None or kps.xy is None:
+            return []
+
+        xyxy = boxes.xyxy.cpu().numpy()
+        box_conf = boxes.conf.cpu().numpy()
+        xy = kps.xy.cpu().numpy()
+        xyn = kps.xyn.cpu().numpy()
+        kp_conf = (
+            kps.conf.cpu().numpy()
+            if kps.conf is not None
+            else np.ones(xy.shape[:2], dtype=np.float32)
+        )
+
+        people = []
+        for i in range(len(xyxy)):
+            msg = PersonPose()
+            msg.x1, msg.y1, msg.x2, msg.y2 = (int(v) for v in xyxy[i])
+            msg.confidence = float(box_conf[i])
+            msg.keypoints_xy = xy[i].astype(np.float32).flatten().tolist()
+            msg.keypoints_xyn = xyn[i].astype(np.float32).flatten().tolist()
+            msg.keypoints_conf = kp_conf[i].astype(np.float32).tolist()
+            people.append(msg)
+        return people
 
     # ------------------------------------------------------------------ inference
 

@@ -17,7 +17,7 @@ def _is_tensorrt_available() -> bool:
         return False
 
 
-def _load_yolo_trt(model_path: str):
+def _load_yolo_trt(model_path: str, task: str = "detect"):
     """Load YOLO with automatic TensorRT export for Orin AGX."""
 
     cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
@@ -33,7 +33,14 @@ def _load_yolo_trt(model_path: str):
 
     if os.path.exists(engine_path):
         print(f"[TRT] Loading cached engine: {engine_path}")
-        return YOLO(engine_path, task="detect")
+        return YOLO(engine_path, task=task)
+
+    # fetch_models.py keeps standard weights in the cache dir; use them there
+    # when they are not beside the registry.
+    if cache_dir and not os.path.exists(model_path):
+        cached_pt = os.path.join(cache_dir, os.path.basename(model_path))
+        if os.path.exists(cached_pt):
+            model_path = cached_pt
 
     model = YOLO(model_path)
 
@@ -48,7 +55,7 @@ def _load_yolo_trt(model_path: str):
         if local_engine != engine_path and os.path.exists(local_engine):
             shutil.move(local_engine, engine_path)
         print(f"[TRT] Engine saved: {engine_path}")
-        return YOLO(engine_path, task="detect")
+        return YOLO(engine_path, task=task)
     except Exception as e:
         print(f"[TRT] Export failed ({e}), using PyTorch model")
         return model

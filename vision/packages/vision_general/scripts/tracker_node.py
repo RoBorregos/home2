@@ -76,6 +76,7 @@ from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
+from models.pose_detection import PoseDetection
 from models.tracker import TrackerModel
 from std_msgs.msg import Bool, Int16
 
@@ -253,11 +254,12 @@ class SingleTracker(Node):
         pbar = tqdm.tqdm(total=2, desc="Loading models")
 
         # Detection/tracking/ReID all live in the model class; YOLO (TensorRT on
-        # the Orin AGX) and pose load now, the heavy SWIN ReID on demand.
-        self.model = TrackerModel()
-        self.model.load()
+        # the Orin AGX) loads now, the heavy SWIN ReID on demand. Pose keypoints
+        # come from the shared model in ObjectDetect2D through the DetectPose client.
+        self.pose_detection = PoseDetection(self, self.callback_group)
         pbar.update(1)
-        self.pose_detection = self.model.pose
+        self.model = TrackerModel()
+        self.model.load(self.pose_detection)
         pbar.update(1)
 
         # Stage 0: per-frame tracking is ultralytics ByteTrack (TrackerModel.track)

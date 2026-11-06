@@ -10,7 +10,7 @@ from frida_interfaces.srv import DetectPointingObject, SetPointingObjectClasses
 from frida_interfaces.msg import ObjectDetectionArray
 import cv2
 import numpy as np
-from utils.trt_utils import load_yolo_trt
+from models.pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     ZERO_SHOT_DETECTIONS_TOPIC,
@@ -40,18 +40,16 @@ LEFT_WRIST = 9  # closest to mediapipe's LEFT_HAND (index 19)
 KP_CONF = 0.3
 
 
-def load_yolo_pose(model_name="yolo11m-pose.pt"):
-    """Load YOLO pose model with automatic TensorRT export for Orin AGX."""
-    return load_yolo_trt(model_name, task="pose")
-
-
 class DetectPointingObjectServer(Node):
     def __init__(self):
         super().__init__("detect_pointing_object_server")
 
         self.get_logger().info("Initializing Detect Pointing Object Server")
 
-        self.pose_model = load_yolo_pose("yolo11m-pose.pt")
+        # yolo11m-pose runs in ObjectDetect2D; this is the DetectPose client. It is
+        # only called from run_inference (a plain thread, not an executor
+        # callback), so the single-threaded rclpy.spin can deliver the response.
+        self.pose_detection = PoseDetection(self)
 
         self.VISUALIZE = True
 
@@ -174,23 +172,11 @@ class DetectPointingObjectServer(Node):
         visualize_img = self.bgr_img.copy()
         img = self.bgr_img
 
-        # Run YOLO pose instead of mediapipe
-        results = self.pose_model(img, verbose=False)
-        has_person = (
-            results
-            and results[0].keypoints is not None
-            and results[0].keypoints.xyn is not None
-            and len(results[0].keypoints.xyn) > 0
-        )
+        # YOLO pose (shared, via DetectPose) instead of mediapipe
+        points, conf = self.pose_detection._get_keypoints(img)  # normalized (0-1)
+        has_person = points is not None
 
         if has_person:
-            points = results[0].keypoints.xyn[0].cpu().numpy()  # normalized (0-1)
-            conf = (
-                results[0].keypoints.conf[0].cpu().numpy()
-                if results[0].keypoints.conf is not None
-                else np.ones(17, dtype=np.float32)
-            )
-
             # Draw keypoints
             if self.VISUALIZE:
                 for idx in [RIGHT_SHOULDER, RIGHT_WRIST, LEFT_SHOULDER, LEFT_WRIST]:
