@@ -49,10 +49,6 @@ The contract with the rest of the robot is exactly one action:
 A `place` is only meaningful after a `pick` or `pour` **in the same process**: the node remembers the
 last pick outcome and uses its measured object height to decide the drop height.
 
-Besides the action, `task_manager` uses a few direct services: move joints / fixed-distance moves,
-the gripper, and the face / person follow toggles (§6, §7). All of them are typed with
-`frida_interfaces` or `std_srvs`, never with xArm types.
-
 ---
 
 ## 2. The packages
@@ -65,10 +61,10 @@ Only what the pick-and-place path uses.
 |---|---|---|
 | **`pick_and_place`** | `manipulation_core`, `keyboard_input`, `fix_position_to_plane` | The pipelines. Decides *what* to do |
 | **`frida_motion_planning`** | `motion_planning_server` | The only node that commands the arm. Decides *how* to move |
-| **`perception_3d`** | `test_only_orchestrator`, `pick_primitives`, `plane_service`, `flat_grasp_estimator`, `downsample_pc` | Segments objects and surfaces from the point cloud |
+| **`perception_3d`** | `test_only_orchestrator`, `pick_primitives`, `plane_service`, `grasp_generator`, `downsample_pc` | Segments objects and surfaces from the point cloud; `grasp_generator` fits flat objects and solids and ranks their grasps |
 | **`place`** | `heatmapPlace_Server` | Scores a surface and returns the best free spot |
 | **`arm_pkg`** | `gpd_service` | Wraps the GPD library; also owns the MoveIt launch files |
-| **`manipulation_general`** | `manipulation_safeguard`, `follow_face_node`, `follow_person_controller` | Task launch files (`ppc`, `gpsr`, …); watches the xArm state and clears errors / re-enables motion; face and person following |
+| **`manipulation_general`** | `manipulation_safeguard` | Task launch files (`ppc`, `gpsr`, …); watches the xArm state and clears errors / re-enables motion |
 | **`frida_pymoveit2`** | *(library)* | xArm6 joint names and `JOINT_POSITION_LIMITS` |
 | **`xarm_utils`** | *(library)* | Shelf level geometry |
 | **`vamp_moveit_plugin`** | *(MoveIt plugin)* | VAMP planner, with OMPL fallback |
@@ -103,7 +99,7 @@ flowchart TB
     end
     subgraph L2["② Perceive"]
         orch["test_only_orchestrator<br/><i>perception_3d</i>"]
-        flat["flat_grasp_estimator<br/><i>perception_3d</i>"]
+        gen["grasp_generator<br/><i>perception_3d</i>"]
         gpd["gpd_service<br/><i>arm_pkg</i>"]
         heat["heatmapPlace_Server<br/><i>place</i>"]
     end
@@ -116,7 +112,7 @@ flowchart TB
     end
 
     core -->|"pick_perception_service<br/>place_perception_service"| orch
-    core -->|"estimate_flat_grasp"| flat
+    core -->|"generate_grasps"| gen
     core -->|"detect_grasps"| gpd
     core -->|"heatmap_place_service"| heat
     core -->|"move_to_pose · move_joints<br/>collision objects · gripper"| mps
@@ -129,7 +125,7 @@ flowchart TB
     classDef l3 fill:#6a4c93,stroke:#c8b6ff,color:#fff
     classDef l4 fill:#343a40,stroke:#adb5bd,color:#fff
     class core l1
-    class orch,flat,gpd,heat l2
+    class orch,gen,gpd,heat l2
     class mps l3
     class mg,ctl l4
 ```
@@ -146,7 +142,7 @@ different paths**, and knowing which one is active explains most failures:
 | | Path A — MoveIt | Path B — cartesian velocity |
 |---|---|---|
 | xArm mode | **1** | **5** |
-| Used by | every `move_to_pose` / `move_joints` | force-guarded and fixed-distance descents |
+| Used by | every `move_to_pose` / `move_joints` | force-guarded and fixed-distance descents, the geometric approach |
 | Collision checking | yes, full planning scene | **none** |
 | Stops on e-stop | via the controller | only because the pipeline polls it |
 
@@ -173,7 +169,7 @@ ros2 launch manipulation_general ppc.launch.py
     ├── motion_planning_server      (frida_motion_planning)
     ├── manipulation_safeguard      (manipulation_general)
     ├── fix_position_to_plane       (pick_and_place)
-    └── flat_grasp_estimator        (perception_3d)
+    └── grasp_generator             (perception_3d)
 ```
 
 > **Naming trap:** `test_only_orchestrator` is **not** test-only. It serves
@@ -189,6 +185,7 @@ sequenceDiagram
     participant TM as task_manager
     participant C as manipulation_core
     participant P as perception_3d
+    participant N as grasp_generator
     participant G as gpd_service
     participant M as motion_planning_server
 
@@ -196,10 +193,10 @@ sequenceDiagram
     C->>M: move_joints("flat_stare")
     Note over C: strategy resolved from the object name
 
-    alt Flat object (fork, plate, banana)
-        C->>P: estimate_flat_grasp
-        P-->>C: top-down pose
-    else Anything else
+    alt Flat, rim, peak or any solid (fork, basket, coke)
+        C->>N: generate_grasps
+        N-->>C: ranked grasp poses (+ fitted shape for a solid)
+    else GPD (no name, shelf, pour, or the geometric fallback)
         C->>P: pick_perception_service
         P-->>C: object cluster
         C->>G: detect_grasps(cluster)
@@ -208,7 +205,7 @@ sequenceDiagram
 
     loop each candidate until one works
         C->>M: move_to_pose(pre-grasp)
-        C->>M: descend (guarded or fixed)
+        C->>M: approach (guarded, fixed or cartesian)
         C->>M: close_gripper
     end
 
@@ -216,7 +213,7 @@ sequenceDiagram
     C-->>TM: success
 ```
 
-### The five pick strategies
+### The six pick strategies
 
 Chosen by object name in `pipelines/classification.py`; tuned in `config/pick_profiles.yaml`.
 
@@ -226,7 +223,8 @@ Chosen by object name in `pipelines/classification.py`; tuned in `config/pick_pr
 | `rim` | baskets | Descend a fixed distance, straddling the rim |
 | `bowl` | bowls | Same, shorter descent |
 | `peak` | clothes piles | Same, onto the highest point |
-| `gpd` | **everything else** | Plan straight to a GPD grasp, no descent |
+| `geometric` | **any other name** (cans, boxes, fruit) | Back off along the generator's approach axis, drive straight in, close; falls back to `gpd` |
+| `gpd` | no name, shelf and pour picks, the fallback | Plan straight to a GPD grasp, no descent |
 
 Retuning any number is a YAML edit. Adding a behaviour that reuses an existing motion is a YAML entry
 plus two lines. Only a genuinely new motion needs a new class.
@@ -238,11 +236,12 @@ plus two lines. Only a genuinely new motion needs a new class.
 | Name | Provider | Used for |
 |---|---|---|
 | `/manipulation/manipulation_action_server` | `manipulation_core` | **The** entry point |
+| `/manipulation/go_to_hand_action_server`, `/manipulation/fixed_distance_move`, `/follow_face`, `/follow_person` | `manipulation_core` | Hand-over, vertical move, follow toggles |
 | `/manipulation/move_to_pose_action_server` | `motion_planning_server` | Any cartesian goal |
 | `/manipulation/move_joints_action_server` | `motion_planning_server` | Named poses and joint goals |
 | `/manipulation/pick_perception_service` | `test_only_orchestrator` | Object cluster |
 | `/manipulation/place_perception_service` | `test_only_orchestrator` | Place surface cloud |
-| `/manipulation/estimate_flat_grasp` | `flat_grasp_estimator` | Top-down pose for flat objects |
+| `/manipulation/generate_grasps` | `grasp_generator` | Ranked grasp poses, plus the fitted shape of a solid |
 | `/manipulation/detect_grasps` | `gpd_service` | GPD grasp candidates |
 | `/manipulation/heatmap_place_service` | `heatmapPlace_Server` | Best free spot on a surface |
 | `/manipulation/estop` | *(topic)* | Aborts any motion in progress |
@@ -254,8 +253,8 @@ hardcode them.
 
 ## 7. Face / person following
 
-`follow_face_node` (`/follow_face`) and `follow_person_controller` (`/follow_person`) live in `manipulation_general`; they were moved here from `task_manager`.
-While either one is active, the xArm is in velocity mode (4), so turn it off before sending MoveIt goals.
+`manipulation_core` serves `/follow_face` and `/follow_person` (logic in `pick_and_place/pipelines/follow.py`), so it must be running.
+While either one is active, the xArm is in velocity mode (4); any manipulation goal turns it off first and it is not resumed.
 Face following also needs `face_recognition` enabled (it starts paused). If the arm doesn't move, check `ros2 topic hz /vision/follow_face`.
 
 ---
@@ -270,8 +269,10 @@ Face following also needs `face_recognition` enabled (it starts paused). If the 
 | Change *how* the arm moves | `pick_and_place/robot/arm.py` |
 | Change where a place lands | `place/scripts/heatmapPlace_Server.py` |
 | Change object/surface segmentation | `perception_3d/` |
+| Change how flat objects and solids are grasped (geometry) | `perception_3d/perception_3d/geometric_grasps.py` |
+| Change the gripper dimensions | `frida_constants/manipulation_constants.py` |
 | Add a named arm pose | `frida_constants/xarm_configurations.py` |
-| Tune face / person following | `manipulation_general/manipulation_general/follow_*.py`; face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |
+| Tune face / person following | `pick_and_place/pipelines/follow.py` (person gains: `follow_person.*` parameters); face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |
 | Add a message, service or action | `frida_interfaces/manipulation/` |
 
 ---

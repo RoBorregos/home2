@@ -20,6 +20,7 @@ PICK_STRATEGY_FLAT = "flat"
 PICK_STRATEGY_RIM = "rim"
 PICK_STRATEGY_BOWL = "bowl"
 PICK_STRATEGY_PEAK = "peak"
+PICK_STRATEGY_GEOMETRIC = "geometric"
 
 PICK_STRATEGY_KEYS = (
     PICK_STRATEGY_FLAT,
@@ -27,6 +28,7 @@ PICK_STRATEGY_KEYS = (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_GPD,
+    PICK_STRATEGY_GEOMETRIC,
 )
 
 # Order matters: BOWL_NAME is a member of RIM_NAMES, so bowl must be tested
@@ -40,16 +42,12 @@ _STRATEGY_BY_OBJECT_NAME = (
 )
 
 
-def resolve_pick_strategy(object_name: str) -> str:
-    """Map an object name to the pick strategy that should handle it.
-
-    Unknown objects fall back to the GPD strategy, which is the historical
-    default.
-    """
+def resolve_pick_strategy(object_name: str, force_gpd: bool = False) -> str:
+    """Name -> strategy; unlisted names are solids, sent to GPD with ``force_gpd``."""
     if not object_name:
         return PICK_STRATEGY_GPD
     key = object_name.lower()
     for strategy, names in _STRATEGY_BY_OBJECT_NAME:
         if key in names:
             return strategy
-    return PICK_STRATEGY_GPD
+    return PICK_STRATEGY_GPD if force_gpd else PICK_STRATEGY_GEOMETRIC

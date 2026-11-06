@@ -1,0 +1,5 @@
+string[] texts
+---
+float32[] embeddings
+int32 dim
+bool success

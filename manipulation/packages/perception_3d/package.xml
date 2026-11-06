@@ -22,4 +22,5 @@
   <depend>pcl_ros</depend>
   <depend>std_msgs</depend>
   <depend>tf_transformations</depend>
+  <exec_depend>visualization_msgs</exec_depend>
 </package>

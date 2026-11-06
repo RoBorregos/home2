@@ -66,6 +66,12 @@ Visualization Manager:
       Keep: 1
       Covariance:
         Value: false
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Patrol viewpoints
+      Enabled: true
+      Topic:
+        Value: /navigation/patrol/markers
+        Durability Policy: Transient Local
   Global Options:
     Fixed Frame: map
     Frame Rate: 20

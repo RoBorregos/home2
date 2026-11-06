@@ -52,10 +52,7 @@ done
 echo "" > .env
 
 # CycloneDDS interface from host
-if [ -f /etc/cyclonedds.env ]; then
-    source /etc/cyclonedds.env
-fi
-add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+add_or_update_variable .env "CYCLONE_INTERFACE" "$(resolve_cyclone_interface)"
 # Default SHM on for Jetson (l4t), off otherwise
 if [ -z "${CYCLONE_SHM:-}" ]; then
     if [ -f /etc/nv_tegra_release ]; then
@@ -140,6 +137,11 @@ case $TASK in
         PACKAGES="vision_general object_detector_2d moondream_run"
         RUN="ros2 launch vision_general gpsr_launch.py"
         PROFILES=("vision" "moondream")
+        ;;
+    "--finals")
+        PACKAGES="vision_general object_detector_2d"
+        RUN="ros2 launch vision_general finals_launch.py"
+        PROFILES=("vision")
         ;;
     "--moondream")
         PROFILES=("moondream")
