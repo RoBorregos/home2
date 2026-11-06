@@ -140,6 +140,20 @@ parse_common_flags() {
   done
 }
 
+# Print the CycloneDDS interface: env over /etc/cyclonedds.env, lo if it has no IPv4 address.
+resolve_cyclone_interface() {
+  local iface="${CYCLONE_INTERFACE-}"
+  if [ -z "${CYCLONE_INTERFACE+x}" ] && [ -f /etc/cyclonedds.env ]; then
+    iface="$(source /etc/cyclonedds.env; echo "${CYCLONE_INTERFACE-}")"
+  fi
+  if [ -n "$iface" ] && [ "$iface" != "lo" ] && command -v ip >/dev/null \
+     && [ -z "$(ip -4 -o addr show dev "$iface" 2>/dev/null)" ]; then
+    echo "[CycloneDDS] WARNING: $iface has no IPv4 address (router disconnected?). Using lo: only this machine will see ROS topics." >&2
+    iface="lo"
+  fi
+  echo "$iface"
+}
+
 # Write .env variables shared by all areas.
 # First arg: area name. Second arg: env file path (default: .env).
 setup_common_env() {
@@ -148,11 +162,7 @@ setup_common_env() {
 
   echo "" > "$env_file"
 
-  if [ -f /etc/cyclonedds.env ]; then
-    source /etc/cyclonedds.env
-  fi
-
-  add_or_update_variable "$env_file" "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+  add_or_update_variable "$env_file" "CYCLONE_INTERFACE" "$(resolve_cyclone_interface)"
   add_or_update_variable "$env_file" "LOCAL_USER_ID"     "$(id -u)"
   add_or_update_variable "$env_file" "LOCAL_GROUP_ID"    "$(id -g)"
   add_or_update_variable "$env_file" "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"

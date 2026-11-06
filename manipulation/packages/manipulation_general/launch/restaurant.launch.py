@@ -2,7 +2,6 @@
 
 
 from launch import LaunchDescription
-from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
@@ -33,13 +32,6 @@ def generate_launch_description():
                         ]
                     )
                 ),
-            ),
-            Node(
-                package="manipulation_general",
-                executable="follow_face_node.py",
-                name="follow_face_node",
-                output="screen",
-                emulate_tty=True,
             ),
         ]
     )
