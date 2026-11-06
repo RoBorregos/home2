@@ -293,7 +293,7 @@ You can activate docking in three ways:
   **Approach Table**. Tick **Target (base_link)** (x forward, y left, z up) to
   stand in front of an object, and **Check reach** to verify it with the arm's
   IK. **Preview Dock** plans without moving and draws the candidate poses on the
-  map (green = best, red = worst, grey = blocked, ring = chosen) plus the planned
+  map (green = best, red = worst, grey = blocked, blue ring = chosen) plus the planned
   path; **Undock** backs off; **Clear** hides the overlay. After each dock the
   panel shows `reach`, `lateral_error` and what blocked it.
 - **From a service call** (see below), or `nav_tasks.dock_table(surface_type=...,

@@ -41,7 +41,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QGroupBox, QSplitter, QToolBar,
     QStatusBar, QCheckBox, QComboBox, QFileDialog, QMessageBox,
-    QDoubleSpinBox,
+    QDoubleSpinBox, QScrollArea, QFrame,
 )
 from PyQt5.QtCore import Qt, QPointF, QTimer, QSize, pyqtSignal, QObject
 from PyQt5.QtGui import (
@@ -988,7 +988,7 @@ class NavCanvas(QWidget):
                 poly.append(QPointF(px, py))
             painter.drawPolyline(poly)
         if self.dock_candidates:
-            r = max(1.5, 0.03 / self.map_resolution)
+            r = max(0.5, 0.0175 / self.map_resolution)  # marker diameter 3.5 cm
             best = max((c for c in self.dock_candidates if c[5]),
                        key=lambda c: c[3] - c[2], default=None)
             painter.setPen(Qt.NoPen)
@@ -999,9 +999,9 @@ class NavCanvas(QWidget):
                 painter.drawEllipse(QPointF(px, py), r, r)
             if best is not None:
                 px, py = self.map_to_pixel(best[0], best[1])
-                painter.setPen(QPen(QColor(255, 255, 255), 2.0 / self.zoom))
+                painter.setPen(QPen(QColor(30, 60, 255), 2.0 / self.zoom))
                 painter.setBrush(Qt.NoBrush)
-                painter.drawEllipse(QPointF(px, py), r * 2.5, r * 2.5)
+                painter.drawEllipse(QPointF(px, py), r * 3.0, r * 3.0)
 
         # Goal
         if self.current_goal:
@@ -1326,7 +1326,16 @@ class NavUI(QMainWindow):
         self.lbl_connection.setStyleSheet("color: #f39c12; font-size: 11px; padding: 4px;")
         panel_layout.addWidget(self.lbl_connection)
 
-        splitter.addWidget(panel)
+        # The panel has grown taller than a small screen: scroll instead of
+        # squeezing the widgets.
+        panel_scroll = QScrollArea()
+        panel_scroll.setWidget(panel)
+        panel_scroll.setWidgetResizable(True)
+        panel_scroll.setFrameShape(QFrame.NoFrame)
+        panel_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        panel_scroll.setMaximumWidth(280)
+        panel_scroll.setMinimumWidth(220)
+        splitter.addWidget(panel_scroll)
         splitter.setSizes([500, 240])
 
         # Status bar
