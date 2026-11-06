@@ -301,6 +301,10 @@ there. The node has no `cmd_vel` publisher and no action client — it cannot mo
 Modes: `full` (every surface), `quick` (one per room), `revisit` (stalest first — what the robot has
 not looked at in a while, for Finals).
 
+A surface counts as scanned only when the robot **stops** at it: within `scan_radius` of the pose,
+facing it, without leaving a `scan_still_radius` circle for `scan_dwell_fraction` of its dwell. Driving
+past does not count, so `revisit` never skips a surface vision did not get to look at.
+
 Surface type, arm pose and dwell are inferred from the sublocation name (`table` → surface,
 `shelf`/`cabinet` → shelf, `refrigerator`/`sink` → appliance, `trash`/`basket` → floor,
 `bed`/`sofa` → low surface), and the sublocation pose is used as the viewpoint.
@@ -311,6 +315,10 @@ Surface type, arm pose and dwell are inferred from the sublocation name (`table`
 | --- | --- | --- |
 | `/navigation/patrol/markers` | `MarkerArray` | Viewpoints in RViz, coloured by how recently each was scanned |
 | `/navigation/patrol/staleness` | `String` (JSON) | Age of the last scan per surface |
+
+### Unit tests
+
+Pure Python, no ROS: `python3 -m pytest navigation/packages/nav_main/test/test_semantic_nav.py`
 
 ## Testing
 
