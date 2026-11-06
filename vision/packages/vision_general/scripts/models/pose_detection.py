@@ -146,8 +146,7 @@ class PoseDetection:
         return self.yolo_pose(frame, verbose=False)
 
     def gesture_side(self, image, gesture: str):
-        """Return the person's own side ("left"/"right") used for a "raising" or
-        "pointing" gesture, from keypoints. Returns None if the arms are not visible."""
+        """Return the person's own side used for a raising or pointing gesture, or None."""
         points, conf = self._get_keypoints(image)
         if points is None:
             return None
