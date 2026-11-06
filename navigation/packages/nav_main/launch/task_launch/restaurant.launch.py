@@ -41,6 +41,12 @@ def launch_function(context, *args, **kwargs):
             'rtab_localization_config': rtab_params,
             'default_base': default_base,
             'nav_type': nav_type,
+            # Unmapped-area navigation (Restaurant only; defaults elsewhere keep
+            # the historical behavior).
+            'approach_allow_unknown': True,
+            'nav_goal_max_attempts': 2,
+            'nav_goal_deadline_s': 75.0,  # below NAV_GOAL_TIMEOUT (90 s) in nav_tasks
+            'clear_global_on_goal': False,  # keep ZED-marked tabletops (voxel_decay)
         }],
     )
 

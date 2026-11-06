@@ -14,6 +14,7 @@ import math
 import time
 
 import rclpy
+from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
 
 from frida_constants.vision_constants import (
@@ -44,6 +45,7 @@ TABLE_STANDOFF = 0.6  # m from the table point for order taking / delivery
 DOCK_TABLE_OFFSET = 0.32  # m front offset for the perpendicular dock_table approach
 CUSTOMER_CLOSE_DISTANCE = 3.5  # m — re-approach if the caller is farther than this
 MAX_APPROACH_RETRIES = 3
+CUSTOMER_HOP_DISTANCE = 2.5  # m — max partial move toward the caller after a nav failure
 MAX_SCAN_ATTEMPTS = 3  # table scans before falling back to the caller point
 
 # ── Camera aiming ──
@@ -274,6 +276,27 @@ class RestaurantTaskManager(Node):
             yaw_offset_deg=float(self.get_parameter("bar_return_yaw_deg").value)
         )
 
+    def _hop_toward_customer(self):
+        """Move at most CUSTOMER_HOP_DISTANCE toward the caller (map frame),
+        ending near the caller's side of the hop point. Used to make partial
+        progress when the full approach fails (e.g. unmapped space)."""
+        status, cur = self.subtask_manager.nav.get_current_pose()
+        if status != Status.EXECUTION_SUCCESS or cur is None:
+            return Status.EXECUTION_ERROR
+        caller = self.target_person_point.point
+        dx = caller.x - cur.pose.position.x
+        dy = caller.y - cur.pose.position.y
+        dist = math.hypot(dx, dy)
+        hop = min(CUSTOMER_HOP_DISTANCE, dist - CUSTOMER_STANDOFF)
+        if hop <= 0.0:
+            return Status.EXECUTION_ERROR
+        hop_point = PointStamped()
+        hop_point.header.frame_id = "map"
+        hop_point.point.x = cur.pose.position.x + dx / dist * hop
+        hop_point.point.y = cur.pose.position.y + dy / dist * hop
+        status, _ = self.subtask_manager.nav.approach_point(hop_point, standoff=0.1)
+        return status
+
     def _dock_to_table(self):
         """Perpendicular-dock to the table/bar in front: tuck the arm first
         (nav_pose keeps it inside the footprint at the 0.32 m offset)."""
@@ -425,6 +448,16 @@ class RestaurantTaskManager(Node):
                 self.subtask_manager.manipulation.pan_to(0.0)
                 self.approach_attempts = 0
                 self.current_state = RestaurantTaskManager.TaskStates.SCAN_TABLES
+            elif self.approach_attempts < MAX_APPROACH_RETRIES:
+                # Keep the caller: make partial progress toward them and retry
+                # instead of dropping them on a single nav failure.
+                self.approach_attempts += 1
+                Logger.warn(
+                    self,
+                    "Navigation to customer failed. Hopping closer "
+                    f"({self.approach_attempts}/{MAX_APPROACH_RETRIES}) and retrying...",
+                )
+                self._hop_toward_customer()
             else:
                 Logger.warn(self, "Navigation to customer failed. Returning to WAIT_FOR_CALL.")
                 self.approach_attempts = 0

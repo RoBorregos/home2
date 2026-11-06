@@ -163,6 +163,13 @@ class Nav_Central(Node):
         self.areas_map_name = self.declare_parameter('areas_map_name', 'default_map').value
         self.areas_data = None
 
+        # Opt-in navigation tuning (defaults keep the historical behavior).
+        # 0 = unlimited attempts / no deadline; False/True as named.
+        self.nav_goal_max_attempts = self.declare_parameter('nav_goal_max_attempts', 0).value
+        self.nav_goal_deadline_s = self.declare_parameter('nav_goal_deadline_s', 0.0).value
+        self.clear_global_on_goal = self.declare_parameter('clear_global_on_goal', True).value
+        self.approach_allow_unknown = self.declare_parameter('approach_allow_unknown', False).value
+
         self.lidar_group = ReentrantCallbackGroup()
         self.service_group = MutuallyExclusiveCallbackGroup()
         self.rtab_service_group = ReentrantCallbackGroup()
@@ -718,7 +725,7 @@ class Nav_Central(Node):
         feedback = feedback_msg.feedback
         self.nav_logger("info", f"Goal_handler -> feedback data = {feedback.distance_remaining}")
 
-    def send_nav_goal(self, pose, behaivor_tree = None, max_attempts = None):
+    def send_nav_goal(self, pose, behaivor_tree = None, max_attempts = None, deadline_s = None):
         """Send a NavigateToPose goal and keep retrying until Nav2 reports the
         goal SUCCEEDED.
 
@@ -726,16 +733,25 @@ class Nav_Central(Node):
         STATUS_SUCCEEDED (ABORTED/CANCELED — e.g. the controller momentarily
         loses TF and the BT exhausts its recoveries), is retried after a short
         delay instead of being reported as success. max_attempts bounds the
-        retries; None (the default) means retry until the goal is reached."""
+        retries; None (the default) means retry until the goal is reached.
+        deadline_s bounds the total time: once exceeded, the active goal is
+        cancelled and the call fails (None = no deadline)."""
 
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = pose
         if behaivor_tree is not None:
             goal_msg.behaivor_tree = behaivor_tree
 
+        end_time = t.monotonic() + deadline_s if deadline_s else None
+
+        def expired():
+            return end_time is not None and t.monotonic() >= end_time
+
         attempt = 0
         while True:
             attempt += 1
+            if expired():
+                return (False, "Goal deadline exceeded")
 
             # Action server may not be back yet right after a lifecycle resume.
             if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
@@ -759,6 +775,10 @@ class Nav_Central(Node):
 
             result_future = goal_handle.get_result_async()
             while not result_future.done():
+                if expired():
+                    self.nav_logger("warn", "Goal_Handler -> Deadline exceeded, cancelling goal")
+                    goal_handle.cancel_goal_async()
+                    return (False, "Goal deadline exceeded")
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
             result = result_future.result()
 
@@ -820,12 +840,14 @@ class Nav_Central(Node):
         return response
 
     def _clear_costmaps(self, settle_s=0.3):
-        """Clear local+global costmaps so the planner/MPPI start from a clean slate
-        (removes stale obstacle marks left from the parked/docked pose that can box-in
+        """Clear local+global costmaps (global only if clear_global_on_goal) so the
+        planner/MPPI start from a clean slate (removes stale obstacle marks left from the parked/docked pose that can box-in
         the planner), then settle so the layers repopulate from sensors before moving.
         Best-effort + bounded — skips a costmap whose clear service isn't up yet."""
-        for client, label in ((self.clear_local_costmap_client,  "Clear local costmap"),
-                              (self.clear_global_costmap_client, "Clear global costmap")):
+        clients = [(self.clear_local_costmap_client, "Clear local costmap")]
+        if self.clear_global_on_goal:
+            clients.append((self.clear_global_costmap_client, "Clear global costmap"))
+        for client, label in clients:
             if client.service_is_ready():
                 self._call_service_with_timeout(
                     client, ClearEntireCostmap.Request(), TIMEOUT_RTAB_SERVICE, label)
@@ -878,7 +900,7 @@ class Nav_Central(Node):
         goal_coord.pose.orientation.z = fetch_coords[5]
         goal_coord.pose.orientation.w = fetch_coords[6]
 
-        future = self.send_nav_goal(goal_coord)
+        future = self.send_nav_goal(goal_coord, **self._nav_limits())
         response.success = future[0]
         response.error = future[1]
         self.pause_slam()
@@ -902,7 +924,7 @@ class Nav_Central(Node):
         if not goal.header.frame_id:
             goal.header.frame_id = "map"
         bt = request.behavior_tree if request.behavior_tree else None
-        ok, msg = self.send_nav_goal(goal, behaivor_tree=bt)
+        ok, msg = self.send_nav_goal(goal, behaivor_tree=bt, **self._nav_limits())
         response.success = ok
         response.error = msg
         self.pause_slam()
@@ -989,18 +1011,33 @@ class Nav_Central(Node):
             response.error = "Navigation not initialized"
             return response
         self._clear_costmaps()
-        ok, msg = self.send_nav_goal(goal)
+        start = t.monotonic()
+        ok, msg = self.send_nav_goal(goal, **self._nav_limits())
         if ok:
             # The goal checker can succeed inside xy tolerance without settling
             # yaw — make sure the base front actually points at the person.
-            self._face_target(tx, ty)
+            self._face_target(tx, ty, budget_s=self._remaining_budget(start))
         response.success = ok
         response.error = msg
         self.pause_slam()
         self.pause_nav2()
         return response
 
-    def _face_target(self, tx, ty, tol=0.25):
+    def _nav_limits(self):
+        """Keyword args for send_nav_goal from the nav_goal_* parameters
+        (0 means unlimited, mapped to None)."""
+        return {
+            "max_attempts": self.nav_goal_max_attempts or None,
+            "deadline_s": self.nav_goal_deadline_s or None,
+        }
+
+    def _remaining_budget(self, start):
+        """Seconds left of nav_goal_deadline_s since `start` (None if unbounded)."""
+        if not self.nav_goal_deadline_s:
+            return None
+        return max(self.nav_goal_deadline_s - (t.monotonic() - start), 0.0)
+
+    def _face_target(self, tx, ty, tol=0.25, budget_s=None):
         """Final in-place rotation toward (tx, ty) if the base ended up facing
         away after the approach goal (runs while nav2 is still resumed)."""
         try:
@@ -1018,7 +1055,12 @@ class Nav_Central(Node):
             return
         self.nav_logger(
             "info", f"Approach_Point -> correcting final yaw by {math.degrees(err):.0f} deg")
-        self.send_nav_goal(self._approach_pose(rx, ry, tx, ty))
+        if budget_s is not None and budget_s < 5.0:
+            return
+        self.send_nav_goal(
+            self._approach_pose(rx, ry, tx, ty),
+            max_attempts=self.nav_goal_max_attempts or None,
+            deadline_s=budget_s)
 
     def _approach_pose(self, gx, gy, tx, ty):
         """Map-frame PoseStamped at (gx, gy) facing (tx, ty)."""
@@ -1031,15 +1073,30 @@ class Nav_Central(Node):
         pose.pose.orientation.w = math.cos(yaw / 2.0)
         return pose
 
-    def _grid_cell_free(self, grid, wx, wy, max_cost=50):
-        """Whether world (wx, wy) lies on a known grid cell with cost < max_cost."""
+    def _grid_cell_free(self, grid, wx, wy, max_cost=50, allow_unknown=False):
+        """Whether world (wx, wy) lies on a known grid cell with cost < max_cost.
+        With allow_unknown, unknown (-1) and off-grid cells are accepted too."""
         info = grid.info
         mx = int((wx - info.origin.position.x) / info.resolution)
         my = int((wy - info.origin.position.y) / info.resolution)
         if not (0 <= mx < info.width and 0 <= my < info.height):
-            return False
+            return allow_unknown
         cost = grid.data[my * info.width + mx]
-        return 0 <= cost < max_cost
+        if cost < 0:
+            return allow_unknown
+        return cost < max_cost
+
+    def _near_lethal(self, grid, wx, wy, radius=0.3, lethal=65):
+        """Whether any known cell within `radius` of (wx, wy) has cost >= lethal."""
+        info = grid.info
+        cx = int((wx - info.origin.position.x) / info.resolution)
+        cy = int((wy - info.origin.position.y) / info.resolution)
+        r = math.ceil(radius / info.resolution)
+        for my in range(max(cy - r, 0), min(cy + r + 1, info.height)):
+            for mx in range(max(cx - r, 0), min(cx + r + 1, info.width)):
+                if grid.data[my * info.width + mx] >= lethal:
+                    return True
+        return False
 
     def _find_free_approach(self, tx, ty, rx, ry, standoff):
         """Nearest free approach pose: walk a ring around the target at
@@ -1054,13 +1111,19 @@ class Nav_Central(Node):
             gx = tx + standoff * math.cos(base)
             gy = ty + standoff * math.sin(base)
             return self._approach_pose(gx, gy, tx, ty)
-        for radius in (standoff, standoff + 0.15, standoff + 0.30):
-            for step in range(0, 19):  # 0°, then ±10° ... ±180° around the target
-                for sign in ((1,) if step == 0 else (1, -1)):
-                    ang = base + sign * math.radians(10 * step)
-                    gx = tx + radius * math.cos(ang)
-                    gy = ty + radius * math.sin(ang)
-                    if self._grid_cell_free(grid, gx, gy):
+        # Pass 1: known-free cells only. Pass 2 (approach_allow_unknown): also
+        # unknown cells away from lethal ones; the planner decides if reachable.
+        for allow_unknown in ((False, True) if self.approach_allow_unknown else (False,)):
+            for radius in (standoff, standoff + 0.15, standoff + 0.30):
+                for step in range(0, 19):  # 0°, then ±10° ... ±180° around the target
+                    for sign in ((1,) if step == 0 else (1, -1)):
+                        ang = base + sign * math.radians(10 * step)
+                        gx = tx + radius * math.cos(ang)
+                        gy = ty + radius * math.sin(ang)
+                        if not self._grid_cell_free(grid, gx, gy, allow_unknown=allow_unknown):
+                            continue
+                        if allow_unknown and self._near_lethal(grid, gx, gy):
+                            continue
                         return self._approach_pose(gx, gy, tx, ty)
         return None
 
