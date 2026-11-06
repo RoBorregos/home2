@@ -33,7 +33,15 @@ done
 for m in "${MODELS[@]}"; do
     [[ -s "$ASSETS_DIR/$m" ]] || { echo "ERROR: $ASSETS_DIR/$m not found"; exit 1; }
 done
-docker ps -q -f name="$ROS_CONTAINER" | grep -q . || { echo "ERROR: $ROS_CONTAINER not running"; exit 1; }
+docker ps -q -f name="^${ROS_CONTAINER}$" | grep -q . \
+    || { echo "ERROR: $ROS_CONTAINER not running (start it with ./run.sh hri --gpsr)"; exit 1; }
+
+# Test a copy pointed at localhost so the hardcoded robot IP in client.baml doesn't matter.
+TEST_CMD="rm -rf /tmp/rbrgs_bench && mkdir -p /tmp/rbrgs_bench \
+    && cp -r /workspace/src/task_manager/task_manager/utils/baml_src /tmp/rbrgs_bench/ \
+    && sed -i 's#http://[0-9.]*:$PORT#http://localhost:$PORT#' /tmp/rbrgs_bench/baml_src/client.baml \
+    && cd /tmp/rbrgs_bench && baml-cli test --from baml_src/ --parallel 1"
+run_tests() { docker exec "$ROS_CONTAINER" bash -c "$TEST_CMD"; }
 
 mkdir -p "$RESULTS_DIR"
 STAMP=$(date +%Y%m%d_%H%M%S)
@@ -69,9 +77,7 @@ for m in "${MODELS[@]}"; do
     for ((r = 1; r <= RUNS; r++)); do
         log="$RESULTS_DIR/rbrgs_${m%.gguf}_${STAMP}_r${r}.log"
         echo "  run $r/$RUNS -> $(basename "$log")"
-        docker exec "$ROS_CONTAINER" bash -c \
-            "cd /workspace/src/task_manager/task_manager/utils && baml-cli test --from baml_src/ --parallel 1" \
-            > "$log" 2>&1 || true
+        run_tests > "$log" 2>&1 || true
         # Only the summary block after "Test results:" has one line per test.
         sed 's/\x1b\[[0-9;]*m//g' "$log" | awk -v m="$m" -v r="$r" '
             /Test results:/ { s = 1; next }
