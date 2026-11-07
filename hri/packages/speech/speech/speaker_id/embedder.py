@@ -59,10 +59,11 @@ class SpeakerEmbedder:
         opts.intra_op_num_threads = num_threads
         opts.inter_op_num_threads = 1
         opts.log_severity_level = 3
-        # Every segment has a different length; exhaustive cuDNN algo search would
-        # re-run for each new shape (~60 ms instead of ~10 ms on the Orin).
+        # Every segment has a different length, so per-shape cuDNN algo search
+        # never amortises. Measured on the HRI Orin (JetPack 7.2, ORT 1.24):
+        # EXHAUSTIVE p50 56 ms, HEURISTIC 56 ms, DEFAULT 37 ms per 1-6 s segment.
         provider_cfg = [
-            (p, {"cudnn_conv_algo_search": "HEURISTIC"})
+            (p, {"cudnn_conv_algo_search": "DEFAULT"})
             if p == "CUDAExecutionProvider"
             else p
             for p in pick_providers(providers)
