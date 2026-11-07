@@ -164,6 +164,7 @@ class SemanticMapNode(VisionRuntime):
             confirm_min_observations=self._param("confirm_min_observations", 3),
             miss_limit=self._param("miss_limit", 4),
             surface_standoff_m=self._param("surface_standoff_m", 0.8),
+            room_margin_m=self._param("room_margin_m", 0.6),
             max_sublocation_distance_m=self._param("max_sublocation_distance_m", 1.5),
             sim_min=self._param("sim_min", 0.24),
             name_weight=self._param("name_weight", 0.5),

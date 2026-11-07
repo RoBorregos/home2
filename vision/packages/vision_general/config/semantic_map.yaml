@@ -25,6 +25,8 @@ semantic_map_node:
 
     # A tagged pose is where the robot stands; the furniture is this far ahead of it
     surface_standoff_m: 0.8
+    # Rooms are drawn up to the walls: furniture against one falls just outside
+    room_margin_m: 0.6
     max_sublocation_distance_m: 1.5
 
     # Retrieval: minimum CLIP text-to-crop similarity. Tune with real crops.
@@ -32,7 +34,8 @@ semantic_map_node:
     name_weight: 0.5
 
     # JSON {"category": ["area", "sublocation"]}, per arena. "" keeps the library's table.
-    category_to_furniture_json: ""
+    # map23oct2026 / lab_jazzy2 have no refrigerator or counter: drinks and fruit go in the cabinet.
+    category_to_furniture_json: '{"drink": ["kitchen", "cabinet"], "fruit": ["kitchen", "cabinet"], "food": ["kitchen", "cabinet"], "cleaning_supply": ["kitchen", "cabinet"], "snack": ["living_room", "coffee_table"], "dish": ["kitchen", "dishwasher"]}'
 
     # "" -> /workspace/log/semantic_map, else ~/.ros/semantic_map
     snapshot_dir: ""

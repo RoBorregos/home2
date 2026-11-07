@@ -193,10 +193,12 @@ class SemanticGraph:
     def area_for_point(self, x: float, y: float, z: float = 0.0) -> PointLocation:
         """Resolve a point to a room and its nearest surface.
 
-        Returns an empty area when the point falls outside every polygon:
-        admitting it is unknown beats naming the wrong room.
+        Returns an empty area when the point falls outside every polygon by more
+        than `room_margin_m`: admitting it is unknown beats naming the wrong room.
         """
         room = next((r for r in self.rooms.values() if _inside(r.polygon, x, y)), None)
+        if room is None:
+            room = self._nearest_room(x, y)
         if room is None:
             return PointLocation()
         where = PointLocation(area=room.name, in_house=True)
@@ -524,6 +526,19 @@ class SemanticGraph:
         yaw = 2.0 * math.atan2(pose.qz, pose.qw)
         return pose.x + standoff * math.cos(yaw), pose.y + standoff * math.sin(yaw)
 
+    def _nearest_room(self, x: float, y: float) -> Optional[Room]:
+        """The room whose outline is nearest, if within `room_margin_m`."""
+        margin = self.config.room_margin_m
+        if margin <= 0.0:
+            return None
+        rooms = [
+            (_edge_distance(r.polygon, x, y), r)
+            for r in self.rooms.values()
+            if len(r.polygon) >= 3
+        ]
+        distance, room = min(rooms, key=lambda pair: pair[0], default=(math.inf, None))
+        return room if distance <= margin else None
+
     def _has_surface(self, area: str, sublocation: str) -> bool:
         room = self.rooms.get(area)
         return room is not None and sublocation in room.surfaces
@@ -541,6 +556,18 @@ def _z(values: np.ndarray) -> np.ndarray:
 def _name(node: Any) -> str:
     """Objects have a label, surfaces a name."""
     return node.label if isinstance(node, ObjectInstance) else node.name
+
+
+def _edge_distance(polygon: list[tuple[float, float]], x: float, y: float) -> float:
+    """Distance from a point to a polygon's outline."""
+    best = math.inf
+    for (x1, y1), (x2, y2) in zip(polygon, polygon[1:] + polygon[:1]):
+        dx, dy = x2 - x1, y2 - y1
+        t = max(
+            0.0, min(1.0, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy or 1.0))
+        )
+        best = min(best, math.hypot(x - x1 - t * dx, y - y1 - t * dy))
+    return best
 
 
 def _inside(polygon: list[tuple[float, float]], x: float, y: float) -> bool:

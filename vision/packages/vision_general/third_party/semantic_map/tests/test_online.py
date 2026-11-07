@@ -243,6 +243,22 @@ def test_surface_is_where_the_furniture_is_not_where_the_robot_stands():
     assert graph.area_for_point(0.75, 0.0, 0.75).sublocation == "east_table"
 
 
+def test_furniture_just_outside_its_room_still_belongs_to_it():
+    # The room is drawn up to the wall; the cabinet stands against it, 0.5 m past.
+    layout = {"kitchen": {"polygon": ROOM, "cabinet": [4.6, 0.0, 0, 0, 0, 0, 1.0]}}
+    graph = online_graph(surface_standoff_m=0.8, room_margin_m=0.6)
+    graph.load_layout(layout)
+    where = graph.area_for_point(5.4, 0.0, 0.9)
+    assert (where.area, where.sublocation) == ("kitchen", "cabinet")
+    assert graph.area_for_point(5.8, 0.0).area == ""  # past the margin: unknown
+
+
+def test_room_margin_is_off_by_default():
+    graph = online_graph()
+    graph.load_layout({"kitchen": {"polygon": ROOM}})
+    assert graph.area_for_point(5.1, 0.0).area == ""
+
+
 def test_layout_skips_what_is_not_a_surface():
     graph = online_graph()
     graph.load_layout(

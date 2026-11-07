@@ -92,6 +92,9 @@ class SemanticMapConfig:
     # How far ahead of its tagged pose a surface is. On a real map that pose is where
     # the robot stands, about 0.8 m in front of the furniture; 0 uses the pose itself.
     surface_standoff_m: float = 0.0
+    # Rooms are often drawn up to the walls, leaving furniture against a wall just
+    # outside: a point outside every room joins the nearest one within this distance.
+    room_margin_m: float = 0.0
     # Tagged poses that are navigation waypoints, not furniture.
     non_surface_names: tuple[str, ...] = (
         "house_entry",
