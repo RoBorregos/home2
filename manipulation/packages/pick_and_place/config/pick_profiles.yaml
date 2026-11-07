@@ -35,9 +35,37 @@ flat:
   close_settle: 2.5 # let the gripper fully close before lifting
   lift_after_grasp: true
   post_contact_retract: 0.004 # m upward, relieves Z pressure so the gripper can close
+  close_after_contact: true
   force_guard:
     descent_speed: 12.0 # mm/s (lowered from 20 for less impact force)
     timeout: 16.0 # s, must cover the 0.15 m pre-grasp at the speed above
+    grace_period: 0.3 # s, ignore effort right after velocity starts
+    contact_settle: 1.0 # s, skip the motion-onset spike before detecting
+    min_contact_descent: 0.08 # m, do not honor a jump before this depth
+    # J1/J6 see no contact force; J2's gravity drift false-trips at 80 mm.
+    ignore_joints: [0, 1, 5]
+    # Jump-based contact: trip on a sudden effort rise vs a trailing reference,
+    # which is robust to the several-N gravity drift seen during a clean descent
+    # (an absolute-vs-rest threshold false-trips).
+    jump_window: 0.3 # s, age of the trailing effort reference
+    jump_trip: 2.5 # N over the window that counts as contact
+    jump_sustain: 3 # consecutive samples (~0.06 s) the jump must hold
+    hard_ceiling: 15.0 # N, last-resort stop
+
+plate:
+  <<: *defaults
+  strategy: force_guarded
+  tip_offset_param: geometric_tip_offset
+  pre_grasp_height: 0.10
+  num_alternatives: 6
+  alternative_step: -0.005
+  close_settle: 2.5 # let the gripper fully close before lifting
+  lift_after_grasp: false
+  close_after_contact: false
+  post_contact_retract: 0.002 # m upward, relieves Z pressure so the gripper can close
+  force_guard:
+    descent_speed: 12.0 # mm/s (lowered from 20 for less impact force)
+    timeout: 16.0 # s, must cover that at the speed above
     grace_period: 0.3 # s, ignore effort right after velocity starts
     contact_settle: 1.0 # s, skip the motion-onset spike before detecting
     min_contact_descent: 0.08 # m, do not honor a jump before this depth

@@ -84,12 +84,11 @@ FLAT_OBJECT_NAMES = [
     "knife",
     "spoon",
     "cutlery",
-    "plate",
-    "red_plate",
     "toothpaste",
     "sponge",
     "dishwasher_tab",
 ]
+PLATE_NAMES = ["plate", "red_plate"]
 POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
@@ -106,6 +105,7 @@ GRASP_CLASS_ROUND = "round"
 GRASP_CLASS_RIM = "rim"
 GRASP_CLASS_PEAK = "peak"
 GRASP_CLASS_TRASH = "trash"
+GRASP_CLASS_PLATE = "plate"
 
 # Default speed for the generic /manipulation/fixed_distance_move service,
 RIM_DESCENT_SPEED = 20.0  # mm/s

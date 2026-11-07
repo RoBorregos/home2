@@ -4,14 +4,16 @@ from typing import Callable
 
 import numpy as np
 import scipy.ndimage as ndi
-from scipy.spatial import cKDTree
+from scipy.spatial import ConvexHull, cKDTree
 from scipy.spatial.transform import Rotation
 
 from frida_constants.manipulation_constants import (
     FLAT_OBJECT_NAMES,
+    PLATE_NAMES,
     GRASP_CLASS_BOX,
     GRASP_CLASS_CYLINDRICAL,
     GRASP_CLASS_FLAT,
+    GRASP_CLASS_PLATE,
     GRASP_CLASS_PEAK,
     GRASP_CLASS_RIM,
     GRASP_CLASS_ROUND,
@@ -35,6 +37,7 @@ GRASP_CLASS_OBJECTS = {
     GRASP_CLASS_RIM: RIM_NAMES,
     GRASP_CLASS_PEAK: PEAK_NAMES,
     GRASP_CLASS_TRASH: [TRASH_BIN_NAME],
+    GRASP_CLASS_PLATE: PLATE_NAMES,
 }
 OBJECT_GRASP_CLASS = {
     name.lower(): grasp_class
@@ -57,6 +60,7 @@ FLAT_SURFACE_OFFSET = 0.003
 FLOOR_PERCENTILE = 5
 FLOOR_MARGIN = 0.05
 TOP_PERCENTILE = 90
+PLATE_CUT = 0.006
 
 RIM_TOP_BAND = 0.03
 RIM_NEAR_FRACTION = 0.05
@@ -392,6 +396,30 @@ def fit_box(points: np.ndarray) -> tuple:
     return center, axes[k], axes[j], high[k] - low[k], high[j] - low[j]
 
 
+def fit_plate(points: np.ndarray) -> tuple:
+    "Center an outer diameter"
+    outline = points[ConvexHull(points[:, :2]).vertices, :2]
+    sol = np.linalg.lstsq(
+        np.column_stack((2 * outline, np.ones(len(outline)))),
+        (outline**2).sum(axis=1),
+        rcond=None,
+    )[0]
+    return sol[:2], 2 * np.sqrt(sol[2] + sol[:2] @ sol[:2])
+
+
+def plate(scene: Scene) -> tuple:
+    points = scene.points(scene.valid)
+    points = points[points[:, 2] > np.median(points[:, 2]) - PLATE_CUT]
+    center, diameter = fit_plate(points)
+    require(diameter > 1e-6, "plate measured wrong")
+    return None, [
+        Grasp(
+            np.array([*center, np.percentile(points[:, 2], TOP_PERCENTILE)]),
+            grasp_frame(TOP_DOWN, DEFAULT_CLOSING_AXIS),
+        )
+    ]
+
+
 def circumsphere(sample: np.ndarray) -> tuple:
     a = 2 * (sample[:, 1:] - sample[:, :1])
     b = (sample[:, 1:] ** 2).sum(axis=2) - (sample[:, :1] ** 2).sum(axis=2)
@@ -681,6 +709,7 @@ RECIPES: dict[str, Callable[[Scene], tuple]] = {
     GRASP_CLASS_RIM: rim,
     GRASP_CLASS_PEAK: peak,
     GRASP_CLASS_TRASH: trash_bin,
+    GRASP_CLASS_PLATE: plate,
 }
 
 

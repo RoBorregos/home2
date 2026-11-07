@@ -14,6 +14,7 @@ from geometry_msgs.msg import PoseStamped
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_FLAT,
+    PICK_STRATEGY_PLATE,
     PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_PEAK,
@@ -217,8 +218,9 @@ class ForceGuardedDescentPick(PickStrategy):
             retract_pose.pose.position.z = contact_z + profile.post_contact_retract
             arm.move_to_pose(retract_pose, velocity=0.1)
 
-        with arm.phase("close_gripper"):
-            arm.close_gripper(settle_s=profile.close_settle)
+        if profile.close_after_contact:
+            with arm.phase("close_gripper"):
+                arm.close_gripper(settle_s=profile.close_settle)
 
         if profile.lift_after_grasp:
             with arm.phase("lift"):
@@ -275,6 +277,7 @@ class DirectGraspPick(PickStrategy):
 # Which strategy handles which profile.
 STRATEGIES = {
     PICK_STRATEGY_FLAT: ForceGuardedDescentPick,
+    PICK_STRATEGY_PLATE: ForceGuardedDescentPick,
     PICK_STRATEGY_RIM: FixedDistanceDescentPick,
     PICK_STRATEGY_BOWL: FixedDistanceDescentPick,
     PICK_STRATEGY_PEAK: FixedDistanceDescentPick,

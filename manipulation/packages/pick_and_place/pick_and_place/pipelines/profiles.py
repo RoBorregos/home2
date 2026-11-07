@@ -97,6 +97,7 @@ class PickProfile:
     descent_speed: float = 0.0
     descent_distance: Optional[float] = None
     post_contact_retract: float = 0.0
+    close_after_contact: bool = True
     force_guard: Optional[ForceGuardProfile] = None
     fallback_to_gpd: bool = False
 

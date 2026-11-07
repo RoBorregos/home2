@@ -13,6 +13,7 @@ from frida_constants.manipulation_constants import (
     FLAT_OBJECT_NAMES,
     PEAK_NAMES,
     RIM_NAMES,
+    PLATE_NAMES,
 )
 
 PICK_STRATEGY_GPD = "gpd"
@@ -21,6 +22,7 @@ PICK_STRATEGY_RIM = "rim"
 PICK_STRATEGY_BOWL = "bowl"
 PICK_STRATEGY_PEAK = "peak"
 PICK_STRATEGY_GEOMETRIC = "geometric"
+PICK_STRATEGY_PLATE = "plate"
 
 PICK_STRATEGY_KEYS = (
     PICK_STRATEGY_FLAT,
@@ -29,6 +31,7 @@ PICK_STRATEGY_KEYS = (
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_GEOMETRIC,
+    PICK_STRATEGY_PLATE,
 )
 
 # Order matters: BOWL_NAME is a member of RIM_NAMES, so bowl must be tested
@@ -39,6 +42,7 @@ _STRATEGY_BY_OBJECT_NAME = (
     (PICK_STRATEGY_PEAK, frozenset(PEAK_NAMES)),
     (PICK_STRATEGY_RIM, frozenset(RIM_NAMES)),
     (PICK_STRATEGY_FLAT, frozenset(FLAT_OBJECT_NAMES)),
+    (PICK_STRATEGY_PLATE, frozenset(PLATE_NAMES)),
 )
 
 

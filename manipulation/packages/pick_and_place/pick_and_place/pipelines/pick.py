@@ -28,6 +28,7 @@ from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_RIM,
     resolve_pick_strategy,
+    PICK_STRATEGY_PLATE,
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.strategies import GraspCandidate, PickOutcome
@@ -175,7 +176,8 @@ def _pick(
 
     # Defensive re-close: the strategy already closed, but a missed service
     # response there would otherwise leave the object un-gripped for the return.
-    arm.close_gripper(settle_s=0.0)
+    if strategy.profile.close_after_contact:
+        arm.close_gripper(settle_s=0.0)
 
     outcome.object_name = request.object_name
     if fitted is not None:
@@ -566,6 +568,10 @@ def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
     if strategy_key == PICK_STRATEGY_RIM:
         # Hold where the strategy left the arm; a basket must be carried in place.
         log.info("Rim pick: holding position (skipping return to stare)")
+        return
+
+    if strategy_key == PICK_STRATEGY_PLATE:
+        log.info("Plate pick: holding position (skipping return to stare)")
         return
 
     named = "look_side_stare" if strategy_key == PICK_STRATEGY_PEAK else "table_stare"
