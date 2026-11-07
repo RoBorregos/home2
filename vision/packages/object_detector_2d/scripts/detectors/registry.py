@@ -29,7 +29,7 @@ MODEL_CONFIGS: dict[str, dict] = {
         "conf": 0.5,
         "use_trt": True,
     },
-    # Shared pose model behind the DetectPose service (POSE_SERVICE param).
+    # Shared pose model behind ObjectDetect2D's DetectPose service.
     "yolo_pose": {
         "filename": "yolo11m-pose.pt",
         "type": "yolo_pose",

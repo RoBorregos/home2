@@ -1,15 +1,14 @@
 #! /usr/bin/env python3
 """Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo services.
 
-With POSE_SERVICE=true it also owns the single yolo11m-pose instance and serves
-it through DetectPose, so hric/gpsr/tracker/customer/pointing do not each load
-their own copy (vision_general models/pose_detection.py is the client).
+It also owns the single yolo11m-pose instance and serves it through DetectPose,
+so hric/gpsr/tracker/customer/pointing do not each load their own copy
+(vision_general models/pose_detection.py is the client).
 """
 
 import copy
 import json
 import os
-import time
 
 import cv2 as cv
 import numpy as np
@@ -67,6 +66,9 @@ class ObjectDetectorNode(BaseDetectorNode):
         self.models = [ModelRegistry.get(n) for n in model_names if n]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
         self.yolo_service_model = ModelRegistry.get("yolo_generic")
+        # Shared pose model behind DetectPose. Only used from service callbacks
+        # (executor thread); the detection loop runs other models on run_thread.
+        self.pose_model = ModelRegistry.get("yolo_pose")
 
         # Latest GalleryDetect2D output, merged into our detections while fresh
         self.gallery_max_age = self.declare_param("GALLERY_MAX_AGE", 3.5).double_value
@@ -97,21 +99,7 @@ class ObjectDetectorNode(BaseDetectorNode):
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV, self.detection_handler
         )
         self.create_service(YoloDetect, YOLO_DETECTION_TOPIC, self.yolo_detect)
-
-        # Shared pose model. Served from the executor thread only (the
-        # detection loop runs on run_thread with other models), so requests
-        # are handled one at a time and never touch the engine concurrently.
-        self.pose_model = None
-        if self.declare_param("POSE_SERVICE", False).bool_value:
-            start = time.time()
-            self.pose_model = ModelRegistry.get("yolo_pose")
-            # Warm-up so the first request does not pay the engine start-up.
-            self.pose_model.estimate(np.zeros((480, 640, 3), dtype=np.uint8))
-            self.create_service(DetectPose, POSE_DETECTION_SERVICE, self.detect_pose)
-            self.get_logger().info(
-                f"Pose service ready on {POSE_DETECTION_SERVICE} "
-                f"({time.time() - start:.1f}s)"
-            )
+        self.create_service(DetectPose, POSE_DETECTION_SERVICE, self.detect_pose)
 
     def box_color(self, det):
         return (0, 0, 255) if det.label_text.startswith("trash/") else (0, 255, 0)

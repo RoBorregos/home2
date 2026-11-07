@@ -3,7 +3,7 @@
 waving, orientation).
 
 The model itself is NOT loaded here: it lives in object_detector_2d's
-ObjectDetect2D (launched with POSE_SERVICE=true), which serves it through the
+ObjectDetect2D, which serves it through the
 DetectPose service so only one copy runs on the robot.
 PoseDetection is the client: ``infer`` / ``detect_people`` / ``_get_keypoints``
 call the service, everything else is local geometry on the returned keypoints.
@@ -77,7 +77,7 @@ class PoseDetection:
         ):
             self.node.get_logger().warn(
                 f"Pose service {POSE_DETECTION_SERVICE} not available "
-                "(is ObjectDetect2D running with POSE_SERVICE=true?)",
+                "(is ObjectDetect2D running?)",
                 throttle_duration_sec=5.0,
             )
             return []
@@ -460,7 +460,7 @@ class PoseDetection:
 
 def main():
     """Webcam demo. Needs the pose service running:
-    ros2 run object_detector_2d object_detector_node.py --ros-args -p POSE_SERVICE:=true
+    ros2 run object_detector_2d object_detector_node.py
     """
     import threading
 

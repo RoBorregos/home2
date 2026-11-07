@@ -46,9 +46,7 @@ def generate_launch_description():
                 respawn=True,
                 output="screen",
                 emulate_tty=True,
-                # POSE_SERVICE: also serve the shared yolo11m-pose (DetectPose)
-                # used by hric_commands and tracker_node.
-                parameters=[config, {"models": [""], "POSE_SERVICE": True}],
+                parameters=[config, {"models": [""]}],
             ),
             Node(
                 package="vision_general",

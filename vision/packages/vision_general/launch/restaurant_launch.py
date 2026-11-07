@@ -40,11 +40,8 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
-            # POSE_SERVICE: ObjectDetect2D also serves the shared yolo11m-pose
-            # (DetectPose) used by customer_node.
             IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(detector_launch_file),
-                launch_arguments={"pose_service": "true"}.items(),
+                PythonLaunchDescriptionSource(detector_launch_file)
             ),
         ]
     )

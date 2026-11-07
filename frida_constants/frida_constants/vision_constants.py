@@ -153,7 +153,7 @@ SHOW_DETECTION_TOPIC = "/vision/show_detection"
 YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
 YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 
-# Shared YOLO pose model (served by ObjectDetect2D with POSE_SERVICE=true)
+# Shared YOLO pose model (served by ObjectDetect2D)
 POSE_DETECTION_SERVICE = "/vision/pose/detect"
 
 # Chair removal

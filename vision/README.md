@@ -201,7 +201,7 @@ handles projection and visualization. `vision_general` has the same pattern in
 
 | Node | Purpose | Key interfaces |
 | --- | --- | --- |
-| `ObjectDetect2D` | Runs the models listed under `models:` in `config/parameters.yaml` continuously and IoU-dedupes across them | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory`; with `POSE_SERVICE: true` also `DetectPose`@`/vision/pose/detect` (the shared yolo11m-pose) |
+| `ObjectDetect2D` | Runs the models listed under `models:` in `config/parameters.yaml` continuously and IoU-dedupes across them | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory`, `DetectPose`@`/vision/pose/detect` (the shared yolo11m-pose) |
 | `ZeroShotDetect2D` | YOLOE open-vocabulary detection for classes not in the finetuned model | pubs `/vision/zero_shot_detections*`; srv `SetDetectorClasses` |
 
 Each node has a fixed activation topic (`/vision/object_detector/active`,
@@ -249,11 +249,10 @@ The benchmark behind the defaults: [`benchmarks/embedding_gallery/`](benchmarks/
 `pose_detection.py` is a library, not a node: it holds the COCO keypoint constants and the
 gesture/pose classification used by `hric_commands`, `gpsr_commands`, `tracker_node`,
 `customer_node` and `pointing_detection`. Its `PoseDetection` class does not load the model;
-it is a client of the `DetectPose` service that `ObjectDetect2D` serves when launched with
-`POSE_SERVICE: true`, so only one yolo11m-pose instance runs. Any launch that starts one of
-those nodes must turn it on (`pose_service:=true` on `object_detector_node.launch.py`). The client waits on a future,
-so call it from a node spun by a `MultiThreadedExecutor` (with a reentrant callback group)
-or from a non-executor thread; on a single-threaded executor callback it times out.
+it is a client of the `DetectPose` service that `ObjectDetect2D` always serves, so only one
+yolo11m-pose instance runs and every launch that starts `ObjectDetect2D` provides it. The client
+waits on a future, so call it from a node spun by a `MultiThreadedExecutor` (with a reentrant
+callback group) or from a non-executor thread; on a single-threaded executor callback it times out.
 
 #### `VisionRuntime`
 

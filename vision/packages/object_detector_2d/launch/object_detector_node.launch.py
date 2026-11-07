@@ -5,7 +5,6 @@ from launch.conditions import IfCondition
 from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -20,11 +19,6 @@ def generate_launch_description():
     )
     return LaunchDescription(
         [
-            DeclareLaunchArgument(
-                "pose_service",
-                default_value="false",
-                description="Also load yolo11m-pose and serve DetectPose",
-            ),
             DeclareLaunchArgument(
                 "enable_gallery",
                 default_value="false",
@@ -44,14 +38,7 @@ def generate_launch_description():
                 respawn=True,
                 output="screen",
                 emulate_tty=True,
-                parameters=[
-                    config,
-                    {
-                        "POSE_SERVICE": ParameterValue(
-                            LaunchConfiguration("pose_service"), value_type=bool
-                        )
-                    },
-                ],
+                parameters=[config],
             ),
             Node(
                 package="object_detector_2d",
