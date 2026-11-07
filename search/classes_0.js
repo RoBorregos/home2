@@ -4,5 +4,6 @@ var searchData=
   ['_5fgoalhandle_1',['_GoalHandle',['../classtest__pick__and__place_1_1__GoalHandle.html',1,'test_pick_and_place']]],
   ['_5frequest_2',['_Request',['../classtest__pick__and__place_1_1__Request.html',1,'test_pick_and_place']]],
   ['_5fsegment_3',['_Segment',['../classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html',1,'task_manager::gpsr::merger']]],
-  ['_5fsuppressstderr_4',['_SuppressStderr',['../classdetectors_1_1yolo__e_1_1__SuppressStderr.html',1,'detectors::yolo_e']]]
+  ['_5fsuppressstderr_4',['_SuppressStderr',['../classdetectors_1_1yolo__e_1_1__SuppressStderr.html',1,'detectors::yolo_e']]],
+  ['_5fthreadrate_5',['_ThreadRate',['../classMoveItPlanner_1_1__ThreadRate.html',1,'MoveItPlanner']]]
 ];

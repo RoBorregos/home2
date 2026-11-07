@@ -1,5 +1,16 @@
 var NAVTREEINDEX38 =
 {
+"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md451":[41,6],
+"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md452":[41,7],
+"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md453":[41,8],
+"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md454":[41,9],
+"md_frida_constants_data_names.html":[17],
+"md_frida_constants_data_objects.html":[18],
+"md_frida_constants_data_objects.html#autotoc_md198":[18,0],
+"md_frida_constants_data_objects.html#autotoc_md199":[18,1],
+"md_frida_constants_data_objects.html#autotoc_md200":[18,2],
+"md_frida_constants_data_objects.html#autotoc_md201":[18,3],
+"md_frida_constants_data_objects.html#autotoc_md202":[18,4],
 "md_frida_interfaces_manipulation_msg_PlaceParamsSpecialRequest.html":[16],
 "md_frida_interfaces_manipulation_msg_PlaceParamsSpecialRequest.html#autotoc_md195":[16,0],
 "md_manipulation_README.html":[8],
@@ -238,16 +249,5 @@ var NAVTREEINDEX38 =
 "moondream__lib_8py.html#ac84395d9ed2025a9e954251124789ae7":[44,0,7,1,0,1,0,10],
 "moondream__lib_8py.html#adb038b52a38e3ae02b1571585802ebb8":[44,0,7,1,0,1,0,2],
 "moondream__lib_8py.html#ae7192007fe4505484cc637c6d11cd04d":[44,0,7,1,0,1,0,6],
-"moondream__lib_8py.html#afe5bff27ba8743d77b82c97de0489055":[44,0,7,1,0,1,0,9],
-"moondream__node_8py.html":[44,0,7,1,0,2,0],
-"moondream__node_8py.html#a10b02c02e345a65f36ac440ca0b90cc6":[44,0,7,1,0,2,0,4],
-"moondream__node_8py.html#a47c45534e210e7306268a61db7efadfe":[44,0,7,1,0,2,0,2],
-"moondream__node_8py.html#a8a3e83538f335b2df8cad8475a2496db":[44,0,7,1,0,2,0,1],
-"moondream__node_8py.html#aa2e1e7b7b490eadcc4fe5414c36631b1":[44,0,7,1,0,2,0,3],
-"moondream__proto__pb2_8py.html":[44,0,7,1,0,1,1],
-"moondream__proto__pb2_8py.html#a0c8c0cd876d97fa191cee4fc98977e35":[44,0,7,1,0,1,1,1],
-"moondream__proto__pb2_8py.html#a1da83ca9e5d8a96c48370dabaa1d7603":[44,0,7,1,0,1,1,0],
-"moondream__proto__pb2_8py.html#a44bda6af6f063528ab8a3c9a3794122c":[44,0,7,1,0,1,1,4],
-"moondream__proto__pb2_8py.html#a97486efd64346f9084f0a3bb7acf3e69":[44,0,7,1,0,1,1,5],
-"moondream__proto__pb2_8py.html#aeef2cc93d63a3042479747f34b2dc602":[44,0,7,1,0,1,1,2]
+"moondream__lib_8py.html#afe5bff27ba8743d77b82c97de0489055":[44,0,7,1,0,1,0,9]
 };

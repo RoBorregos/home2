@@ -1,5 +1,16 @@
 var NAVTREEINDEX37 =
 {
+"manipulation__constants__cpp_8hpp.html#aea79927e7322982d7468107318fe548c":[44,0,1,2,0,0,26],
+"manipulation__constants__cpp_8hpp.html#aeda8763f7b4ae11a3b5bd280d44cbebe":[44,0,1,2,0,0,15],
+"manipulation__constants__cpp_8hpp.html#aeede76ff0f1954547a24d2dd81f2ec64":[44,0,1,2,0,0,24],
+"manipulation__constants__cpp_8hpp.html#af852638f6bb2230f875e0d7578e1841f":[44,0,1,2,0,0,25],
+"manipulation__constants__cpp_8hpp_source.html":[44,0,1,2,0,0],
+"manipulation__core_8py.html":[44,0,3,1,5,1,9],
+"manipulation__core_8py.html#a4810c7e4b9d5af6572ad6d9864a580d1":[44,0,3,1,5,1,9,5],
+"manipulation__core_8py.html#a514658d21d46ed2364d0ea9e266e92d2":[44,0,3,1,5,1,9,2],
+"manipulation__core_8py.html#a8186701a4f2197fd8462d338e413ed97":[44,0,3,1,5,1,9,1],
+"manipulation__core_8py.html#aea5cebd50f27e2acec4e76711d70ac59":[44,0,3,1,5,1,9,3],
+"manipulation__core_8py.html#aead1614fba3c4bc4f148d9114cbf5706":[44,0,3,1,5,1,9,4],
 "manipulation__safeguard_8py.html":[44,0,3,1,3,1,1],
 "manipulation__safeguard_8py.html#a13b15f879be26bb8dce7f3569d263f0b":[44,0,3,1,3,1,1,2],
 "manipulation__safeguard_8py.html#a1d0b28bec98e0fd286d4ed58a6d79e5a":[44,0,3,1,3,1,1,3],
@@ -238,16 +249,5 @@ var NAVTREEINDEX37 =
 "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md447":[41,4,2],
 "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md448":[41,4,3],
 "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md449":[41,4,4],
-"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md450":[41,5],
-"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md451":[41,6],
-"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md452":[41,7],
-"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md453":[41,8],
-"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md454":[41,9],
-"md_frida_constants_data_names.html":[17],
-"md_frida_constants_data_objects.html":[18],
-"md_frida_constants_data_objects.html#autotoc_md198":[18,0],
-"md_frida_constants_data_objects.html#autotoc_md199":[18,1],
-"md_frida_constants_data_objects.html#autotoc_md200":[18,2],
-"md_frida_constants_data_objects.html#autotoc_md201":[18,3],
-"md_frida_constants_data_objects.html#autotoc_md202":[18,4]
+"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md450":[41,5]
 };

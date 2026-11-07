@@ -251,6 +251,7 @@ var annotated_dup =
       [ "MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub" ]
     ] ],
     [ "MoveItPlanner", "namespaceMoveItPlanner.html", [
+      [ "_ThreadRate", "classMoveItPlanner_1_1__ThreadRate.html", "classMoveItPlanner_1_1__ThreadRate" ],
       [ "MoveItPlanner", "classMoveItPlanner_1_1MoveItPlanner.html", "classMoveItPlanner_1_1MoveItPlanner" ]
     ] ],
     [ "MoveItServo", "namespaceMoveItServo.html", [

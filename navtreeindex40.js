@@ -1,5 +1,17 @@
 var NAVTREEINDEX40 =
 {
+"namespacedownsample__pc.html#ac2b4cab7e9652eb5d6142f99b1981c55":[42,0,29,0],
+"namespaceds4__demo.html":[42,0,30],
+"namespaceds4__demo.html#a4c6991237427da870d97ade2a44fdfec":[42,0,30,3],
+"namespaceds4__demo.html#a9537b385d440de90c55689e7d09e9b5d":[42,0,30,2],
+"namespaceds4__demo.html#a9ee64277947c3be58860b6df419273bd":[42,0,30,1],
+"namespaceegsr__cut.html":[42,0,31],
+"namespaceegsr__cut.html#a0e686aa3fb80c3b83bd276c99727c65e":[42,0,31,4],
+"namespaceegsr__cut.html#a1b8f9dabccf41a8d821d7cb2b32afd76":[42,0,31,7],
+"namespaceegsr__cut.html#a1ca23f555a40c8aa0974151fc2c06366":[42,0,31,8],
+"namespaceegsr__cut.html#a4aeb00c58259adbdc77b491d53265b82":[42,0,31,1],
+"namespaceegsr__cut.html#a6c44cb0ee835bfe89fea9b0119ae3175":[42,0,31,5],
+"namespaceegsr__cut.html#aa506d34038d8e9edcefb284b24391dd0":[42,0,31,2],
 "namespaceegsr__cut.html#aaa1cdd1c1d00bce1477e860c8f1dabe1":[42,0,31,3],
 "namespaceegsr__cut.html#afbf5f9721f7db9f36ba82a87768ae541":[42,0,31,6],
 "namespaceembedding__gallery.html":[42,0,32],
@@ -237,17 +249,5 @@ var NAVTREEINDEX40 =
 "namespacefrida__constants_1_1manipulation__constants.html#a520f33abe220f0f53b58bc4a6087abae":[42,0,53,2,34],
 "namespacefrida__constants_1_1manipulation__constants.html#a55494e172679a5eef70416f9d0f487e2":[42,0,53,2,30],
 "namespacefrida__constants_1_1manipulation__constants.html#a5a5abd76d002b0c9d56e76f93bc1b3e5":[42,0,53,2,102],
-"namespacefrida__constants_1_1manipulation__constants.html#a5ea55eae7fc712affd0e6fc30dcf8467":[42,0,53,2,59],
-"namespacefrida__constants_1_1manipulation__constants.html#a5eb759b00b661c3ef19e217417323b4c":[42,0,53,2,88],
-"namespacefrida__constants_1_1manipulation__constants.html#a6038fba62b19224dfcafc0c052adbae6":[42,0,53,2,80],
-"namespacefrida__constants_1_1manipulation__constants.html#a60fec6dff1f21269d68429db6ce6c56d":[42,0,53,2,104],
-"namespacefrida__constants_1_1manipulation__constants.html#a68c18caff6eff36289422c67d0cce3dd":[42,0,53,2,103],
-"namespacefrida__constants_1_1manipulation__constants.html#a6aaf2e16c447f7ca03df763bd4a0f754":[42,0,53,2,86],
-"namespacefrida__constants_1_1manipulation__constants.html#a728847a78ea88a5a8ea9fc4d3b914369":[42,0,53,2,37],
-"namespacefrida__constants_1_1manipulation__constants.html#a72d781c5768abe2b3250a2030220b1a3":[42,0,53,2,48],
-"namespacefrida__constants_1_1manipulation__constants.html#a7514c1959bd5da9ebad62690cba03451":[42,0,53,2,75],
-"namespacefrida__constants_1_1manipulation__constants.html#a777012eeb4aed1198489527887a98d36":[42,0,53,2,95],
-"namespacefrida__constants_1_1manipulation__constants.html#a7980f88d789cc49a57a0fccd0bcec244":[42,0,53,2,50],
-"namespacefrida__constants_1_1manipulation__constants.html#a79c4beebdcccc18e2cce0cbabb1c855b":[42,0,53,2,66],
-"namespacefrida__constants_1_1manipulation__constants.html#a7bd0f05a2e6391c67a506fea48e6ffd5":[42,0,53,2,40]
+"namespacefrida__constants_1_1manipulation__constants.html#a5ea55eae7fc712affd0e6fc30dcf8467":[42,0,53,2,59]
 };

@@ -5,6 +5,7 @@ var hierarchy =
     [ "test_pick_and_place._Request", "classtest__pick__and__place_1_1__Request.html", null ],
     [ "task_manager.gpsr.merger._Segment", "classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html", null ],
     [ "detectors.yolo_e._SuppressStderr", "classdetectors_1_1yolo__e_1_1__SuppressStderr.html", null ],
+    [ "MoveItPlanner._ThreadRate", "classMoveItPlanner_1_1__ThreadRate.html", null ],
     [ "vamp::collision::CAPT::AlignedAllocator< T >", "structvamp_1_1collision_1_1CAPT_1_1AlignedAllocator.html", null ],
     [ "vamp::planning::AORRTC< Robot, rake, resolution >", "structvamp_1_1planning_1_1AORRTC.html", null ],
     [ "vamp::planning::AORRTCSettings", "structvamp_1_1planning_1_1AORRTCSettings.html", null ],

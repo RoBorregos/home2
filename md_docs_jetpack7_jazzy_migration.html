@@ -113,6 +113,7 @@ Base image (&lt;tt&gt;docker/Dockerfile.ROS&lt;/tt&gt;, &lt;tt&gt;docker/Dockerf
 Host configuration (Orin), outside the repo</h1>
 <ul>
 <li>The kernel's <code>net.core.rmem_max</code>/<code>wmem_max</code> were at Ubuntu's default (~208 KB), far below the 10 MB CycloneDDS asks for on its socket — without this, <b>no</b> ROS 2 node could create its DDS domain (<code>rmw_create_node: failed to create domain, error Error</code>), in any container. Raised to 2 GB via <code>/etc/sysctl.d/60-cyclonedds.conf</code> on the Orin (outside the repo — it is host config, not image config).</li>
+<li>systemd-logind's default <code>RemoveIPC=yes</code> deletes every shared-memory file of the <code>orin</code> user when its last login session closes, including RouDi's <code>/dev/shm/iceoryx_mgmt</code>. RouDi keeps running with the deleted mapping, so every container started afterwards dies with <code>POSH__SHM_APP_MAPP_ERR</code> (ZED, navigation, display, ...). Fixed with <code>sudo loginctl enable-linger orin</code> on the main Orin (the user never logs out, so its IPC is kept); undo with <code>loginctl disable-linger orin</code>. Check with <code>loginctl show-user orin -p Linger</code>.</li>
 </ul>
 <h1><a class="anchor" id="autotoc_md326"></a>
 By area</h1>
