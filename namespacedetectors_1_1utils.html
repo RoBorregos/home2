@@ -100,6 +100,8 @@ $(document).ready(function(){initNavTree('namespacedetectors_1_1utils.html','');
 Functions</h2></td></tr>
 <tr class="memitem:af7cdecddcac99f7c329b866f5ed79ed9"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedetectors_1_1utils.html#af7cdecddcac99f7c329b866f5ed79ed9">iou</a> (det1, det2)</td></tr>
 <tr class="separator:af7cdecddcac99f7c329b866f5ed79ed9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa169dedca405a026206465b06d317631"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedetectors_1_1utils.html#aa169dedca405a026206465b06d317631">iou_msg</a> (det1, det2)</td></tr>
+<tr class="separator:aa169dedca405a026206465b06d317631"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a518bb5f2252ac2f0372fdbb596bee6bf"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedetectors_1_1utils.html#a518bb5f2252ac2f0372fdbb596bee6bf">iou_deduplicate</a> (list detections, float threshold=0.6)</td></tr>
 <tr class="separator:a518bb5f2252ac2f0372fdbb596bee6bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -159,6 +161,34 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Remove detections that overlap an already-kept detection above `threshold`.</pre> 
+</div>
+</div>
+<a id="aa169dedca405a026206465b06d317631" name="aa169dedca405a026206465b06d317631"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa169dedca405a026206465b06d317631">&#9670;&#160;</a></span>iou_msg()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> float detectors.utils.iou_msg </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>det1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>det2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">IoU between two ObjectDetection messages (normalized xmin/ymin/xmax/ymax).</pre> 
 </div>
 </div>
 </div><!-- contents -->

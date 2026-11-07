@@ -162,6 +162,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacefrida__moveit__config.html#a55fbe8117df991cd5a2af35a23d38579", null ],
       [ "launch_setup", "namespacefrida__moveit__config.html#a5e023520268c7fc528bdef585510ea67", null ]
     ] ],
+    [ "gallery_object_detector_node", "namespacegallery__object__detector__node.html", "namespacegallery__object__detector__node" ],
     [ "general_navigation", "namespacegeneral__navigation.html", [
       [ "generate_launch_description", "namespacegeneral__navigation.html#af472e117a9a8a68b98c82219ed0d3a14", null ],
       [ "launch_function", "namespacegeneral__navigation.html#a7ef9e56e1cb54dea09714dcd59926838", null ]

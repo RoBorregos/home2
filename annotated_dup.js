@@ -160,6 +160,9 @@ var annotated_dup =
         [ "MotionPlanningServer", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer" ]
       ] ]
     ] ],
+    [ "gallery_object_detector_node", "namespacegallery__object__detector__node.html", [
+      [ "GalleryDetectorNode", "classgallery__object__detector__node_1_1GalleryDetectorNode.html", "classgallery__object__detector__node_1_1GalleryDetectorNode" ]
+    ] ],
     [ "gpd_ros2", "namespacegpd__ros2.html", [
       [ "GraspDetection", "classgpd__ros2_1_1GraspDetection.html", "classgpd__ros2_1_1GraspDetection" ],
       [ "GraspDetectionService", "classgpd__ros2_1_1GraspDetectionService.html", "classgpd__ros2_1_1GraspDetectionService" ]

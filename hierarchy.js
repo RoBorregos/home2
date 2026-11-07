@@ -165,6 +165,7 @@ var hierarchy =
     ] ],
     [ "rclpy.node.Node", null, [
       [ "base_detector_node.BaseDetectorNode", "classbase__detector__node_1_1BaseDetectorNode.html", [
+        [ "gallery_object_detector_node.GalleryDetectorNode", "classgallery__object__detector__node_1_1GalleryDetectorNode.html", null ],
         [ "object_detector_node.ObjectDetectorNode", "classobject__detector__node_1_1ObjectDetectorNode.html", null ],
         [ "zero_shot_object_detector_node.ZeroShotDetectorNode", "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html", null ]
       ] ]
