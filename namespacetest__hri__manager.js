@@ -32,7 +32,6 @@ var namespacetest__hri__manager =
     [ "TEST_INDIVIDUAL_FUNCTIONS", "namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
     [ "TEST_IS_NEGATIVE", "namespacetest__hri__manager.html#a0badb875d731e79a361252aae7631ac1", null ],
     [ "TEST_IS_POSITIVE", "namespacetest__hri__manager.html#ad6e339590c518dbf7c365f89e90b8be8", null ],
-    [ "TEST_MAP", "namespacetest__hri__manager.html#a6dab12c78ddfca13d1fd313af30f27bf", null ],
     [ "TEST_MERGED_PLAN_SPEECH", "namespacetest__hri__manager.html#a2b89018d4828726cfb8545330447a473", null ],
     [ "TEST_MERGER", "namespacetest__hri__manager.html#adc9eb09510b4382c10329bd2d6aa0b63", null ],
     [ "TEST_NLP", "namespacetest__hri__manager.html#a7ac6a46e0a6a75878f37da6ac5afe92b", null ],

@@ -11,6 +11,7 @@ var searchData=
   ['ex_5fpose_5fgoal_8',['ex_pose_goal',['../namespaceex__pose__goal.html',1,'']]],
   ['example_5flaunch_9',['example_launch',['../namespaceexample__launch.html',1,'']]],
   ['example_5fnode_10',['example_node',['../namespaceexample__node.html',1,'']]],
-  ['gallery_5fbuild_11',['gallery_build',['../namespaceembedding__gallery_1_1core_1_1gallery__build.html',1,'embedding_gallery::core']]],
-  ['gallery_5fmatcher_12',['gallery_matcher',['../namespaceembedding__gallery_1_1core_1_1gallery__matcher.html',1,'embedding_gallery::core']]]
+  ['exploration_5fplanner_11',['exploration_planner',['../namespaceexploration__planner.html',1,'']]],
+  ['gallery_5fbuild_12',['gallery_build',['../namespaceembedding__gallery_1_1core_1_1gallery__build.html',1,'embedding_gallery::core']]],
+  ['gallery_5fmatcher_13',['gallery_matcher',['../namespaceembedding__gallery_1_1core_1_1gallery__matcher.html',1,'embedding_gallery::core']]]
 ];

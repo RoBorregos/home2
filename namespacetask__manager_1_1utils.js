@@ -5,7 +5,6 @@ var namespacetask__manager_1_1utils =
       [ "mockable", "namespacetask__manager_1_1utils_1_1decorators.html#a026a1029f1cd63d148cea86009000db0", null ],
       [ "service_check", "namespacetask__manager_1_1utils_1_1decorators.html#a71d32900d7390409fe37451aa09c2cf0", null ]
     ] ],
-    [ "exploration_planner", "namespacetask__manager_1_1utils_1_1exploration__planner.html", "namespacetask__manager_1_1utils_1_1exploration__planner" ],
     [ "grasp_confirmation", "namespacetask__manager_1_1utils_1_1grasp__confirmation.html", [
       [ "count_by_class", "namespacetask__manager_1_1utils_1_1grasp__confirmation.html#a0b0ea83c89356b143d30bdd16c3f9cb0", null ],
       [ "picked_ok", "namespacetask__manager_1_1utils_1_1grasp__confirmation.html#a1724a5c718a48965095e5db46e11be09", null ],

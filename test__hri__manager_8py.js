@@ -32,7 +32,6 @@ var test__hri__manager_8py =
     [ "TEST_INDIVIDUAL_FUNCTIONS", "test__hri__manager_8py.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
     [ "TEST_IS_NEGATIVE", "test__hri__manager_8py.html#a0badb875d731e79a361252aae7631ac1", null ],
     [ "TEST_IS_POSITIVE", "test__hri__manager_8py.html#ad6e339590c518dbf7c365f89e90b8be8", null ],
-    [ "TEST_MAP", "test__hri__manager_8py.html#a6dab12c78ddfca13d1fd313af30f27bf", null ],
     [ "TEST_MERGED_PLAN_SPEECH", "test__hri__manager_8py.html#a2b89018d4828726cfb8545330447a473", null ],
     [ "TEST_MERGER", "test__hri__manager_8py.html#adc9eb09510b4382c10329bd2d6aa0b63", null ],
     [ "TEST_NLP", "test__hri__manager_8py.html#a7ac6a46e0a6a75878f37da6ac5afe92b", null ],

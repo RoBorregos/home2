@@ -101,6 +101,9 @@ var annotated_dup =
     [ "example_node", "namespaceexample__node.html", [
       [ "ExampleNode", "classexample__node_1_1ExampleNode.html", "classexample__node_1_1ExampleNode" ]
     ] ],
+    [ "exploration_planner", "namespaceexploration__planner.html", [
+      [ "ExplorationPlanner", "classexploration__planner_1_1ExplorationPlanner.html", "classexploration__planner_1_1ExplorationPlanner" ]
+    ] ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", [
       [ "FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", "classface__recognition__node_1_1FaceRecognition" ]
     ] ],
@@ -182,9 +185,6 @@ var annotated_dup =
     ] ],
     [ "grasp_markers", "namespacegrasp__markers.html", [
       [ "GraspVisualizer", "classgrasp__markers_1_1GraspVisualizer.html", "classgrasp__markers_1_1GraspVisualizer" ]
-    ] ],
-    [ "hand_task_manager", "namespacehand__task__manager.html", [
-      [ "HandTM", "classhand__task__manager_1_1HandTM.html", "classhand__task__manager_1_1HandTM" ]
     ] ],
     [ "heatmapPlace_Server", "namespaceheatmapPlace__Server.html", [
       [ "HeatmapServer", "classheatmapPlace__Server_1_1HeatmapServer.html", "classheatmapPlace__Server_1_1HeatmapServer" ]
@@ -463,11 +463,7 @@ var annotated_dup =
           [ "AudioStates", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates" ],
           [ "CommandHistory", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
           [ "FindClosestResult", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
-          [ "HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
           [ "Location", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1Location.html", null ]
-        ] ],
-        [ "hri_hand", "namespacetask__manager_1_1subtask__managers_1_1hri__hand.html", [
-          [ "HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand" ]
         ] ],
         [ "hri_tasks", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html", [
           [ "HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks" ]
@@ -485,9 +481,6 @@ var annotated_dup =
       [ "utils", "namespacetask__manager_1_1utils.html", [
         [ "colored_logger", "namespacetask__manager_1_1utils_1_1colored__logger.html", [
           [ "CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ]
-        ] ],
-        [ "exploration_planner", "namespacetask__manager_1_1utils_1_1exploration__planner.html", [
-          [ "ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner" ]
         ] ],
         [ "logger", "namespacetask__manager_1_1utils_1_1logger.html", [
           [ "Logger", "classtask__manager_1_1utils_1_1logger_1_1Logger.html", null ]

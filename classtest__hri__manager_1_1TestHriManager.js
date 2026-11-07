@@ -23,7 +23,6 @@ var classtest__hri__manager_1_1TestHriManager =
     [ "test_is_coherent", "classtest__hri__manager_1_1TestHriManager.html#a70531ff6288c279fa8bcec2699efb8d4", null ],
     [ "test_is_negative", "classtest__hri__manager_1_1TestHriManager.html#a5ffc27f537aa91090fa44f0e715250e5", null ],
     [ "test_is_positive", "classtest__hri__manager_1_1TestHriManager.html#a5e36aa8c1a7e0afb23ab8950f8ee5b1e", null ],
-    [ "test_map", "classtest__hri__manager_1_1TestHriManager.html#a54c69995753f4ce05bd076720a89c6b6", null ],
     [ "test_merged_plan_speech", "classtest__hri__manager_1_1TestHriManager.html#ab6539f583db1f8d9c7433e07eaa15ef6", null ],
     [ "test_merger", "classtest__hri__manager_1_1TestHriManager.html#ac612e2939530a3918c89a5f57ab90058", null ],
     [ "test_object_location", "classtest__hri__manager_1_1TestHriManager.html#abc972947f62b9ac49382f61b0e245d6e", null ],

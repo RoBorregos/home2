@@ -99,6 +99,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceexample__launch.html#af49d150abaa0c5580b32932333d2f2c8", null ]
     ] ],
     [ "example_node", "namespaceexample__node.html", "namespaceexample__node" ],
+    [ "exploration_planner", "namespaceexploration__planner.html", "namespaceexploration__planner" ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", "namespaceface__recognition__node" ],
     [ "fakes", "namespacefakes.html", "namespacefakes" ],
     [ "fetch_models", "namespacefetch__models.html", [
@@ -135,11 +136,6 @@ var namespaces_dup =
     [ "follow_person_node", "namespacefollow__person__node.html", "namespacefollow__person__node" ],
     [ "follow_person_node copy", "namespacefollow__person__node_01copy.html", "namespacefollow__person__node_01copy" ],
     [ "follow_person_v2", "namespacefollow__person__v2.html", "namespacefollow__person__v2" ],
-    [ "format", "namespaceformat.html", [
-      [ "parse_names", "namespaceformat.html#a2a29f347a155ccc16cb32c49b561e449", null ],
-      [ "parse_objects", "namespaceformat.html#af0893b47c7fbeda9b19ea7006e54f925", null ],
-      [ "save_json", "namespaceformat.html#ad68caf3b2ac11c6981af7cda72d732bf", null ]
-    ] ],
     [ "frida_constants", "namespacefrida__constants.html", "namespacefrida__constants" ],
     [ "frida_driver", "namespacefrida__driver.html", [
       [ "generate_launch_description", "namespacefrida__driver.html#aef5c72bf0e9a5f9cd51e0088acd02488", null ],
@@ -192,7 +188,6 @@ var namespaces_dup =
       [ "get_grasps", "namespacegrasp__utils.html#a9597ffd3c2a1573ab6036bd81117a64e", null ],
       [ "move_to_pregrasp_nearest_ik", "namespacegrasp__utils.html#abd739b812ccc2ca74c2903ecd1e851f4", null ]
     ] ],
-    [ "hand_task_manager", "namespacehand__task__manager.html", "namespacehand__task__manager" ],
     [ "heatmapPlace_Server", "namespaceheatmapPlace__Server.html", "namespaceheatmapPlace__Server" ],
     [ "help_me_carry", "namespacehelp__me__carry.html", "namespacehelp__me__carry" ],
     [ "hric", "namespacehric.html", [

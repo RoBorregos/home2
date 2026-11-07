@@ -6,7 +6,6 @@ var dir_2cc4506cbd6db8b57838626098c52a0d =
     [ "gpsr_tasks.py", "gpsr__tasks_8py.html", "gpsr__tasks_8py" ],
     [ "gpsr_test_commands.py", "gpsr__test__commands_8py.html", "gpsr__test__commands_8py" ],
     [ "hri_dataclasses.py", "hri__dataclasses_8py.html", "hri__dataclasses_8py" ],
-    [ "hri_hand.py", "hri__hand_8py.html", "hri__hand_8py" ],
     [ "hri_tasks.py", "hri__tasks_8py.html", "hri__tasks_8py" ],
     [ "manipulation_tasks.py", "manipulation__tasks_8py.html", "manipulation__tasks_8py" ],
     [ "nav_tasks.py", "nav__tasks_8py.html", "nav__tasks_8py" ],

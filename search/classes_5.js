@@ -8,5 +8,5 @@ var searchData=
   ['environment_5',['Environment',['../structvamp_1_1collision_1_1Environment.html',1,'vamp::collision']]],
   ['examplenode_6',['ExampleNode',['../classexample__node_1_1ExampleNode.html',1,'example_node']]],
   ['executionstates_7',['ExecutionStates',['../classsafety__task__manager_1_1ExecutionStates.html',1,'safety_task_manager.ExecutionStates'],['../classstoring__groceries__manager_1_1ExecutionStates.html',1,'storing_groceries_manager.ExecutionStates']]],
-  ['explorationplanner_8',['ExplorationPlanner',['../classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html',1,'task_manager::utils::exploration_planner']]]
+  ['explorationplanner_8',['ExplorationPlanner',['../classexploration__planner_1_1ExplorationPlanner.html',1,'exploration_planner']]]
 ];
