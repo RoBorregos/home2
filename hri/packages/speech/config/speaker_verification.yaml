@@ -35,10 +35,14 @@ speaker_verification:
     # Verification
     TARGET_NAME: ""                    # "" = any enrolled person counts as target
     EMBED_MIN_SEC: 1.0
-    EMBED_HOP_SEC: 0.5
+    EMBED_HOP_SEC: 0.5                 # partial decision period
+    EMBED_WIN_SEC: 1.5                 # partial window: who is speaking now
     EMBED_MAX_SEC: 6.0
-    ACCEPT_TH: 0.50
-    REJECT_TH: 0.28
+    # Calibrated 2026-11-07 on the HRI Orin ReSpeaker (ch0), 1 m, noisy lab:
+    # genuine vs profile 0.57-0.79, real people in the room <= 0.18,
+    # 12 played-back impostors <= 0.20 -> accept 0.45 / reject 0.30
+    ACCEPT_TH: 0.45
+    REJECT_TH: 0.30
     MARGIN: 0.10
     ADAPT: true
     ADAPT_TH: 0.65

@@ -52,6 +52,7 @@ from speech.speaker_id.verifier import (
     NOT_TARGET,
     TARGET,
     VerifierConfig,
+    aggregate_segment,
     build_profile,
     decide,
 )
@@ -184,6 +185,7 @@ class SpeakerVerification(Node):
         self._segments = 0
         self._target_active = False
         self._current_seg_label: dict[int, str] = {}
+        self._seg_windows: dict[int, list[tuple[str, float]]] = {}
         self._running = True
 
         # ROS I/O
@@ -261,9 +263,10 @@ class SpeakerVerification(Node):
             "TARGET_NAME": "",
             "EMBED_MIN_SEC": 1.0,
             "EMBED_HOP_SEC": 0.5,
+            "EMBED_WIN_SEC": 1.5,
             "EMBED_MAX_SEC": 6.0,
-            "ACCEPT_TH": 0.50,
-            "REJECT_TH": 0.28,
+            "ACCEPT_TH": 0.45,
+            "REJECT_TH": 0.30,
             "MARGIN": 0.10,
             "ADAPT": True,
             "ADAPT_TH": 0.65,
@@ -340,14 +343,15 @@ class SpeakerVerification(Node):
         if self.segmenter.t - self._last_partial_t < self.p["EMBED_HOP_SEC"]:
             return
         self._last_partial_t = self.segmenter.t
-        wave_ = seg.wave()[-int(self.p["EMBED_MAX_SEC"] * self.sr) :]
+        # sliding window: who is speaking *now* (segments can mix several voices)
+        wave_ = seg.wave()[-int(self.p["EMBED_WIN_SEC"] * self.sr) :]
         snr, vad_p = self._seg_stats(seg)
         self._enqueue(
             Job(
                 "partial",
                 seg.seg_id,
                 wave_,
-                dur,
+                wave_.shape[0] / self.sr,
                 snr,
                 vad_p,
                 self._seg_wall_start.get(seg.seg_id, time.time()),
@@ -362,7 +366,7 @@ class SpeakerVerification(Node):
             Job(
                 "final",
                 seg.seg_id,
-                seg.wave(),
+                seg.wave()[-int(self.p["EMBED_MAX_SEC"] * self.sr) :],
                 seg.duration(self.sr),
                 snr,
                 vad_p,
@@ -437,8 +441,22 @@ class SpeakerVerification(Node):
             label = dec.label
             result.update(dec.as_dict())
             result["infer_ms"] = round(infer_ms, 1)
-            if final and self.p["ADAPT"] and not self._enrolling:
-                self._maybe_adapt(dec, emb, job.duration)
+            if not final:
+                self._seg_windows.setdefault(job.seg_id, []).append(
+                    (label, dec.target_score)
+                )
+            else:
+                wins = self._seg_windows.pop(job.seg_id, [])
+                labels = [w[0] for w in wins]
+                label = aggregate_segment(dec.label, labels)
+                result["whole_label"] = dec.label
+                result["label"] = label
+                result["win_n"] = len(wins)
+                result["win_target"] = labels.count(TARGET)
+                result["win_not"] = labels.count(NOT_TARGET)
+                result["win_max"] = round(max((w[1] for w in wins), default=0.0), 3)
+                if self.p["ADAPT"] and not self._enrolling and label == TARGET:
+                    self._maybe_adapt(dec, emb, job.duration)
 
         now = time.time()
         if final:
@@ -449,12 +467,14 @@ class SpeakerVerification(Node):
             result["since_onset_ms"] = round((now - job.t_wall_start) * 1000.0, 1)
         self._labels[label if final else f"partial_{label}"] += 1
 
-        # target_active: True while the current segment is judged TARGET
+        # target_active: True while the latest window is judged TARGET
+        # (UNKNOWN windows keep the previous state of this segment)
         if label in (TARGET, NOT_TARGET):
             self._current_seg_label[job.seg_id] = label
         active = (not final) and self._current_seg_label.get(job.seg_id) == TARGET
         if final:
             self._current_seg_label.pop(job.seg_id, None)
+            self._seg_windows.pop(job.seg_id, None)
         if active != self._target_active:
             self._target_active = active
             self.target_pub.publish(Bool(data=active))
@@ -508,6 +528,8 @@ class SpeakerVerification(Node):
             self.get_logger().info(
                 f"[seg {r['seg_id']}] {r['dur']:.1f}s {r['label']:<10} "
                 f"best={r['best']}:{r['score']:.2f}{second}{tgt} "
+                f"win(T/N/all)={r.get('win_target', 0)}/{r.get('win_not', 0)}/"
+                f"{r.get('win_n', 0)} max={r.get('win_max', 0):.2f} "
                 f"vad_p={r['vad_p']:.2f} snr={r['snr_db']:.0f}dB "
                 f"infer={r['infer_ms']:.0f}ms lat={r['lat_ms']:.0f}ms"
                 + (" [enrolling]" if r["enrolling"] else "")

@@ -12,13 +12,14 @@ from speech.speaker_id.profiles import ProfileStore, SpeakerProfile
 TARGET = "TARGET"
 NOT_TARGET = "NOT_TARGET"
 UNKNOWN = "UNKNOWN"
+MIXED = "MIXED"  # target and someone else both spoke in the same segment
 NO_PROFILES = "NO_PROFILES"
 
 
 @dataclass
 class VerifierConfig:
-    accept_th: float = 0.50
-    reject_th: float = 0.28
+    accept_th: float = 0.45
+    reject_th: float = 0.30
     margin: float = 0.10
     min_sec: float = 1.0  # shorter audio -> UNKNOWN
     adapt_th: float = 0.65
@@ -97,6 +98,30 @@ def decide(
         tgt_score,
         scores,
     )
+
+
+def aggregate_segment(
+    whole_label: str, window_labels: list[str], min_windows: int = 2
+) -> str:
+    """Final label of a segment from its whole-segment decision and the labels of
+    its sliding windows (partials).
+
+    In noisy rooms one segment often contains several voices; the whole-segment
+    embedding then mixes them. Windows show whether the target spoke at all:
+
+    * target windows and other-speaker windows both present -> MIXED
+    * mostly target windows -> TARGET (even if the whole embedding was unsure)
+    * otherwise the whole-segment decision stands.
+    """
+    n_tgt = sum(1 for lbl in window_labels if lbl == TARGET)
+    n_not = sum(1 for lbl in window_labels if lbl == NOT_TARGET)
+    if n_tgt >= min_windows and n_not >= min_windows:
+        return MIXED
+    if whole_label == TARGET:
+        return TARGET
+    if n_tgt >= min_windows and n_tgt >= 0.5 * len(window_labels):
+        return TARGET
+    return whole_label
 
 
 def windows(wave: np.ndarray, sr: int, win_sec: float, hop_sec: float) -> list:
@@ -202,10 +227,12 @@ __all__ = [
     "TARGET",
     "NOT_TARGET",
     "UNKNOWN",
+    "MIXED",
     "NO_PROFILES",
     "VerifierConfig",
     "Decision",
     "decide",
+    "aggregate_segment",
     "build_profile",
     "EnrollResult",
     "ProfileStore",

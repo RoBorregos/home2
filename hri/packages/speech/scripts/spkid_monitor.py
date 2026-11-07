@@ -35,6 +35,7 @@ from std_msgs.msg import Bool, String
 COLORS = {
     "TARGET": "\033[92m",
     "NOT_TARGET": "\033[91m",
+    "MIXED": "\033[95m",
     "UNKNOWN": "\033[93m",
     "NO_PROFILES": "\033[90m",
     "TTS_CUT": "\033[90m",
@@ -57,6 +58,11 @@ CSV_FIELDS = [
     "snr_db",
     "infer_ms",
     "lat_ms",
+    "whole_label",
+    "win_n",
+    "win_target",
+    "win_not",
+    "win_max",
     "legacy_vad_seen",
     "enrolling",
     "tts_cut",
@@ -144,6 +150,8 @@ class Monitor(Node):
                 f"tgt={r['target'] or 'any'}:{r['target_score']:+.2f}  "
                 f"infer={r.get('infer_ms', 0):.0f}ms"
             )
+            if r["final"] and "win_n" in r:
+                body += f"  win T/N/all={r['win_target']}/{r['win_not']}/{r['win_n']}"
         else:
             body = ""
         lat = (

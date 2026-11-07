@@ -16,11 +16,13 @@ from speech.speaker_id.features import kaldi_fbank, speaker_features  # noqa: E4
 from speech.speaker_id.profiles import ProfileStore, SpeakerProfile  # noqa: E402
 from speech.speaker_id.segmenter import Segmenter, SegmenterConfig  # noqa: E402
 from speech.speaker_id.verifier import (  # noqa: E402
+    MIXED,
     NO_PROFILES,
     NOT_TARGET,
     TARGET,
     UNKNOWN,
     VerifierConfig,
+    aggregate_segment,
     decide,
 )
 
@@ -133,3 +135,12 @@ def test_profile_store_roundtrip(tmp_path):
     # other backends are skipped
     assert ProfileStore(str(tmp_path), "other").load_all()
     assert other.forget("MARIO") and other.get("mario") is None
+
+
+def test_aggregate_segment():
+    T, N, U = TARGET, NOT_TARGET, UNKNOWN
+    assert aggregate_segment(N, [T, T, N, N, U]) == MIXED
+    assert aggregate_segment(U, [T, T, T, U]) == TARGET
+    assert aggregate_segment(T, []) == TARGET
+    assert aggregate_segment(N, [N, N, T]) == NOT_TARGET
+    assert aggregate_segment(U, [U, T]) == UNKNOWN
