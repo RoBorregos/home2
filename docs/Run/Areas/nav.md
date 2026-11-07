@@ -84,7 +84,7 @@ The lidars sit at z = 0.136 m, so table tops, chair seats and shelves never reac
 ```bash
 ros2 bag record -o /tmp/bags/mapping_1318 --storage-preset-profile zstd_fast \
   /scan /scan_front /scan_rear /odrive/odom /odrive/imu /tf /tf_static /point_cloud \
-  /zed/zed_node/rgb/image_rect_color /zed/zed_node/rgb/camera_info /zed/zed_node/depth/depth_registered
+  /zed/zed_node/rgb/color/rect/image /zed/zed_node/rgb/color/rect/camera_info /zed/zed_node/depth/depth_registered
 ros2 bag info /tmp/bags/mapping_1318   # depth + point_cloud counts must be non-zero (SHM drops big msgs)
 ```
 

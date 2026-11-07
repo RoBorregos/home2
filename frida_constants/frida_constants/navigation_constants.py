@@ -120,7 +120,7 @@ DEFAULT_DOCK_OFFSET = 0.16
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
 SCAN_TOPIC = "/scan"
-CAMERA_RGB_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-CAMERA_INFO_TOPIC = "/zed/zed_node/rgb/camera_info"
+CAMERA_RGB_TOPIC = "/zed/zed_node/rgb/color/rect/image"
+CAMERA_INFO_TOPIC = "/zed/zed_node/rgb/color/rect/camera_info"
 CAMERA_DEPTH_TOPIC = "/zed/zed_node/depth/depth_registered"
 MAP_TOPIC = "/map"

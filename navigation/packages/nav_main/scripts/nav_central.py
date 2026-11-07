@@ -154,7 +154,7 @@ class Nav_Central(Node):
         self.required_topics = {'/cmd_vel', '/scan'}
         if not self.use_slam_toolbox:
             # RTABMap is RGBD; slam_toolbox is lidar-only.
-            self.required_topics.add('/zed/zed_node/rgb/camera_info')
+            self.required_topics.add(CAMERA_INFO_TOPIC)
 
         self.rtabmap_remapping = [
             f'rgb/image:={CAMERA_RGB_TOPIC}',
