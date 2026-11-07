@@ -22,9 +22,9 @@ speaker_verification:
     DUMP_SEGMENTS_DIR: ""              # e.g. /workspace/src/hri/packages/speech/assets/downloads/speaker_id/segments
 
     # VAD / segmentation
-    VAD_ON: 0.6
+    VAD_ON: 0.5
     VAD_OFF: 0.4
-    ENERGY_MARGIN_DB: 6.0
+    ENERGY_MARGIN_DB: 3.0
     NOISE_FLOOR_TAU_SEC: 3.0
     MIN_SPEECH_SEC: 0.25
     MIN_SILENCE_SEC: 0.5
@@ -38,11 +38,13 @@ speaker_verification:
     EMBED_HOP_SEC: 0.5                 # partial decision period
     EMBED_WIN_SEC: 1.5                 # partial window: who is speaking now
     EMBED_MAX_SEC: 6.0
-    # Calibrated 2026-11-07 on the HRI Orin ReSpeaker (ch0), 1 m, noisy lab:
-    # genuine vs profile 0.57-0.79, real people in the room <= 0.18,
-    # 12 played-back impostors <= 0.20 -> accept 0.45 / reject 0.30
-    ACCEPT_TH: 0.45
-    REJECT_TH: 0.30
+    # Calibrated 2026-11-07 on the HRI Orin ReSpeaker (ch0), noisy lab, profile
+    # enrolled frontal at 1 m. Target: frontal 1 m 0.53-0.68, side 0.26-0.58,
+    # 3 m 0.28-0.51, turned away 0.17-0.39. Impostors: 34 segments of real people
+    # in the room <= 0.15, 36 played-back segments (12 speakers) <= 0.20.
+    # 0.38 / 0.24 -> 0% impostor accepted, 6% target rejected, rest UNKNOWN.
+    ACCEPT_TH: 0.38
+    REJECT_TH: 0.24
     MARGIN: 0.10
     ADAPT: true
     ADAPT_TH: 0.65

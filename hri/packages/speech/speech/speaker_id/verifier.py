@@ -18,8 +18,8 @@ NO_PROFILES = "NO_PROFILES"
 
 @dataclass
 class VerifierConfig:
-    accept_th: float = 0.45
-    reject_th: float = 0.30
+    accept_th: float = 0.38
+    reject_th: float = 0.24
     margin: float = 0.10
     min_sec: float = 1.0  # shorter audio -> UNKNOWN
     adapt_th: float = 0.65

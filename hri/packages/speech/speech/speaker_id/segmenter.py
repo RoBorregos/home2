@@ -22,9 +22,9 @@ import numpy as np
 class SegmenterConfig:
     sample_rate: int = 16000
     frame_samples: int = 512
-    vad_on: float = 0.6
+    vad_on: float = 0.5
     vad_off: float = 0.4
-    energy_margin_db: float = 6.0
+    energy_margin_db: float = 3.0
     noise_floor_tau_sec: float = 3.0
     min_speech_sec: float = 0.25
     min_silence_sec: float = 0.5
