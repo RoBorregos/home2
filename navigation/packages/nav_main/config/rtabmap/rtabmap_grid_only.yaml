@@ -1,4 +1,4 @@
-# RTAB-Map as a GRID-ONLY mapper next to slam_toolbox (#1318).
+# RTAB-Map as a GRID-ONLY mapper next to slam_toolbox.
 #
 # slam_toolbox keeps owning the poses (map->odom) and localization. RTAB-Map
 # only projects the ZED depth into a 2D occupancy grid so furniture the lidars
