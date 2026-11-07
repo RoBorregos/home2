@@ -22,6 +22,7 @@ from std_srvs.srv import Empty
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+from action_msgs.msg import GoalStatus, GoalStatusArray
 from action_msgs.srv import CancelGoal
 from std_srvs.srv import Trigger
 from ament_index_python.packages import get_package_share_directory
@@ -106,6 +107,7 @@ class RosSignals(QObject):
     local_costmap_updated = pyqtSignal()
     global_costmap_updated = pyqtSignal()
     robot_pose_updated = pyqtSignal(float, float, float)  # x, y, yaw
+    nav_result = pyqtSignal(int)  # terminal GoalStatus of the latest Nav2 goal
 
 
 class NavRosNode(Node):
@@ -181,6 +183,13 @@ class NavRosNode(Node):
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
         self.initialpose_pub = self.create_publisher(
             PoseWithCovarianceStamped, '/initialpose', 10)
+
+        # Nav2 goal result. /goal_pose is fire-and-forget, so watch the action status.
+        # Default (volatile) QoS: only live updates; the latched status is dropped
+        # cross-process over shared memory, same as /map below.
+        self._last_result_goal = None
+        self.create_subscription(
+            GoalStatusArray, '/navigate_to_pose/_action/status', self.nav_status_callback, 10)
 
         # Service client for cancelling navigation goals
         self.cancel_nav_client = self.create_client(
@@ -583,6 +592,16 @@ class NavRosNode(Node):
         msg.pose.orientation.z = math.sin(yaw / 2.0)
         msg.pose.orientation.w = math.cos(yaw / 2.0)
         self.goal_pub.publish(msg)
+
+    def nav_status_callback(self, msg):
+        if not msg.status_list:
+            return
+        latest = max(msg.status_list, key=lambda s: (s.goal_info.stamp.sec, s.goal_info.stamp.nanosec))
+        goal_id = bytes(latest.goal_info.goal_id.uuid)
+        if latest.status in (GoalStatus.STATUS_SUCCEEDED, GoalStatus.STATUS_CANCELED,
+                             GoalStatus.STATUS_ABORTED) and goal_id != self._last_result_goal:
+            self._last_result_goal = goal_id
+            self.signals.nav_result.emit(latest.status)
 
     def cancel_nav(self):
         """Cancel all navigation goals."""
@@ -1213,6 +1232,7 @@ class NavUI(QMainWindow):
         signals.local_costmap_updated.connect(self.on_local_costmap_update)
         signals.global_costmap_updated.connect(self.on_global_costmap_update)
         signals.robot_pose_updated.connect(self.on_robot_pose)
+        signals.nav_result.connect(self.on_nav_result)
         # ROS spins before the window exists; a latched /map that arrived during a
         # slow window build (e.g. X11 over ssh) emitted with no slot connected.
         self.on_map_update()
@@ -1268,6 +1288,15 @@ class NavUI(QMainWindow):
         self.ros_node.send_goal(x, y, yaw)
         self.lbl_goal.setText(f"Goal: ({x:.2f}, {y:.2f})")
         self.status.showMessage(f"Goal sent: ({x:.2f}, {y:.2f}) yaw={math.degrees(yaw):.0f}")
+
+    def on_nav_result(self, status):
+        text = {GoalStatus.STATUS_SUCCEEDED: "reached", GoalStatus.STATUS_ABORTED: "failed",
+                GoalStatus.STATUS_CANCELED: "cancelled"}[status]
+        if status == GoalStatus.STATUS_SUCCEEDED:
+            self.canvas.current_goal = None  # keep it on failure so Send Goal can retry
+            self.canvas.update()
+        self.lbl_goal.setText(f"Goal: {text}")
+        self.status.showMessage(f"Navigation {text}")
 
     def cancel_navigation(self):
         self.ros_node.cancel_nav()
