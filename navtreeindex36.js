@@ -1,14 +1,5 @@
 var NAVTREEINDEX36 =
 {
-"launch__nav_8py.html#a96af342b5bd59dd400aefda6b7532555":[44,0,4,0,2,2,2,22],
-"launch__nav_8py.html#abc760dc1ac36e19482c124398ae7dc45":[44,0,4,0,2,2,2,5],
-"launch__nav_8py.html#abfda763f2a6e7b9caafc056cc9aa1e4f":[44,0,4,0,2,2,2,3],
-"launch__nav_8py.html#ace16b89971ec24d4c2a83bfb2423d2fa":[44,0,4,0,2,2,2,13],
-"launch__nav_8py.html#ad5f0f2a140eea61ec2fce197123a1d64":[44,0,4,0,2,2,2,12],
-"launch__nav_8py.html#ad8f3f0a83ccae0a1f950b036873acdfd":[44,0,4,0,2,2,2,1],
-"launch__nav_8py.html#ae215736aa067f1294af81ef3dcafe6f9":[44,0,4,0,2,2,2,20],
-"launch__nav_8py.html#ae5ed452e73246c6a02445001d416e92e":[44,0,4,0,2,2,2,10],
-"launch__nav_8py.html#af0470fd800e1efdfd2e37f736994e4cc":[44,0,4,0,2,2,2,4],
 "leaf__behaviours_8py.html":[44,0,6,2,0,2],
 "leaf__behaviours_8py.html#a10aa94116ccb2ceb7a36ad503806a10a":[44,0,6,2,0,2,4],
 "leaf__behaviours_8py.html#a40b1802be1d7fc019e2bd61f9f5ffc61":[44,0,6,2,0,2,3],
@@ -249,5 +240,14 @@ var NAVTREEINDEX36 =
 "manipulation__tasks_8py.html#a67991fa02b2a35d7109ee315e6223ac8":[44,0,6,2,1,8,10],
 "manipulation__tasks_8py.html#a801e74603aa06d40b4d6a5077a137ca9":[44,0,6,2,1,8,7],
 "manipulation__tasks_8py.html#abba582e852efb634001953a6f6e13989":[44,0,6,2,1,8,9],
-"manipulation__tasks_8py.html#ac0ffc9ca4f25c4f8fedebc41d53d04bd":[44,0,6,2,1,8,12]
+"manipulation__tasks_8py.html#ac0ffc9ca4f25c4f8fedebc41d53d04bd":[44,0,6,2,1,8,12],
+"manipulation__tasks_8py.html#ad2c48d09d4fd7a7a4470eab00d2a31fa":[44,0,6,2,1,8,4],
+"manipulation__tasks_8py.html#af100c45ca0837aa8dcea64c1673a8fb5":[44,0,6,2,1,8,11],
+"map__area__tagger_8py.html":[44,0,4,0,1,3,0],
+"map__area__tagger_8py.html#a0a8c16661fedc07a4d89252f175f3fde":[44,0,4,0,1,3,0,4],
+"map__area__tagger_8py.html#a33c0e02922d99d9405848a521fad78ab":[44,0,4,0,1,3,0,3],
+"map__area__tagger_8py.html#a5ff188d3d9297ca930d16ba3349e0f0d":[44,0,4,0,1,3,0,6],
+"map__area__tagger_8py.html#a8b8e125ab7b5ed1f090345e6c568893f":[44,0,4,0,1,3,0,7],
+"map__area__tagger_8py.html#a9c0f1fffca59ee4d50efdcc6d8995046":[44,0,4,0,1,3,0,8],
+"map__area__tagger_8py.html#aa3c45ff1720560f65c705d5b80511313":[44,0,4,0,1,3,0,2]
 };

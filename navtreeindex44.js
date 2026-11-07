@@ -1,13 +1,5 @@
 var NAVTREEINDEX44 =
 {
-"namespacepick__and__place_1_1manipulation__client.html#a07257cb905504438e2be1b6aa9c7c4d8":[42,0,110,4,1],
-"namespacepick__and__place_1_1manipulation__core.html":[42,0,110,5],
-"namespacepick__and__place_1_1manipulation__core.html#a4810c7e4b9d5af6572ad6d9864a580d1":[42,0,110,5,5],
-"namespacepick__and__place_1_1manipulation__core.html#a514658d21d46ed2364d0ea9e266e92d2":[42,0,110,5,2],
-"namespacepick__and__place_1_1manipulation__core.html#a8186701a4f2197fd8462d338e413ed97":[42,0,110,5,1],
-"namespacepick__and__place_1_1manipulation__core.html#aea5cebd50f27e2acec4e76711d70ac59":[42,0,110,5,3],
-"namespacepick__and__place_1_1manipulation__core.html#aead1614fba3c4bc4f148d9114cbf5706":[42,0,110,5,4],
-"namespacepick__and__place_1_1pick__benchmark.html":[42,0,110,6],
 "namespacepick__and__place_1_1pick__benchmark.html#a0208a21e425c23f8a2dcd53211702df6":[42,0,110,6,6],
 "namespacepick__and__place_1_1pick__benchmark.html#a43173d1939ddb476a63ba0c08b7c5f56":[42,0,110,6,7],
 "namespacepick__and__place_1_1pick__benchmark.html#a47132deb2b20d954142784abb51e5299":[42,0,110,6,2],
@@ -249,5 +241,13 @@ var NAVTREEINDEX44 =
 "namespacerandom__dance.html#a8bbebe78043a08027ef40579653add21":[42,0,119,1],
 "namespacerandom__dance.html#ac1529052cb9529d85902c8182845cddb":[42,0,119,0],
 "namespacereceptionist.html":[42,0,120],
-"namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8":[42,0,120,0]
+"namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8":[42,0,120,0],
+"namespacereceptionist__task__manager.html":[42,0,121],
+"namespacereceptionist__task__manager.html#a190fa117b34e8f98afa854494e664047":[42,0,121,3],
+"namespacereceptionist__task__manager.html#ab6e6d47fc4ae90351efa864eacc5c880":[42,0,121,2],
+"namespacerecord__joints__node.html":[42,0,122],
+"namespacerecord__joints__node.html#affacd92dfdac1d2fd31eb665364dfa8e":[42,0,122,1],
+"namespacerecord__relative__pose.html":[42,0,123],
+"namespacerecord__relative__pose.html#a5b8f44ea816afb929415be7362869603":[42,0,123,1],
+"namespaceremove__collision__object.html":[42,0,124]
 };

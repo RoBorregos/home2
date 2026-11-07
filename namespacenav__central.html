@@ -109,6 +109,8 @@ Functions</h2></td></tr>
 <tr class="separator:a03a4b9afc936746d5950dc3dd6443176"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86af41de54cd576d3ea441a7bdf3cd20"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__central.html#a86af41de54cd576d3ea441a7bdf3cd20">params_from_yaml</a> (yaml_path, node_name)</td></tr>
 <tr class="separator:a86af41de54cd576d3ea441a7bdf3cd20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3004bbe86aa4e0793fdfca26b8f6038b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__central.html#a3004bbe86aa4e0793fdfca26b8f6038b">door_window_median</a> (ranges, lo, hi, sensor_min, far_value)</td></tr>
+<tr class="separator:a3004bbe86aa4e0793fdfca26b8f6038b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b76521918c13d0a97e1ad8c5b97c1f4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__central.html#a2b76521918c13d0a97e1ad8c5b97c1f4">main</a> (args=None)</td></tr>
 <tr class="separator:a2b76521918c13d0a97e1ad8c5b97c1f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -118,6 +120,56 @@ Variables</h2></td></tr>
 <tr class="separator:a12f9b4e3d13bf93219b5c2a23513d755"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a3004bbe86aa4e0793fdfca26b8f6038b" name="a3004bbe86aa4e0793fdfca26b8f6038b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3004bbe86aa4e0793fdfca26b8f6038b">&#9670;&#160;</a></span>door_window_median()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_central.door_window_median </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>ranges</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>lo</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>hi</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>sensor_min</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>far_value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Median range over beam indices lo..hi (wraps past the end when lo &gt; hi).
+inf/over-range beams count as far_value (door open -&gt; beam passes through);
+nan/under-range beams are ignored. None when no beam is valid. Median, not
+mean: the merged /scan leaves a few empty (inf) bins even in front of a
+closed door, and at far_value each one drags a mean past DOOR_DISTANCE.</pre> 
+</div>
+</div>
 <a id="a2b76521918c13d0a97e1ad8c5b97c1f4" name="a2b76521918c13d0a97e1ad8c5b97c1f4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2b76521918c13d0a97e1ad8c5b97c1f4">&#9670;&#160;</a></span>main()</h2>
 

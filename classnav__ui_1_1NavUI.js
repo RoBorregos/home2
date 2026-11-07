@@ -18,6 +18,7 @@ var classnav__ui_1_1NavUI =
     [ "on_global_costmap_update", "classnav__ui_1_1NavUI.html#af27056a44359832804f16729181a7b68", null ],
     [ "on_local_costmap_update", "classnav__ui_1_1NavUI.html#a2b975243f60e43409ab3870b30a5ea5d", null ],
     [ "on_map_update", "classnav__ui_1_1NavUI.html#a1e9683c40a1ee4ee3ff1f76c69743024", null ],
+    [ "on_nav_result", "classnav__ui_1_1NavUI.html#ad422636c1b2da1f0a3ae15ac8de0f2bd", null ],
     [ "on_path_update", "classnav__ui_1_1NavUI.html#ac93ab723e066a5b473f35ca632ad7919", null ],
     [ "on_robot_pose", "classnav__ui_1_1NavUI.html#aef962168a4d6b10891e3a70fd9f9223c", null ],
     [ "send_current_goal", "classnav__ui_1_1NavUI.html#acf9189a020f83ca37c90f397fda598e1", null ],
