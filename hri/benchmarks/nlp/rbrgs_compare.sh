@@ -110,13 +110,13 @@ for m in "${MODELS[@]}"; do
         echo "  run $r/$RUNS -> $(basename "$log")"
         before=$(scrape || true)
         start=$SECONDS
-        # Full output to the log; one live line per finished test to the terminal.
+        # Full output to the log; one live line per LLM call (latency + command) to the terminal.
+        # baml-cli only prints PASSED/FAILED after the run, so pass/fail is in the summary.
         run_tests 2>&1 | tee "$log" | sed -u 's/\x1b\[[0-9;]*m//g' | awk -v total="$TOTAL_TESTS" '
-            /Test results:/ { s = 1 }
-            !s && ($2 == "PASSED" || $2 == "FAILED") && $3 ~ /^GenerateCommandList::/ {
-                name = $3; sub(/^GenerateCommandList::/, "", name)
-                ms = $1; sub(/s$/, "", ms)
-                printf "    [%2d/%d] %-6s %8.0f ms  %s\n", ++i, total, $2, ms * 1000, name; fflush()
+            /Client: .* - [0-9]+ms/ { ms = $0; sub(/.* - /, "", ms); sub(/ms.*/, "", ms); want = 1; next }
+            want && /^ *user:/ {
+                cmd = $0; sub(/^ *user: */, "", cmd)
+                printf "    [%2d/%d] %6d ms  %s\n", ++i, total, ms, substr(cmd, 1, 70); fflush(); want = 0
             }' || true
         printf "%s\twall_secs\t%s\n" "$m" "$((SECONDS - start))" >> "$METRICS"
         after=$(scrape || true)
