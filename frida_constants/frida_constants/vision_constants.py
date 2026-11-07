@@ -166,10 +166,10 @@ RIGHT_MOUTH_LANDMARK = 291
 
 # Talking detection tuning
 TALKING_HISTORY_FRAMES = 20
-TALKER_WINDOW_SEC = 5.0
 # Crops sent per is_talking request. Each request starts a fresh MouthActivity, so
-# the first frames only fill its TALKING_HISTORY_FRAMES buffer and debounce.
-TALKING_REQUEST_FRAMES = 50
+# the first frames only fill its TALKING_HISTORY_FRAMES buffer and debounce; the
+# server spends ~30 ms per crop, so more crops mean a slower answer.
+TALKING_REQUEST_FRAMES = 35
 TALKING_MIN_DELTA = 0.01
 TALKING_DIRECTION_CHANGE_THRESHOLD = 2
 TALKING_DEBOUNCE_ON_FRAMES = 3
