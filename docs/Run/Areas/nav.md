@@ -68,3 +68,40 @@ The Navigation Node includes the following components:
 ```bash
 ros2 launch nav_main navigation_launch.py
 ```
+---
+
+## Mapping Evaluation: ZED Obstacles in the Static Map (#1318)
+
+The lidars sit at z = 0.136 m, so table tops, chair seats and shelves never reach the slam_toolbox map. To evaluate adding them from the ZED depth, run offline on a bag. slam_toolbox keeps the poses and localization; RTAB-Map only builds a grid from the ZED (`zed_grid.launch.py`, `config/rtabmap/rtabmap_grid_only.yaml`).
+
+### 1. Record (robot, inside the navigation container)
+- Run **only** `omni_basics.launch.py` + teleop, **no SLAM**. Otherwise the bag carries a live `map->odom` that fights the replay.
+- Put the arm in the navigation pose (the ZED is on the gripper). Clear people out of the arena if possible.
+- Lab tables are 0.70-0.80 m tall. With the arm in `NAV_POSE`, check that the ZED sees the table tops: `ros2 run tf2_ros tf2_echo base_link zed_camera_link`, then watch `/point_cloud` in RViz as you drive up to a table. If the camera sits at table height looking straight ahead, it sees the top edge-on and the grid barely marks it.
+- Drive ~5 min past every table/chair. Write down a furniture checklist (item, rough position, height): that's the metric.
+
+```bash
+ros2 bag record -o ~/bags/mapping_1318 --storage-preset-profile zstd_fast \
+  /scan /scan_front /scan_rear /odrive/odom /odrive/imu /tf /tf_static /point_cloud \
+  /zed/zed_node/rgb/image_rect_color /zed/zed_node/rgb/camera_info /zed/zed_node/depth/depth_registered
+ros2 bag info ~/bags/mapping_1318   # depth + point_cloud counts must be non-zero (SHM drops big msgs)
+```
+
+### 2. Replay (baseline + ZED grid in the same run)
+```bash
+ros2 launch nav_main slam.launch.py use_sim_time:=true
+ros2 launch nav_main zed_grid.launch.py use_sim_time:=true
+ros2 bag play ~/bags/mapping_1318 --clock
+# when it ends, save both grids (absolute paths):
+ros2 service call /slam_toolbox/save_map slam_toolbox/srv/SaveMap "{name: {data: '/abs/path/baseline'}}"
+ros2 run nav2_map_server map_saver_cli -t /rtabmap/map -f /abs/path/zed_grid
+```
+
+Full RTAB-Map (lidar + depth, own poses) for comparison: skip `slam.launch.py` and pass `params_file:=<nav_main share>/config/rtabmap/rtabmap_mapping_config.yaml`. SuperPoint needs the Orin image.
+
+### 3. Merge and Compare
+```bash
+ros2 run map_context merge_grids.py /abs/path/baseline.yaml /abs/path/zed_grid.yaml /abs/path/merged
+ros2 run map_context merge_grids.py --test   # self-check
+```
+Score `baseline` vs `merged` against the checklist: furniture present, and false obstacles (people/noise baked in). If the floor shows up as obstacles, raise `Grid/MaxGroundHeight`. The merged `.pgm` is served by map_server in `localization.launch.py`; the `.posegraph` is unchanged.

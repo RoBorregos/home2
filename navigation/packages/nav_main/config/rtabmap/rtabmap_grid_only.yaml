@@ -1,0 +1,67 @@
+# RTAB-Map as a GRID-ONLY mapper next to slam_toolbox (#1318).
+#
+# slam_toolbox keeps owning the poses (map->odom) and localization. RTAB-Map
+# only projects the ZED depth into a 2D occupancy grid so furniture the lidars
+# miss (table tops, chair seats, shelves above z=0.136 m) can be merged into the
+# saved map (map_context/scripts/merge_grids.py).
+#
+# Trick: odom_frame_id = map, so RTAB-Map takes slam_toolbox's corrected pose as
+# its odometry. Loop closure is off and publish_tf is false, so its grid stays in
+# the same coordinates as slam_toolbox's /map and never fights over the TF tree.
+#
+# Launched by nav_main/launch/omni_setup/zed_grid.launch.py (namespace rtabmap,
+# so the grid is /rtabmap/map and does not collide with slam_toolbox's /map).
+
+rgbd_sync:
+  ros__parameters:
+    approx_sync: false              # ZED rgb + depth share the same stamp
+    qos: 1
+    qos_camera_info: 1
+
+rtabmap:
+  ros__parameters:
+    qos: 1
+    subscribe_rgbd: true
+    subscribe_rgb: false
+    subscribe_depth: false
+    subscribe_scan: false
+    frame_id: "base_link"
+    odom_frame_id: "map"            # slam_toolbox's pose is the "odometry"
+    map_frame_id: "rtab_map"
+    publish_tf: false
+    odom_sensor_sync: true          # look the pose up at the image stamp (camera rides on the arm)
+    wait_for_transform: 0.3
+    queue_size: 5
+    database_path: "~/.ros/zed_grid.db"
+    delete_db_on_start: true
+
+    # Add a node every 10 cm / ~6 deg of motion.
+    "Rtabmap/DetectionRate": "2"
+    "RGBD/LinearUpdate": "0.1"
+    "RGBD/AngularUpdate": "0.1"
+    "RGBD/ForceOdom3DoF": "true"
+    "Reg/Force3DoF": "true"
+
+    # No pose estimation of our own: no loop closure, no proximity links, no ICP refining.
+    "Kp/MaxFeatures": "-1"
+    "RGBD/ProximityBySpace": "false"
+    "RGBD/NeighborLinkRefining": "false"
+    "Mem/IncrementalMemory": "true"
+
+    # Grid from the ZED depth only. Plain height thresholds (no normals):
+    #   z < MaxGroundHeight            -> floor (free)
+    #   MaxGroundHeight..MaxObstacleHeight -> obstacle
+    # Calibration knobs: raise MaxGroundHeight if floor noise shows up as
+    # obstacles; MaxObstacleHeight ~ robot height (anything above can't be hit).
+    # Lab tables measure 0.70-0.80 m (2026-11-06): well inside the band.
+    "Grid/Sensor": "1"
+    "Grid/3D": "false"
+    "Grid/CellSize": "0.05"         # must match slam_toolbox resolution for a clean merge
+    "Grid/RangeMax": "3.0"          # ZED depth gets noisy past ~3 m
+    "Grid/RayTracing": "true"       # clear free space, so someone walking by gets erased
+    "Grid/NormalsSegmentation": "false"
+    "Grid/MaxGroundHeight": "0.15"
+    "Grid/MaxObstacleHeight": "1.6"
+    "Grid/DepthDecimation": "4"
+    "Grid/NoiseFilteringRadius": "0.1"
+    "Grid/NoiseFilteringMinNeighbors": "3"
