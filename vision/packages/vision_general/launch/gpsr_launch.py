@@ -18,14 +18,6 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
-                executable="hric_commands.py",
-                name="hric_commands",
-                output="screen",
-                emulate_tty=True,
-                # parameters=[config],
-            ),
-            Node(
-                package="vision_general",
                 executable="gpsr_commands.py",
                 name="gpsr_commands",
                 output="screen",
@@ -33,7 +25,7 @@ def generate_launch_description():
                 # parameters=[config],
             ),
             # image_orienter (feeds IMAGE_ORIENTED_TOPIC for gpsr_commands,
-            # hric_commands, face_recognition and the display's default video
+            # face_recognition and the display's default video
             # feed) is started by the included object_detector_node.launch.py —
             # do NOT add it here again or two instances will run.
             Node(
