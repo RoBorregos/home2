@@ -59,8 +59,16 @@ class SpeakerEmbedder:
         opts.intra_op_num_threads = num_threads
         opts.inter_op_num_threads = 1
         opts.log_severity_level = 3
+        # Every segment has a different length; exhaustive cuDNN algo search would
+        # re-run for each new shape (~60 ms instead of ~10 ms on the Orin).
+        provider_cfg = [
+            (p, {"cudnn_conv_algo_search": "HEURISTIC"})
+            if p == "CUDAExecutionProvider"
+            else p
+            for p in pick_providers(providers)
+        ]
         self.session = ort.InferenceSession(
-            model_path, sess_options=opts, providers=pick_providers(providers)
+            model_path, sess_options=opts, providers=provider_cfg
         )
         self.input_name = self.session.get_inputs()[0].name
         self.output_name = self.session.get_outputs()[0].name
