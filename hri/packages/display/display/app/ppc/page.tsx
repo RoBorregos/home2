@@ -14,7 +14,6 @@ import { Topic } from "roslib";
 import { AudioStateIndicator } from "../../components/InteractionIndicator";
 import { ConnectionStatus } from "../../components/ConnectionStatus";
 import { MessagesList } from "../../components/MessagesList";
-import { MapModal } from "../../components/MapModal";
 import { QuestionModal } from "../../components/QuestionModal";
 import { VideoFeed } from "../../components/VideoFeed";
 import { StartButton } from "../../components/StartButton";
@@ -183,7 +182,6 @@ export default function PPCPage() {
       </div>
 
       {/* ── MODALS ── */}
-      <MapModal />
       <QuestionModal />
     </div>
   );

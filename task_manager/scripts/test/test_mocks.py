@@ -58,7 +58,6 @@ EXEMPT = {
         "add_location",
         "query_location",
         "get_items_embeddings",
-        "get_hand_items",
         "query_command_history",
         "categorize_objects",
         "deterministic_categorization",

@@ -36,7 +36,7 @@ from frida_constants.vision_constants import (
 )
 
 from PyQt5.QtCore import Qt, QObject, QTimer, pyqtSignal
-from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPixmap
+from PyQt5.QtGui import QFont, QImage, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QDialog,
@@ -294,7 +294,6 @@ class DisplaySignals(QObject):
     message_received = pyqtSignal(str, str)  # type, content
     question_received = pyqtSignal(str)  # empty string closes the modal
     task_status_changed = pyqtSignal(bool)
-    map_received = pyqtSignal(dict)
     video_topic_changed = pyqtSignal(str)
     frame_received = pyqtSignal(QImage)
     task_step_changed = pyqtSignal(str)
@@ -416,7 +415,6 @@ class DisplayRosNode(Node):
         self.create_subscription(
             String, "/hri/display/task_status", self._on_task_status, 10
         )
-        self.create_subscription(String, "/hri/display/map", self._on_map, 10)
         self.create_subscription(
             String, "/hri/display/change_video", self._on_change_video, 10
         )
@@ -530,14 +528,6 @@ class DisplayRosNode(Node):
     def _on_command_index(self, msg: Int32):
         self.signals.command_index_changed.emit(msg.data)
 
-    def _on_map(self, msg: String):
-        try:
-            data = json.loads(msg.data)
-            if data.get("image_path", "").strip():
-                self.signals.map_received.emit(data)
-        except json.JSONDecodeError as e:
-            self.get_logger().warn(f"Error parsing map message: {e}")
-
     def _on_change_video(self, msg: String):
         if msg.data == self.video_topic:
             return  # hri_tasks re-publishes the current topic at 1 Hz
@@ -637,77 +627,6 @@ class DisplayRosNode(Node):
 
     def publish_answer(self, text: str):
         self.answer_pub.publish(String(data=text))
-
-
-# Bases tried, in order, to resolve a relative `image_path` from /hri/display/map
-# (the old web app resolved these as URLs against its own public/ dir; there's no
-# equivalent web root here, so we look in the likely asset locations instead).
-MAP_IMAGE_SEARCH_DIRS = [
-    Path("/workspace/src/frida_constants/data"),
-    Path.home() / ".frida",
-]
-
-
-def resolve_map_image(image_path: str) -> str:
-    path = Path(image_path)
-    if path.is_absolute() or path.is_file():
-        return str(path)
-    for base in MAP_IMAGE_SEARCH_DIRS:
-        candidate = base / path
-        if candidate.is_file():
-            return str(candidate)
-    return image_path
-
-
-class MapDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Map View")
-        self.resize(700, 700)
-        self.markers = []
-        self.image_label = QLabel()
-        self.image_label.setAlignment(Qt.AlignCenter)
-
-        self.legend_layout = QVBoxLayout()
-
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.image_label)
-        layout.addLayout(self.legend_layout)
-
-    def show_map(self, data: dict):
-        self.markers = data.get("markers", [])
-        image_path = resolve_map_image(data["image_path"])
-        pixmap = QPixmap(image_path)
-        if pixmap.isNull():
-            print(
-                f"[display_ui] MapDialog: could not load image '{image_path}'",
-                file=sys.stderr,
-            )
-        else:
-            painted = QPixmap(pixmap)
-            painter = QPainter(painted)
-            for marker in self.markers:
-                x = marker["x"] / 100.0 * pixmap.width()
-                y = marker["y"] / 100.0 * pixmap.height()
-                painter.setPen(QColor("white"))
-                painter.setBrush(QColor(marker.get("color", "#ffffff")))
-                painter.drawEllipse(int(x) - 8, int(y) - 8, 16, 16)
-            painter.end()
-            self.image_label.setPixmap(painted)
-
-        while self.legend_layout.count():
-            self.legend_layout.takeAt(0).widget().deleteLater()
-        for marker in self.markers:
-            color = marker.get("color", "#ffffff")
-            color_name = marker.get("color_name", color)
-            row = QLabel(
-                f"<span style='color:{color}'>⬤</span> {color_name} — "
-                f"{marker['x']:.1f}%, {marker['y']:.1f}%"
-            )
-            self.legend_layout.addWidget(row)
-
-        self.show()
-        self.raise_()
 
 
 class QuestionDialog(QDialog):
@@ -1254,10 +1173,8 @@ class BaseWindow(QMainWindow):
         )
 
         if with_dialogs:
-            self.map_dialog = MapDialog(self)
             self.question_dialog = QuestionDialog(self)
             self.question_dialog.answered.connect(ros_node.publish_answer)
-            ros_node.signals.map_received.connect(self.map_dialog.show_map)
             ros_node.signals.question_received.connect(self._on_question)
 
     def make_header(self, title: str, extra_left=(), extra_right=()):
