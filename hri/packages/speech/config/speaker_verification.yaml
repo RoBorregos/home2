@@ -1,0 +1,55 @@
+speaker_verification:
+  ros__parameters:
+    # Topics (filled from frida_constants.hri_constants)
+    RAW_AUDIO_TOPIC: REPLACE           # input audio (raw ReSpeaker ch0, before DeepFilterNet)
+    SAYING_TOPIC: REPLACE              # robot TTS active -> mute
+    SPEAKER_ID_VAD_TOPIC: REPLACE
+    SPEAKER_ID_TARGET_ACTIVE_TOPIC: REPLACE
+    SPEAKER_ID_RESULT_TOPIC: REPLACE
+    SPEAKER_ID_METRICS_TOPIC: REPLACE
+    SPEAKER_ID_COMMAND_TOPIC: REPLACE
+    SPEAKER_ID_STATUS_TOPIC: REPLACE
+    # Set to the processed topic to A/B against DeepFilterNet output ("" = RAW_AUDIO_TOPIC)
+    INPUT_AUDIO_TOPIC: ""
+    SAMPLE_RATE: 16000
+
+    # Models / data ("" = defaults under hri/packages/speech/assets)
+    SILERO_MODEL: ""
+    EMBED_MODEL: ""                    # default: assets/downloads/speaker_id/voxceleb_resnet34_LM.onnx
+    EMBED_BACKEND: "wespeaker_resnet34_lm"
+    ORT_PROVIDERS: "cuda,cpu"
+    PROFILE_DIR: ""                    # default: assets/downloads/speaker_id/profiles
+    DUMP_SEGMENTS_DIR: ""              # e.g. /workspace/src/hri/packages/speech/assets/downloads/speaker_id/segments
+
+    # VAD / segmentation
+    VAD_ON: 0.6
+    VAD_OFF: 0.4
+    ENERGY_MARGIN_DB: 6.0
+    NOISE_FLOOR_TAU_SEC: 3.0
+    MIN_SPEECH_SEC: 0.25
+    MIN_SILENCE_SEC: 0.5
+    PAD_SEC: 0.2
+    MAX_SEGMENT_SEC: 15.0
+    TTS_TAIL_SEC: 0.3
+
+    # Verification
+    TARGET_NAME: ""                    # "" = any enrolled person counts as target
+    EMBED_MIN_SEC: 1.0
+    EMBED_HOP_SEC: 0.5
+    EMBED_MAX_SEC: 6.0
+    ACCEPT_TH: 0.50
+    REJECT_TH: 0.28
+    MARGIN: 0.10
+    ADAPT: true
+    ADAPT_TH: 0.65
+    ADAPT_MIN_SEC: 2.0
+    POOL_MAX: 10
+
+    # Enrollment
+    ENROLL_MIN_SEC: 3.0
+    ENROLL_GOOD_SEC: 6.0
+    ENROLL_OUTLIER_TH: 0.45
+    ENROLL_TIMEOUT_SEC: 90.0
+    LOOKBACK_SEC: 30.0
+
+    METRICS_PERIOD: 1.0
