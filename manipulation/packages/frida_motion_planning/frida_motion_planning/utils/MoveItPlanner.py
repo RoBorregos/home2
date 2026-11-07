@@ -18,6 +18,21 @@ from frida_constants.manipulation_constants import (
 )
 
 PYMOVEIT_FUTURE_TIMEOUT = 3
+RATE_MAX_PERIOD = 0.01
+
+
+class _ThreadRate:
+    """Drop-in for rclpy Rate that sleeps the calling thread instead of adding an executor timer."""
+
+    def __init__(self, frequency: float, clock=None):
+        # Polls at least every 10 ms: pymoveit2's 10 Hz future polling added up to 100 ms per plan/FK/IK
+        self._period = min(1.0 / frequency, RATE_MAX_PERIOD)
+
+    def sleep(self) -> None:
+        time.sleep(self._period)
+
+    def destroy(self) -> None:
+        pass
 
 
 # A class to handle planning with MoveIt
@@ -33,6 +48,8 @@ class MoveItPlanner(Planner):
     ):
         # Create callback group
         self.node = node
+        # pymoveit2 Rates are executor timers (1 kHz at init, a leaked 10 Hz one per plan/FK/IK), so use thread sleeps
+        self.node.create_rate = _ThreadRate
         # Create MoveIt 2 interface
         self.moveit2 = MoveIt2(
             node=node,
@@ -42,6 +59,9 @@ class MoveItPlanner(Planner):
             group_name=xarm6.MOVE_GROUP_ARM,
             callback_group=callback_group,
         )
+        # pymoveit2 checks hasattr(self, "__compute_fk_client") without name mangling, so it made a new FK client per call
+        self.moveit2._MoveIt2__init_compute_fk()
+        setattr(self.moveit2, "__compute_fk_client", True)
         self.joint_states_topic = "/joint_states"
         # create listener
         self.joint_states_sub = self.node.create_subscription(
