@@ -1,0 +1,10 @@
+# Run the shared YOLO pose model (pose_node) on an image.
+sensor_msgs/Image image
+# Optional regions to analyse, flattened as x1,y1,x2,y2 per region (pixels).
+# Empty = analyse the whole image. Keypoints are relative to each region.
+int32[] rois
+# Detection confidence threshold; 0 = model default.
+float32 conf
+---
+bool success
+frida_interfaces/PoseResult[] results  # one per roi (one if rois is empty)
