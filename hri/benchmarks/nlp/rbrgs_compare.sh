@@ -3,7 +3,8 @@
 # Needs the HRI stack up with gpsr (./run.sh hri --gpsr) and the GGUFs in hri/packages/nlp/assets.
 #
 # Usage:
-#   ./rbrgs_compare.sh [--runs N] [--no-restore] model_a.gguf model_b.gguf ...
+#   ./rbrgs_compare.sh [--runs N] [--no-restore] model_a.gguf model_a.gguf:long model_b.gguf ...
+#   A ":long" suffix tests that model with the long fine-tuning system prompt instead of the default one.
 
 set -euo pipefail
 
@@ -24,24 +25,35 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --runs)       RUNS="$2"; shift 2 ;;
         --no-restore) RESTORE=false; shift ;;
-        -h|--help)    sed -n '2,6p' "$0"; exit 0 ;;
+        -h|--help)    sed -n '2,7p' "$0"; exit 0 ;;
         *)            MODELS+=("$1"); shift ;;
     esac
 done
-[[ ${#MODELS[@]} -ge 1 ]] || { sed -n '2,6p' "$0"; exit 1; }
+[[ ${#MODELS[@]} -ge 1 ]] || { sed -n '2,7p' "$0"; exit 1; }
 
 for m in "${MODELS[@]}"; do
-    [[ -s "$ASSETS_DIR/$m" ]] || { echo "ERROR: $ASSETS_DIR/$m not found"; exit 1; }
+    [[ -s "$ASSETS_DIR/${m%%:*}" ]] || { echo "ERROR: $ASSETS_DIR/${m%%:*} not found"; exit 1; }
+    [[ "$m" != *:* || "${m#*:}" == long ]] || { echo "ERROR: unknown prompt variant in $m (only :long)"; exit 1; }
 done
 docker ps -q -f name="^${ROS_CONTAINER}$" | grep -q . \
     || { echo "ERROR: $ROS_CONTAINER not running (start it with ./run.sh hri --gpsr)"; exit 1; }
 
 # Test a copy pointed at localhost so the hardcoded robot IP in client.baml doesn't matter.
-TEST_CMD="rm -rf /tmp/rbrgs_bench && mkdir -p /tmp/rbrgs_bench \
+PREP_CMD="rm -rf /tmp/rbrgs_bench && mkdir -p /tmp/rbrgs_bench \
     && cp -r /workspace/src/task_manager/task_manager/utils/baml_src /tmp/rbrgs_bench/ \
-    && sed -i 's#http://[0-9.]*:$PORT#http://localhost:$PORT#' /tmp/rbrgs_bench/baml_src/client.baml \
-    && cd /tmp/rbrgs_bench && baml-cli test --from baml_src/ --parallel 1"
-run_tests() { docker exec "$ROS_CONTAINER" bash -c "$TEST_CMD"; }
+    && sed -i 's#http://[0-9.]*:$PORT#http://localhost:$PORT#' /tmp/rbrgs_bench/baml_src/client.baml"
+BENCH_PROMPT=/tmp/rbrgs_bench/baml_src/robot_commands.baml
+# Extra sentences of the long fine-tuning prompt (from 2306cf633), appended to GenerateCommandList's system line.
+LONG_PROMPT_TAIL="the format is a list of commands, each with an action, complement, and characteristic. The action is the main verb of the command, the complement is an object or location related to the action, and the characteristic is optional additional information about the action."
+prepare_tests() {
+    docker exec "$ROS_CONTAINER" bash -c "$PREP_CMD"
+    [[ "$1" == long ]] || return 0
+    docker exec "$ROS_CONTAINER" sed -i \
+        "/^function GenerateCommandList/,/^}/ s/understand\.\$/understand. $LONG_PROMPT_TAIL/" "$BENCH_PROMPT"
+    docker exec "$ROS_CONTAINER" grep -qF "$LONG_PROMPT_TAIL" "$BENCH_PROMPT" \
+        || { echo "ERROR: long prompt was not applied to $BENCH_PROMPT"; exit 1; }
+}
+run_tests() { docker exec "$ROS_CONTAINER" bash -c "cd /tmp/rbrgs_bench && baml-cli test --from baml_src/ --parallel 1"; }
 TOTAL_TESTS=$(cat "$REPO_ROOT"/task_manager/task_manager/utils/baml_src/*.baml | grep -c '^test ' || true)
 
 mkdir -p "$RESULTS_DIR"
@@ -51,8 +63,16 @@ METRICS="$RESULTS_DIR/rbrgs_metrics_${STAMP}.tsv"
 printf "model\trun\ttest\tstatus\tsecs\n" > "$TSV"
 printf "model\tkey\tvalue\n" > "$METRICS"
 
+LOADED=""
 serve_model() {
     local model="$1"
+    LOAD_SECS=""
+    # Same GGUF as the previous entry (e.g. a :long variant): keep it loaded.
+    if [[ "${model:-rbrgs.F16.gguf}" == "$LOADED" ]]; then
+        echo "${LOADED} already loaded on :$PORT"
+        return 0
+    fi
+    LOADED=""
     echo "Loading ${model:-default rbrgs.F16.gguf} on :$PORT..."
     (cd "$HRI_DIR" && RBRGS_MODEL_FILE="$model" ROLE=gpsr COMPOSE_PROFILES=gpsr \
         docker compose -f "$COMPOSE" up -d --no-deps --force-recreate llama >/dev/null)
@@ -66,6 +86,7 @@ serve_model() {
         fi
     done
     LOAD_SECS=$((waited + 5))
+    LOADED="${model:-rbrgs.F16.gguf}"
     echo "  ready after ~${LOAD_SECS}s: $(curl -s "localhost:$PORT/props" | grep -o '"model_path":"[^"]*"')"
 }
 
@@ -100,14 +121,18 @@ restore() {
 trap restore EXIT
 
 for m in "${MODELS[@]}"; do
-    serve_model "$m"
+    prompt=""; [[ "$m" == *:* ]] && prompt="${m#*:}"
+    serve_model "${m%%:*}"
     warmup
     ram=$(ram_mb)
-    printf "%s\tload_secs\t%s\n%s\tram_mb\t%s\n" "$m" "$LOAD_SECS" "$m" "$ram" >> "$METRICS"
-    echo "  system RAM in use: ${ram} MB"
+    [[ -z "$LOAD_SECS" ]] || printf "%s\tload_secs\t%s\n" "$m" "$LOAD_SECS" >> "$METRICS"
+    printf "%s\tram_mb\t%s\n" "$m" "$ram" >> "$METRICS"
+    echo "  system RAM in use: ${ram} MB, prompt: ${prompt:-default}"
     for ((r = 1; r <= RUNS; r++)); do
-        log="$RESULTS_DIR/rbrgs_${m%.gguf}_${STAMP}_r${r}.log"
+        label="${m/.gguf/}"
+        log="$RESULTS_DIR/rbrgs_${label//:/_}_${STAMP}_r${r}.log"
         echo "  run $r/$RUNS -> $(basename "$log")"
+        prepare_tests "$prompt"
         before=$(scrape || true)
         start=$SECONDS
         # Full output to the log; one live line per LLM call (latency + command) to the terminal.
@@ -176,7 +201,7 @@ awk -F'\t' -v models="${MODELS[*]}" -v mf="$METRICS" '
     }
     END {
         k = split(models, M, " ")
-        printf "%-30s", "SUMMARY"; for (i = 1; i <= k; i++) { lb = M[i]; sub(/\.gguf$/, "", lb); printf " %18.18s", lb }; print ""
+        printf "%-30s", "SUMMARY"; for (i = 1; i <= k; i++) { lb = M[i]; sub(/\.gguf/, "",lb); printf " %18.18s", lb }; print ""
         print "Accuracy"
         row("tests passed", "%s", "acc")
         print "Latency per command (ms, end to end)"
@@ -198,7 +223,7 @@ awk -F'\t' -v models="${MODELS[*]}" 'NR > 1 {
     }
     END {
         k = split(models, M, " ")
-        printf "%-36s", "test"; for (i = 1; i <= k; i++) { lb = M[i]; sub(/\.gguf$/, "", lb); printf " %18.18s", lb }; print ""
+        printf "%-36s", "test"; for (i = 1; i <= k; i++) { lb = M[i]; sub(/\.gguf/, "",lb); printf " %18.18s", lb }; print ""
         for (t in tests) {
             printf "%-36s", t
             for (i = 1; i <= k; i++) {
@@ -217,7 +242,7 @@ awk -F'\t' -v models="${MODELS[*]}" 'NR > 1 {
                 else if (b > a) only2 = only2 " " t
                 else if (a == 0) none = none " " t
             }
-            l1 = M[1]; sub(/\.gguf$/, "", l1); l2 = M[2]; sub(/\.gguf$/, "", l2)
+            l1 = M[1]; sub(/\.gguf/, "",l1); l2 = M[2]; sub(/\.gguf/, "",l2)
             print "~"
             print "~Only " l1 " passes:" (only1 == "" ? " none" : only1)
             print "~Only " l2 " passes:" (only2 == "" ? " none" : only2)
