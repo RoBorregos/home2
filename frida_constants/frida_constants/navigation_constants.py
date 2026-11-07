@@ -45,11 +45,11 @@ RESUME_NAV_SERVICE = "/navigation/resume_nav"
 
 ### Path query service (distance between two map areas without moving)
 NAV_QUERY_SERVICE = "/navigation/query_path"
-NAV_QUERY_MATRIX_SERVICE = "/navigation/query_path_matrix"
+NAV_QUERY_MATRIX_ACTION_SERVER = "/navigation/query_path_matrix"
 COMPUTE_PATH_ACTION_SERVER = "/compute_path_to_pose"
 TIMEOUT_NAV_QUERY = 10.0  # seconds to wait for ComputePathToPose result
-# Total planning budget for one matrix query; pairs left unplanned return -1.0
-TIMEOUT_NAV_QUERY_MATRIX = 20.0
+# Budget for one matrix query, SLAM/nav2 resume included; unplanned pairs return -1.0
+TIMEOUT_NAV_QUERY_MATRIX = 8.0
 
 ### Table/shelf docking (perpendicular approach) — see table_docker.py
 DOCK_SERVICE = "/navigation/dock_to_surface"  # std_srvs/Trigger: align + approach
@@ -71,6 +71,8 @@ TIMEOUT_REQUIREMENTS = 0.8
 TIMEOUT_RTABMAP = 30.0
 TIMEOUT_RTAB_SERVICE = 5.0
 TIMEOUT_NAV2_LIFECYCLE = 10.0
+# Worst case for a SLAM + nav2 resume (or pause): readiness + call waits
+TIMEOUT_NAV_TOGGLE_WORST = 3 * TIMEOUT_RTAB_SERVICE + TIMEOUT_NAV2_LIFECYCLE
 RTAB_PAUSE_SERVICE = "/rtabmap/pause"
 RTAB_RESUME_SERVICE = "/rtabmap/resume"
 RTAB_CHECK_TOPIC = "/rtabmap/republish_node_data"
@@ -88,13 +90,10 @@ class SUBTASK_MANAGER(Enum):
     # Path query may resume nav2 (up to TIMEOUT_NAV2_LIFECYCLE), plan
     # (up to TIMEOUT_NAV_QUERY) and re-pause, so give it ample room
     NAV_QUERY_TIMEOUT = 30.0
-    # Matrix planning budget plus worst-case SLAM + nav2 resume and pause,
-    # so the service always answers before the client gives up
-    NAV_QUERY_MATRIX_TIMEOUT = (
-        TIMEOUT_NAV_QUERY_MATRIX
-        + 2 * (3 * TIMEOUT_RTAB_SERVICE + TIMEOUT_NAV2_LIFECYCLE)
-        + 5.0
-    )
+    # Wait for the matrix result before cancelling: budget plus a normal pause
+    NAV_QUERY_MATRIX_TIMEOUT = TIMEOUT_NAV_QUERY_MATRIX + 4.0
+    # After a cancel the server may finish a resume and must still pause nav2
+    NAV_QUERY_MATRIX_CANCEL_TIMEOUT = 2 * TIMEOUT_NAV_TOGGLE_WORST + 5.0
 
 
 # Follow person node constants

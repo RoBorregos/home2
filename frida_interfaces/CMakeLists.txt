@@ -62,6 +62,7 @@ set(action_files
   "manipulation/action/GoToHand.action"
   "manipulation/action/PickTask.action"
   "navigation/action/Move.action"
+  "navigation/action/NavQueryMatrix.action"
   "vision/action/ExampleAction.action"
   "vision/action/Xarmmove.action"
 )
@@ -171,7 +172,6 @@ set(srv_files
   "navigation/srv/MapAreas.srv"
   "navigation/srv/MoveLocation.srv"
   "navigation/srv/NavQuery.srv"
-  "navigation/srv/NavQueryMatrix.srv"
   "navigation/srv/DockTable.srv"
   "navigation/srv/GetRobotPose.srv"
   "navigation/srv/GoToPose.srv"

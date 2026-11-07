@@ -2,7 +2,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
-from rclpy.action import ActionClient
+from rclpy.action import ActionClient, ActionServer, CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from rclpy.qos import qos_profile_sensor_data
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
@@ -53,7 +53,7 @@ from frida_constants.navigation_constants import(
         FOLLOW_GOAL_UPDATE_TIMEOUT,
         FOLLOW_ACTION_SERVER_TIMEOUT,
         NAV_QUERY_SERVICE,
-        NAV_QUERY_MATRIX_SERVICE,
+        NAV_QUERY_MATRIX_ACTION_SERVER,
         GO_TO_POSE_SERVICE,
         GET_ROBOT_POSE_SERVICE,
         COMPUTE_PATH_ACTION_SERVER,
@@ -72,12 +72,12 @@ from frida_interfaces.srv import (
         MapAreas,
         MoveLocation,
         NavQuery,
-        NavQueryMatrix,
         DockTable,
         GoToPose,
         GetRobotPose,
         ApproachPoint,
         )
+from frida_interfaces.action import NavQueryMatrix
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
 import json
@@ -205,7 +205,15 @@ class Nav_Central(Node):
 
         # Path query service — distance/time between two areas without navigating
         self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
-        self.nav_query_matrix_srv = self.create_service(NavQueryMatrix, NAV_QUERY_MATRIX_SERVICE, self.query_path_matrix, callback_group=self.service_group)
+        # Path matrix action: goal/cancel use their own group so a cancel lands even
+        # while the work holds service_group through matrix_group_token
+        self.matrix_action_group = ReentrantCallbackGroup()
+        self.matrix_group_token = self.create_guard_condition(lambda: None, callback_group=self.service_group)
+        self.nav_query_matrix_server = ActionServer(
+            self, NavQueryMatrix, NAV_QUERY_MATRIX_ACTION_SERVER,
+            execute_callback=self.query_path_matrix,
+            cancel_callback=lambda _goal: CancelResponse.ACCEPT,
+            callback_group=self.matrix_action_group)
         self.compute_path_client = ActionClient(self, ComputePathToPose, COMPUTE_PATH_ACTION_SERVER)
 
         # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
@@ -1032,11 +1040,13 @@ class Nav_Central(Node):
             total += math.hypot(p1.x - p0.x, p1.y - p0.y)
         return total
 
-    def _compute_path(self, goal_pose, start_pose=None, deadline=None):
+    def _compute_path(self, goal_pose, start_pose=None, deadline=None, cancelled=None):
         """Call nav2 ComputePathToPose action. Returns nav_msgs/Path or None.
         If start_pose is None the planner uses the robot's current pose.
-        deadline (time.monotonic) cuts every wait short, on top of TIMEOUT_NAV_QUERY."""
+        deadline (time.monotonic) or cancelled() cut every wait short, on top of TIMEOUT_NAV_QUERY."""
         def expired():
+            if cancelled is not None and cancelled():
+                return True
             return deadline is not None and t.monotonic() >= deadline
 
         goal_msg = ComputePathToPose.Goal()
@@ -1144,27 +1154,38 @@ class Nav_Central(Node):
                 self.pause_nav2()
         return response
 
-    def query_path_matrix(self, request, response):
-        """Callback: path lengths between every ordered pair of areas (plus the
-        robot's pose as an extra first start), with a single
-        nav2 resume/pause. Pairs that are unsolvable or past the
-        TIMEOUT_NAV_QUERY_MATRIX budget are reported as -1.0."""
+    def query_path_matrix(self, goal_handle):
+        """Action execute: path lengths between every ordered pair of areas (plus
+        the robot's pose as an extra first start) in one nav2 resume/pause.
+        The terminal state is set only after nav2 is restored and service_group freed."""
+        result = self._run_path_matrix(goal_handle)
+        if goal_handle.is_cancel_requested:
+            goal_handle.canceled()
+        elif result.success:
+            goal_handle.succeed()
+        else:
+            goal_handle.abort()
+        return result
+
+    def _run_path_matrix(self, goal_handle):
+        request = goal_handle.request
         n = len(request.locations)
-        self.nav_logger("info", f"Query_Path_Matrix -> Service called ({n} areas)")
-        response.success = False
-        response.distances = []
-        response.error = ""
+        self.nav_logger("info", f"Query_Path_Matrix -> Goal received ({n} areas)")
+        result = NavQueryMatrix.Result()
+        result.success = False
+        result.distances = []
+        result.error = ""
 
         if self.mapping:
-            response.error = "Not available in mapping mode"
-            return response
+            result.error = "Not available in mapping mode"
+            return result
         if self.areas_data is None:
             self.nav_logger("error", "Query_Path_Matrix -> Areas not loaded")
-            response.error = "Areas not loaded"
-            return response
+            result.error = "Areas not loaded"
+            return result
         if len(request.sublocations) != n:
-            response.error = "locations and sublocations differ in length"
-            return response
+            result.error = "locations and sublocations differ in length"
+            return result
 
         poses = []
         for loc, sub in zip(request.locations, request.sublocations):
@@ -1173,43 +1194,81 @@ class Nav_Central(Node):
 
         if not self.rtabmap_loaded:
             self.nav_logger("error", "Query_Path_Matrix -> Navigation not initialized")
-            response.error = "Navigation not initialized"
-            return response
+            result.error = "Navigation not initialized"
+            return result
 
-        # Planner needs nav2 active; remember prior state to restore it after
-        was_paused = self.nav2_paused
-        self.resume_slam()
-        self.resume_nav2()
-        if self.nav2_paused:
-            self.nav_logger("error", "Query_Path_Matrix -> Could not resume nav2")
-            response.error = "Could not resume nav2"
-            return response
-
-        # None start = robot's current pose
-        starts = [None] + list(range(n))
-        distances = []
-        deadline = t.monotonic() + TIMEOUT_NAV_QUERY_MATRIX
+        if not self._hold_service_group(goal_handle):
+            self.nav_logger("info", "Query_Path_Matrix -> Cancelled while queued, nav2 untouched")
+            result.error = "Cancelled before start"
+            return result
         try:
-            for i in starts:
-                for j in range(n):
-                    if i == j:
-                        distances.append(0.0)
-                        continue
-                    if poses[j] is None or (i is not None and poses[i] is None) or t.monotonic() >= deadline:
-                        distances.append(-1.0)
-                        continue
-                    path = self._compute_path(poses[j], None if i is None else poses[i], deadline)
-                    distances.append(-1.0 if path is None else self._path_length(path))
-            response.success = True
-            response.distances = distances
-            solved = sum(1 for d in distances if d >= 0.0)
-            budget_note = " (planning budget exhausted)" if t.monotonic() >= deadline else ""
-            self.nav_logger("info", f"Query_Path_Matrix -> {solved}/{len(distances)} pairs solved{budget_note}")
+            # Budget starts before the resume so the whole query stays bounded
+            deadline = t.monotonic() + TIMEOUT_NAV_QUERY_MATRIX
+            # Planner needs nav2 active; remember prior state to restore it after
+            was_paused = self.nav2_paused
+            self.resume_slam()
+            self.resume_nav2()
+            if self.nav2_paused:
+                self.nav_logger("error", "Query_Path_Matrix -> Could not resume nav2")
+                result.error = "Could not resume nav2"
+                return result
+            try:
+                result.distances = self._plan_matrix(goal_handle, poses, deadline)
+                result.success = True
+            finally:
+                if was_paused:
+                    self.pause_slam()
+                    self.pause_nav2()
         finally:
-            if was_paused:
-                self.pause_slam()
-                self.pause_nav2()
-        return response
+            self._release_service_group()
+
+        solved = sum(1 for d in result.distances if d >= 0.0)
+        if goal_handle.is_cancel_requested:
+            note = " (cancelled)"
+        elif t.monotonic() >= deadline:
+            note = " (planning budget exhausted)"
+        else:
+            note = ""
+        self.nav_logger("info", f"Query_Path_Matrix -> {solved}/{len(result.distances)} pairs solved{note}")
+        return result
+
+    def _plan_matrix(self, goal_handle, poses, deadline):
+        """Row-major (n + 1) x n path lengths, robot pose as the first start;
+        -1.0 when unsolvable, past the deadline or cancelled."""
+        def cancelled():
+            return goal_handle.is_cancel_requested
+
+        n = len(poses)
+        feedback = NavQueryMatrix.Feedback()
+        feedback.pairs_total = (n + 1) * n
+        distances = []
+        for i in [None] + list(range(n)):
+            for j in range(n):
+                if i == j:
+                    distances.append(0.0)
+                elif poses[j] is None or (i is not None and poses[i] is None) or t.monotonic() >= deadline or cancelled():
+                    distances.append(-1.0)
+                else:
+                    path = self._compute_path(poses[j], None if i is None else poses[i], deadline, cancelled)
+                    distances.append(-1.0 if path is None else self._path_length(path))
+                feedback.pairs_done = len(distances)
+                goal_handle.publish_feedback(feedback)
+        return distances
+
+    def _hold_service_group(self, goal_handle):
+        """Claim service_group like a service callback would (execute callbacks run
+        outside any group). Returns False if cancelled while waiting."""
+        while not self.service_group.beginning_execution(self.matrix_group_token):
+            if goal_handle.is_cancel_requested:
+                return False
+            t.sleep(0.05)
+        return True
+
+    def _release_service_group(self):
+        self.service_group.ending_execution(self.matrix_group_token)
+        # Wake the executor so service requests queued meanwhile run now
+        if self.executor is not None:
+            self.executor.wake()
 
     def check_for_topics(self, topics):
         topic_names_and_types = self.get_topic_names_and_types()

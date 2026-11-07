@@ -21,12 +21,13 @@ home2/
 │frida_interfaces/                      # Custom ROS interfaces
 ├── navigation/
 │   ├── action/
-│   │   └── Move.action
+│   │   ├── Move.action
+│   │   └── NavQueryMatrix.action
 │   ├── msg/
 │   │   ├── MonitorReport.msg
 │   │   └── NodeStatus.msg
 │   └── srv/                            # ApproachPoint, DockTable, GetRobotPose,
-│                                       # GoToPose, MapAreas, MoveLocation, NavQuery, NavQueryMatrix
+│                                       # GoToPose, MapAreas, MoveLocation, NavQuery
 │
 │navigation/
 ├── packages/                           # ROS 2 packages for the area
@@ -235,7 +236,7 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 | `/navigation/approach_point` | `ApproachPoint` | Approach a point at a standoff distance |
 | `/navigation/get_robot_pose` | `GetRobotPose` | Current pose from TF (map → base_link) |
 | `/navigation/query_path` | `NavQuery` | Path distance between two areas (no motion) |
-| `/navigation/query_path_matrix` | `NavQueryMatrix` | Path distances between every pair of areas (+ robot) in one nav2 resume/pause |
+| `/navigation/query_path_matrix` | `NavQueryMatrix` (action) | Path distances between every pair of areas (+ robot) in one nav2 resume/pause; cancellable, returns partial results |
 | `/navigation/dock_table` | `DockTable` | Dock to the surface in front (with offset) |
 | `/navigation/is_door_open` | `CheckDoor` | Door open/closed via lidar |
 | `/navigation/areas_json` | `MapAreas` | Return `areas.json` as a string |

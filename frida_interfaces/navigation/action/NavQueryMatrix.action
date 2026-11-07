@@ -1,0 +1,17 @@
+# Goal
+# Real path lengths (nav2 ComputePathToPose) between every ordered pair of map
+# areas, plus from the robot's pose to each, in one nav2 resume/pause, no motion.
+string[] locations
+string[] sublocations
+---
+# Result
+# Row-major (n + 1) x n: first row starts at the robot, then one row per area.
+# -1.0 marks a pair that was unsolvable, past the budget or skipped by a cancel;
+# a cancelled goal still returns the pairs solved before it stopped.
+bool success
+float64[] distances
+string error
+---
+# Feedback
+int32 pairs_done
+int32 pairs_total
