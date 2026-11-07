@@ -21,7 +21,6 @@ from frida_constants.hri_constants import (
     DEFAULT_HOTWORDS,
     DISPLAY_CAPTURE_TOPIC,
     DISPLAY_IMAGE_TOPIC,
-    DISPLAY_MAP_TOPIC,
     DISPLAY_PUBLISHER,
     EXTRACT_DATA_SERVICE,
     FIND_CLOSEST_SERVICE,
@@ -71,7 +70,6 @@ from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
     CommandHistory,
     FindClosestResult,
-    HandItem,
     Location,
 )
 from task_manager.utils.baml_client.sync_client import b
@@ -182,7 +180,6 @@ class HRITasks:
         self.display_capture_publisher = self.node.create_publisher(
             String, DISPLAY_CAPTURE_TOPIC, 10
         )
-        self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
         self.add_entry_service = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
@@ -271,10 +268,6 @@ class HRITasks:
             self.negation_words = set(json.load(file)["negations"])
         # Phrases like "thats right" never equal a single word, so they are harmless here
         self.affirmation_words = set(self.positive)
-
-        file_path = os.path.join(package_share_directory, "data/hand_items.json")
-        with open(file_path, "r") as file:
-            self.hand_items = json.load(file)
 
         file_path = os.path.join(package_share_directory, "data/objects.json")
         with open(file_path, "r") as file:
@@ -1456,19 +1449,6 @@ class HRITasks:
         raw = self._call_query_entry(collection="items", query_texts=[], top_k=10000)
         return [json.loads(r)["text"] for r in raw]
 
-    def get_hand_items(self, query: str) -> tuple[list[HandItem], list[HandItem]]:
-        """
-        Query hand_items from postgres service.
-        Returns:
-            tuple: (by_name, by_description) lists of HandItem objects.
-        """
-        raw = self._call_query_entry(collection="hand_items", query_texts=[query], top_k=10000)
-        if len(raw) < 2:
-            return [], []
-        by_name = [HandItem(**item) for item in json.loads(raw[0])]
-        by_description = [HandItem(**item) for item in json.loads(raw[1])]
-        return by_name, by_description
-
     # TODO: Make async
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_llm_answer"))
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -1700,28 +1680,6 @@ class HRITasks:
         except Exception as e:
             self.node.get_logger().error(f"Error finding closest object: {e}")
             return "unknown"
-
-    @mockable()
-    def show_map(self, name="", clear_map: bool = False):
-        """
-        Method to show the map on the display.
-        """
-        show_items = self.hand_items.copy()
-
-        if clear_map:
-            show_items["image_path"] = ""
-            Logger.info(self.node, "Map cleared on the screen.")
-        else:
-            filtered_items = []
-
-            # Filter items to only include those matching the specified name
-            for item in show_items["markers"]:
-                if name == "" or item["name"].strip().lower() == name.strip().lower():
-                    filtered_items.append(item)
-
-            show_items["markers"] = filtered_items
-
-        self.display_map_publisher.publish(String(data=json.dumps(show_items)))
 
     @mockable(return_value=True)
     def send_display_answer(self, answer: str) -> bool:
