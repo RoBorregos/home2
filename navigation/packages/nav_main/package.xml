@@ -39,6 +39,9 @@
   <depend>frida_constants</depend>
   <depend>map_context</depend>
   <depend>omnidriver</depend>
+  <!-- Decompress the recorded ZED topics on replay -->
+  <exec_depend>compressed_image_transport</exec_depend>
+  <exec_depend>compressed_depth_image_transport</exec_depend>
   <!-- Action server move -->
   <depend>action_msgs</depend>
   <depend>nav2_msgs</depend>
