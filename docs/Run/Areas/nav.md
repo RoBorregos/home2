@@ -81,21 +81,38 @@ The lidars sit at z = 0.136 m, so table tops, chair seats and shelves never reac
 - Lab tables are 0.70-0.80 m tall. With the arm in `NAV_POSE`, check that the ZED sees the table tops: `ros2 run tf2_ros tf2_echo base_link zed_camera_link`, then watch `/point_cloud` in RViz as you drive up to a table. If the camera sits at table height looking straight ahead, it sees the top edge-on and the grid barely marks it.
 - Drive ~5 min past every table/chair. Write down a furniture checklist (item, rough position, height): that's the metric.
 
+Record the ZED **compressed** topics: raw rgb + depth are ~220 MB/s (~66 GB per 5 min), compressed ~13 MB/s.
 ```bash
-ros2 bag record -o /tmp/bags/mapping_1318 --storage-preset-profile zstd_fast \
+ros2 bag record -o /tmp/bags/mapping_1318 \
   /scan /scan_front /scan_rear /odrive/odom /odrive/imu /tf /tf_static /point_cloud \
-  /zed/zed_node/rgb/color/rect/image /zed/zed_node/rgb/color/rect/camera_info /zed/zed_node/depth/depth_registered
-ros2 bag info /tmp/bags/mapping_1318   # depth + point_cloud counts must be non-zero (SHM drops big msgs)
+  /zed/zed_node/rgb/color/rect/image/compressed /zed/zed_node/rgb/color/rect/camera_info \
+  /zed/zed_node/depth/depth_registered/compressedDepth
+ros2 bag info /tmp/bags/mapping_1318   # every topic ~10 Hz; stop the recorder with Ctrl+C / SIGINT, never kill -9
 ```
 
 ### 2. Replay (baseline + ZED grid in the same run)
+Run every replay process with these two exports: a separate domain keeps the live robot topics out, and SHM is off because processes started with `docker exec` drop big messages over SHM.
+```bash
+export ROS_DOMAIN_ID=77
+export CYCLONEDDS_URI="file:///etc/cyclonedds.xml,<SharedMemory><Enable>false</Enable></SharedMemory>"
+```
+The navigation image has no compressed image_transport plugins, so decompress in the **zed** container:
+```bash
+ros2 run image_transport republish --ros-args -p in_transport:=compressed -p out_transport:=raw \
+  -r in/compressed:=/zed/zed_node/rgb/color/rect/image/compressed -r out:=/zed/zed_node/rgb/color/rect/image
+ros2 run image_transport republish --ros-args -p in_transport:=compressedDepth -p out_transport:=raw \
+  -r in/compressedDepth:=/zed/zed_node/depth/depth_registered/compressedDepth -r out:=/zed/zed_node/depth/depth_registered
+```
+Then, in the navigation container:
 ```bash
 ros2 launch nav_main slam.launch.py use_sim_time:=true
-ros2 launch nav_main zed_grid.launch.py use_sim_time:=true
+ros2 launch nav_main zed_grid.launch.py use_sim_time:=true      # params_file:=... to try a variant
 ros2 bag play /tmp/bags/mapping_1318 --clock
 # when it ends, save both grids (absolute paths):
-ros2 service call /slam_toolbox/save_map slam_toolbox/srv/SaveMap "{name: {data: '/abs/path/baseline'}}"
-ros2 run nav2_map_server map_saver_cli -t /rtabmap/map -f /abs/path/zed_grid
+ros2 service call /slam_toolbox/save_map slam_toolbox/srv/SaveMap "{name: {data: '/tmp/bags/baseline'}}"
+# rtabmap only publishes the grid when it changes: start the saver, then ask for a republish
+ros2 run nav2_map_server map_saver_cli -t /rtabmap/map -f /tmp/bags/zed_grid --ros-args -p save_map_timeout:=30.0 &
+ros2 service call /rtabmap/rtabmap/publish_map rtabmap_msgs/srv/PublishMap "{global_map: true, optimized: true, graph_only: false}"
 ```
 
 Full RTAB-Map (lidar + depth, own poses) for comparison: skip `slam.launch.py` and pass `params_file:=<nav_main share>/config/rtabmap/rtabmap_mapping_config.yaml`. SuperPoint needs the Orin image.

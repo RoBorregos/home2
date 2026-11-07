@@ -35,7 +35,7 @@ target_link_libraries(map_service  nlohmann_json::nlohmann_json)
 
 
 
-file(GLOB PYTHON_SCRIPTS scripts/*.py)
+file(GLOB PYTHON_SCRIPTS CONFIGURE_DEPENDS scripts/*.py)
 foreach(script ${PYTHON_SCRIPTS})
   execute_process(COMMAND chmod +x ${script})
 endforeach()

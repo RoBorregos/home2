@@ -14,7 +14,11 @@ Offline on a bag:
     ros2 launch nav_main slam.launch.py use_sim_time:=true
     ros2 launch nav_main zed_grid.launch.py use_sim_time:=true
     ros2 bag play <bag> --clock
-    ros2 run nav2_map_server map_saver_cli -t /rtabmap/map -f /abs/path/zed_grid
+    ros2 run nav2_map_server map_saver_cli -t /rtabmap/map -f /abs/path/zed_grid \
+        --ros-args -p save_map_timeout:=30.0 &
+    ros2 service call /rtabmap/rtabmap/publish_map rtabmap_msgs/srv/PublishMap \
+        "{global_map: true, optimized: true, graph_only: false}"
+    (full recipe: docs/Run/Areas/nav.md, "Mapping Evaluation")
 
 Full RTAB-Map instead (Phase 2, no slam_toolbox running):
     ros2 launch nav_main zed_grid.launch.py params_file:=<.../rtabmap_mapping_config.yaml>

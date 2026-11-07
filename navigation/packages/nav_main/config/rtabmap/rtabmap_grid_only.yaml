@@ -57,7 +57,7 @@ rtabmap:
     "Grid/Sensor": "1"
     "Grid/3D": "false"
     "Grid/CellSize": "0.05"         # must match slam_toolbox resolution for a clean merge
-    "Grid/RangeMax": "3.0"          # ZED depth gets noisy past ~3 m
+    "Grid/RangeMax": "2.5"          # ZED depth gets noisy with range; 3.0 left streaks on the walls
     "Grid/RayTracing": "true"       # clear free space, so someone walking by gets erased
     "Grid/NormalsSegmentation": "false"
     "Grid/MaxGroundHeight": "0.15"
@@ -65,3 +65,11 @@ rtabmap:
     "Grid/DepthDecimation": "4"
     "Grid/NoiseFilteringRadius": "0.1"
     "Grid/NoiseFilteringMinNeighbors": "3"
+
+    # Global map robustness (tuned on the 2026-11-06 lab bag, #1318):
+    #   OccupancyThr 0.65 -> a cell needs consistent hits, a couple of noisy frames don't stick
+    #   FootprintRadius   -> clear obstacles under the path the robot drove (it fit there, so it's free)
+    #   Eroded            -> trim obstacle edges by one cell
+    "GridGlobal/OccupancyThr": "0.65"
+    "GridGlobal/FootprintRadius": "0.35"
+    "GridGlobal/Eroded": "true"
