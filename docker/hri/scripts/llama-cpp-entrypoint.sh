@@ -19,7 +19,7 @@ wait_for_server() {
     local port=$1
     local alias=$2
     local model=$3
-    local max_attempts=30
+    local max_attempts=${4:-30}
     local attempt=0
     debug_log "Waiting for llama-server ($alias) on port $port..."
     while ! curl -sf "http://localhost:$port/health" >/dev/null 2>&1; do
@@ -43,6 +43,8 @@ MAIN_CTX="${LLAMA_CTX_SIZE:-2048}"
 # Keep the correctness-first llama.cpp default until q8_0 is validated on the
 # target Jetson; set LLAMA_CACHE_TYPE=q8_0 for that A/B comparison.
 CACHE_TYPE="${LLAMA_CACHE_TYPE:-f16}"
+# GPSR command interpreter; override to A/B fine-tunes without renaming files.
+RBRGS_MODEL="${RBRGS_MODEL_FILE:-rbrgs.F16.gguf}"
 
 if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] || [ "$ROLE" = "bench" ]; then
     if [ ! -s "$MODELS_DIR/$MAIN_MODEL" ]; then
@@ -69,20 +71,27 @@ fi
 
 # rbrgs on port 11435, gpsr only
 if [ "$ROLE" = "gpsr" ]; then
-    debug_log "Starting rbrgs on port 11435..."
+    if [ ! -s "$MODELS_DIR/$RBRGS_MODEL" ]; then
+        echo "ERROR: model not found or empty: $MODELS_DIR/$RBRGS_MODEL"
+        exit 1
+    fi
+    echo "llama.cpp serving $RBRGS_MODEL as 'rbrgs' on :11435"
     llama-server \
-        --model "$MODELS_DIR/rbrgs.F16.gguf" \
+        --model "$MODELS_DIR/$RBRGS_MODEL" \
         --host 0.0.0.0 \
         --port 11435 \
         --ctx-size 4096 \
         -ngl 99 \
         --flash-attn on \
         --parallel 1 \
+        --jinja \
+        --reasoning off \
         --alias rbrgs \
-        --temp 1.5 \
-        --min-p 0.1 \
+        --temp 0 \
+        --metrics \
         &
-    wait_for_server 11435 rbrgs rbrgs.F16.gguf
+    # 27B Q8_0 takes minutes to load on the Orin
+    wait_for_server 11435 rbrgs "$RBRGS_MODEL" 150
 fi
 
 wait
