@@ -25,7 +25,7 @@
             camera_flip: false
             self_calib: true # Enable the self-calibration process at camera opening.
             serial_number: 0 # overwritten by launch file
-            pub_resolution: 'NATIVE' # The resolution used for image and depth map publishing. 'NATIVE' to use the same `general.grab_resolution` - `CUSTOM` to apply the `general.pub_downscale_factor` downscale factory to reduce bandwidth in transmission
+            pub_resolution: 'CUSTOM' # The resolution used for image and depth map publishing. 'NATIVE' to use the same `general.grab_resolution` - `CUSTOM` to apply the `general.pub_downscale_factor` downscale factory to reduce bandwidth in transmission
             pub_downscale_factor: 2.0 # rescale factor used to rescale image before publishing when 'pub_resolution' is 'CUSTOM'
             pub_frame_rate: 30.0 # [DYNAMIC] Frequency of publishing of visual images and depth data
             enable_image_validity_check: 1 # [SDK5 required] Sets the image validity check.
@@ -45,7 +45,7 @@
 
         sensors:
             publish_imu_tf: false # [overwritten by launch file options] enable/disable the IMU TF broadcasting
-            sensors_image_sync: true # Synchronize Sensors messages with latest published video/depth message
+            sensors_image_sync: false # Synchronize Sensors messages with latest published video/depth message (true crashes wrapper v5.4.1 on ZED2: stereolabs/zed-ros2-wrapper#459)
             sensors_pub_rate: 30. # frequency of publishing of sensors data. MAX: 400. - MIN: grab rate
 
         region_of_interest:
