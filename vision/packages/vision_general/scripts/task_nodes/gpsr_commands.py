@@ -279,6 +279,10 @@ class GPSRCommands(VisionRuntime):
                 self._highlight_person(person["bbox"], pose_requested)
                 self.get_logger().info(f"Person is {pose_requested}.")
 
+        if pose_count[Poses.UNKNOWN]:
+            self.get_logger().warn(
+                f"{pose_count[Poses.UNKNOWN]} person(s) with unknown pose were not counted"
+            )
         response.success = True
         response.count = pose_count[pose_requested_enum]
         self.get_logger().info(f"People with pose {pose_requested}: {response.count}")
@@ -468,6 +472,11 @@ class GPSRCommands(VisionRuntime):
 
         if type_requested == DetectBy.POSES.value:
             response_clean = self.person_pose(biggest_person["bbox"]).value
+            if response_clean == Poses.UNKNOWN.value:
+                self.get_logger().warn("Could not classify the person's pose.")
+                response.success = False
+                response.result = ""
+                return response
             self.get_logger().info(f"The person is {response_clean}.")
             response.result = response_clean
 
@@ -682,6 +691,9 @@ class GPSRCommands(VisionRuntime):
         request.ymax = ymax
         request.xmax = xmax
 
+        if not client.wait_for_service(timeout_sec=3.0):
+            self.get_logger().error(f"{name} service not available.")
+            return 0, ""
         future = client.call_async(request)
         future = wait_for_future(future, 15)
         result = future.result()
