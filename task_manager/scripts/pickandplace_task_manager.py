@@ -18,6 +18,7 @@ from rclpy.node import Node
 from task_manager.utils.bt import Action, ForEach, RunLog, TreeRunner, optional, sequence
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
+from task_manager.utils.subtask_manager import SubtaskManager
 from task_manager.utils.task import Task
 
 OK = Status.EXECUTION_SUCCESS
@@ -224,8 +225,6 @@ class PickAndPlaceTM(Node):
         spec_file = self.declare_parameter("spec_file", "").value
         self.step = self.declare_parameter("step", False).value
         self.log_dir = self.declare_parameter("log_dir", "~/.ros/ppc_runs").value
-
-        from task_manager.utils.subtask_manager import SubtaskManager
 
         mock_areas = [a.strip() for a in mock.split(",") if a.strip()]
         self.sm = SubtaskManager(self, task=Task.PICK_AND_PLACE, mock_areas=mock_areas)
