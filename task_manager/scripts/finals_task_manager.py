@@ -74,9 +74,13 @@ class FinalsTaskManager(Node):
         return name.replace("_", " ")
 
     def _step(self, text: str) -> None:
-        """Show what the robot is doing on the display; the run goes on without it."""
+        """Show what the robot is doing on the display; the run goes on without it.
+
+        Sent as a display answer: the default view, which Finals uses, lists answers
+        in its message panel but has no task-step bar.
+        """
         try:
-            self.subtask_manager.hri.publish_display_step(text)
+            self.subtask_manager.hri.send_display_answer(text)
         except Exception as error:
             Logger.warn(self, f"Display step not shown: {error}")
 
