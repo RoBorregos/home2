@@ -14,6 +14,7 @@ import time
 from enum import Enum
 
 import rclpy
+from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
@@ -41,7 +42,10 @@ class FinalsTaskManager(Node):
         self.patrol_mode = self._param("patrol_mode", "full")
         self.nav_retries = self._param("nav_retries", 2)
         self.approach_standoff_m = self._param("approach_standoff_m", 0.65)
-        self.max_silent_rounds = self._param("max_silent_rounds", 5)
+        # Each round asks up to listen_retries times, waiting listen_start_s for speech
+        self.max_silent_rounds = self._param("max_silent_rounds", 2)
+        self.listen_retries = self._param("listen_retries", 3)
+        self.listen_start_s = self._param("listen_start_s", 8.0)
         mock_areas = self._param("mock_areas", [""])
 
         self.subtask_manager = SubtaskManager(
@@ -69,6 +73,25 @@ class FinalsTaskManager(Node):
     def _speakable(name: str) -> str:
         return name.replace("_", " ")
 
+    def _step(self, text: str) -> None:
+        """Show what the robot is doing on the display; the run goes on without it."""
+        try:
+            self.subtask_manager.hri.publish_display_step(text)
+        except Exception as error:
+            Logger.warn(self, f"Display step not shown: {error}")
+
+    def _capture(self, label: str, data: dict) -> None:
+        """Save the camera's current view in the display's evidence gallery."""
+        try:
+            self.subtask_manager.hri.publish_display_capture(label, DETECTIONS_IMAGE_TOPIC, data)
+        except Exception as error:
+            Logger.warn(self, f"Display capture not saved: {error}")
+
+    @staticmethod
+    def _where(obj) -> str:
+        """Short place for the display: sublocation (area)."""
+        return f"{obj.sublocation or '?'} ({obj.area or 'unknown room'})"
+
     def _place(self, area: str, sublocation: str) -> str:
         """How to say where something is. Empty when the map does not know."""
         if area and sublocation:
@@ -89,10 +112,17 @@ class FinalsTaskManager(Node):
             Logger.error(self, f"No patrol route (mode '{mode}')")
             return 0
 
+        # Live camera detections on the display while the robot looks around
+        try:
+            self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
+        except Exception as error:
+            Logger.warn(self, f"Display feed not switched: {error}")
+
         started = time.monotonic()
         reached = 0
         arm_pose = ""
-        for step in route:
+        for index, step in enumerate(route, start=1):
+            self._step(f"Patrolling {index}/{len(route)}: {step['area']}/{step['sublocation']}")
             if time.monotonic() - started > time_limit_s:
                 Logger.warn(self, f"Patrol out of time after {reached}/{len(route)} viewpoints")
                 break
@@ -108,6 +138,7 @@ class FinalsTaskManager(Node):
             reached += 1
         self.subtask_manager.manipulation.move_to_position(ARM_TRAVEL_POSE)
         Logger.info(self, f"Patrol done: {reached}/{len(route)} viewpoints")
+        self._step(f"Patrol done: {reached}/{len(route)} places checked")
         return reached
 
     def _drive_to(self, step: dict) -> bool:
@@ -124,15 +155,22 @@ class FinalsTaskManager(Node):
 
     def report_misplaced(self) -> int:
         """Say every object that is not where it belongs. Returns how many."""
+        self._step("Checking for objects out of place")
         status, misplaced = self.subtask_manager.vision.get_misplaced()
         if status != Status.EXECUTION_SUCCESS:
+            self._step("Could not read the semantic map")
             self.subtask_manager.hri.say("I could not check my map of the house.")
             return 0
         if not misplaced:
+            self._step("Everything is in its place")
             self.subtask_manager.hri.say("Everything I saw is in its place.")
             return 0
         self.subtask_manager.hri.say(f"I found {len(misplaced)} things out of place.")
         for obj, expected_area, expected_sublocation in misplaced:
+            self._step(
+                f"Out of place: {obj.label} -> {self._where(obj)}, "
+                f"should be: {expected_sublocation} ({expected_area})"
+            )
             label = self._speakable(obj.label)
             found = self._place(obj.area, obj.sublocation)
             expected = self._place(expected_area, expected_sublocation)
@@ -143,15 +181,19 @@ class FinalsTaskManager(Node):
 
     def handle_command(self, text: str) -> None:
         """Answer one spoken command, and guide to the object when there is one."""
+        self._step(f"Looking for: {text}")
         status, answer, objects = self.subtask_manager.vision.resolve_command(text)
         if status != Status.EXECUTION_SUCCESS:
+            self._step("Could not read the semantic map")
             self.subtask_manager.hri.say("Sorry, I could not check my map of the house.")
             return
         if answer == "not_found":
+            self._step(f"Not seen yet: {text}. Looking again")
             self.subtask_manager.hri.say("I have not seen that. I will take another look.")
             self.patrol("revisit", self.patrol_time_limit_s, max_viewpoints=3)
             status, answer, objects = self.subtask_manager.vision.resolve_command(text)
             if status != Status.EXECUTION_SUCCESS or answer == "not_found":
+                self._step(f"Not found: {text}")
                 self.subtask_manager.hri.say("Sorry, I could not find it anywhere.")
                 return
         if answer == "list":
@@ -161,8 +203,10 @@ class FinalsTaskManager(Node):
 
     def _say_list(self, objects: list) -> None:
         if not objects:
+            self._step("Nothing seen there")
             self.subtask_manager.hri.say("I did not see anything there.")
             return
+        self._step("Seen: " + ", ".join(f"{obj.label} -> {self._where(obj)}" for obj in objects))
         names = ", ".join(self._speakable(obj.label) for obj in objects)
         self.subtask_manager.hri.say(f"I saw: {names}.")
 
@@ -170,30 +214,64 @@ class FinalsTaskManager(Node):
         label = self._speakable(obj.label)
         place = self._place(obj.area, obj.sublocation)
         where = f"on {place}" if place else "nearby"
+        self._step(f"Found: {obj.label} -> {self._where(obj)}. Guiding there")
         self.subtask_manager.hri.say(f"The {label} is {where}. Please follow me.")
         status, error = self.subtask_manager.nav.approach_point(
             obj.position, standoff=self.approach_standoff_m
         )
         if status == Status.EXECUTION_SUCCESS:
+            self._step(f"Here is the {obj.label}")
+            self._capture(f"found {obj.label}", {"area": obj.area, "sublocation": obj.sublocation})
             self.subtask_manager.hri.say(f"Here is the {label}.")
         else:
+            self._step(f"Could not reach the {obj.label}")
             Logger.error(self, f"Could not reach the {label}: {error}")
             self.subtask_manager.hri.say(f"Sorry, I cannot get to the {label} from here.")
 
+    @staticmethod
+    def _is_stop(text: str) -> bool:
+        return any(word in text.lower() for word in STOP_WORDS)
+
+    def _confirm_question(self, heard: str, target: str) -> str:
+        if self._is_stop(target):
+            return "Do you want me to finish? Yes or no?"
+        return f"Are you looking for: {target}? Yes or no?"
+
+    def _ask(self, question: str) -> str:
+        """Ask, hear and confirm, like GPSR; "" when nothing was understood."""
+        self._step(f"Listening: {question}")
+        status, text = self.subtask_manager.hri.ask_and_confirm(
+            question,
+            "LLM_command",
+            context="The user says what object they are looking for, or asks to stop.",
+            confirm_question=self._confirm_question,
+            hotwords=HOTWORDS,
+            retries=self.listen_retries,
+            min_wait_between_retries=5.0,
+            skip_extract_data=True,
+            always_confirm=True,
+            start_silence_time=self.listen_start_s,
+        )
+        if status != Status.EXECUTION_SUCCESS or not text:
+            self._step("No answer heard")
+            return ""
+        self._step(f"Heard: {text}")
+        return text
+
     def command_loop(self) -> None:
-        """Listen until told to stop, the time runs out, or nobody speaks for a while."""
-        self.subtask_manager.hri.say("What are you looking for?")
+        """Listen until told to stop, the time runs out, or nobody answers for a while."""
+        question = "What are you looking for? Say stop when you are done."
         silent_rounds = 0
         while self._elapsed() < self.total_time_limit_s and silent_rounds < self.max_silent_rounds:
-            status, text, _ = self.subtask_manager.hri.hear(hotwords=HOTWORDS)
-            if status != Status.EXECUTION_SUCCESS or not text:
+            text = self._ask(question)
+            if not text:
                 silent_rounds += 1
                 continue
             silent_rounds = 0
-            if any(word in text.lower() for word in STOP_WORDS):
+            if self._is_stop(text):
                 return
             self.handle_command(text)
-            self.subtask_manager.hri.say("Anything else?")
+            question = "Anything else? Say stop when you are done."
 
     # ---------------------------------------------------------------------- run
 
@@ -202,6 +280,7 @@ class FinalsTaskManager(Node):
 
         self.state = ExecutionStates.WAIT_START
         hri.reset_task_status()
+        self._step("Press start to begin")
         hri.say("Press the start button when you are ready.", wait=False)
         while not hri.start_button_clicked and not self.subtask_manager.get_mocked_areas():
             rclpy.spin_once(self, timeout_sec=0.1)
@@ -220,6 +299,7 @@ class FinalsTaskManager(Node):
         self.command_loop()
 
         self.state = ExecutionStates.END
+        self._step("Done")
         hri.say("I am done. Thank you.")
 
 
