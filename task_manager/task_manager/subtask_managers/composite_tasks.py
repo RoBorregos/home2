@@ -16,6 +16,8 @@ from task_manager.utils.shelf_pick_logic import find_target_on_level, height_mat
 from task_manager.utils.status import Status
 
 SHELF_SETTLE_S = 3.0
+STACK_Z_MIN = 0.03  # A rests on B if A is this much higher...
+STACK_XY_MAX = 0.12  # ...and this close in XY
 
 
 class CompositeTasks:
@@ -91,6 +93,19 @@ class CompositeTasks:
             if point is not None and height_matches_level(point[2], level_height):
                 result.append(det)
         return result
+
+    @staticmethod
+    def is_covered(point, others) -> bool:
+        """True if any of the other base_link points rests on top of point."""
+        if point is None:
+            return False
+        for other in others:
+            if other is None or other is point:
+                continue
+            dx, dy = other[0] - point[0], other[1] - point[1]
+            if other[2] - point[2] > STACK_Z_MIN and (dx * dx + dy * dy) ** 0.5 < STACK_XY_MAX:
+                return True
+        return False
 
     def detect_with_retries(self, retries: int = 3):
         """detect_objects, retrying on service errors."""

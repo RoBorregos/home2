@@ -163,3 +163,5 @@ AIM_STRAIGHT_FRONT_QUAT = [0.650, -0.290, 0.636, -0.299]
 SHELF_MIN_REACH = 0.40
 SHELF_REACH_BASE = 0.75
 SHELF_REACH_SLOPE = 0.25
+# The arm cannot pick or place below this base_link Z
+MIN_REACHABLE_SHELF_Z = 0.20

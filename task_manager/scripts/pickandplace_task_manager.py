@@ -19,6 +19,9 @@ import rclpy
 from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
 
+from frida_constants.hri_constants import PPC_TASK_STEP_TOPIC
+from frida_constants.manipulation_constants import MIN_REACHABLE_SHELF_Z
+from frida_constants.navigation_constants import DOCK_OFFSETS
 from frida_constants.vision_constants import (
     CHAIR_REMOVAL_IMAGE_TOPIC,
     DETECTIONS_IMAGE_TOPIC,
@@ -27,25 +30,9 @@ from frida_constants.vision_constants import (
 from task_manager.utils.bt import Action, ForEach, RunLog, TreeRunner, optional, sequence
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.shelf_pick_logic import levels_from_sorted_heights
+from xarm_utils.shelf_levels import get_shelf_levels
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
-
-DISPLAY_STEP_TOPIC = "/pickandplace/display/task_step"
-STACK_Z_MIN = 0.03  # A rests on B if A is this much higher...
-STACK_XY_MAX = 0.12  # ...and this close in XY
-MIN_REACHABLE_SHELF_Z = 0.20  # real level 1 is announce-only
-FALLBACK_SHELF_HEIGHTS = {1: 0.095, 2: 0.39, 3: 0.68, 4: 1.05}
-
-
-ROOM = "kitchen"
-# Dock stand-off per map location (m); locations not listed are not docked
-DOCK_OFFSETS = {
-    "dinner_table": 0.0,
-    "counter": 0.0,
-    "dishwasher": 0.32,
-    "cooking_table": 0.32,
-    "cabinet": 0.30,
-}
 
 
 @dataclass(frozen=True)
@@ -61,6 +48,7 @@ class BreakfastSpec:
 class PPCConfig:
     """Competition config — adjust before each run."""
 
+    room: str = "kitchen"  # map room holding every PPC location
     trash_category: str = "fruit"
     trash_exceptions: tuple = ()
     use_dishwasher: bool = False  # ask to open it and place inside
@@ -153,25 +141,11 @@ def destination(category: str, cfg: PPCConfig) -> str:
     return "cabinet"
 
 
-def sort_for_pick(objects: list, priority: tuple) -> list:
+def sort_for_pick(objects: list, priority: tuple, is_covered) -> list:
     """Objects with something resting on them go last, then by category priority."""
-
-    def covered(obj):
-        if obj.point is None:
-            return False
-        for other in objects:
-            if other is obj or other.point is None:
-                continue
-            dx, dy = other.point[0] - obj.point[0], other.point[1] - obj.point[1]
-            if (
-                other.point[2] - obj.point[2] > STACK_Z_MIN
-                and (dx * dx + dy * dy) ** 0.5 < STACK_XY_MAX
-            ):
-                return True
-        return False
-
+    points = [o.point for o in objects]
     rank = {c: i for i, c in enumerate(priority)}
-    return sorted(objects, key=lambda o: (covered(o), rank.get(o.category, 99)))
+    return sorted(objects, key=lambda o: (is_covered(o.point, points), rank.get(o.category, 99)))
 
 
 def shelf_order(primary: float, heights: list[float]) -> list[float]:
@@ -258,7 +232,7 @@ class PickAndPlace:
             return Status.EXECUTION_SUCCESS
         self.state.cabinet_scan_fresh = False
         status = self.sm.composite.navigate_and_dock(
-            ROOM, location, DOCK_OFFSETS.get(location), say=say
+            self.cfg.room, location, DOCK_OFFSETS.get(location), say=say
         )
         self.state.location = location if status == Status.EXECUTION_SUCCESS else None
         return status
@@ -290,7 +264,9 @@ class PickAndPlace:
         for obj in self.state.objects:
             if obj.name.lower() in self.cfg.skip_names:
                 obj.status = "skipped"
-        self.state.objects = sort_for_pick(self.state.objects, self.cfg.priority)
+        self.state.objects = sort_for_pick(
+            self.state.objects, self.cfg.priority, self.sm.composite.is_covered
+        )
         self.log(f"Pick order: {[o.name for o in self.state.objects if o.status == 'pending']}")
         return Status.EXECUTION_SUCCESS
 
@@ -561,21 +537,15 @@ class PickAndPlaceTM(Node):
             if state_file
             else PPCState()
         )
-        self.ppc = PickAndPlace(self.sm, PPCConfig(), state, self, self._shelf_heights())
+        self.ppc = PickAndPlace(
+            self.sm,
+            PPCConfig(),
+            state,
+            self,
+            levels_from_sorted_heights(get_shelf_levels(int(os.environ.get("FRIDA_ARENA", "1")))),
+        )
         self.sm.manipulation.move_to_position("nav_pose")
         CLog.fsm(self, "STATE", f"PPC ready (start_at={self.start_at}, mock={mock_areas}).")
-
-    def _shelf_heights(self) -> dict:
-        """Real shelf levels from the arena calibration JSON (FRIDA_ARENA=1|2|3)."""
-        try:
-            from xarm_utils.shelf_levels import get_shelf_levels
-
-            return levels_from_sorted_heights(
-                get_shelf_levels(int(os.environ.get("FRIDA_ARENA", "1")))
-            )
-        except Exception as e:
-            self.get_logger().warn(f"Arena shelf JSON unavailable ({e}); using fallback heights.")
-            return dict(FALLBACK_SHELF_HEIGHTS)
 
     def run(self):
         ppc = self.ppc
@@ -584,14 +554,14 @@ class PickAndPlaceTM(Node):
         log = RunLog(
             self.log_dir,
             snapshot=lambda: asdict(ppc.state),
-            on_leaf=lambda name: self.sm.hri.publish_display_step(name, topic=DISPLAY_STEP_TOPIC),
+            on_leaf=lambda name: self.sm.hri.publish_display_step(name, topic=PPC_TASK_STEP_TOPIC),
             step=self.step,
         )
         runner = TreeRunner(ppc.build_tree(self.start_at), log, ppc.past_hard_deadline)
         result = runner.run(spin=lambda: rclpy.spin_once(self, timeout_sec=0.0))
         if result.name == "INVALID":
             CLog.fsm(self, "TIMER", "Hard deadline reached, stopping.", level="warn")
-        self.sm.hri.publish_display_step("end", topic=DISPLAY_STEP_TOPIC)
+        self.sm.hri.publish_display_step("end", topic=PPC_TASK_STEP_TOPIC)
         ppc.end()
         CLog.fsm(self, "TIMER", f"Total {ppc.elapsed():.1f}s — log in {log.dir}")
         for name, seconds in log.report():

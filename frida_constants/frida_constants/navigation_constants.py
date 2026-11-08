@@ -116,6 +116,14 @@ FOLLOW_ACTION_SERVER_TIMEOUT = 3.0  # Wait for NavigateToPose action server
 
 # Default docking offset (table_docker front_offset).
 DEFAULT_DOCK_OFFSET = 0.16
+# Dock stand-off per map sublocation (0.0 = default); unlisted sublocations are not docked
+DOCK_OFFSETS = {
+    "dinner_table": 0.0,
+    "counter": 0.0,
+    "dishwasher": 0.32,
+    "cooking_table": 0.32,
+    "cabinet": 0.30,
+}
 
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
