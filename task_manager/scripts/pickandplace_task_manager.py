@@ -10,7 +10,6 @@ Debug: -p start_at:=perceive|cleanup|breakfast -p state_file:=<snapshot.json>
 """
 
 import json
-import os
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -19,9 +18,6 @@ import rclpy
 from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
 
-from frida_constants.hri_constants import PPC_TASK_STEP_TOPIC
-from frida_constants.manipulation_constants import MIN_REACHABLE_SHELF_Z
-from frida_constants.navigation_constants import DOCK_OFFSETS
 from frida_constants.vision_constants import (
     CHAIR_REMOVAL_IMAGE_TOPIC,
     DETECTIONS_IMAGE_TOPIC,
@@ -29,8 +25,6 @@ from frida_constants.vision_constants import (
 )
 from task_manager.utils.bt import Action, ForEach, RunLog, TreeRunner, optional, sequence
 from task_manager.utils.colored_logger import CLog
-from task_manager.utils.shelf_pick_logic import levels_from_sorted_heights
-from xarm_utils.shelf_levels import get_shelf_levels
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
@@ -48,7 +42,6 @@ class BreakfastSpec:
 class PPCConfig:
     """Competition config — adjust before each run."""
 
-    room: str = "kitchen"  # map room holding every PPC location
     trash_category: str = "fruit"
     trash_exceptions: tuple = ()
     use_dishwasher: bool = False  # ask to open it and place inside
@@ -141,33 +134,23 @@ def destination(category: str, cfg: PPCConfig) -> str:
     return "cabinet"
 
 
-def sort_for_pick(objects: list, priority: tuple, is_covered) -> list:
-    """Objects with something resting on them go last, then by category priority."""
-    points = [o.point for o in objects]
+def sort_for_pick(objects: list, priority: tuple) -> list:
+    """Most reliable category first."""
+    # TODO(vision): report stacked objects so the ones on top are picked first
     rank = {c: i for i, c in enumerate(priority)}
-    return sorted(objects, key=lambda o: (is_covered(o.point, points), rank.get(o.category, 99)))
-
-
-def shelf_order(primary: float, heights: list[float]) -> list[float]:
-    """Categorized shelf first (if reachable), then the other reachable shelves lowest first."""
-    reachable = sorted(h for h in heights if h >= MIN_REACHABLE_SHELF_Z)
-    if primary < MIN_REACHABLE_SHELF_Z:
-        return reachable
-    return [primary] + [h for h in reachable if abs(h - primary) > 1e-6]
+    return sorted(objects, key=lambda o: rank.get(o.category, 99))
 
 
 class PickAndPlace:
     """Task logic and tree; ROS-free so tests can drive it with fake areas."""
 
-    def __init__(
-        self, sm, cfg: PPCConfig, state: PPCState, node, shelf_heights: dict, clock=time.time
-    ):
+    def __init__(self, sm, cfg: PPCConfig, state: PPCState, node, clock=time.time):
         self.sm = sm
         self.cfg = cfg
         self.state = state
         self.node = node
         self.clock = clock
-        self.shelf_heights = shelf_heights  # {level: base_link z}, level 1 = lowest
+        self.shelf_heights = sm.composite.shelf_heights()
         if not state.breakfast:
             state.breakfast = [BreakfastItem(b.name) for b in cfg.breakfast]
         self.object_to_category = self._load_categories()
@@ -212,7 +195,7 @@ class PickAndPlace:
 
     def request_chair_removal(self) -> Status:
         self.say("I am ready.")
-        self.go("safe_place", say=False)
+        self.go("safe_place", say=False, dock=False)
         status, chairs = self.sm.vision.detect_chairs_to_remove()
         if status == Status.EXECUTION_SUCCESS and not chairs:
             return Status.EXECUTION_SUCCESS
@@ -226,14 +209,12 @@ class PickAndPlace:
         self.sm.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
         return Status.EXECUTION_SUCCESS
 
-    def go(self, location: str, say: bool = True) -> Status:
+    def go(self, location: str, say: bool = True, dock: bool = True) -> Status:
         """Navigate + dock once per visit; staying put is free."""
         if self.state.location == location:
             return Status.EXECUTION_SUCCESS
         self.state.cabinet_scan_fresh = False
-        status = self.sm.composite.navigate_and_dock(
-            self.cfg.room, location, DOCK_OFFSETS.get(location), say=say
-        )
+        status = self.sm.composite.navigate_and_dock(location, dock=dock, say=say)
         self.state.location = location if status == Status.EXECUTION_SUCCESS else None
         return status
 
@@ -264,9 +245,7 @@ class PickAndPlace:
         for obj in self.state.objects:
             if obj.name.lower() in self.cfg.skip_names:
                 obj.status = "skipped"
-        self.state.objects = sort_for_pick(
-            self.state.objects, self.cfg.priority, self.sm.composite.is_covered
-        )
+        self.state.objects = sort_for_pick(self.state.objects, self.cfg.priority)
         self.log(f"Pick order: {[o.name for o in self.state.objects if o.status == 'pending']}")
         return Status.EXECUTION_SUCCESS
 
@@ -314,9 +293,7 @@ class PickAndPlace:
         if self.state.shelf_scanned:
             return Status.EXECUTION_SUCCESS
         self.say("Scanning cabinet shelves.")
-        heights = list(self.shelf_heights.values())
-        floor = min(h for h in heights if h >= MIN_REACHABLE_SHELF_Z)
-        self.state.shelves = self.sm.composite.scan_shelves(heights, floor)
+        self.state.shelves = self.sm.composite.scan_shelves(self.shelf_heights)
         self.state.shelf_scanned = True
         self.state.cabinet_scan_fresh = True
         others = [o.name for o in self.state.objects if o.category == "other"]
@@ -341,15 +318,12 @@ class PickAndPlace:
         return Status.EXECUTION_SUCCESS
 
     def _shelf_heights_for(self, name: str) -> list[float]:
-        levels = sorted(self.shelf_heights)
-        heights = [self.shelf_heights[lvl] for lvl in levels]
+        """Categorized shelf first, then the rest lowest first."""
         idx = self.state.object_to_shelf.get(name)
-        reachable = [h for h in heights if h >= MIN_REACHABLE_SHELF_Z]
-        primary = heights[idx] if idx is not None and idx < len(heights) else min(reachable)
-        order = shelf_order(primary, heights)
-        if primary < MIN_REACHABLE_SHELF_Z and order:
-            self.say(f"That shelf is too low for my arm, so I will place the {name} higher.")
-        return order
+        if idx is None or idx >= len(self.shelf_heights):
+            return list(self.shelf_heights)
+        primary = self.shelf_heights[idx]
+        return [primary] + [h for h in self.shelf_heights if h != primary]
 
     def place_object(self, obj: TableObject, dest: str) -> Status:
         self.say(f"Placing the {obj.name} at the {dest.replace('_', ' ')}.")
@@ -376,10 +350,9 @@ class PickAndPlace:
     def pick_breakfast_item(self, item: BreakfastItem) -> Status:
         name = item.name
         if self.spec(item.name).source == "cabinet":
-            heights = list(self.shelf_heights.values())
             status = self.sm.composite.pick_from_shelf(
                 name,
-                heights,
+                self.shelf_heights,
                 self.cfg.attempts,
                 self.cfg.use_vision_confirmation,
                 self.cfg.use_grasp_detector,
@@ -462,7 +435,7 @@ class PickAndPlace:
             Action("navigate_to_table", lambda: self.go(self.table, say=False)),
             Action("ensure_gripper_empty", self.ensure_gripper_empty),
             Action("pick_object", lambda: self.pick_object(obj)),
-            Action("navigate_to_placement", lambda: self.go(dest)),
+            Action("navigate_to_placement", lambda: self.go(dest, dock=dest != "trashbin")),
         ]
         if dest == "dishwasher" and self.cfg.use_dishwasher and not self.state.dishwasher_open:
             steps.append(Action("check_dishwasher", self.check_dishwasher))
@@ -537,13 +510,7 @@ class PickAndPlaceTM(Node):
             if state_file
             else PPCState()
         )
-        self.ppc = PickAndPlace(
-            self.sm,
-            PPCConfig(),
-            state,
-            self,
-            levels_from_sorted_heights(get_shelf_levels(int(os.environ.get("FRIDA_ARENA", "1")))),
-        )
+        self.ppc = PickAndPlace(self.sm, PPCConfig(), state, self)
         self.sm.manipulation.move_to_position("nav_pose")
         CLog.fsm(self, "STATE", f"PPC ready (start_at={self.start_at}, mock={mock_areas}).")
 
@@ -554,14 +521,15 @@ class PickAndPlaceTM(Node):
         log = RunLog(
             self.log_dir,
             snapshot=lambda: asdict(ppc.state),
-            on_leaf=lambda name: self.sm.hri.publish_display_step(name, topic=PPC_TASK_STEP_TOPIC),
+            # TODO(hri): the PPC display page listens on its own topic, not TASK_STEP_TOPIC
+            on_leaf=self.sm.hri.publish_display_step,
             step=self.step,
         )
         runner = TreeRunner(ppc.build_tree(self.start_at), log, ppc.past_hard_deadline)
         result = runner.run(spin=lambda: rclpy.spin_once(self, timeout_sec=0.0))
         if result.name == "INVALID":
             CLog.fsm(self, "TIMER", "Hard deadline reached, stopping.", level="warn")
-        self.sm.hri.publish_display_step("end", topic=PPC_TASK_STEP_TOPIC)
+        self.sm.hri.publish_display_step("end")
         ppc.end()
         CLog.fsm(self, "TIMER", f"Total {ppc.elapsed():.1f}s — log in {log.dir}")
         for name, seconds in log.report():

@@ -1,5 +1,7 @@
 """Subtasks that combine several areas (vision, manipulation, navigation, hri)."""
 
+import os
+
 import rclpy
 from geometry_msgs.msg import PointStamped
 from rclpy.duration import Duration
@@ -14,10 +16,9 @@ from task_manager.utils.colored_logger import CLog
 from task_manager.utils.grasp_confirmation import count_by_class, picked_ok
 from task_manager.utils.shelf_pick_logic import find_target_on_level, height_matches_level
 from task_manager.utils.status import Status
+from xarm_utils.shelf_levels import get_shelf_levels
 
 SHELF_SETTLE_S = 3.0
-STACK_Z_MIN = 0.03  # A rests on B if A is this much higher...
-STACK_XY_MAX = 0.12  # ...and this close in XY
 
 
 class CompositeTasks:
@@ -31,6 +32,7 @@ class CompositeTasks:
         self.hri = hri
         self.tf_buffer = tf_buffer
         self.shelf_level_cache: dict[str, float] = {}
+        self._rooms: dict[str, str] = {}
         self.gripper_has_object = False
         node.create_subscription(GripperGraspState, GRIPPER_GRASP_STATE_TOPIC, self._gripper_cb, 10)
         self._clear_octomap_client = node.create_client(Empty, "/clear_octomap")
@@ -52,18 +54,33 @@ class CompositeTasks:
 
     # ── Navigation ──
 
-    def navigate_and_dock(self, room: str, place: str, dock_offset=None, say=True) -> Status:
-        """Tuck the arm, drive to an areas.json location and dock if an offset is given."""
+    def room_of(self, place: str) -> str:
+        """Room that holds a map sublocation, from the active map's areas."""
+        if not self._rooms:
+            _, areas = self.nav.retrieve_areas()
+            if isinstance(areas, dict):
+                self._rooms = {sub: room for room, subs in areas.items() for sub in subs}
+        return self._rooms.get(place, "")
+
+    def navigate_and_dock(self, place: str, dock: bool = True, say: bool = True) -> Status:
+        """Tuck the arm, drive to a map sublocation and dock to its surface."""
         self.manipulation.move_to_position("nav_pose")
         if say:
-            self.hri.say(f"Now I will go to the {(place or room).replace('_', ' ')}.", wait=False)
-        status, _ = self.nav.move_to_location(room, place)
+            self.hri.say(f"Now I will go to the {place.replace('_', ' ')}.", wait=False)
+        # TODO(navigation): resolve the room from the sublocation inside move_to_location
+        status, _ = self.nav.move_to_location(self.room_of(place), place)
         if status != Status.EXECUTION_SUCCESS:
-            CLog.nav(self.node, "FAIL", f"Could not reach {room}/{place}.", level="error")
+            CLog.nav(self.node, "FAIL", f"Could not reach {place}.", level="error")
             return status
-        if dock_offset is not None:
-            self.nav.dock_table(offset=dock_offset)
+        if dock:
+            # TODO(navigation): table_docker picks a safe stand-off per surface on its own
+            self.nav.dock_table()
         return Status.EXECUTION_SUCCESS
+
+    def shelf_heights(self) -> list[float]:
+        """Shelf level surface heights (base_link Z), lowest first."""
+        # TODO(manipulation): detect shelf levels live instead of the calibration JSON
+        return sorted(get_shelf_levels(int(os.environ.get("FRIDA_ARENA", "1"))))
 
     # ── Perception helpers ──
 
@@ -93,19 +110,6 @@ class CompositeTasks:
             if point is not None and height_matches_level(point[2], level_height):
                 result.append(det)
         return result
-
-    @staticmethod
-    def is_covered(point, others) -> bool:
-        """True if any of the other base_link points rests on top of point."""
-        if point is None:
-            return False
-        for other in others:
-            if other is None or other is point:
-                continue
-            dx, dy = other[0] - point[0], other[1] - point[1]
-            if other[2] - point[2] > STACK_Z_MIN and (dx * dx + dy * dy) ** 0.5 < STACK_XY_MAX:
-                return True
-        return False
 
     def detect_with_retries(self, retries: int = 3):
         """detect_objects, retrying on service errors."""
@@ -267,12 +271,12 @@ class CompositeTasks:
 
     # ── Shelves ──
 
-    def scan_shelves(self, heights: list[float], view_floor: float) -> dict[int, list[str]]:
-        """Classes seen per level index (0 = lowest); levels below view_floor are seen from it."""
+    def scan_shelves(self, heights: list[float]) -> dict[int, list[str]]:
+        """Classes seen per level index (0 = lowest)."""
         shelves = {}
         for idx, height in enumerate(sorted(heights)):
             self.hri.say(f"Scanning shelf number {idx + 1}.", wait=False)
-            self.view_shelf_level(max(height, view_floor))
+            self.view_shelf_level(height)
             status, dets = self.detect_with_retries()
             names = [d.classname or "unknown" for d in self.detections_at_level(dets, height)]
             shelves[idx] = names if status == Status.EXECUTION_SUCCESS else []
@@ -281,6 +285,7 @@ class CompositeTasks:
 
     def place_on_shelf_fallback(self, heights: list[float], attempts: int = 2, scan=True):
         """Try each shelf height in order, attempts times each. Returns (Status, height)."""
+        # TODO(manipulation): reject unreachable heights fast instead of planning against them
         for i, height in enumerate(heights):
             if scan and i == 0:
                 self.view_shelf_level(height)
