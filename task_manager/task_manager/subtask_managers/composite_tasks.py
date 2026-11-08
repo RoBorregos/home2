@@ -33,6 +33,7 @@ class CompositeTasks:
         self.tf_buffer = tf_buffer
         self.shelf_level_cache: dict[str, float] = {}
         self._rooms: dict[str, str] = {}
+        self._shelves: dict[int, list[str]] | None = None
         self.gripper_has_object = False
         node.create_subscription(GripperGraspState, GRIPPER_GRASP_STATE_TOPIC, self._gripper_cb, 10)
         self._clear_octomap_client = node.create_client(Empty, "/clear_octomap")
@@ -120,6 +121,11 @@ class CompositeTasks:
             self.wait(1.0)
             status, dets = self.vision.detect_objects()
         return status, dets or []
+
+    def detect_on_surface(self, view_pose: str = "table_stare"):
+        """Aim the camera at the surface in front and detect objects."""
+        self.manipulation.move_to_position(view_pose)
+        return self.vision.detect_objects()
 
     def table_counts(self) -> dict:
         """Detections per class at the current view."""
@@ -301,12 +307,20 @@ class CompositeTasks:
                 CLog.manip(self.node, "PLACE", f"Shelf {height:.2f} m failed {attempt}/{attempts}.")
         return Status.EXECUTION_ERROR, None
 
-    # ── Human help ──
-
-    def ask_human(self, request: str, question: str, retries: int = 5) -> Status:
-        """Ask a person to do something and wait for a spoken yes."""
-        self.hri.say(request, wait=True)
-        _, answer = self.hri.confirm(
-            question, use_keyword=True, retries=retries, wait_between_retries=10.0
-        )
-        return Status.EXECUTION_SUCCESS if answer == "yes" else Status.EXECUTION_ERROR
+    def place_on_shelf_near_similar(self, name: str, attempts: int = 2) -> Status:
+        """Place on the shelf in front, next to objects of the same category."""
+        heights = self.shelf_heights()
+        if self._shelves is None:
+            self._shelves = self.scan_shelves(heights)
+        status, _, to_add, _ = self.hri.categorize_objects([name], self._shelves)
+        idx = None
+        if status == Status.EXECUTION_SUCCESS:
+            idx = next((int(i) for i, names in to_add.items() if name in names), None)
+        order = list(heights)
+        if idx is not None and idx < len(heights):
+            self.hri.say(f"The {name} goes on shelf {idx + 1}.", wait=False)
+            order = [heights[idx]] + [h for h in heights if h != heights[idx]]
+        status, height = self.place_on_shelf_fallback(order, attempts)
+        if status == Status.EXECUTION_SUCCESS:
+            self._shelves.setdefault(heights.index(height), []).append(name)
+        return status
