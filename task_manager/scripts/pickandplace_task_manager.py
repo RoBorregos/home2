@@ -13,7 +13,6 @@ import json
 import os
 import time
 from dataclasses import asdict, dataclass, field
-from enum import Enum
 from pathlib import Path
 
 import rclpy
@@ -38,36 +37,24 @@ MIN_REACHABLE_SHELF_Z = 0.20  # real level 1 is announce-only
 FALLBACK_SHELF_HEIGHTS = {1: 0.095, 2: 0.39, 3: 0.68, 4: 1.05}
 
 
-class Location(Enum):
-    DINING_TABLE = "dining_table"
-    EXTRA_SURFACE = "extra_surface"
-    DISHWASHER = "dishwasher"
-    DISHWASHER_TAB = "dishwasher_tab"
-    CABINET = "cabinet"
-    TRASH_BIN = "trash_bin"
-    BREAKFAST_ITEMS = "breakfast_items"
-    KITCHEN = "kitchen"
-
-
-# Venue mapping: role -> (room, furniture) as named in areas.json, and dock stand-off (None = no dock)
-NAV_LOCATIONS = {
-    Location.KITCHEN: ("kitchen", "safe_place", None),
-    Location.DINING_TABLE: ("kitchen", "dinner_table", 0.0),
-    Location.EXTRA_SURFACE: ("kitchen", "counter", 0.0),
-    Location.DISHWASHER: ("kitchen", "dishwasher", 0.32),
-    Location.DISHWASHER_TAB: ("kitchen", "cooking_table", 0.32),
-    Location.CABINET: ("kitchen", "cabinet", 0.30),
-    Location.TRASH_BIN: ("kitchen", "trashbin", None),
-    Location.BREAKFAST_ITEMS: ("kitchen", "dishwasher", 0.32),
+ROOM = "kitchen"
+# Dock stand-off per map location (m); locations not listed are not docked
+DOCK_OFFSETS = {
+    "dinner_table": 0.0,
+    "counter": 0.0,
+    "dishwasher": 0.32,
+    "cooking_table": 0.32,
+    "cabinet": 0.30,
 }
 
 
 @dataclass(frozen=True)
 class BreakfastSpec:
-    name: str
-    source: Location
+    name: str  # vision label
+    source: str  # map location
     close_to: str
     essential: bool  # still attempted after breakfast_tail_s
+    pour: bool = False
 
 
 @dataclass(frozen=True)
@@ -90,17 +77,16 @@ class PPCConfig:
     cleanup_deadline_s: float = 180.0
     breakfast_tail_s: float = 360.0
     hard_deadline_s: float = 405.0
-    yolo_names: dict = field(default_factory=lambda: {"cereal": "cornflakes", "milk": "milk"})
     skip_names: tuple = ("red_plate", "plate", "dish")  # flat objects are not graspable
     cutlery: tuple = ("fork", "knife", "spoon")
     tableware: tuple = ("red_plate", "cup", "mug", "bowl")
     # Reliability first: a box/can is the safest first pick (+100 first-pick bonus)
     priority: tuple = ("other", "cutlery", "tableware", "trash", "common")
     breakfast: tuple = (
-        BreakfastSpec("bowl", Location.BREAKFAST_ITEMS, "", True),
-        BreakfastSpec("cereal", Location.CABINET, "bowl", True),
-        BreakfastSpec("milk", Location.CABINET, "cereal", True),
-        BreakfastSpec("spoon", Location.BREAKFAST_ITEMS, "bowl", False),
+        BreakfastSpec("bowl", "dishwasher", "", True),
+        BreakfastSpec("cornflakes", "cabinet", "bowl", True, pour=True),
+        BreakfastSpec("milk", "cabinet", "cornflakes", True, pour=True),
+        BreakfastSpec("spoon", "dishwasher", "bowl", False),
     )
 
 
@@ -154,18 +140,17 @@ def categorize(name: str, cfg: PPCConfig, object_to_category: dict) -> str:
         return "tableware"
     trash = cfg.trash_category.lower()
     if trash and name not in cfg.trash_exceptions:
-        yolo = cfg.yolo_names.get(name, name).lower()
-        if name == trash or object_to_category.get(yolo, "").lower() == trash:
+        if name == trash or object_to_category.get(name, "").lower() == trash:
             return "trash"
     return "other"
 
 
-def destination(category: str, cfg: PPCConfig) -> Location:
+def destination(category: str, cfg: PPCConfig) -> str:
     if category == "trash":
-        return Location.TRASH_BIN
+        return "trashbin"
     if category in ("cutlery", "tableware"):
-        return Location.DISHWASHER_TAB if cfg.place_dishwasher_at_tab else Location.DISHWASHER
-    return Location.CABINET
+        return "cooking_table" if cfg.place_dishwasher_at_tab else "dishwasher"
+    return "cabinet"
 
 
 def sort_for_pick(objects: list, priority: tuple) -> list:
@@ -224,9 +209,6 @@ class PickAndPlace:
     def elapsed(self) -> float:
         return 0.0 if self.state.started_at is None else self.clock() - self.state.started_at
 
-    def yolo(self, name: str) -> str:
-        return self.cfg.yolo_names.get(name.lower(), name)
-
     def say(self, text: str, wait: bool = False) -> Status:
         """Speak; a TTS failure never fails the task."""
         self.sm.hri.say(text, wait=wait)
@@ -236,8 +218,8 @@ class PickAndPlace:
         CLog.fsm(self.node, "PPC", msg, level=level)
 
     @property
-    def table(self) -> Location:
-        return Location.EXTRA_SURFACE if self.cfg.use_extra_surface else Location.DINING_TABLE
+    def table(self) -> str:
+        return "counter" if self.cfg.use_extra_surface else "dinner_table"
 
     def spec(self, name: str) -> BreakfastSpec:
         return next(b for b in self.cfg.breakfast if b.name == name)
@@ -256,7 +238,7 @@ class PickAndPlace:
 
     def request_chair_removal(self) -> Status:
         self.say("I am ready.")
-        self.go(Location.KITCHEN, say=False)
+        self.go("safe_place", say=False)
         status, chairs = self.sm.vision.detect_chairs_to_remove()
         if status == Status.EXECUTION_SUCCESS and not chairs:
             return Status.EXECUTION_SUCCESS
@@ -270,14 +252,15 @@ class PickAndPlace:
         self.sm.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
         return Status.EXECUTION_SUCCESS
 
-    def go(self, location: Location, say: bool = True) -> Status:
+    def go(self, location: str, say: bool = True) -> Status:
         """Navigate + dock once per visit; staying put is free."""
-        if self.state.location == location.value:
+        if self.state.location == location:
             return Status.EXECUTION_SUCCESS
         self.state.cabinet_scan_fresh = False
-        room, place, offset = NAV_LOCATIONS[location]
-        status = self.sm.composite.navigate_and_dock(room, place, offset, say=say)
-        self.state.location = location.value if status == Status.EXECUTION_SUCCESS else None
+        status = self.sm.composite.navigate_and_dock(
+            ROOM, location, DOCK_OFFSETS.get(location), say=say
+        )
+        self.state.location = location if status == Status.EXECUTION_SUCCESS else None
         return status
 
     def perceive_table(self) -> Status:
@@ -288,11 +271,9 @@ class PickAndPlace:
         if status != Status.EXECUTION_SUCCESS or not dets:
             self.log("No objects on the table, going to breakfast.", "warn")
             return Status.EXECUTION_ERROR
-        inverse = {v: k for k, v in self.cfg.yolo_names.items()}
         self.state.objects = []
         for det in dets:
-            raw = (det.classname or "unknown").split("/", 1)[-1]  # "trash/<name>" from vision
-            name = inverse.get(raw, raw)
+            name = (det.classname or "unknown").split("/", 1)[-1]  # "trash/<name>" from vision
             category = (
                 "common"
                 if self.cfg.use_extra_surface
@@ -331,7 +312,7 @@ class PickAndPlace:
     def pick_object(self, obj: TableObject) -> Status:
         self.say(f"I will pick the {obj.name}.")
         status = self.sm.composite.pick_confirmed(
-            self.yolo(obj.name),
+            obj.name,
             self.cfg.attempts,
             self.cfg.use_vision_confirmation,
             self.cfg.use_grasp_detector,
@@ -394,11 +375,11 @@ class PickAndPlace:
             self.say(f"That shelf is too low for my arm, so I will place the {name} higher.")
         return order
 
-    def place_object(self, obj: TableObject, dest: Location) -> Status:
-        self.say(f"Placing the {obj.name} at the {dest.value.replace('_', ' ')}.")
-        if dest == Location.TRASH_BIN:
+    def place_object(self, obj: TableObject, dest: str) -> Status:
+        self.say(f"Placing the {obj.name} at the {dest.replace('_', ' ')}.")
+        if dest == "trashbin":
             status = self.sm.manipulation.place(is_trash=True)
-        elif dest == Location.CABINET:
+        elif dest == "cabinet":
             status, _ = self.sm.composite.place_on_shelf_fallback(
                 self._shelf_heights_for(obj.name),
                 self.cfg.attempts,
@@ -411,14 +392,14 @@ class PickAndPlace:
             obj.status = "placed"
             self.state.holding = None
             self.sm.hri.publish_display_capture(
-                f"Placed {obj.name} at {dest.value}",
-                data={"object": obj.name, "location": dest.value},
+                f"Placed {obj.name} at {dest}",
+                data={"object": obj.name, "location": dest},
             )
         return status
 
     def pick_breakfast_item(self, item: BreakfastItem) -> Status:
-        name = self.yolo(item.name)
-        if self.spec(item.name).source == Location.CABINET:
+        name = item.name
+        if self.spec(item.name).source == "cabinet":
             heights = list(self.shelf_heights.values())
             status = self.sm.composite.pick_from_shelf(
                 name,
@@ -427,7 +408,7 @@ class PickAndPlace:
                 self.cfg.use_vision_confirmation,
                 self.cfg.use_grasp_detector,
                 self.cfg.use_octomap_clearing,
-                say_name=item.name,
+                say_name=name,
             )
             self.state.cabinet_scan_fresh = True
         else:
@@ -447,8 +428,8 @@ class PickAndPlace:
         self.say(f"Pouring {item.name} into the bowl.")
         for _ in range(self.cfg.pour_attempts):
             status = self.sm.manipulation.pour(
-                pour_object_name=self.yolo(item.name),
-                pour_container_name=self.yolo("bowl"),
+                pour_object_name=item.name,
+                pour_container_name="bowl",
                 object_already_grasped=True,
             )
             if status == Status.EXECUTION_SUCCESS:
@@ -459,7 +440,7 @@ class PickAndPlace:
     def place_breakfast_item(self, item: BreakfastItem) -> Status:
         self.say(f"Placing the {item.name}.")
         ref = self.spec(item.name).close_to
-        close_to = self.yolo(ref) if ref and self._breakfast(ref).status == "placed" else ""
+        close_to = ref if ref and self._breakfast(ref).status == "placed" else ""
         status = self.sm.manipulation.place(close_to=close_to)
         if status == Status.EXECUTION_SUCCESS:
             item.status = "placed"
@@ -507,13 +488,9 @@ class PickAndPlace:
             Action("pick_object", lambda: self.pick_object(obj)),
             Action("navigate_to_placement", lambda: self.go(dest)),
         ]
-        if (
-            dest == Location.DISHWASHER
-            and self.cfg.use_dishwasher
-            and not self.state.dishwasher_open
-        ):
+        if dest == "dishwasher" and self.cfg.use_dishwasher and not self.state.dishwasher_open:
             steps.append(Action("check_dishwasher", self.check_dishwasher))
-        if dest == Location.CABINET:
+        if dest == "cabinet":
             steps.append(Action("scan_cabinet_shelves", self.scan_cabinet_shelves))
         steps.append(Action("place_object", lambda: self.place_object(obj, dest)))
         return sequence(f"clean_{obj.name}", *steps)
@@ -523,9 +500,9 @@ class PickAndPlace:
             Action("navigate_to_item_source", lambda: self.go(self.spec(item.name).source)),
             Action("ensure_gripper_empty", self.ensure_gripper_empty),
             Action("pick_breakfast_item", lambda: self.pick_breakfast_item(item)),
-            Action("navigate_to_dining", lambda: self.go(Location.DINING_TABLE)),
+            Action("navigate_to_dining", lambda: self.go("dinner_table")),
         ]
-        if item.name in ("cereal", "milk") and self._breakfast("bowl").status == "placed":
+        if self.spec(item.name).pour and self._breakfast("bowl").status == "placed":
             steps.append(optional(Action("pour_into_bowl", lambda: self.pour_into_bowl(item))))
         steps.append(Action("place_breakfast_item", lambda: self.place_breakfast_item(item)))
         return sequence(f"breakfast_{item.name}", *steps)
