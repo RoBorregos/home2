@@ -2,7 +2,7 @@ var classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks =
 [
     [ "__init__", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ae48b688fd886f6960c0a544c749db476", null ],
     [ "_resolve_map_xy", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a335b8044871554eeecaf94faeae52914", null ],
-    [ "approach_point", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a4ad8a0666219551db0baff734c01ad0d", null ],
+    [ "approach_point", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa3dd54d1b192c5e61d2f7ff76eae1836", null ],
     [ "bearing_to", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a3adafb3362b7bf27fc657bb99ba25366", null ],
     [ "check_door", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a03078902443e9c684ea6deddb7a33921", null ],
     [ "dock_table", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa979bd089810c5d4d3ba058eb7903826", null ],

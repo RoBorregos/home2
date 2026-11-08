@@ -1,5 +1,11 @@
 var NAVTREEINDEX37 =
 {
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md379":[32,3],
+"md_docs_Run_Areas_hri.html":[30],
+"md_docs_Run_Areas_hri.html#autotoc_md355":[30,0],
+"md_docs_Run_Areas_hri.html#autotoc_md356":[30,1],
+"md_docs_Run_Areas_nav.html":[33],
+"md_docs_Run_Areas_nav.html#autotoc_md381":[33,0],
 "md_docs_Run_Areas_nav.html#autotoc_md383":[33,1],
 "md_docs_Run_Areas_nav.html#autotoc_md384":[33,1,0],
 "md_docs_Run_Areas_nav.html#autotoc_md385":[33,1,1],
@@ -243,11 +249,5 @@ var NAVTREEINDEX37 =
 "md_manipulation_packages_vamp_README.html#autotoc_md28":[3,0,6],
 "md_manipulation_packages_vamp_README.html#autotoc_md29":[3,1],
 "md_manipulation_packages_vamp_README.html#autotoc_md30":[3,2],
-"md_manipulation_packages_vamp_README.html#autotoc_md31":[3,3],
-"md_manipulation_packages_vamp_README.html#autotoc_md32":[3,4],
-"md_manipulation_packages_vamp_README.html#autotoc_md33":[3,5],
-"md_manipulation_packages_vamp_README.html#autotoc_md34":[3,5,0],
-"md_manipulation_packages_vamp_README.html#autotoc_md35":[3,6],
-"md_manipulation_packages_vamp_README.html#autotoc_md36":[3,7],
-"md_manipulation_packages_vamp_README.html#autotoc_md37":[3,8]
+"md_manipulation_packages_vamp_README.html#autotoc_md31":[3,3]
 };

@@ -1,5 +1,11 @@
 var NAVTREEINDEX39 =
 {
+"namespacebenchmark__vamp.html":[40,0,7],
+"namespacebenchmark__vamp.html#a186b0c38ab4698ef0b34c529dc33a197":[40,0,7,5],
+"namespacebenchmark__vamp.html#a9b0d761583c11cecee33ee66344bfdd9":[40,0,7,2],
+"namespacebenchmark__vamp.html#abcae032d3725528cc49ff6403e879d99":[40,0,7,4],
+"namespacebenchmark__vamp.html#ac31abad6cf704fac96ccc21213f3cbb3":[40,0,7,1],
+"namespacebenchmark__vamp.html#ad3eea89269da5fba69502eb1830b20e2":[40,0,7,3],
 "namespacecalibrate__ignore__laser.html":[40,0,8],
 "namespacecalibrate__ignore__laser.html#a34da9aa3d10276af312e54fdf65f548c":[40,0,8,1],
 "namespacecall__joint__goal.html":[40,0,9],
@@ -243,11 +249,5 @@ var NAVTREEINDEX39 =
 "namespaceface__recognition__node.html#a3064558ca546a28feddfddc19858d9ae":[40,0,41,4],
 "namespaceface__recognition__node.html#a4b2d182930304b364cdc2af6f6b32bef":[40,0,41,2],
 "namespaceface__recognition__node.html#a56617f4391f49f52c38a3bdabc308aad":[40,0,41,3],
-"namespaceface__recognition__node.html#abe2d04ddc5e2378a7b776a096ca9c278":[40,0,41,1],
-"namespacefakes.html":[40,0,42],
-"namespacefakes.html#a2132794781f5d0e74bcad64799d40aba":[40,0,42,9],
-"namespacefakes.html#a2f2dad6f43b6c730b802e6f636eabe4c":[40,0,42,8],
-"namespacefakes.html#a822384887380295d84d67b6051fb4c70":[40,0,42,10],
-"namespacefetch__models.html":[40,0,43],
-"namespacefetch__models.html#a12426f016a212a03cf8484f0b02d7303":[40,0,43,3]
+"namespaceface__recognition__node.html#abe2d04ddc5e2378a7b776a096ca9c278":[40,0,41,1]
 };

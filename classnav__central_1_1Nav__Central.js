@@ -1,6 +1,7 @@
 var classnav__central_1_1Nav__Central =
 [
     [ "__init__", "classnav__central_1_1Nav__Central.html#add534391d75a8d5d4702fbc1aa842447", null ],
+    [ "_align_parallel", "classnav__central_1_1Nav__Central.html#ae30a10f88490c2604723fa08ffa5959b", null ],
     [ "_approach_pose", "classnav__central_1_1Nav__Central.html#a271581590fa2a1b982d23c78ad63cf6f", null ],
     [ "_approach_table", "classnav__central_1_1Nav__Central.html#a4ae0f1b71b138859260019299d129756", null ],
     [ "_call_service_with_timeout", "classnav__central_1_1Nav__Central.html#af7654d5b728493a9cd14121e19246839", null ],
@@ -18,6 +19,7 @@ var classnav__central_1_1Nav__Central =
     [ "_navigate", "classnav__central_1_1Nav__Central.html#a47a06f0d86dd79579eeedb6c6c99fd08", null ],
     [ "_path_length", "classnav__central_1_1Nav__Central.html#a3f57c7ea2e88b6d550eaf0f0b92623d4", null ],
     [ "_pose_from_coords", "classnav__central_1_1Nav__Central.html#a071fe41930bbf1574441e41b1a879543", null ],
+    [ "_publish_cmd", "classnav__central_1_1Nav__Central.html#af03041b6b35fd75c840a50b359aa2398", null ],
     [ "_ready_to_drive", "classnav__central_1_1Nav__Central.html#a486745b9ad6a43d7502a1f4edd15e6ca", null ],
     [ "_resume_nav_callback", "classnav__central_1_1Nav__Central.html#a5905fc0ebb477b88453d272cb944dba6", null ],
     [ "_retreat_if_docked", "classnav__central_1_1Nav__Central.html#ab3efc7a44c61f4b3db21148b44e300fe", null ],
@@ -69,6 +71,7 @@ var classnav__central_1_1Nav__Central =
     [ "check_door_srv", "classnav__central_1_1Nav__Central.html#a26b333e672e7a3f2fd58f729d03d0c26", null ],
     [ "clear_global_costmap_client", "classnav__central_1_1Nav__Central.html#ab9093cb4cc3740f56d75d8a8c5369261", null ],
     [ "clear_local_costmap_client", "classnav__central_1_1Nav__Central.html#aa0cee57574c10fb8053a36a4cb57ac64", null ],
+    [ "cmd_vel_pub", "classnav__central_1_1Nav__Central.html#ac53eae3ad787d3afb9d265b815fcc360", null ],
     [ "compute_path_client", "classnav__central_1_1Nav__Central.html#a9de809398177e1163dce35a3d29293f4", null ],
     [ "config_path", "classnav__central_1_1Nav__Central.html#a341aff4a61dccdecce2a6c60a167cef8", null ],
     [ "default_base", "classnav__central_1_1Nav__Central.html#a1d9465308874beb431873c6f434afd27", null ],

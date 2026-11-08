@@ -52,7 +52,7 @@ var searchData=
   ['apply_5fsmoothing_5ffilter_49',['apply_smoothing_filter',['../classvamp__server_1_1VampServer.html#a649dd8d98de7f611f505c74642d37de5',1,'vamp_server::VampServer']]],
   ['apply_5fstyle_50',['apply_style',['../classmap__area__tagger_1_1MapAreaTagger.html#a43545652430f848a3573bc2f2afab1e7',1,'map_area_tagger.MapAreaTagger.apply_style()'],['../classnav__ui_1_1NavUI.html#ae4a11b8fc154e4b8545545812def5dd8',1,'nav_ui.NavUI.apply_style()']]],
   ['approach_5faxis_51',['approach_axis',['../namespacepick__and__place_1_1robot_1_1geometry.html#a487048d9bd8f3c6bc2de5c3256acd25f',1,'pick_and_place::robot::geometry']]],
-  ['approach_5fpoint_52',['approach_point',['../classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a4ad8a0666219551db0baff734c01ad0d',1,'task_manager::subtask_managers::nav_tasks::NavigationTasks']]],
+  ['approach_5fpoint_52',['approach_point',['../classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa3dd54d1b192c5e61d2f7ff76eae1836',1,'task_manager::subtask_managers::nav_tasks::NavigationTasks']]],
   ['approach_5fpoint_5fcallback_53',['approach_point_callback',['../classnav__central_1_1Nav__Central.html#ae85188640cc78ed58739988bef44d767',1,'nav_central::Nav_Central']]],
   ['approaches_54',['approaches',['../namespaceperception__3d_1_1geometric__grasps.html#ac905561b6f7221dc98e893c6f10e9470',1,'perception_3d::geometric_grasps']]],
   ['arcball_5fconstrain_5fto_5faxis_55',['arcball_constrain_to_axis',['../namespacevamp_1_1transformations.html#a7f6dfca6957e78340326401059cb4290',1,'vamp::transformations']]],
