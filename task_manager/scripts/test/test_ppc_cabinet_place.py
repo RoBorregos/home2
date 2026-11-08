@@ -37,11 +37,12 @@ def _load_task_manager_module():
     """
     candidates = [
         # When running from the install tree
-        "/workspace/install/task_manager/lib/task_manager/pickandplace_task_manager.py",
+        "/workspace/install/task_manager/lib/task_manager/pickandplace_fsm_legacy.py",
         # When running from the source tree
         os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "pickandplace_task_manager.py",
+            "misc",
+            "pickandplace_fsm_legacy.py",
         ),
     ]
     for path in candidates:
@@ -51,7 +52,7 @@ def _load_task_manager_module():
             sys.modules["pickandplace_task_manager"] = mod
             spec.loader.exec_module(mod)
             return mod
-    raise RuntimeError("Could not locate pickandplace_task_manager.py in any known location")
+    raise RuntimeError("Could not locate pickandplace_fsm_legacy.py in any known location")
 
 
 _tm_mod = _load_task_manager_module()
