@@ -242,25 +242,32 @@ class FinalsTaskManager(Node):
         return f"Are you looking for: {target}? Yes or no?"
 
     def _ask(self, question: str) -> str:
-        """Ask, hear and confirm, like GPSR; "" when nothing was understood."""
-        self._step(f"Listening: {question}")
-        status, text = self.subtask_manager.hri.ask_and_confirm(
-            question,
-            "LLM_command",
-            context="The user says what object they are looking for, or asks to stop.",
-            confirm_question=self._confirm_question,
-            hotwords=HOTWORDS,
-            retries=self.listen_retries,
-            min_wait_between_retries=5.0,
-            skip_extract_data=True,
-            always_confirm=True,
-            start_silence_time=self.listen_start_s,
-        )
-        if status != Status.EXECUTION_SUCCESS or not text:
-            self._step("No answer heard")
-            return ""
-        self._step(f"Heard: {text}")
-        return text
+        """Ask, hear and confirm, like GPSR's ask_and_confirm; "" when nothing was understood.
+
+        Its own loop rather than hri.ask_and_confirm: that one always waits the default
+        4 s for speech to start, and people need longer right after a question.
+        """
+        hri = self.subtask_manager.hri
+        for attempt in range(1, self.listen_retries + 1):
+            self._step(f"Listening ({attempt}/{self.listen_retries}): {question}")
+            hri.say(question)
+            status, text, _ = hri.hear(hotwords=HOTWORDS, start_silence_time=self.listen_start_s)
+            text = (text or "").strip()
+            if status != Status.EXECUTION_SUCCESS or not text:
+                self._step("No answer heard")
+                hri.say("Sorry, I could not hear you.")
+                continue
+            self._step(f"Heard: {text}")
+            status, answer = hri.confirm(
+                self._confirm_question(text, text),
+                use_keyword=True,
+                retries=2,
+                wait_between_retries=2.0,
+            )
+            if status == Status.EXECUTION_SUCCESS and answer == "yes":
+                return text
+            self._step(f"Not confirmed: {text}")
+        return ""
 
     def command_loop(self) -> None:
         """Listen until told to stop, the time runs out, or nobody answers for a while."""
