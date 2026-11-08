@@ -93,7 +93,12 @@ class RosLLM:
 
     def complete_json(self, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
         """The model's answer as a dict, or LLMUnavailable if there is none to use."""
-        question = f"{prompt}\n\nAnswer only with JSON matching this schema:\n{json.dumps(schema)}"
+        # An example object, not the schema: small models copy a schema's shape back.
+        example = {key: "" for key in schema.get("properties", {})}
+        question = (
+            f"{prompt}\n\nAnswer with only one JSON object with exactly these keys, "
+            f"filled in, and nothing else. Example: {json.dumps(example)}"
+        )
         try:
             answer = _call(
                 self.node,

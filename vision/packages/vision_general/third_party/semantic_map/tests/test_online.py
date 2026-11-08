@@ -9,7 +9,7 @@ from adapters.clock import ManualClock
 from adapters.files import load_snapshot, save_snapshot
 from core.config import SemanticMapConfig
 from core.graph import SemanticGraph
-from core.types import Observation, Point
+from core.types import Observation, ParsedQuery, Point
 from core.visibility import should_be_visible
 from ports import LLMUnavailable
 
@@ -357,3 +357,75 @@ def test_point_out_of_frame_or_range_is_not_visible(point):
 def test_without_valid_depth_it_does_not_count(bad):
     assert not should_be_visible((0.0, 0.0, 1.0), depth=depth_at(bad), **CAMERA)
     assert not should_be_visible((0.0, 0.0, 1.0), depth=None, **CAMERA)
+
+
+# --- what the robot's LLM and detector actually returned on lab_7_nov ---
+
+
+class SchemaEchoLLM:
+    """qwen3.5-4b on the robot: the values nested under "properties"."""
+
+    def complete_json(self, prompt, schema):
+        target = "cup" if "cup" in prompt.split("Command:")[-1] else "banana"
+        return {
+            "type": "object",
+            "properties": {"target": target, "anchor": "", "relation": "", "room": ""},
+            "required": ["target", "anchor", "relation", "room"],
+        }
+
+
+def test_values_echoed_under_properties_are_read():
+    graph = SemanticGraph(llm=SchemaEchoLLM())
+    assert graph.parse("I am looking for a cup.").target == "cup"
+
+
+def test_a_plain_answer_is_still_read():
+    class Plain:
+        def complete_json(self, prompt, schema):
+            return {"target": "trash bin", "anchor": "", "relation": "", "room": ""}
+
+    assert SemanticGraph(llm=Plain()).parse("Trash bin.").target == "trash bin"
+
+
+class OrthogonalEncoder:
+    """Text and crops far apart, as when a detector crop looks nothing like CLIP's idea of it."""
+
+    dim = 3
+    vectors = {}
+
+    def encode_text(self, text):
+        key = text.replace("a photo of a ", "")
+        if key not in self.vectors:
+            v = np.zeros(3, np.float32)
+            v[len(self.vectors) % 3] = 1.0
+            self.vectors[key] = v
+        return self.vectors[key]
+
+
+def test_an_object_named_outright_wins_even_with_a_poor_crop():
+    graph = SemanticGraph(
+        encoder=OrthogonalEncoder(), config=SemanticMapConfig(sim_min=0.24)
+    )
+    cup_crop = np.array([0.0, 0.6, 0.8], np.float32)
+    bin_crop = np.array([0.0, 0.0, 1.0], np.float32)
+    graph.observe(seen("cup", x=0.0, embedding=cup_crop))
+    graph.observe(seen("trash_bin", x=5.0, embedding=bin_crop))
+    answer = graph.answer("trash bin", ParsedQuery(target="trash bin"))
+    assert answer.status == "found"
+    assert answer.matches[0].obj.label == "trash_bin"
+
+
+@pytest.mark.parametrize(
+    "text,label,expected",
+    [
+        ("Trash bin.", "trash_bin", True),
+        ("where are the trash bins", "trash_bin", True),
+        ("I'm looking for a cup.", "cup", True),
+        ("cupboard", "cup", False),
+        ("bin", "trash_bin", False),
+    ],
+)
+def test_naming_a_label(text, label, expected):
+    from core.graph import _names_label
+
+    assert _names_label(text, label) is expected

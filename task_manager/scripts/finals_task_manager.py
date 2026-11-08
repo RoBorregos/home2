@@ -24,6 +24,8 @@ ARM_TRAVEL_POSE = "nav_pose"
 # Words that end the command phase before the time limit
 STOP_WORDS = ("stop", "finish", "that's all", "that is all", "terminar")
 HOTWORDS = "where is bring find look stop"
+# Replies that answer a yes/no question, not "what are you looking for"
+YES_NO = {"yes", "yeah", "yep", "no", "nope", "si", "sí", "ok", "okay", "sure"}
 
 
 class ExecutionStates(Enum):
@@ -233,6 +235,11 @@ class FinalsTaskManager(Node):
             self.subtask_manager.hri.say(f"Sorry, I cannot get to the {label} from here.")
 
     @staticmethod
+    def _is_yes_no(text: str) -> bool:
+        words = "".join(c if c.isalnum() or c.isspace() else " " for c in text.lower()).split()
+        return bool(words) and all(word in YES_NO for word in words)
+
+    @staticmethod
     def _is_stop(text: str) -> bool:
         return any(word in text.lower() for word in STOP_WORDS)
 
@@ -258,6 +265,10 @@ class FinalsTaskManager(Node):
                 hri.say("Sorry, I could not hear you.")
                 continue
             self._step(f"Heard: {text}")
+            if self._is_yes_no(text):
+                self._step(f"Not a request: {text}")
+                hri.say("Please tell me the name of the object.")
+                continue
             status, answer = hri.confirm(
                 self._confirm_question(text, text),
                 use_keyword=True,
@@ -282,7 +293,7 @@ class FinalsTaskManager(Node):
             if self._is_stop(text):
                 return
             self.handle_command(text)
-            question = "Anything else? Say stop when you are done."
+            question = "What else are you looking for? Say stop when you are done."
 
     # ---------------------------------------------------------------------- run
 

@@ -62,6 +62,10 @@ A person tells a robot: "{text}".
 Answer the number of the photo that best matches the object the person wants, or "" if none could match."""
 
 
+# Added to the score of an object whose label the query names outright
+EXACT_LABEL_BONUS = 100.0
+
+
 class SemanticGraph:
     """A three-layer map of the house: rooms, furniture, and the objects on them."""
 
@@ -287,6 +291,7 @@ class SemanticGraph:
             )
         except LLMUnavailable:
             return ParsedQuery(target=text)
+        answer = _unwrap_schema_echo(answer, PARSE_SCHEMA)
         parsed = ParsedQuery(
             **{k: answer.get(k, "") for k in PARSE_SCHEMA["properties"]}
         )
@@ -446,10 +451,14 @@ class SemanticGraph:
         weight = self.config.name_weight
         fused = (1 - weight) * _z(image) + weight * _z(name)
         wanted = {o.id for o in objects}
+        # An object whose label the text names outright is a match whatever its crop
+        # looks like, and outranks every object that only resembles the words.
         scored = [
-            (o, float(score))
+            (o, float(score) + (EXACT_LABEL_BONUS if exact else 0.0))
             for o, similarity, score in zip(everything, image, fused)
-            if o.id in wanted and (not gated or similarity >= self.config.sim_min)
+            for exact in (_names_label(text, o.label),)
+            if o.id in wanted
+            and (not gated or exact or similarity >= self.config.sim_min)
         ]
         return sorted(scored, key=lambda pair: -pair[1])
 
@@ -542,6 +551,36 @@ class SemanticGraph:
     def _has_surface(self, area: str, sublocation: str) -> bool:
         room = self.rooms.get(area)
         return room is not None and sublocation in room.surfaces
+
+
+def _words(text: str) -> list[str]:
+    """Lowercase words without punctuation, plural "s" dropped: "Trash bins." -> trash bin."""
+    cleaned = "".join(c if c.isalnum() else " " for c in text.lower().replace("_", " "))
+    return [w[:-1] if len(w) > 3 and w.endswith("s") else w for w in cleaned.split()]
+
+
+def _names_label(text: str, label: str) -> bool:
+    """True when every word of the label appears in the text, in order."""
+    words, wanted = _words(text), _words(label)
+    if not wanted:
+        return False
+    return any(
+        words[i : i + len(wanted)] == wanted
+        for i in range(len(words) - len(wanted) + 1)
+    )
+
+
+def _unwrap_schema_echo(answer: dict, schema: dict) -> dict:
+    """Small models often echo the JSON schema and put the values under "properties"."""
+    keys = schema.get("properties", {})
+    inner = answer.get("properties") if isinstance(answer, dict) else None
+    if (
+        isinstance(inner, dict)
+        and not any(k in answer for k in keys)
+        and any(k in inner for k in keys)
+    ):
+        return {k: v for k, v in inner.items() if isinstance(v, str)}
+    return answer
 
 
 def _distance(a: Point, b: Point) -> float:
