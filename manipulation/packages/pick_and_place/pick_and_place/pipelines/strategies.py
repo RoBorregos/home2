@@ -133,6 +133,10 @@ class CartesianApproachPick(PickStrategy):
     The rim strategy, tilted: the arm moves to a pre-grasp behind the grasp, drives
     straight forward along the approach axis, closes, attaches the fitted object and
     saves the PickOutcome data like height.
+
+    With a ``force_guard`` in the profile (plates) the drive is the force-guarded
+    descent along the approach axis instead: it stops on effort contact or at the
+    guard's timeout, and the grasp closes either way.
     """
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
@@ -156,7 +160,14 @@ class CartesianApproachPick(PickStrategy):
         with arm.phase("cartesian_approach"):
             arm.check_abort()
             distance = profile.effective_descent_distance
-            if not arm.cartesian_approach(
+            if profile.force_guard:
+                result = arm.force_guarded_descent(
+                    profile.force_guard, approach_axis(candidate.pose)
+                )
+                if result.descended_m == 0.0:
+                    raise PickAttemptFailed("force-guarded approach could not start")
+                arm.close_gripper(settle_s=profile.close_settle)
+            elif not arm.cartesian_approach(
                 approach_axis(candidate.pose),
                 distance,
                 profile.descent_speed,
@@ -182,7 +193,7 @@ class CartesianApproachPick(PickStrategy):
 class ForceGuardedDescentPick(PickStrategy):
     """Descend onto a flat object until joint effort reports contact.
 
-    Forks, plates and sponges are too thin to descend onto by position: the
+    Forks and sponges are too thin to descend onto by position: the
     perceived height is not accurate to the millimetre, so a fixed descent
     either stops short or drives into the table.
 
@@ -277,7 +288,7 @@ class DirectGraspPick(PickStrategy):
 # Which strategy handles which profile.
 STRATEGIES = {
     PICK_STRATEGY_FLAT: ForceGuardedDescentPick,
-    PICK_STRATEGY_PLATE: ForceGuardedDescentPick,
+    PICK_STRATEGY_PLATE: CartesianApproachPick,
     PICK_STRATEGY_RIM: FixedDistanceDescentPick,
     PICK_STRATEGY_BOWL: FixedDistanceDescentPick,
     PICK_STRATEGY_PEAK: FixedDistanceDescentPick,

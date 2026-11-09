@@ -129,6 +129,17 @@ SHAPE_CLASS = {
     "box": GRASP_CLASS_BOX,
 }
 
+LEDGE_DIRECTION = np.array([0.0, 1.0])
+PLATE_TABLE_BAND = 0.04
+PLATE_TILT = 35  # gripper geometry based
+PLATE_TABLE_PUSH = 0.007  # 7 mm below the table so the fingertip presses
+PLATE_MIN_DEPTH = 0.010  # m the lower fingertip ends up under the lip: enough for the pads to hold the rim
+GRIPPER_TIP_THICKNESS = 0.003
+PLATE_SWEEP = 15
+PLATE_SWEEP_STEP = 5
+
+UP = np.array([0.0, 0.0, 1.0])
+
 
 class GraspRejected(Exception):
     pass
@@ -386,10 +397,10 @@ def trash_bin(scene: Scene) -> tuple:
     ]
 
 
-def fit_box(points: np.ndarray) -> tuple:
+def fit_box(points: np.ndarray, trim: float = 1) -> tuple:
     angles = np.radians(np.arange(0, 180, FIT_STEP_DEG))
     axes = np.column_stack((np.cos(angles), np.sin(angles)))
-    low, high = np.percentile(points[:, :2] @ axes.T, [1, 99], axis=0)
+    low, high = np.percentile(points[:, :2] @ axes.T, [trim, 100 - trim], axis=0)
     k = np.argmin(high - low)
     j = (k + len(angles) // 2) % len(angles)
     center = axes[k] * (low[k] + high[k]) / 2 + axes[j] * (low[j] + high[j]) / 2
@@ -409,15 +420,38 @@ def fit_plate(points: np.ndarray) -> tuple:
 
 def plate(scene: Scene) -> tuple:
     points = scene.points(scene.valid)
-    points = points[points[:, 2] > np.median(points[:, 2]) - PLATE_CUT]
-    center, diameter = fit_plate(points)
-    require(diameter > 1e-6, "plate measured wrong")
-    return None, [
-        Grasp(
-            np.array([*center, np.percentile(points[:, 2], TOP_PERCENTILE)]),
-            grasp_frame(TOP_DOWN, DEFAULT_CLOSING_AXIS),
-        )
+    median = np.median(points[:, 2])
+    center, diameter = fit_plate(points[points[:, 2] > median])
+    radius = diameter / 2
+    require(radius > 1e-3, "plate measured wrong")
+    table = points[
+        (points[:, 2] < median - PLATE_CUT) & (points[:, 2] > median - PLATE_TABLE_BAND)
     ]
+    require(
+        len(table) >= MIN_POINTS_FOR_PCA,
+        "no table visible around the plate, may hit the table",
+    )
+    tilt = np.radians(PLATE_TILT)
+    z = (
+        np.median(table[:, 2])
+        - PLATE_TABLE_PUSH
+        + GRIPPER_MAX_APERTURE / 2 * np.cos(tilt)
+    )
+    lip = (
+        GRIPPER_MAX_APERTURE / 2 * np.sin(tilt)
+        + (PLATE_TABLE_PUSH + GRIPPER_TIP_THICKNESS) / np.tan(tilt)
+        + PLATE_MIN_DEPTH
+    )
+    grasps = []
+    for azimuth in sorted(
+        range(-PLATE_SWEEP, PLATE_SWEEP + 1, PLATE_SWEEP_STEP), key=abs
+    ):
+        out = turn(LEDGE_DIRECTION, azimuth)
+
+        tip = np.array([*(center + (radius - lip) * out), z])
+        approach = np.array([*(-out * np.cos(tilt)), -np.sin(tilt)])
+        grasps.append(Grasp(tip, grasp_frame(approach, UP), f"az{azimuth:+d}"))
+    return None, grasps
 
 
 def circumsphere(sample: np.ndarray) -> tuple:

@@ -177,6 +177,37 @@ def test_cartesian_approach_fails_when_the_gripper_never_closed(mode1_restored):
     assert closes == ([0.0] if mode1_restored else [])
 
 
+@pytest.mark.parametrize("contact", [True, False])
+def test_plate_approach_is_force_guarded_and_the_grasp_closes_either_way(
+    strategies, contact
+):
+    """Contact only ends the drive; the guard timing out at full depth still grasps."""
+    arm = FakeArm(contact_results=[ContactResult(contact=contact, descended_m=0.04)])
+    pose = set_quaternion(
+        make_pose(x=0.5, z=0.3), Rotation.from_euler("y", 115, degrees=True).as_quat()
+    )
+
+    strategies["plate"].attempt(
+        arm, GraspCandidate(pose=pose, score=0.9, pose_index=0, alternative_index=0)
+    )
+
+    assert arm.guards == [strategies["plate"].profile.force_guard]
+    assert arm.guard_directions[0] == pytest.approx(approach_axis(pose))
+    assert "cartesian_approach" not in arm.calls
+    assert (
+        arm.calls.index("force_guarded_descent")
+        < arm.calls.index("close_gripper")
+        < arm.calls.index("attach_pick_object")
+    )
+
+
+def test_plate_approach_fails_when_the_guard_never_ran(strategies):
+    arm = FakeArm(contact_results=[ContactResult(contact=False, descended_m=0.0)])
+    with pytest.raises(PickAttemptFailed, match="could not start"):
+        strategies["plate"].attempt(arm, candidate())
+    assert "close_gripper" not in arm.calls
+
+
 def test_cylinders_stay_top_down_by_default():
     away, tangent = np.array([1.0, 0.0]), np.array([0.0, 1.0])
     found = approaches("cylindrical", away, tangent, away)
@@ -791,12 +822,22 @@ def test_every_strategy_key_has_a_profile(profiles):
     assert set(profiles) == set(PICK_STRATEGY_KEYS)
 
 
+def test_plate_newtons_to_contact_are_independent_of_flat(tmp_path):
+    flat_changed = _load_with(tmp_path, "flat", "force_guard.jump_trip", 4.0)
+    assert flat_changed["flat"].force_guard.jump_trip == 4.0
+    assert flat_changed["plate"].force_guard.jump_trip == 2.5
+    plate_changed = _load_with(tmp_path, "plate", "force_guard.hard_ceiling", 20.0)
+    assert plate_changed["plate"].force_guard.hard_ceiling == 20.0
+    assert plate_changed["flat"].force_guard.hard_ceiling == 15.0
+
+
 @pytest.mark.parametrize(
     "profile,field,value,fragment",
     [
         ("bowl", "grasp_z_tweak", 0.5, "must be positive"),
         ("flat", "force_guard.jump_trip", 99.0, "hard_ceiling"),
         ("flat", "force_guard.timeout", 2.0, "less than pre_grasp_height"),
+        ("plate", "force_guard.jump_trip", 99.0, "hard_ceiling"),
         ("gpd", "num_alternatives", 0, "num_alternatives"),
         ("rim", "pre_grasp_height", "abc", "must be a float"),
         ("rim", "descent_speed", 0.0, "descent_speed"),

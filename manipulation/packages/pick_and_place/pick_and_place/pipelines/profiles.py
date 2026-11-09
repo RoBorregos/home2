@@ -150,6 +150,9 @@ class PickProfile:
                 )
             _require_positive(self.descent_speed, f"{self.name}.descent_speed")
 
+        if self.strategy == STRATEGY_CARTESIAN and self.force_guard is not None:
+            self.force_guard.validate(self.name)
+
         if self.strategy == STRATEGY_FORCE_GUARDED:
             if self.force_guard is None:
                 raise ProfileError(

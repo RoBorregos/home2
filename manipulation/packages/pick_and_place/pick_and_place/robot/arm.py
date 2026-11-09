@@ -677,8 +677,11 @@ class RobotArm:
         if not self.wait_for_future(future, timeout=5) or future.result() is None:
             raise PickHardwareError(f"[{label}] velocity command failed")
 
-    def force_guarded_descent(self, guard: ForceGuardProfile) -> ContactResult:
-        """Descend in -Z until joint effort reports contact.
+    def force_guarded_descent(
+        self, guard: ForceGuardProfile, direction=(0.0, 0.0, -1.0)
+    ) -> ContactResult:
+        """Drive along ``direction`` (default straight down) until joint effort
+        reports contact.
 
         Contact is detected from a sudden effort *jump* against a trailing
         reference rather than an absolute threshold: effort drifts several N
@@ -698,7 +701,7 @@ class RobotArm:
             if post_switch is not None:
                 baseline = post_switch
 
-            self._send_cartesian_velocity(-guard.descent_speed, label)
+            self._send_cartesian_velocity(guard.descent_speed, label, direction)
             self._log.info(
                 f"[{label}] descending at {guard.descent_speed:.1f} mm/s "
                 f"(jump_trip={guard.jump_trip}N, ceiling={guard.hard_ceiling}N)"
