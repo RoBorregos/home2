@@ -70,12 +70,11 @@ MIN_REVERSIBLE_HEIGHT = 0.06
 # grasp; the offset is used to decide whether flipping lifts the camera clear.
 ZED_OFFSET = np.array([-0.096, 0.0, 0.041])
 
-# Where to look for each kind of object, before perceiving it. Every flat object
-# uses the same pose; anything not listed (bowl, GPD) uses the default.
+# Where to look for each kind of object, before perceiving it. Flat objects pick
+# from wherever the arm already is (see _pick): no dedicated stare pose needed.
 STARE_POSES = {
     PICK_STRATEGY_RIM: "look_side_stare",
     PICK_STRATEGY_PEAK: "look_side_stare",
-    PICK_STRATEGY_FLAT: "pick_stare_at_table",
 }
 DEFAULT_STARE_POSE = "table_stare"
 
@@ -142,7 +141,7 @@ def _pick(
         f"[{strategy_key}] picking '{request.object_name}' (shelf={request.is_shelf})"
     )
 
-    if not request.in_configuration:
+    if not request.in_configuration and strategy_key != PICK_STRATEGY_FLAT:
         _move_to_stare_pose(arm, strategy_key)
 
     perceived = _perceive(perception, request, strategy_key)
