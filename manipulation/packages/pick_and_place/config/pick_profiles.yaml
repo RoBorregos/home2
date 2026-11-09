@@ -30,6 +30,7 @@ flat:
   <<: *defaults
   strategy: force_guarded
   pre_grasp_height: 0.15
+  pre_grasp_velocity: 0.5
   num_alternatives: 6
   alternative_step: -0.005
   close_settle: 2.5 # let the gripper fully close before lifting
@@ -37,6 +38,7 @@ flat:
   post_contact_retract: 0.004 # m upward, relieves Z pressure so the gripper can close
   force_guard:
     descent_speed: 12.0 # mm/s (lowered from 20 for less impact force)
+    fast_descent_speed: 60.0 # mm/s, used until min_contact_descent; contact is never honored before that anyway
     timeout: 16.0 # s, must cover the 0.15 m pre-grasp at the speed above
     grace_period: 0.3 # s, ignore effort right after velocity starts
     contact_settle: 1.0 # s, skip the motion-onset spike before detecting

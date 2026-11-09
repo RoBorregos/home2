@@ -192,8 +192,9 @@ class ForceGuardedDescentPick(PickStrategy):
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
         profile = self.profile
 
+        # No settle: the gripper finishes opening during the pre-grasp move.
         with arm.phase("open_gripper"):
-            arm.open_gripper()
+            arm.open_gripper(settle_s=0.0)
 
         pre_grasp = offset_z(candidate.pose, profile.pre_grasp_height)
         with arm.phase("approach_pre_grasp"):
@@ -222,7 +223,7 @@ class ForceGuardedDescentPick(PickStrategy):
 
         if profile.lift_after_grasp:
             with arm.phase("lift"):
-                arm.move_to_pose(pre_grasp, velocity=0.2)
+                arm.move_to_pose(pre_grasp, velocity=0.35)
 
         # Heights stay zero: this strategy attaches no collision object.
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)

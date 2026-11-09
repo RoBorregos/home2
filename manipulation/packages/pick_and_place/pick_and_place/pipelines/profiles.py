@@ -52,11 +52,26 @@ class ForceGuardProfile:
     jump_trip: float  # N
     jump_sustain: int  # consecutive samples
     hard_ceiling: float  # N
+    # mm/s, used until min_contact_descent (contact is never honored before
+    # that anyway); 0 disables the fast phase and descends at descent_speed
+    # throughout.
+    fast_descent_speed: float = 0.0
 
     def validate(self, profile_name: str) -> None:
         _require_positive(
             self.descent_speed, f"{profile_name}.force_guard.descent_speed"
         )
+        if self.fast_descent_speed < 0.0:
+            raise ProfileError(
+                f"{profile_name}.force_guard.fast_descent_speed must be >= 0, "
+                f"got {self.fast_descent_speed}"
+            )
+        if self.fast_descent_speed and self.fast_descent_speed <= self.descent_speed:
+            raise ProfileError(
+                f"{profile_name}.force_guard.fast_descent_speed "
+                f"({self.fast_descent_speed}) must be greater than descent_speed "
+                f"({self.descent_speed}), otherwise there's no point"
+            )
         _require_positive(self.timeout, f"{profile_name}.force_guard.timeout")
         _require_positive(self.jump_window, f"{profile_name}.force_guard.jump_window")
         _require_positive(self.jump_trip, f"{profile_name}.force_guard.jump_trip")
