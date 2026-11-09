@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-from aiohttp import request
-
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
