@@ -4,7 +4,7 @@ from ultralytics import YOLO
 
 from .base import Detection, DetectorModel
 from .registry import MODELS_PATH, ModelRegistry
-from .yolo import _load_yolo_trt
+from utils.trt_utils import load_yolo_trt
 
 PERSON_CLASS_ID = 0
 
@@ -14,7 +14,7 @@ class YoloPoseModel(DetectorModel):
     def load(self, config: dict):
         model_path = MODELS_PATH + config["filename"]
         if config.get("use_trt", True):
-            self.model = _load_yolo_trt(model_path, task="pose")
+            self.model = load_yolo_trt(model_path, task="pose")
         else:
             self.model = YOLO(model_path, task="pose")
         self.conf = config.get("conf", 0.25)
