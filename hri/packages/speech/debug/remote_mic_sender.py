@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Laptop side: stream this computer's mic (16 kHz mono int16) to remote_mic_receiver.py.
 
-    ssh -N -L 5005:127.0.0.1:5005 orin@<orin-ip>      # in another terminal
-    python remote_mic_sender.py [--device N]          # --list to see input devices
+ssh -N -L 5005:127.0.0.1:5005 orin@<orin-ip>      # in another terminal
+python remote_mic_sender.py [--device N]          # --list to see input devices
 """
 
 import argparse
