@@ -168,21 +168,21 @@ flowchart LR
 
     subgraph VIS["home2-vision (ROS 2)"]
         IO
-        OD["ObjectDetect2D<br/>yolo_finetuned + embedding_gallery"]
+        OD["ObjectDetect2D<br/>yolo_finetuned + embedding_gallery<br/>+ yolo11m-pose (DetectPose)"]
         ZS["ZeroShotDetect2D<br/>yoloe-11l-seg"]
-        TRK["tracker_node<br/>yolov8n + ByteTrack, yolo11m-pose"]
+        TRK["tracker_node<br/>yolov8n + ByteTrack"]
         FR["face_recognition<br/>InsightFace buffalo_sc"]
-        HC["hric_commands<br/>yolo11m-pose"]
-        GC["gpsr_commands<br/>yolo11m-pose"]
+        HC["hric_commands"]
+        GC["gpsr_commands"]
         MD["moondream_node<br/>yolov8n person crop"]
     end
 
     OD -->|/vision/detections + detections_3d| TM[task_manager<br/>vision_tasks.py]
     HC -->|srv YoloDetect| OD
+    HC & GC & TRK -->|srv DetectPose| OD
     HC -->|srv MapAreas| NAV[nav_central]
     GC -->|srv CropQuery| MD
     MD -->|gRPC :50052| MDS["home2-moondream-server<br/>Moondream2 2B VLM"]
-    ZS -->|/vision/zero_shot_detections| PD[pointing_detection]
 
     TRK -.->|/vision/tracking_results| SM[nav person_goal_smoother]
     FR -.->|/vision/follow_face| ARM[manipulation follow_face]
@@ -200,7 +200,7 @@ handles projection and visualization. `vision_general` has the same pattern in
 
 | Node | Purpose | Key interfaces |
 | --- | --- | --- |
-| `ObjectDetect2D` | Runs the models listed under `models:` in `config/parameters.yaml` continuously and IoU-dedupes across them | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory` |
+| `ObjectDetect2D` | Runs the models listed under `models:` in `config/parameters.yaml` continuously and IoU-dedupes across them | pubs `/vision/detections`, `/vision/detections_3d`, `/vision/detections_image`; srvs `DetectionHandler`, `YoloDetect`, `SetTrashCategory`, `DetectPose`@`/vision/pose/detect` (the shared yolo11m-pose) |
 | `ZeroShotDetect2D` | YOLOE open-vocabulary detection for classes not in the finetuned model | pubs `/vision/zero_shot_detections*`; srv `SetDetectorClasses` |
 
 Each node has a fixed activation topic (`/vision/object_detector/active`,
@@ -235,18 +235,22 @@ The benchmark behind the defaults: [`benchmarks/embedding_gallery/`](benchmarks/
 
 | Node | Purpose | Key interfaces | Model |
 | --- | --- | --- | --- |
-| `hric_commands` | Person detection, seat finding, handover point, chair removal | srvs `DetectPerson`, `FindSeat`, `DetectHand`, `ChairsToRemove` | yolo11m-pose |
-| `gpsr_commands` | Counting and describing people by pose, gesture, clothing color | srvs `CountByPose`, `CountBy`, `CountByColor`, `PersonPoseGesture` | yolo11m-pose |
-| `tracker_node` | Locks onto one person and publishes their 3D point for nav to follow | srvs `SetBool`@`set_tracking_target`, `TrackBy`, `Trigger`@`is_tracking`; pub `/vision/tracking_results` | yolov8n + ByteTrack, yolo11m-pose|
+| `hric_commands` | Person detection, seat finding, handover point, chair removal | srvs `DetectPerson`, `FindSeat`, `DetectHand`, `ChairsToRemove` | pose via `DetectPose` |
+| `gpsr_commands` | Counting and describing people by pose, gesture, clothing color | srvs `CountByPose`, `CountBy`, `CountByColor`, `PersonPoseGesture` | pose via `DetectPose` |
+| `tracker_node` | Locks onto one person and publishes their 3D point for nav to follow | srvs `SetBool`@`set_tracking_target`, `TrackBy`, `Trigger`@`is_tracking`; pub `/vision/tracking_results` | yolov8n + ByteTrack, pose via `DetectPose` |
 | `face_recognition` | Learns and recognizes faces; drives the arm's face following | srvs `SaveName`@`new_name`, `SaveName`@`follow_by_name`; pubs `/vision/follow_face`, `/vision/person_list` | InsightFace `buffalo_sc` |
 | `restaurant_commands` | Maps waving customers onto table positions | srv `CustomerTables` | — (delegates) |
-| `customer_node` | Finds seated / waving customers in the full frame | srv `Customer` | yolo11m-pose |
+| `customer_node` | Finds seated / waving customers in the full frame | srv `Customer` | pose via `DetectPose` |
 | `image_orienter` | The single camera-rotation point (see Concepts) | pub `/vision/camera/image_oriented` | — |
-| `pointing_detection` | Resolves which object a person is pointing at | srvs `DetectPointingObject`, `SetPointingObjectClasses` | consumes zero-shot |
 | `zed_simulator` | Publishes a plain webcam onto the ZED topics for laptop dev | params `video_id`, `use_zed`, `visualize` | — |
 
 `pose_detection.py` is a library, not a node: it holds the COCO keypoint constants and the
-gesture/pose classification used by `hric_commands`, `gpsr_commands` and `customer_node`.
+gesture/pose classification used by `hric_commands`, `gpsr_commands`, `tracker_node` and
+`customer_node`. Its `PoseDetection` class does not load the model;
+it is a client of the `DetectPose` service that `ObjectDetect2D` always serves, so only one
+yolo11m-pose instance runs and every launch that starts `ObjectDetect2D` provides it. The client
+waits on a future, so call it from a node spun by a `MultiThreadedExecutor` (with a reentrant
+callback group) or from a non-executor thread; on a single-threaded executor callback it times out.
 
 #### `VisionRuntime`
 

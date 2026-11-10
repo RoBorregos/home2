@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo services."""
+"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo/pose services."""
 
 import copy
 import json
@@ -17,15 +17,26 @@ from frida_constants.vision_constants import (
     DETECTIONS_POSES_TOPIC,
     DETECTIONS_TOPIC,
     GALLERY_DETECTIONS_TOPIC,
+    POSE_DETECTION_SERVICE,
     TRASH_SERVICE_CATEGORY,
     YOLO_DETECTION_TOPIC,
     YOLO_DETECTIONS_PUBLISHER_TOPIC,
 )
-from frida_interfaces.msg import Detection, ObjectDetectionArray
-from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
+from frida_interfaces.msg import (
+    Detection,
+    ObjectDetectionArray,
+    PersonPose,
+)
+from frida_interfaces.srv import (
+    DetectionHandler,
+    DetectPose,
+    SetTrashCategory,
+    YoloDetect,
+)
 from sensor_msgs.msg import Image
 from detectors.registry import ModelRegistry
 from detectors.utils import iou_deduplicate, iou_msg
+from utils.trt_utils import load_yolo_trt
 from base_detector_node import BaseDetectorNode
 
 
@@ -49,6 +60,9 @@ class ObjectDetectorNode(BaseDetectorNode):
         self.models = [ModelRegistry.get(n) for n in model_names if n]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
         self.yolo_service_model = ModelRegistry.get("yolo_generic")
+        # Shared pose model behind DetectPose. Only used from service callbacks
+        # (executor thread); the detection loop runs other models on run_thread.
+        self.pose_model = load_yolo_trt("yolo11m-pose.pt", task="pose")
 
         # Latest GalleryDetect2D output, merged into our detections while fresh
         self.gallery_max_age = self.declare_param("GALLERY_MAX_AGE", 3.5).double_value
@@ -79,6 +93,7 @@ class ObjectDetectorNode(BaseDetectorNode):
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV, self.detection_handler
         )
         self.create_service(YoloDetect, YOLO_DETECTION_TOPIC, self.yolo_detect)
+        self.create_service(DetectPose, POSE_DETECTION_SERVICE, self.detect_pose)
 
     def box_color(self, det):
         return (0, 0, 255) if det.label_text.startswith("trash/") else (0, 255, 0)
@@ -172,6 +187,39 @@ class ObjectDetectorNode(BaseDetectorNode):
         response.success = True
         response.detections = ros_dets
         return response
+
+    def detect_pose(self, request, response):
+        try:
+            frame = self.bridge.imgmsg_to_cv2(request.image, "bgr8")
+        except Exception as e:
+            self.get_logger().error(f"Invalid image in DetectPose request: {e}")
+            response.success = False
+            return response
+
+        results = self.pose_model(frame, verbose=False, conf=request.conf or 0.25)
+        response.people = self._pose_to_msgs(results[0] if results else None)
+        response.success = True
+        return response
+
+    @staticmethod
+    def _pose_to_msgs(result) -> list:
+        if result is None or result.boxes is None or result.keypoints is None:
+            return []
+        boxes = result.boxes.xyxy.int().tolist()
+        points = result.keypoints.xyn.tolist()
+        confs = result.keypoints.conf
+        confs = confs.tolist() if confs is not None else [[1.0] * 17] * len(boxes)
+        return [
+            PersonPose(
+                x1=b[0],
+                y1=b[1],
+                x2=b[2],
+                y2=b[3],
+                keypoints=[v for p in pts for v in p],
+                keypoints_conf=c,
+            )
+            for b, pts, c in zip(boxes, points, confs)
+        ]
 
     # ------------------------------------------------------------------ inference
 
