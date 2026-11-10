@@ -23,6 +23,7 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
+    LFM_CROP_QUERY_TOPIC,
     OBJECT_POINTS_TOPIC,
     MOONDREAM_DETECTION_TOPIC,
 )
@@ -60,6 +61,9 @@ class MoondreamNode(Node):
         self.crop_query_service = self.create_service(
             CropQuery, CROP_QUERY_TOPIC, self.crop_query_callback
         )
+        self.lfm_crop_query_service = self.create_service(
+            CropQuery, LFM_CROP_QUERY_TOPIC, self.lfm_crop_query_callback
+        )
         self.object_points_service = self.create_service(
             ObjectPoints, OBJECT_POINTS_TOPIC, self.object_points_callback
         )
@@ -74,6 +78,9 @@ class MoondreamNode(Node):
         ]
         channel = grpc.insecure_channel("localhost:50052", options=options)
         self.stub = moondream_proto_pb2_grpc.MoonDreamServiceStub(channel)
+        # LFM2.5-VL server speaks the same gRPC contract on its own port
+        lfm_channel = grpc.insecure_channel("localhost:50053", options=options)
+        self.lfm_stub = moondream_proto_pb2_grpc.MoonDreamServiceStub(lfm_channel)
 
         self.get_logger().info("MoondreamNode Ready.")
 
@@ -115,8 +122,18 @@ class MoondreamNode(Node):
         return response
 
     def crop_query_callback(self, request, response):
-        """Callback to describe the bag."""
+        """Callback to query a crop of the image with Moondream."""
         self.get_logger().info("Executing service Crop query")
+        return self._crop_query(self.stub, request, response, encode=True)
+
+    def lfm_crop_query_callback(self, request, response):
+        """Callback to query a crop of the image with LFM2.5-VL."""
+        self.get_logger().info("Executing service LFM Crop query")
+        return self._crop_query(self.lfm_stub, request, response, encode=False)
+
+    def _crop_query(self, stub, request, response, encode: bool):
+        """Crop the current image to the normalized bbox and query it on the given server.
+        encode: run EncodeImage first (Moondream); LFM takes the JPEG directly in Query."""
         if self.image is None:
             response.result = "No image received yet."
             response.success = False
@@ -155,16 +172,16 @@ class MoondreamNode(Node):
         image_bytes = image_bytes.tobytes()
 
         try:
-            encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
-            )
-            query_response = self.stub.Query(
+            if encode:
+                image_bytes = stub.EncodeImage(
+                    moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+                ).encoded_image
+            query_response = stub.Query(
                 moondream_proto_pb2.QueryRequest(
-                    encoded_image=encoded.encoded_image, query=request.query
+                    encoded_image=image_bytes, query=request.query
                 )
             )
 
-            print(query_response.answer)
             response.result = query_response.answer
             response.success = True
             self.get_logger().info(
@@ -172,7 +189,7 @@ class MoondreamNode(Node):
             )
 
         except Exception as e:
-            self.get_logger().error(f"Error describing bag: {e}")
+            self.get_logger().error(f"Error querying crop: {e}")
             response.result = ""
             response.success = False
 
