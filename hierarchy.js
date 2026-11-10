@@ -129,6 +129,7 @@ var hierarchy =
     [ "moondream_lib.MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", null ],
     [ "moondream_proto_pb2_grpc.MoonDreamService", "classmoondream__proto__pb2__grpc_1_1MoonDreamService.html", null ],
     [ "moondream_proto_pb2_grpc.MoonDreamServiceServicer", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer.html", [
+      [ "lfm_server.LfmServicer", "classlfm__server_1_1LfmServicer.html", null ],
       [ "server.MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", null ]
     ] ],
     [ "moondream_proto_pb2_grpc.MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", null ],

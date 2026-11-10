@@ -210,6 +210,9 @@ var annotated_dup =
     [ "image_orienter", "namespaceimage__orienter.html", [
       [ "ImageOrienter", "classimage__orienter_1_1ImageOrienter.html", "classimage__orienter_1_1ImageOrienter" ]
     ] ],
+    [ "lfm_server", "namespacelfm__server.html", [
+      [ "LfmServicer", "classlfm__server_1_1LfmServicer.html", "classlfm__server_1_1LfmServicer" ]
+    ] ],
     [ "look_at_example", "namespacelook__at__example.html", [
       [ "LookAt", "classlook__at__example_1_1LookAt.html", "classlook__at__example_1_1LookAt" ]
     ] ],

@@ -178,6 +178,7 @@ var namespacefrida__constants =
       [ "IS_TALKING_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a13af2ecf98043daced224061e46f2b18", null ],
       [ "IS_TRACKING_TOPIC", "namespacefrida__constants_1_1vision__constants.html#acceb0d31e9392751549f943e983af41f", null ],
       [ "LEFT_MOUTH_LANDMARK", "namespacefrida__constants_1_1vision__constants.html#afb22ba968f47db9f2a43ad9e25da2801", null ],
+      [ "LFM_CROP_QUERY_TOPIC", "namespacefrida__constants_1_1vision__constants.html#afab5e14cdc3bcc5e5e8d1e62658b8891", null ],
       [ "LOCAL_CAMERA_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a36dd44d3155495112c9e8ccff83938c9", null ],
       [ "LOWER_LIP_LANDMARK", "namespacefrida__constants_1_1vision__constants.html#a4d85a9d03193ed8a392d06543ede1428", null ],
       [ "MOONDREAM_DETECTION_TOPIC", "namespacefrida__constants_1_1vision__constants.html#af3bed3a595beccba9943d64a82d8dff2", null ],

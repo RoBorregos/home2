@@ -114,6 +114,16 @@ Variables</h2></td></tr>
 <tr class="separator:a7dce31766c14809575920f9d6ebe53a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56bdb1e15ec9535078a234ee5c42f2df"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegpsr__commands.html#a56bdb1e15ec9535078a234ee5c42f2df">ANNOTATION_HOLD_SECONDS</a> = 6.0</td></tr>
 <tr class="separator:a56bdb1e15ec9535078a234ee5c42f2df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9352fc4e4ddd662953bb389f6146512b"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegpsr__commands.html#a9352fc4e4ddd662953bb389f6146512b">GESTURE_PROMPT</a></td></tr>
+<tr class="separator:a9352fc4e4ddd662953bb389f6146512b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a261584c599abeca57583e86356691501"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegpsr__commands.html#a261584c599abeca57583e86356691501">GESTURE_CHOICES</a> = [&quot;raising&quot;, &quot;waving&quot;, &quot;pointing&quot;, &quot;none&quot;]</td></tr>
+<tr class="separator:a261584c599abeca57583e86356691501"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3d68a805d5a16ac1d9d8ef9f0471090"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegpsr__commands.html#ab3d68a805d5a16ac1d9d8ef9f0471090">POSE_PROMPT</a> = &quot;Is the <a class="el" href="namespacegpsr__commands.html#a5783abd6bc09633fca3b65604586f3cb">main</a> person A) standing, B) sitting, or C) lying down? Answer with the letter only.&quot;</td></tr>
+<tr class="separator:ab3d68a805d5a16ac1d9d8ef9f0471090"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9381a68bfbc3242ca924ad22e3ad108e"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegpsr__commands.html#a9381a68bfbc3242ca924ad22e3ad108e">POSE_CHOICES</a> = [<a class="el" href="classfrida__constants_1_1vision__enums_1_1Poses.html#afaf6987cfc93bf031ebd634ea1a31868">Poses.STANDING</a>, <a class="el" href="classfrida__constants_1_1vision__enums_1_1Poses.html#adf25cb1196d5a23200867d9c2e29435a">Poses.SITTING</a>, <a class="el" href="classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362">Poses.LYING_DOWN</a>]</td></tr>
+<tr class="separator:a9381a68bfbc3242ca924ad22e3ad108e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa01b36e0076ad78cfa661636832a8191"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegpsr__commands.html#aa01b36e0076ad78cfa661636832a8191">SIDED_GESTURES</a></td></tr>
+<tr class="separator:aa01b36e0076ad78cfa661636832a8191"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Node to handle GPSR commands.
@@ -151,6 +161,42 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a261584c599abeca57583e86356691501" name="a261584c599abeca57583e86356691501"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a261584c599abeca57583e86356691501">&#9670;&#160;</a></span>GESTURE_CHOICES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list gpsr_commands.GESTURE_CHOICES = [&quot;raising&quot;, &quot;waving&quot;, &quot;pointing&quot;, &quot;none&quot;]</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9352fc4e4ddd662953bb389f6146512b" name="a9352fc4e4ddd662953bb389f6146512b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9352fc4e4ddd662953bb389f6146512b">&#9670;&#160;</a></span>GESTURE_PROMPT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">tuple gpsr_commands.GESTURE_PROMPT</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  (</div>
+<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;Look at the main person in the image. Which option best describes their arms and hands?\n&quot;</span></div>
+<div class="line"><span class="lineno">    3</span>    <span class="stringliteral">&quot;A) Raising a hand or arm above their head\n&quot;</span></div>
+<div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&quot;B) Waving hello with an open hand\n&quot;</span></div>
+<div class="line"><span class="lineno">    5</span>    <span class="stringliteral">&quot;C) Pointing at something with an extended arm or finger\n&quot;</span></div>
+<div class="line"><span class="lineno">    6</span>    <span class="stringliteral">&quot;D) No gesture: arms down, resting, or holding or using something\n&quot;</span></div>
+<div class="line"><span class="lineno">    7</span>    <span class="stringliteral">&quot;Answer with the letter only.&quot;</span></div>
+<div class="line"><span class="lineno">    8</span>)</div>
+</div><!-- fragment -->
+</div>
+</div>
 <a id="a7dce31766c14809575920f9d6ebe53a2" name="a7dce31766c14809575920f9d6ebe53a2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7dce31766c14809575920f9d6ebe53a2">&#9670;&#160;</a></span>package_share_dir</h2>
 
@@ -163,6 +209,54 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a9381a68bfbc3242ca924ad22e3ad108e" name="a9381a68bfbc3242ca924ad22e3ad108e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9381a68bfbc3242ca924ad22e3ad108e">&#9670;&#160;</a></span>POSE_CHOICES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list gpsr_commands.POSE_CHOICES = [<a class="el" href="classfrida__constants_1_1vision__enums_1_1Poses.html#afaf6987cfc93bf031ebd634ea1a31868">Poses.STANDING</a>, <a class="el" href="classfrida__constants_1_1vision__enums_1_1Poses.html#adf25cb1196d5a23200867d9c2e29435a">Poses.SITTING</a>, <a class="el" href="classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362">Poses.LYING_DOWN</a>]</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab3d68a805d5a16ac1d9d8ef9f0471090" name="ab3d68a805d5a16ac1d9d8ef9f0471090"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3d68a805d5a16ac1d9d8ef9f0471090">&#9670;&#160;</a></span>POSE_PROMPT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">str gpsr_commands.POSE_PROMPT = &quot;Is the <a class="el" href="namespacegpsr__commands.html#a5783abd6bc09633fca3b65604586f3cb">main</a> person A) standing, B) sitting, or C) lying down? Answer with the letter only.&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa01b36e0076ad78cfa661636832a8191" name="aa01b36e0076ad78cfa661636832a8191"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa01b36e0076ad78cfa661636832a8191">&#9670;&#160;</a></span>SIDED_GESTURES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">dict gpsr_commands.SIDED_GESTURES</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
+<div class="line"><span class="lineno">    2</span>    (<span class="stringliteral">&quot;raising&quot;</span>, <span class="stringliteral">&quot;left&quot;</span>): Gestures.RAISING_LEFT_ARM,</div>
+<div class="line"><span class="lineno">    3</span>    (<span class="stringliteral">&quot;raising&quot;</span>, <span class="stringliteral">&quot;right&quot;</span>): Gestures.RAISING_RIGHT_ARM,</div>
+<div class="line"><span class="lineno">    4</span>    (<span class="stringliteral">&quot;pointing&quot;</span>, <span class="stringliteral">&quot;left&quot;</span>): Gestures.POINTING_LEFT,</div>
+<div class="line"><span class="lineno">    5</span>    (<span class="stringliteral">&quot;pointing&quot;</span>, <span class="stringliteral">&quot;right&quot;</span>): Gestures.POINTING_RIGHT,</div>
+<div class="line"><span class="lineno">    6</span>}</div>
+</div><!-- fragment -->
 </div>
 </div>
 </div><!-- contents -->

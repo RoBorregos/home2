@@ -129,12 +129,18 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a44fd2508682f74bbc718af3bb9550181"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a189b2d11b148acfd29d57196fc37bb0b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a189b2d11b148acfd29d57196fc37bb0b">publish_image</a> (self)</td></tr>
 <tr class="separator:a189b2d11b148acfd29d57196fc37bb0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5d7db3415e4863955cedbd8994206717"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a5d7db3415e4863955cedbd8994206717">detect_gesture</a> (self, cropped_frame)</td></tr>
-<tr class="separator:a5d7db3415e4863955cedbd8994206717"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adac6f9b59d2bec82ec1c66090d439bcf"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#adac6f9b59d2bec82ec1c66090d439bcf">detect_gesture</a> (self, frame, bbox)</td></tr>
+<tr class="separator:adac6f9b59d2bec82ec1c66090d439bcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad060e3a6d5c783408fff6a8df1c31cf5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ad060e3a6d5c783408fff6a8df1c31cf5">get_detections</a> (self, comp_class=None, timeout=5.0)</td></tr>
 <tr class="separator:ad060e3a6d5c783408fff6a8df1c31cf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a758d3b60afd37459b07c4274205cd1d7"><td class="memItemLeft" align="right" valign="top">tuple[int, str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a758d3b60afd37459b07c4274205cd1d7">moondream_crop_query</a> (self, str prompt, list[float] bbox)</td></tr>
 <tr class="separator:a758d3b60afd37459b07c4274205cd1d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7044406791f693937062c8fb58e87408"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a7044406791f693937062c8fb58e87408">classify_person</a> (self, bbox, str prompt, list choices)</td></tr>
+<tr class="separator:a7044406791f693937062c8fb58e87408"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73ebe05845c232d6f1a7b418959bfb9e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classfrida__constants_1_1vision__enums_1_1Poses.html">Poses</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a73ebe05845c232d6f1a7b418959bfb9e">person_pose</a> (self, bbox)</td></tr>
+<tr class="separator:a73ebe05845c232d6f1a7b418959bfb9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0406c2baf76c3a98365b6aaec33ff4de"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classfrida__constants_1_1vision__enums_1_1Gestures.html">Gestures</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a0406c2baf76c3a98365b6aaec33ff4de">person_gesture</a> (self, frame, bbox)</td></tr>
+<tr class="separator:a0406c2baf76c3a98365b6aaec33ff4de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classvision__runtime_1_1VisionRuntime"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classvision__runtime_1_1VisionRuntime')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classvision__runtime_1_1VisionRuntime.html">vision_runtime.VisionRuntime</a></td></tr>
 <tr class="memitem:ace43d8c2f09a3d5e477e704146a9df1b inherit pub_methods_classvision__runtime_1_1VisionRuntime"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#ace43d8c2f09a3d5e477e704146a9df1b">__init__</a> (self, str node_name, *str image_topic=IMAGE_ORIENTED_TOPIC, bool use_depth=False, bool use_camera_info=False, bool use_tf=False, bool track_rotation=False, str debug_topic=None, str debug_name=None, str active_name=None, bool active_node=True)</td></tr>
 <tr class="separator:ace43d8c2f09a3d5e477e704146a9df1b inherit pub_methods_classvision__runtime_1_1VisionRuntime"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -167,6 +173,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a4c396f532119f40dc3e75e3dc38e1cb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad104ba02ae9a97e081c2c9fe907450eb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ad104ba02ae9a97e081c2c9fe907450eb">moondream_client</a></td></tr>
 <tr class="separator:ad104ba02ae9a97e081c2c9fe907450eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88e1d949ebace6024353f11006d73218"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a88e1d949ebace6024353f11006d73218">lfm_client</a></td></tr>
+<tr class="separator:a88e1d949ebace6024353f11006d73218"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a928bee0668cea771ab24a95f6b34ec16"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a928bee0668cea771ab24a95f6b34ec16">areas</a></td></tr>
 <tr class="separator:a928bee0668cea771ab24a95f6b34ec16"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca43ec4f8dbc009938aed6cf4c7852cc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#aca43ec4f8dbc009938aed6cf4c7852cc">areas_client</a></td></tr>
@@ -207,12 +215,14 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:af44da302fa693c7a99ba8d76ef97e751"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7734173cd66d7a0f0a9d7e43ddaad5d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ad7734173cd66d7a0f0a9d7e43ddaad5d">_get_areas</a> (self)</td></tr>
 <tr class="separator:ad7734173cd66d7a0f0a9d7e43ddaad5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaafd47f481e85dad01f1760fc75ec544"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#aaafd47f481e85dad01f1760fc75ec544">_current_room</a> (self)</td></tr>
-<tr class="separator:aaafd47f481e85dad01f1760fc75ec544"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0331644b6257f17b4ae29970c236f57a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a0331644b6257f17b4ae29970c236f57a">_current_room</a> (self, <a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a928bee0668cea771ab24a95f6b34ec16">areas</a>)</td></tr>
+<tr class="separator:a0331644b6257f17b4ae29970c236f57a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e841aa2f5943246de4c0b0c8f540412"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a8e841aa2f5943246de4c0b0c8f540412">_filter_people</a> (self, frame, <a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a0098f10cc04efcf527d815497f1619e2">people</a>)</td></tr>
 <tr class="separator:a8e841aa2f5943246de4c0b0c8f540412"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acad5b9ee789f491d4587c6ec22bdaae0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#acad5b9ee789f491d4587c6ec22bdaae0">_draw_people</a> (self, <a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a0098f10cc04efcf527d815497f1619e2">people</a>)</td></tr>
 <tr class="separator:acad5b9ee789f491d4587c6ec22bdaae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef7fa21bff15d0fb65d98a46f563169a"><td class="memItemLeft" align="right" valign="top">tuple[int, str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#aef7fa21bff15d0fb65d98a46f563169a">_crop_query</a> (self, client, str prompt, list[float] bbox, str name)</td></tr>
+<tr class="separator:aef7fa21bff15d0fb65d98a46f563169a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classvision__runtime_1_1VisionRuntime"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classvision__runtime_1_1VisionRuntime')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classvision__runtime_1_1VisionRuntime.html">vision_runtime.VisionRuntime</a></td></tr>
 <tr class="memitem:a599057efcb81885d58cce35497724f0d inherit pro_methods_classvision__runtime_1_1VisionRuntime"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#a599057efcb81885d58cce35497724f0d">_image_callback</a> (self, msg)</td></tr>
 <tr class="separator:a599057efcb81885d58cce35497724f0d inherit pro_methods_classvision__runtime_1_1VisionRuntime"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -252,8 +262,63 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aaafd47f481e85dad01f1760fc75ec544" name="aaafd47f481e85dad01f1760fc75ec544"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaafd47f481e85dad01f1760fc75ec544">&#9670;&#160;</a></span>_current_room()</h2>
+<a id="aef7fa21bff15d0fb65d98a46f563169a" name="aef7fa21bff15d0fb65d98a46f563169a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef7fa21bff15d0fb65d98a46f563169a">&#9670;&#160;</a></span>_crop_query()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[int, str] gpsr_commands.GPSRCommands._crop_query </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>prompt</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[float]&#160;</td>
+          <td class="paramname"><em>bbox</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str
+    &#160;</td>
+          <td class="paramname"><em>name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Query a crop (bbox = [ymin, xmin, ymax, xmax] in pixels) on a CropQuery service.</pre> 
+</div>
+</div>
+<a id="a0331644b6257f17b4ae29970c236f57a" name="a0331644b6257f17b4ae29970c236f57a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0331644b6257f17b4ae29970c236f57a">&#9670;&#160;</a></span>_current_room()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -265,8 +330,18 @@ Protected Attributes</h2></td></tr>
           <td class="memname">def gpsr_commands.GPSRCommands._current_room </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>areas</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -543,6 +618,47 @@ while rejecting closer-than-person depth speckles.</pre>
 (one jpg per detection service call, like restaurant_commands).</pre> 
 </div>
 </div>
+<a id="a7044406791f693937062c8fb58e87408" name="a7044406791f693937062c8fb58e87408"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7044406791f693937062c8fb58e87408">&#9670;&#160;</a></span>classify_person()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def gpsr_commands.GPSRCommands.classify_person </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>bbox</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>prompt</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list&#160;</td>
+          <td class="paramname"><em>choices</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Ask LFM2.5-VL a multiple-choice question about the person in bbox
+(x1, y1, x2, y2); returns the matching choice or None.</pre> 
+</div>
+</div>
 <a id="a26012972d777c04eed5e6049860b7be0" name="a26012972d777c04eed5e6049860b7be0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a26012972d777c04eed5e6049860b7be0">&#9670;&#160;</a></span>count_by_color_callback()</h2>
 
@@ -708,14 +824,14 @@ while rejecting closer-than-person depth speckles.</pre>
 gesture -&gt; count and a dict of gesture -&gt; matched person bboxes.</pre> 
 </div>
 </div>
-<a id="a5d7db3415e4863955cedbd8994206717" name="a5d7db3415e4863955cedbd8994206717"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5d7db3415e4863955cedbd8994206717">&#9670;&#160;</a></span>detect_gesture()</h2>
+<a id="adac6f9b59d2bec82ec1c66090d439bcf" name="adac6f9b59d2bec82ec1c66090d439bcf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adac6f9b59d2bec82ec1c66090d439bcf">&#9670;&#160;</a></span>detect_gesture()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">def gpsr_commands.GPSRCommands.detect_gesture </td>
+          <td class="memname"> str gpsr_commands.GPSRCommands.detect_gesture </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
@@ -724,7 +840,13 @@ gesture -&gt; count and a dict of gesture -&gt; matched person bboxes.</pre>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>cropped_frame</em>&#160;</td>
+          <td class="paramname"><em>frame</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>bbox</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -733,7 +855,7 @@ gesture -&gt; count and a dict of gesture -&gt; matched person bboxes.</pre>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Detect the gesture in the image.</pre> 
+<pre class="fragment">Detect the gesture of the person in bbox.</pre> 
 </div>
 </div>
 <a id="a256a9caf91423d065e0221ec477ead2f" name="a256a9caf91423d065e0221ec477ead2f"></a>
@@ -838,6 +960,69 @@ comp_class: int or None (None = detect all classes)
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Makes a query of the current image using moondream.</pre> 
+</div>
+</div>
+<a id="a0406c2baf76c3a98365b6aaec33ff4de" name="a0406c2baf76c3a98365b6aaec33ff4de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0406c2baf76c3a98365b6aaec33ff4de">&#9670;&#160;</a></span>person_gesture()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> <a class="el" href="classfrida__constants_1_1vision__enums_1_1Gestures.html">Gestures</a> gpsr_commands.GPSRCommands.person_gesture </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>frame</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>bbox</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Gesture of the person in bbox: LFM2.5-VL picks the gesture, keypoints pick
+the side; falls back to the keypoint rules if LFM does not answer.</pre> 
+</div>
+</div>
+<a id="a73ebe05845c232d6f1a7b418959bfb9e" name="a73ebe05845c232d6f1a7b418959bfb9e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73ebe05845c232d6f1a7b418959bfb9e">&#9670;&#160;</a></span>person_pose()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> <a class="el" href="classfrida__constants_1_1vision__enums_1_1Poses.html">Poses</a> gpsr_commands.GPSRCommands.person_pose </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>bbox</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Pose of the person in bbox from LFM2.5-VL.</pre> 
 </div>
 </div>
 <a id="a189b2d11b148acfd29d57196fc37bb0b" name="a189b2d11b148acfd29d57196fc37bb0b"></a>
@@ -992,6 +1177,20 @@ live view of what vision was seeing.</pre>
       <table class="memname">
         <tr>
           <td class="memname">gpsr_commands.GPSRCommands.count_by_pose_service</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a88e1d949ebace6024353f11006d73218" name="a88e1d949ebace6024353f11006d73218"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a88e1d949ebace6024353f11006d73218">&#9670;&#160;</a></span>lfm_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">gpsr_commands.GPSRCommands.lfm_client</td>
         </tr>
       </table>
 </div><div class="memdoc">

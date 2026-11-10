@@ -231,6 +231,7 @@ var namespaces_dup =
       [ "VIEW_LOG_DIR", "namespacelaunch__nav.html#a2df0ee976d79351ff02d519353fc5231", null ],
       [ "VIEWS", "namespacelaunch__nav.html#a96af342b5bd59dd400aefda6b7532555", null ]
     ] ],
+    [ "lfm_server", "namespacelfm__server.html", "namespacelfm__server" ],
     [ "lidar_setup", "namespacelidar__setup.html", [
       [ "generate_launch_description", "namespacelidar__setup.html#a270b8733299546018e10198255b2f9bf", null ],
       [ "launch_setup", "namespacelidar__setup.html#a9990279d91c4caa156096d8ed443c567", null ]

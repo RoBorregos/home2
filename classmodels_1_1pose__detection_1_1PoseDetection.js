@@ -14,6 +14,7 @@ var classmodels_1_1pose__detection_1_1PoseDetection =
     [ "detect_people", "classmodels_1_1pose__detection_1_1PoseDetection.html#adc384d4dec43bae2e72922d5a0b8dff7", null ],
     [ "detectGesture", "classmodels_1_1pose__detection_1_1PoseDetection.html#a1347746dc2ca20138813e4805652f79d", null ],
     [ "draw_landmarks", "classmodels_1_1pose__detection_1_1PoseDetection.html#a276afa52f7525a7a53e81e3bda6d62f8", null ],
+    [ "gesture_side", "classmodels_1_1pose__detection_1_1PoseDetection.html#a287324ffff20104553ca075bc9095b38", null ],
     [ "get_angle", "classmodels_1_1pose__detection_1_1PoseDetection.html#ae81f20a30907ac0283dbd38e106593bc", null ],
     [ "is_chest_visible", "classmodels_1_1pose__detection_1_1PoseDetection.html#a83f92f27c089b1540467d34038345b3a", null ],
     [ "is_sitting_from_keypoints", "classmodels_1_1pose__detection_1_1PoseDetection.html#ad95d4c5bd47672abf95b9963613c6bd8", null ],

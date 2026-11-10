@@ -111,6 +111,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad95d4c5bd47672abf95b9963613c6bd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80efe2305d71777854bbbdb7af4c87b5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodels_1_1pose__detection_1_1PoseDetection.html#a80efe2305d71777854bbbdb7af4c87b5">detect</a> (self, frame)</td></tr>
 <tr class="separator:a80efe2305d71777854bbbdb7af4c87b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a287324ffff20104553ca075bc9095b38"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodels_1_1pose__detection_1_1PoseDetection.html#a287324ffff20104553ca075bc9095b38">gesture_side</a> (self, image, str gesture)</td></tr>
+<tr class="separator:a287324ffff20104553ca075bc9095b38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae81f20a30907ac0283dbd38e106593bc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodels_1_1pose__detection_1_1PoseDetection.html#ae81f20a30907ac0283dbd38e106593bc">get_angle</a> (self, p1, p2, p3)</td></tr>
 <tr class="separator:ae81f20a30907ac0283dbd38e106593bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83f92f27c089b1540467d34038345b3a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodels_1_1pose__detection_1_1PoseDetection.html#a83f92f27c089b1540467d34038345b3a">is_chest_visible</a> (self, image)</td></tr>
@@ -717,6 +719,40 @@ Returns (None, None) if no person detected.</pre>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Draw keypoints and arm connections on image.</pre> 
+</div>
+</div>
+<a id="a287324ffff20104553ca075bc9095b38" name="a287324ffff20104553ca075bc9095b38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a287324ffff20104553ca075bc9095b38">&#9670;&#160;</a></span>gesture_side()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def models.pose_detection.PoseDetection.gesture_side </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>image</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>gesture</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Return the person's own side used for a raising or pointing gesture, or None.</pre> 
 </div>
 </div>
 <a id="ae81f20a30907ac0283dbd38e106593bc" name="ae81f20a30907ac0283dbd38e106593bc"></a>
