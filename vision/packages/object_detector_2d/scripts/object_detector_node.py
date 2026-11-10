@@ -1,17 +1,11 @@
 #! /usr/bin/env python3
-"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo services.
-
-It also owns the single yolo11m-pose instance and serves it through DetectPose,
-so hric/gpsr/tracker/customer/pointing do not each load their own copy
-(vision_general models/pose_detection.py is the client).
-"""
+"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo/pose services."""
 
 import copy
 import json
 import os
 
 import cv2 as cv
-import numpy as np
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from rclpy.time import Time
@@ -32,7 +26,6 @@ from frida_interfaces.msg import (
     Detection,
     ObjectDetectionArray,
     PersonPose,
-    PoseResult,
 )
 from frida_interfaces.srv import (
     DetectionHandler,
@@ -43,6 +36,7 @@ from frida_interfaces.srv import (
 from sensor_msgs.msg import Image
 from detectors.registry import ModelRegistry
 from detectors.utils import iou_deduplicate, iou_msg
+from utils.trt_utils import load_yolo_trt
 from base_detector_node import BaseDetectorNode
 
 
@@ -68,7 +62,7 @@ class ObjectDetectorNode(BaseDetectorNode):
         self.yolo_service_model = ModelRegistry.get("yolo_generic")
         # Shared pose model behind DetectPose. Only used from service callbacks
         # (executor thread); the detection loop runs other models on run_thread.
-        self.pose_model = ModelRegistry.get("yolo_pose")
+        self.pose_model = load_yolo_trt("yolo11m-pose.pt", task="pose")
 
         # Latest GalleryDetect2D output, merged into our detections while fresh
         self.gallery_max_age = self.declare_param("GALLERY_MAX_AGE", 3.5).double_value
@@ -202,53 +196,30 @@ class ObjectDetectorNode(BaseDetectorNode):
             response.success = False
             return response
 
-        if len(request.rois) % 4 != 0:
-            self.get_logger().error("DetectPose rois must be groups of 4 values")
-            response.success = False
-            return response
-
-        h, w = frame.shape[:2]
-        rois = [tuple(request.rois[i : i + 4]) for i in range(0, len(request.rois), 4)]
-        for x1, y1, x2, y2 in rois or [(0, 0, w, h)]:
-            x1, x2 = max(0, x1), min(w, x2)
-            y1, y2 = max(0, y1), min(h, y2)
-            result = PoseResult()
-            if x2 > x1 and y2 > y1:
-                pose = self.pose_model.estimate(frame[y1:y2, x1:x2], request.conf)
-                result.people = self._pose_to_msgs(pose)
-            response.results.append(result)
-
+        results = self.pose_model(frame, verbose=False, conf=request.conf or 0.25)
+        response.people = self._pose_to_msgs(results[0] if results else None)
         response.success = True
         return response
 
     @staticmethod
     def _pose_to_msgs(result) -> list:
-        if result is None:
+        if result is None or result.boxes is None or result.keypoints is None:
             return []
-        boxes, kps = result.boxes, result.keypoints
-        if boxes is None or kps is None or kps.xy is None:
-            return []
-
-        xyxy = boxes.xyxy.cpu().numpy()
-        box_conf = boxes.conf.cpu().numpy()
-        xy = kps.xy.cpu().numpy()
-        xyn = kps.xyn.cpu().numpy()
-        kp_conf = (
-            kps.conf.cpu().numpy()
-            if kps.conf is not None
-            else np.ones(xy.shape[:2], dtype=np.float32)
-        )
-
-        people = []
-        for i in range(len(xyxy)):
-            msg = PersonPose()
-            msg.x1, msg.y1, msg.x2, msg.y2 = (int(v) for v in xyxy[i])
-            msg.confidence = float(box_conf[i])
-            msg.keypoints_xy = xy[i].astype(np.float32).flatten().tolist()
-            msg.keypoints_xyn = xyn[i].astype(np.float32).flatten().tolist()
-            msg.keypoints_conf = kp_conf[i].astype(np.float32).tolist()
-            people.append(msg)
-        return people
+        boxes = result.boxes.xyxy.int().tolist()
+        points = result.keypoints.xyn.tolist()
+        confs = result.keypoints.conf
+        confs = confs.tolist() if confs is not None else [[1.0] * 17] * len(boxes)
+        return [
+            PersonPose(
+                x1=b[0],
+                y1=b[1],
+                x2=b[2],
+                y2=b[3],
+                keypoints=[v for p in pts for v in p],
+                keypoints_conf=c,
+            )
+            for b, pts, c in zip(boxes, points, confs)
+        ]
 
     # ------------------------------------------------------------------ inference
 

@@ -1,25 +1,14 @@
 #!/usr/bin/env python3
-"""YOLO-pose keypoints and the pose logic built on them (gestures, sitting,
-waving, orientation).
+"""Pose logic on YOLO keypoints; PoseDetection is the DetectPose client (model runs in ObjectDetect2D)."""
 
-The model itself is NOT loaded here: it lives in object_detector_2d's
-ObjectDetect2D, which serves it through the
-DetectPose service so only one copy runs on the robot.
-PoseDetection is the client: ``infer`` / ``detect_people`` / ``_get_keypoints``
-call the service, everything else is local geometry on the returned keypoints.
-
-Threading rule: the service call waits on a future that the node's executor
-completes. Call these methods from a callback of a node spun by a
-MultiThreadedExecutor (pass a ReentrantCallbackGroup), or from a thread that
-is not the executor's. Calling them from a callback on a single-threaded
-executor deadlocks until the timeout.
-"""
-
+import threading
 import time
 
 import cv2
 import numpy as np
+import rclpy
 from cv_bridge import CvBridge
+from rclpy.executors import MultiThreadedExecutor
 from frida_constants.vision_constants import POSE_DETECTION_SERVICE
 from frida_constants.vision_enums import Gestures
 from frida_interfaces.srv import DetectPose
@@ -47,11 +36,7 @@ DEFAULT_TIMEOUT = 3.0  # s, per DetectPose call
 
 class PoseDetection:
     def __init__(self, node, callback_group=None, timeout: float = DEFAULT_TIMEOUT):
-        """Create the DetectPose client on ``node``.
-
-        Does not block: if the pose service is not up yet, each call waits for it up
-        to ``timeout`` and returns no people on failure.
-        """
+        """Create the DetectPose client; call it from a MultiThreadedExecutor callback."""
         self.node = node
         self.timeout = timeout
         self.bridge = CvBridge()
@@ -59,32 +44,34 @@ class PoseDetection:
             DetectPose, POSE_DETECTION_SERVICE, callback_group=callback_group
         )
 
-    # ── Service call ──
+    @staticmethod
+    def _person_dict(person) -> dict:
+        kp_conf = np.asarray(person.keypoints_conf, dtype=np.float32)
+        if kp_conf.size != NUM_KEYPOINTS:
+            kp_conf = np.ones(NUM_KEYPOINTS, dtype=np.float32)
+        return {
+            "bbox": (person.x1, person.y1, person.x2, person.y2),
+            "keypoints": np.asarray(person.keypoints, dtype=np.float32).reshape(-1, 2),
+            "kp_conf": kp_conf,
+        }
 
-    def infer(self, image, rois=None, conf: float = 0.0) -> list[list[dict]]:
-        """Run the shared pose model on ``image``.
+    # ── Full-image detection ──
 
-        rois: optional list of (x1, y1, x2, y2) pixel regions; keypoints are
-        relative to each region. Returns one list of people per region (one
-        list for the whole image if rois is None), or [] if the call failed.
-        Each person is a dict with 'bbox' (x1,y1,x2,y2), 'confidence',
-        'keypoints' (17,2 normalized), 'keypoints_xy' (17,2 pixels), 'kp_conf' (17,).
-        """
+    def detect_people(self, image, conf=0.4):
+        """Call DetectPose on image; one dict per person, [] on failure."""
         if image is None or image.size == 0:
             return []
         if not self.client.service_is_ready() and not self.client.wait_for_service(
             timeout_sec=self.timeout
         ):
             self.node.get_logger().warn(
-                f"Pose service {POSE_DETECTION_SERVICE} not available "
-                "(is ObjectDetect2D running?)",
+                f"Pose service {POSE_DETECTION_SERVICE} not available",
                 throttle_duration_sec=5.0,
             )
             return []
 
         request = DetectPose.Request()
         request.image = self.bridge.cv2_to_imgmsg(np.ascontiguousarray(image), "bgr8")
-        request.rois = [int(v) for roi in (rois or []) for v in roi]
         request.conf = float(conf)
 
         future = self.client.call_async(request)
@@ -99,33 +86,7 @@ class PoseDetection:
         if response is None or not response.success:
             self.node.get_logger().warn("Pose service call failed")
             return []
-        return [[self._person_dict(p) for p in r.people] for r in response.results]
-
-    @staticmethod
-    def _person_dict(person) -> dict:
-        kp_conf = np.asarray(person.keypoints_conf, dtype=np.float32)
-        if kp_conf.size != NUM_KEYPOINTS:
-            kp_conf = np.ones(NUM_KEYPOINTS, dtype=np.float32)
-        return {
-            "bbox": (person.x1, person.y1, person.x2, person.y2),
-            "confidence": float(person.confidence),
-            "keypoints": np.asarray(person.keypoints_xyn, dtype=np.float32).reshape(
-                -1, 2
-            ),
-            "keypoints_xy": np.asarray(person.keypoints_xy, dtype=np.float32).reshape(
-                -1, 2
-            ),
-            "kp_conf": kp_conf,
-        }
-
-    # ── Full-image detection ──
-
-    def detect_people(self, image, conf=0.4):
-        """Run YOLO pose on full image. Returns list of dicts with
-        'bbox' (x1,y1,x2,y2), 'confidence', 'keypoints' (17,2 normalized),
-        'keypoints_xy' (17,2 pixels), 'kp_conf' (17,)."""
-        results = self.infer(image, conf=conf)
-        return results[0] if results else []
+        return [self._person_dict(p) for p in response.people]
 
     def is_waving_from_keypoints(self, points, conf):
         """Check if person has a hand raised using pre-computed keypoints."""
@@ -179,9 +140,7 @@ class PoseDetection:
     # ── Core keypoint extraction ──
 
     def _get_keypoints(self, image):
-        """Run YOLO pose on image, return (points, conf) for first person.
-        points: (17, 2) normalized coords, conf: (17,) confidence scores.
-        Returns (None, None) if no person detected."""
+        """(points (17,2) normalized, conf (17,)) of the first person, or (None, None)."""
         people = self.detect_people(image, conf=0.0)
         if not people:
             return None, None
@@ -459,14 +418,7 @@ class PoseDetection:
 
 
 def main():
-    """Webcam demo. Needs the pose service running:
-    ros2 run object_detector_2d object_detector_node.py
-    """
-    import threading
-
-    import rclpy
-    from rclpy.executors import MultiThreadedExecutor
-
+    """Webcam demo; needs object_detector_node.py running for DetectPose."""
     rclpy.init()
     node = rclpy.create_node("pose_detection_demo")
     executor = MultiThreadedExecutor()

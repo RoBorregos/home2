@@ -23,7 +23,7 @@ from embedding_gallery.core.constants import GALLERY_DIRNAME  # noqa: E402
 
 # Standard ultralytics-hosted weights: name -> YOLO task (None = fetch only)
 STANDARD_MODELS = {
-    "yolo11m-pose.pt": "pose",  # ObjectDetect2D yolo_pose (DetectPose, shared)
+    "yolo11m-pose.pt": "pose",  # ObjectDetect2D DetectPose (shared)
     "yolov8n.pt": "detect",  # tracker, moondream person crop
     "yolo26n.pt": "detect",  # object_detector yolo_generic
     "yoloe-11l-seg.pt": None,  # zero_shot (loads via its own YOLOE path)

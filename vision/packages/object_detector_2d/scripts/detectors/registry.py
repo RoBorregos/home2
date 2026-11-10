@@ -29,13 +29,6 @@ MODEL_CONFIGS: dict[str, dict] = {
         "conf": 0.5,
         "use_trt": True,
     },
-    # Shared pose model behind ObjectDetect2D's DetectPose service.
-    "yolo_pose": {
-        "filename": "yolo11m-pose.pt",
-        "type": "yolo_pose",
-        "conf": 0.25,
-        "use_trt": True,
-    },
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
     "embedding_box_proposer": {
         "filename": "yoloe-11l-seg-pf.pt",

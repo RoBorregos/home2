@@ -175,7 +175,7 @@ class HRICCommands(VisionRuntime):
             people,
             key=lambda p: (p["bbox"][2] - p["bbox"][0]) * (p["bbox"][3] - p["bbox"][1]),
         )
-        points = person["keypoints_xy"]  # pixel coords
+        points = person["keypoints"] * np.array([w, h], dtype=np.float32)  # pixels
         conf = person["kp_conf"]
 
         # Candidate wrists: confident enough and inside the image.

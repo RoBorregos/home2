@@ -89,7 +89,6 @@ set(msg_files
   "vision/msg/ShelfDetection.msg"
   "vision/msg/Detection.msg"
   "vision/msg/PersonPose.msg"
-  "vision/msg/PoseResult.msg"
   "navigation/msg/NodeStatus.msg"
   "navigation/msg/MonitorReport.msg"
   )

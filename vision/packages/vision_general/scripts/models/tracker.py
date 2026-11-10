@@ -1,13 +1,4 @@
-"""Person tracking model: YOLO + ByteTrack + ReID — no ROS dependencies.
-
-Pose keypoints come from the shared DetectPose service (ObjectDetect2D): the
-tracker node builds the
-PoseDetection client (it needs a ROS node) and hands it to load().
-"""
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+"""Person tracking model: YOLO + ByteTrack + ReID + pose client."""
 
 import cv2
 import torch
@@ -20,9 +11,7 @@ from utils.models.reid_model import (
     load_network,
 )
 from utils.trt_utils import load_yolo_trt
-
-if TYPE_CHECKING:  # the client imports ROS; keep this module ROS-free
-    from .pose_detection import PoseDetection
+from .pose_detection import PoseDetection
 
 CONF_THRESHOLD = 0.6
 
@@ -39,11 +28,7 @@ class TrackerModel:
         self.reid = None
 
     def load(self, pose: PoseDetection) -> None:
-        """Load the per-frame YOLO model and keep the pose client.
-
-        ``pose`` is the DetectPose client built by the node; the pose model
-        itself runs in ObjectDetect2D. ReID is loaded separately.
-        """
+        """Load the per-frame YOLO and keep the node's pose client. ReID is loaded separately."""
         self.yolo = load_yolo_trt("yolov8n.pt")
         self.pose = pose
 

@@ -183,7 +183,6 @@ flowchart LR
     HC -->|srv MapAreas| NAV[nav_central]
     GC -->|srv CropQuery| MD
     MD -->|gRPC :50052| MDS["home2-moondream-server<br/>Moondream2 2B VLM"]
-    ZS -->|/vision/zero_shot_detections| PD[pointing_detection]
 
     TRK -.->|/vision/tracking_results| SM[nav person_goal_smoother]
     FR -.->|/vision/follow_face| ARM[manipulation follow_face]
@@ -243,12 +242,11 @@ The benchmark behind the defaults: [`benchmarks/embedding_gallery/`](benchmarks/
 | `restaurant_commands` | Maps waving customers onto table positions | srv `CustomerTables` | — (delegates) |
 | `customer_node` | Finds seated / waving customers in the full frame | srv `Customer` | pose via `DetectPose` |
 | `image_orienter` | The single camera-rotation point (see Concepts) | pub `/vision/camera/image_oriented` | — |
-| `pointing_detection` | Resolves which object a person is pointing at | srvs `DetectPointingObject`, `SetPointingObjectClasses` | consumes zero-shot, pose via `DetectPose` |
 | `zed_simulator` | Publishes a plain webcam onto the ZED topics for laptop dev | params `video_id`, `use_zed`, `visualize` | — |
 
 `pose_detection.py` is a library, not a node: it holds the COCO keypoint constants and the
-gesture/pose classification used by `hric_commands`, `gpsr_commands`, `tracker_node`,
-`customer_node` and `pointing_detection`. Its `PoseDetection` class does not load the model;
+gesture/pose classification used by `hric_commands`, `gpsr_commands`, `tracker_node` and
+`customer_node`. Its `PoseDetection` class does not load the model;
 it is a client of the `DetectPose` service that `ObjectDetect2D` always serves, so only one
 yolo11m-pose instance runs and every launch that starts `ObjectDetect2D` provides it. The client
 waits on a future, so call it from a node spun by a `MultiThreadedExecutor` (with a reentrant
