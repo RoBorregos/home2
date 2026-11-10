@@ -117,6 +117,11 @@ MESSAGE_ICONS = {
 AUDIO_STATE_TIMEOUT_MS = 10_000
 HEARD_WATCHDOG_S = 5.0
 
+# KWS keywords worth showing ("frida" and "stop" are no longer used by tasks).
+DISPLAY_KEYWORDS = {"yes", "no"}
+# /AudioState values meaning a task is actively listening (e.g. interpret_keyword).
+LISTENING_STATES = {"listening", "listening_silent"}
+
 # Display modes shared by the GPSR/HRIC step machines.
 MODE_BUTTON = "button"
 MODE_CAMERA = "camera"
@@ -267,6 +272,9 @@ class DisplayRosNode(Node):
         self._audio_state = "idle"
         self._pending_heard = None
         self._heard_watchdog = None
+        # Keywords already shown in the current listening window (dedupes KWS
+        # false positives that fire the same keyword over and over).
+        self._shown_keywords = set()
 
         self.create_subscription(String, "/AudioState", self._on_audio_state, 10)
         self.create_subscription(Float32, "/hri/speech/vad", self._on_vad, 10)
@@ -312,6 +320,8 @@ class DisplayRosNode(Node):
         self.signals.video_topic_changed.emit(topic)
 
     def _on_audio_state(self, msg: String):
+        if msg.data in LISTENING_STATES and self._audio_state not in LISTENING_STATES:
+            self._shown_keywords.clear()
         self._audio_state = msg.data
         self.signals.audio_state_changed.emit(msg.data)
         if msg.data != "listening":
@@ -355,9 +365,15 @@ class DisplayRosNode(Node):
     def _on_kws(self, msg: String):
         try:
             data = json.loads(msg.data)
-            keyword = data.get("keyword")
-            if keyword:
-                self.signals.message_received.emit("keyword", str(keyword))
+            keyword = str(data.get("keyword") or "").strip().lower()
+            # Only show yes/no while a task is listening for them, once per window.
+            if (
+                keyword in DISPLAY_KEYWORDS
+                and self._audio_state in LISTENING_STATES
+                and keyword not in self._shown_keywords
+            ):
+                self._shown_keywords.add(keyword)
+                self.signals.message_received.emit("keyword", keyword)
         except (json.JSONDecodeError, AttributeError) as e:
             self.get_logger().warn(f"Error parsing KWS message: {e}")
 
