@@ -14,7 +14,6 @@
   <depend>cv_bridge</depend>
   <depend>action_msgs</depend>
 
-  <exec_depend>action_msgs</exec_depend>
   <exec_depend>control_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
