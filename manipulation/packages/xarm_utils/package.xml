@@ -11,10 +11,14 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>frida_interfaces</depend>
+  <depend>cv_bridge</depend>
+  <depend>action_msgs</depend>
 
   <exec_depend>action_msgs</exec_depend>
   <exec_depend>control_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>shape_msgs</exec_depend>

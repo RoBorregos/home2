@@ -205,13 +205,10 @@ class PickAndPlaceTM(Node):
         # arena with FRIDA_ARENA=1|2|3. Level 1 (0.095) is below MIN_REACHABLE_SHELF_Z:
         # announce-only, never placed on or picked from.
         self.arena = int(os.environ.get("FRIDA_ARENA", "1"))
-        try:
-            from xarm_utils.shelf_levels import get_shelf_levels
+        from xarm_utils.shelf_levels import load_shelf_calibration
 
-            self.shelf_level_heights = levels_from_sorted_heights(get_shelf_levels(self.arena))
-        except Exception as e:
-            self.get_logger().warn(f"Arena shelf JSON unavailable ({e}); using fallback heights.")
-            self.shelf_level_heights = {1: 0.095, 2: 0.39, 3: 0.68, 4: 1.05}
+        calibration = load_shelf_calibration(self.arena)
+        self.shelf_level_heights = levels_from_sorted_heights(calibration.levels)
         reachable = [h for h in self.shelf_level_heights.values() if h >= MIN_REACHABLE_SHELF_Z]
         self.default_shelf_height = min(reachable or self.shelf_level_heights.values())
 

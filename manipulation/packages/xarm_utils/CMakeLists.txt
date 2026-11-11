@@ -18,6 +18,8 @@ set(SCRIPTS_DIR xarm_utils)
 install(PROGRAMS
     ${SCRIPTS_DIR}/grasp_detector.py
     ${SCRIPTS_DIR}/shelf_height_calibrator.py
+    ${SCRIPTS_DIR}/shelf_calibration_check.py
+    ${SCRIPTS_DIR}/shelf_live_calibrator.py
     DESTINATION lib/${PROJECT_NAME}
 )
 

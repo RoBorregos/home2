@@ -6,10 +6,15 @@ Read the heights for an arena with ``get_shelf_levels(arena)``; write them with
 """
 
 import json
+import math
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 SHELF_SCAN_TOLERANCE = 0.1
+MIN_SHELF_LEVELS = 2
+MAX_SHELF_LEVELS = 8
+DEFAULT_MIN_LEVEL_SEPARATION = 0.10
 
 # Fallback shelf level-to-ceiling (compartment) height, in meters. Only used if
 # the JSON levels file cannot be read; the live value comes from
@@ -30,6 +35,24 @@ SHELF_LEVELS_BY_ARENA_FALLBACK = {
 }
 
 
+class ShelfCalibrationError(ValueError):
+    """Raised when shelf calibration data cannot be used safely."""
+
+
+@dataclass(frozen=True)
+class ShelfCalibration:
+    """Validated shelf geometry for one arena."""
+
+    frame: str
+    levels: tuple[float, ...]
+    compartment_height: float
+
+    @property
+    def ceiling_heights(self) -> tuple[float, ...]:
+        """Return the estimated ceiling height above each shelf level."""
+        return tuple(level + self.compartment_height for level in self.levels)
+
+
 def levels_file():
     """Resolve the shelf levels path: FRIDA_SHELF_LEVELS_FILE env, else the
     xarm_utils package share config."""
@@ -45,8 +68,80 @@ def levels_file():
         return Path.home() / "frida_shelf_levels.json"
 
 
+def load_shelf_calibration(
+    arena: int,
+    path: Path | None = None,
+    expected_levels: int | None = None,
+    min_levels: int = MIN_SHELF_LEVELS,
+    max_levels: int = MAX_SHELF_LEVELS,
+    min_level_separation: float = DEFAULT_MIN_LEVEL_SEPARATION,
+) -> ShelfCalibration:
+    """Load and validate one arena calibration.
+
+    This is the strict API for startup checks and safety-critical consumers.
+    ``get_shelf_levels`` remains backward compatible and keeps its fallback
+    behavior for legacy callers.
+    """
+    calibration_path = Path(path) if path is not None else levels_file()
+    try:
+        data = json.loads(calibration_path.read_text())
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ShelfCalibrationError(
+            f"Cannot read calibration file {calibration_path}: {exc}"
+        ) from exc
+
+    frame = data.get("frame")
+    if frame != "base_link":
+        raise ShelfCalibrationError(
+            f"Calibration frame must be 'base_link', got {frame!r}"
+        )
+
+    try:
+        compartment_height = float(data["compartment_height"])
+        raw_levels = data["arenas"][str(int(arena))]
+        levels = tuple(float(level) for level in raw_levels)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ShelfCalibrationError(
+            f"Missing or invalid calibration for arena {arena}: {exc}"
+        ) from exc
+
+    values = (*levels, compartment_height)
+    if not all(math.isfinite(value) for value in values):
+        raise ShelfCalibrationError("Calibration values must be finite numbers")
+    if expected_levels is not None and len(levels) != expected_levels:
+        raise ShelfCalibrationError(
+            f"Arena {arena} must contain {expected_levels} levels, got {len(levels)}"
+        )
+    if not min_levels <= len(levels) <= max_levels:
+        raise ShelfCalibrationError(
+            f"Arena {arena} must contain between {min_levels} and {max_levels} levels, "
+            f"got {len(levels)}"
+        )
+    if compartment_height <= 0:
+        raise ShelfCalibrationError(
+            f"Compartment height must be positive, got {compartment_height}"
+        )
+    if any(current <= previous for previous, current in zip(levels, levels[1:])):
+        raise ShelfCalibrationError("Shelf levels must be strictly increasing")
+    if min_level_separation <= 0:
+        raise ShelfCalibrationError("Minimum level separation must be positive")
+    if any(
+        current - previous < min_level_separation
+        for previous, current in zip(levels, levels[1:])
+    ):
+        raise ShelfCalibrationError(
+            f"Shelf levels must be at least {min_level_separation:.2f} m apart"
+        )
+
+    return ShelfCalibration(
+        frame=frame,
+        levels=levels,
+        compartment_height=compartment_height,
+    )
+
+
 def get_shelf_levels(arena: int) -> list:
-    """Return the 3 shelf heights for the selected arena, read live from the JSON
+    """Return the shelf heights for the selected arena, read live from the JSON
     levels file (no recompile needed). Falls back to arena 1, then to the
     hardcoded defaults, if the file or arena entry is missing."""
     arena = int(arena)
