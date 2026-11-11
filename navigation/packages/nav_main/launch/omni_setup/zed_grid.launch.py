@@ -20,6 +20,9 @@ Offline on a bag:
         "{global_map: true, optimized: true, graph_only: false}"
     (full recipe: docs/Run/Areas/nav.md, "Mapping Evaluation")
 
+A/B the clearing under the driven path on the same bag:
+    ros2 launch nav_main zed_grid.launch.py use_sim_time:=true footprint_radius:=0
+
 Full RTAB-Map instead (Phase 2, no slam_toolbox running):
     ros2 launch nav_main zed_grid.launch.py params_file:=<.../rtabmap_mapping_config.yaml>
 """
@@ -46,6 +49,11 @@ def launch_setup(context, *args, **kwargs):
     def params(node):
         return [{**cfg.get(node, {}).get('ros__parameters', {}), 'use_sim_time': use_sim_time}]
 
+    rtab_params = params('rtabmap')
+    footprint_radius = LaunchConfiguration('footprint_radius').perform(context)
+    if footprint_radius:
+        rtab_params[0]['GridGlobal/FootprintRadius'] = footprint_radius
+
     # Namespace rtabmap: grid is /rtabmap/map, never slam_toolbox's /map.
     rgbd_sync = Node(
         package='rtabmap_sync', executable='rgbd_sync', name='rgbd_sync',
@@ -60,7 +68,7 @@ def launch_setup(context, *args, **kwargs):
     rtabmap = Node(
         package='rtabmap_slam', executable='rtabmap', name='rtabmap',
         namespace='rtabmap', output='screen',
-        parameters=params('rtabmap'),
+        parameters=rtab_params,
         remappings=[('scan', '/scan')],
     )
     return [rgbd_sync, rtabmap]
@@ -74,5 +82,8 @@ def generate_launch_description():
                               description='RTAB-Map YAML (rgbd_sync + rtabmap sections).'),
         DeclareLaunchArgument('use_sim_time', default_value='false',
                               description='true when replaying a bag with --clock.'),
+        DeclareLaunchArgument('footprint_radius', default_value='',
+                              description='Override GridGlobal/FootprintRadius in metres (0 = no clearing '
+                                          'under the driven path); empty keeps the YAML value.'),
         OpaqueFunction(function=launch_setup),
     ])

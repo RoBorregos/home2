@@ -12,6 +12,8 @@ import math
 import threading
 import numpy as np
 
+import merge_grids  # sibling script (same install dir)
+
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
@@ -35,6 +37,10 @@ from frida_constants.navigation_constants import (
     DOCK_TABLE_SERVICE,
     DEFAULT_DOCK_OFFSET,
 )
+
+# RTAB-Map grid-only mapper started by nav_main zed_grid.launch.py (namespace rtabmap).
+ZED_GRID_TOPIC = '/rtabmap/map'
+ZED_GRID_PUBLISH_SERVICE = '/rtabmap/rtabmap/publish_map'
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -121,6 +127,8 @@ class NavRosNode(Node):
         self.default_base = self.declare_parameter('default_base', 'omnibase').value
         self.nav_type = self.declare_parameter('nav_type', '2d').value
         self.use_slam_toolbox = (self.default_base == 'omnibase' and self.nav_type == '2d')
+        # Mapping: merge the ZED furniture grid (zed_grid.launch.py) into the saved map.
+        self.use_zed_grid = self.declare_parameter('use_zed_grid', False).value
 
         # TF
         self.tf_buffer = Buffer()
@@ -215,6 +223,14 @@ class NavRosNode(Node):
                     SaveMap, '/slam_toolbox/save_map')
                 self._slam_serialize_client = self.create_client(
                     SerializePoseGraph, '/slam_toolbox/serialize_map')
+                if self.use_zed_grid:
+                    from rtabmap_msgs.srv import PublishMap
+                    self.zed_grid = None
+                    self._zed_grid_count = 0
+                    self.create_subscription(
+                        OccupancyGrid, ZED_GRID_TOPIC, self._zed_grid_callback, map_qos)
+                    self._zed_publish_client = self.create_client(
+                        PublishMap, ZED_GRID_PUBLISH_SERVICE)
             else:
                 self._rtab_backup_client = self.create_client(Empty, '/rtabmap/backup')
 
@@ -347,6 +363,26 @@ class NavRosNode(Node):
             f.write('occupied_thresh: 0.65\n')
             f.write('free_thresh: 0.25\n')
 
+    def _zed_grid_callback(self, msg):
+        self.zed_grid = msg
+        self._zed_grid_count += 1
+
+    def _fresh_zed_grid(self, timeout=10.0):
+        """Latest ZED grid, or None. RTAB-Map only publishes it when it changes,
+        so ask for a republish and wait for it (worker thread only)."""
+        import time
+        from rtabmap_msgs.srv import PublishMap
+        seen = self._zed_grid_count
+        if self._zed_publish_client.wait_for_service(timeout_sec=2.0):
+            self._zed_publish_client.call_async(
+                PublishMap.Request(global_map=True, optimized=True, graph_only=False))
+            elapsed = 0.0
+            while self._zed_grid_count == seen and elapsed < timeout:
+                time.sleep(0.2)
+                elapsed += 0.2
+        grid = self.zed_grid
+        return grid if grid is not None and grid.info.width and grid.info.height else None
+
     def save_map_async(self, name, on_done):
         """Dispatch map saving to the active SLAM backend."""
         if self.use_slam_toolbox:
@@ -356,7 +392,11 @@ class NavRosNode(Node):
 
     def _save_map_slamtoolbox(self, name, on_done):
         """Serialize the slam_toolbox pose-graph (.posegraph + .data, for later
-        localization) and write the occupancy grid (.pgm + .yaml, for nav2)."""
+        localization) and write the occupancy grid (.pgm + .yaml, for nav2).
+
+        With use_zed_grid, the ZED furniture grid is OR-ed into the grid:
+        <name>_lidar (slam_toolbox) + <name>_zed (RTAB-Map) -> <name>. The
+        posegraph is untouched, so localization still matches the lidar map."""
         import time
         from slam_toolbox.srv import SaveMap, SerializePoseGraph
         from std_msgs.msg import String
@@ -387,10 +427,12 @@ class NavRosNode(Node):
 
                 # --- Occupancy grid via slam_toolbox; fall back to writing it
                 # ourselves from the last /map if the service is unavailable. ---
+                zed_grid = self._fresh_zed_grid() if self.use_zed_grid else None
+                grid_base = base + '_lidar' if zed_grid else base
                 grid_ok = False
                 if self._slam_save_map_client.wait_for_service(timeout_sec=5.0):
                     mreq = SaveMap.Request()
-                    mreq.name = String(data=base)
+                    mreq.name = String(data=grid_base)
                     future = self._slam_save_map_client.call_async(mreq)
                     elapsed = 0.0
                     while not future.done() and elapsed < 30.0:
@@ -401,10 +443,20 @@ class NavRosNode(Node):
                     if map_snapshot is None:
                         on_done(False, "Graph serialized, but no /map yet for the grid")
                         return
-                    self._write_map_files(map_snapshot, base)
+                    self._write_map_files(map_snapshot, grid_base)
 
-                on_done(True, f"{name}.posegraph  |  {name}.yaml + {name}.pgm")
-            except Exception as e:
+                note = ""
+                if zed_grid:
+                    self._write_map_files(zed_grid, base + '_zed')
+                    merged_grid = merge_grids.load(grid_base + '.yaml')
+                    added, _ = merge_grids.merge(
+                        merged_grid, merge_grids.load(base + '_zed.yaml'))
+                    merge_grids.save(merged_grid, base)
+                    note = f"  (+{added} ZED cells)"
+                elif self.use_zed_grid:
+                    note = "  (lidar only: no ZED grid received)"
+                on_done(True, f"{name}.posegraph  |  {name}.yaml + {name}.pgm{note}")
+            except (Exception, SystemExit) as e:
                 on_done(False, str(e))
 
         threading.Thread(target=_worker, daemon=True).start()

@@ -22,6 +22,12 @@ def launch_function(context, *args, **kwargs):
     # Override with: map_name:=mymap.db
     rtabmap_map_name = LaunchConfiguration('map_name', default='mapping_session.db')
     
+    # ZED depth -> furniture grid merged into the saved map by nav_ui (#1318).
+    # Needs the ZED up and the arm in the navigation pose; without the ZED the
+    # save falls back to the lidar-only grid. Disable with use_zed_grid:=false.
+    use_zed_grid = LaunchConfiguration('use_zed_grid', default='true')
+    use_zed_grid_value = nav_type_value == "2d" and use_zed_grid.perform(context).lower() in ('true', '1')
+
     nav_central_node = Node(
         package='nav_main',
         executable='nav_central.py',
@@ -49,6 +55,7 @@ def launch_function(context, *args, **kwargs):
             'map_name': rtabmap_map_name,
             'default_base': default_base,
             'nav_type': nav_type,
+            'use_zed_grid': use_zed_grid_value,
         }],
     )
 
@@ -64,6 +71,12 @@ def launch_function(context, *args, **kwargs):
         ),
     )
 
+    zed_grid = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare("nav_main"), "launch","omni_setup", "zed_grid.launch.py"])
+        ),
+    )
+
     launch_actions = [
         nav_central_node,
         nav_ui_node,
@@ -72,6 +85,8 @@ def launch_function(context, *args, **kwargs):
 
     if nav_type_value == "2d":
         launch_actions.append(slam_toolbox)
+    if use_zed_grid_value:
+        launch_actions.append(zed_grid)
     
     return launch_actions
 

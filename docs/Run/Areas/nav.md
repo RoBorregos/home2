@@ -70,11 +70,21 @@ ros2 launch nav_main navigation_launch.py
 ```
 ---
 
-## Mapping Evaluation: ZED Obstacles in the Static Map (#1318)
+## ZED Obstacles in the Static Map (#1318)
 
-The lidars sit at z = 0.136 m, so table tops, chair seats and shelves never reach the slam_toolbox map. To evaluate adding them from the ZED depth, run offline on a bag. slam_toolbox keeps the poses and localization; RTAB-Map only builds a grid from the ZED (`zed_grid.launch.py`, `config/rtabmap/rtabmap_grid_only.yaml`).
+The lidars sit at z = 0.136 m, so table tops, chair seats and shelves never reach the slam_toolbox map. `mapping.launch.py` (`run.sh --mapping`) therefore also starts `zed_grid.launch.py`: RTAB-Map builds a grid from the ZED depth while slam_toolbox keeps the poses, and **Save Map** in nav_ui ORs that grid into the saved map.
 
-### 1. Record (robot, inside the navigation container)
+- Start the ZED container first and keep the arm in the navigation pose while mapping (the ZED is on the gripper).
+- Save Map writes `<name>.posegraph/.data` (localization, lidar only, unchanged), `<name>_lidar.pgm` (slam_toolbox grid), `<name>_zed.pgm` (ZED grid) and `<name>.pgm/.yaml` (merged, the one nav2 serves). The status bar reports how many ZED cells were added.
+- No ZED grid (camera down) -> the save falls back to the lidar-only `<name>.pgm` and says so.
+- Lidar-only mapping: `ros2 launch nav_main mapping.launch.py use_zed_grid:=false`.
+- Tuning lives in `config/rtabmap/rtabmap_grid_only.yaml`. Re-merge by hand after editing a grid: `ros2 run map_context merge_grids.py <name>_lidar.yaml <name>_zed.yaml <name>`.
+
+### Mapping Evaluation (offline, on a bag)
+
+To tune the grid parameters, run offline on a bag. slam_toolbox keeps the poses and localization; RTAB-Map only builds a grid from the ZED (`zed_grid.launch.py`, `config/rtabmap/rtabmap_grid_only.yaml`).
+
+#### 1. Record (robot, inside the navigation container)
 - Save under `/tmp` (mounted to the host); the container home is not persisted, so a bag there is lost on exit. Copy it off the Orin afterwards.
 - Run **only** `omni_basics.launch.py` + teleop, **no SLAM**. Otherwise the bag carries a live `map->odom` that fights the replay.
 - Put the arm in the navigation pose (the ZED is on the gripper). Clear people out of the arena if possible.
@@ -90,7 +100,7 @@ ros2 bag record -o /tmp/bags/mapping_1318 \
 ros2 bag info /tmp/bags/mapping_1318   # every topic ~10 Hz; stop the recorder with Ctrl+C / SIGINT, never kill -9
 ```
 
-### 2. Replay (baseline + ZED grid in the same run)
+#### 2. Replay (baseline + ZED grid in the same run)
 Run every replay process with these two exports: a separate domain keeps the live robot topics out, and SHM is off because processes started with `docker exec` drop big messages over SHM.
 ```bash
 export ROS_DOMAIN_ID=77
@@ -106,7 +116,7 @@ ros2 run image_transport republish --ros-args -p in_transport:=compressedDepth -
 Then, in the navigation container:
 ```bash
 ros2 launch nav_main slam.launch.py use_sim_time:=true
-ros2 launch nav_main zed_grid.launch.py use_sim_time:=true      # params_file:=... to try a variant
+ros2 launch nav_main zed_grid.launch.py use_sim_time:=true      # params_file:=... to try a variant, footprint_radius:=0 to A/B the path clearing
 ros2 bag play /tmp/bags/mapping_1318 --clock
 # when it ends, save both grids (absolute paths):
 ros2 service call /slam_toolbox/save_map slam_toolbox/srv/SaveMap "{name: {data: '/tmp/bags/baseline'}}"
@@ -117,7 +127,7 @@ ros2 service call /rtabmap/rtabmap/publish_map rtabmap_msgs/srv/PublishMap "{glo
 
 Full RTAB-Map (lidar + depth, own poses) for comparison: skip `slam.launch.py` and pass `params_file:=<nav_main share>/config/rtabmap/rtabmap_mapping_config.yaml`. SuperPoint needs the Orin image.
 
-### 3. Merge and Compare
+#### 3. Merge and Compare
 ```bash
 ros2 run map_context merge_grids.py /abs/path/baseline.yaml /abs/path/zed_grid.yaml /abs/path/merged
 ros2 run map_context merge_grids.py --test   # self-check
