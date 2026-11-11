@@ -225,8 +225,13 @@ class ForceGuardedDescentPick(PickStrategy):
             with arm.phase("lift"):
                 arm.move_to_pose(pre_grasp, velocity=0.35)
 
-        # Heights stay zero: this strategy attaches no collision object.
-        return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
+        # Grasp point's height above the measured contact: how far retract
+        # moved it up, so place knows how high to release above the surface.
+        return PickOutcome(
+            pick_pose=candidate.pose,
+            grasp_score=candidate.score,
+            object_pick_height=profile.post_contact_retract,
+        )
 
 
 class DirectGraspPick(PickStrategy):

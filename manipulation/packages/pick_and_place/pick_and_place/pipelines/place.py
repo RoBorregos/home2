@@ -148,10 +148,15 @@ def _reach_place_pose(arm, place_pose: PoseStamped, is_shelf: bool) -> bool:
                     log.error(f"Failed to reach pre-place pose at rung {index}")
                     continue
 
-        with arm.phase("place"):
-            if reach(final):
-                log.info(f"Place pose reached at rung {index}")
-                return True
+        # Cheap IK + self-collision check: skip a doomed rung before paying for
+        # a full OMPL planning attempt that would just time out anyway.
+        if arm.endpoint_self_collides(final):
+            log.info(f"Rung {index} has no IK or self-collides, skipping")
+        else:
+            with arm.phase("place"):
+                if reach(final):
+                    log.info(f"Place pose reached at rung {index}")
+                    return True
 
         if is_shelf and index == 0:
             # Halfway only on the first rung; higher rungs are already elevated
