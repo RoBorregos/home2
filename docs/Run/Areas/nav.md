@@ -75,6 +75,7 @@ ros2 launch nav_main navigation_launch.py
 The lidars sit at z = 0.136 m, so table tops, chair seats and shelves never reach the slam_toolbox map. `mapping.launch.py` (`run.sh --mapping`) therefore also starts `zed_grid.launch.py`: RTAB-Map builds a grid from the ZED depth while slam_toolbox keeps the poses, and **Save Map** in nav_ui ORs that grid into the saved map.
 
 - Start the ZED container first and keep the arm in the navigation pose while mapping (the ZED is on the gripper).
+- Check the camera pose before and during the run: `ros2 run tf2_ros tf2_echo base_link zed_camera_center` should stay near z 1.17 m, pitch ~52°. In bag `mapping_1318e` the arm sagged to ~86° (camera facing the floor) and the tables came out as thin rings instead of solid blocks.
 - Save Map writes `<name>.posegraph/.data` (localization, lidar only, unchanged), `<name>_lidar.pgm` (slam_toolbox grid), `<name>_zed.pgm` (ZED grid) and `<name>.pgm/.yaml` (merged, the one nav2 serves). The status bar reports how many ZED cells were added.
 - No ZED grid (camera down) -> the save falls back to the lidar-only `<name>.pgm` and says so.
 - Lidar-only mapping: `ros2 launch nav_main mapping.launch.py use_zed_grid:=false`.

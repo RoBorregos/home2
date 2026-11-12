@@ -68,7 +68,10 @@ rtabmap:
 
     # Global map robustness (tuned on the 2026-11-06 lab bag, #1318):
     #   OccupancyThr 0.65 -> a cell needs consistent hits, a couple of noisy frames don't stick
-    #   FootprintRadius   -> clear obstacles under the path the robot drove (it fit there, so it's free)
+    #   FootprintRadius   -> clear obstacles under the path the robot drove (it fit there, so it's free).
+    #                        A/B 0 vs 0.35 on bag mapping_1318f (2026-11-11): removes ~270 noise cells on the
+    #                        path and trims table edges facing it by 1-2 cells (<= 10 cm, inside the 0.45 m
+    #                        inflation). Retest with: zed_grid.launch.py footprint_radius:=<m>
     #   Eroded            -> trim obstacle edges by one cell
     "GridGlobal/OccupancyThr": "0.65"
     "GridGlobal/FootprintRadius": "0.35"
