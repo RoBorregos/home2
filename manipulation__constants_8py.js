@@ -104,5 +104,6 @@ var manipulation__constants_8py =
     [ "XARM_STATE_PAUSED", "manipulation__constants_8py.html#a016a5674c9a7149bf11ea485fe1f32b7", null ],
     [ "XARM_STATE_READY", "manipulation__constants_8py.html#a5a5abd76d002b0c9d56e76f93bc1b3e5", null ],
     [ "XARM_STATE_STOPPED", "manipulation__constants_8py.html#a68c18caff6eff36289422c67d0cce3dd", null ],
+    [ "ZED_DEPTH_SCALE", "manipulation__constants_8py.html#a43afa8c982d18e63e85d35eda600e92e", null ],
     [ "ZED_POINT_CLOUD_TOPIC", "manipulation__constants_8py.html#a60fec6dff1f21269d68429db6ce6c56d", null ]
 ];

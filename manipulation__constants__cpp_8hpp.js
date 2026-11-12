@@ -40,5 +40,6 @@ var manipulation__constants__cpp_8hpp =
     [ "XARM_SETMODE_SERVICE", "manipulation__constants__cpp_8hpp.html#a82634a6daed3d1e8cb1166837194b724", null ],
     [ "XARM_SETSTATE_SERVICE", "manipulation__constants__cpp_8hpp.html#a45dd2103773e4cc96f8376e914ef2bd2", null ],
     [ "ZED_CAMERA_FRAME", "manipulation__constants__cpp_8hpp.html#a56af7b9da0fb3dfb9f8c337970b4dbd2", null ],
+    [ "ZED_DEPTH_SCALE", "manipulation__constants__cpp_8hpp.html#a96b764bad7b6c9d80e579baffeb13bb4", null ],
     [ "ZED_POINT_CLOUD_TOPIC", "manipulation__constants__cpp_8hpp.html#ad803a68729673ec3b910aa82774ddeed", null ]
 ];

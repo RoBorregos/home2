@@ -111,6 +111,7 @@ var namespacefrida__constants =
       [ "XARM_STATE_PAUSED", "namespacefrida__constants_1_1manipulation__constants.html#a016a5674c9a7149bf11ea485fe1f32b7", null ],
       [ "XARM_STATE_READY", "namespacefrida__constants_1_1manipulation__constants.html#a5a5abd76d002b0c9d56e76f93bc1b3e5", null ],
       [ "XARM_STATE_STOPPED", "namespacefrida__constants_1_1manipulation__constants.html#a68c18caff6eff36289422c67d0cce3dd", null ],
+      [ "ZED_DEPTH_SCALE", "namespacefrida__constants_1_1manipulation__constants.html#a43afa8c982d18e63e85d35eda600e92e", null ],
       [ "ZED_POINT_CLOUD_TOPIC", "namespacefrida__constants_1_1manipulation__constants.html#a60fec6dff1f21269d68429db6ce6c56d", null ]
     ] ],
     [ "navigation_constants", "namespacefrida__constants_1_1navigation__constants.html", "namespacefrida__constants_1_1navigation__constants" ],

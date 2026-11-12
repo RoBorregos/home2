@@ -153,6 +153,8 @@ Functions</h2></td></tr>
 <tr class="separator:ac905561b6f7221dc98e893c6f10e9470"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21e2fb76b2b5a19d7f0372b5d9d781a3"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a21e2fb76b2b5a19d7f0372b5d9d781a3">pad_contact</a> (center, normal, extent, bottom, span, tip, rotation)</td></tr>
 <tr class="separator:a21e2fb76b2b5a19d7f0372b5d9d781a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa299cf3d0bb0384da7c17c66ae9ca0b9"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#aa299cf3d0bb0384da7c17c66ae9ca0b9">behind_near_limb</a> (np.ndarray xy, np.ndarray center, np.ndarray camera, float radius)</td></tr>
+<tr class="separator:aa299cf3d0bb0384da7c17c66ae9ca0b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97666d31e7b7594b7071f7c4585002c1"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a97666d31e7b7594b7071f7c4585002c1">solid</a> (<a class="el" href="classperception__3d_1_1geometric__grasps_1_1Scene.html">Scene</a> scene, str grasp_class, tuple segmented)</td></tr>
 <tr class="separator:a97666d31e7b7594b7071f7c4585002c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad69e59881b3ccd3e95ad4f03bc61a60f"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#ad69e59881b3ccd3e95ad4f03bc61a60f">measured_solid</a> (<a class="el" href="classperception__3d_1_1geometric__grasps_1_1Scene.html">Scene</a> scene)</td></tr>
@@ -350,6 +352,47 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Candidate (label, tilt, approach side, closing axis) for a grasp class.</pre> 
+</div>
+</div>
+<a id="aa299cf3d0bb0384da7c17c66ae9ca0b9" name="aa299cf3d0bb0384da7c17c66ae9ca0b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa299cf3d0bb0384da7c17c66ae9ca0b9">&#9670;&#160;</a></span>behind_near_limb()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> np.ndarray perception_3d.geometric_grasps.behind_near_limb </td>
+          <td>(</td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>xy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>center</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>camera</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float
+&#160;</td>
+          <td class="paramname"><em>radius</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Sphere centre: one radius behind the near limb (the far limb is trimmed).</pre> 
 </div>
 </div>
 <a id="acc56fb1c71ebc50bcb7197816bd8f214" name="acc56fb1c71ebc50bcb7197816bd8f214"></a>
