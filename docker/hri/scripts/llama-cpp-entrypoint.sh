@@ -44,7 +44,7 @@ MAIN_CTX="${LLAMA_CTX_SIZE:-2048}"
 # target Jetson; set LLAMA_CACHE_TYPE=q8_0 for that A/B comparison.
 CACHE_TYPE="${LLAMA_CACHE_TYPE:-f16}"
 # GPSR command interpreter; override to A/B fine-tunes without renaming files.
-RBRGS_MODEL="${RBRGS_MODEL_FILE:-rbrgs.F16.gguf}"
+RBRGS_MODEL="${RBRGS_MODEL_FILE:-rbrgs-qwen3.5-9b-F16.gguf}"
 
 if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] || [ "$ROLE" = "bench" ]; then
     if [ ! -s "$MODELS_DIR/$MAIN_MODEL" ]; then
@@ -90,7 +90,7 @@ if [ "$ROLE" = "gpsr" ]; then
         --temp 0 \
         --metrics \
         &
-    # 27B Q8_0 takes minutes to load on the Orin
+    # Big GGUFs take minutes to load on the Orin
     wait_for_server 11435 rbrgs "$RBRGS_MODEL" 150
 fi
 

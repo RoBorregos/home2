@@ -68,12 +68,12 @@ serve_model() {
     local model="$1"
     LOAD_SECS=""
     # Same GGUF as the previous entry (e.g. a :long variant): keep it loaded.
-    if [[ "${model:-rbrgs.F16.gguf}" == "$LOADED" ]]; then
+    if [[ "${model:-rbrgs-qwen3.5-9b-F16.gguf}" == "$LOADED" ]]; then
         echo "${LOADED} already loaded on :$PORT"
         return 0
     fi
     LOADED=""
-    echo "Loading ${model:-default rbrgs.F16.gguf} on :$PORT..."
+    echo "Loading ${model:-default rbrgs-qwen3.5-9b-F16.gguf} on :$PORT..."
     (cd "$HRI_DIR" && RBRGS_MODEL_FILE="$model" ROLE=gpsr COMPOSE_PROFILES=gpsr \
         docker compose -f "$COMPOSE" up -d --no-deps --force-recreate llama >/dev/null)
     local waited=0
@@ -86,7 +86,7 @@ serve_model() {
         fi
     done
     LOAD_SECS=$((waited + 5))
-    LOADED="${model:-rbrgs.F16.gguf}"
+    LOADED="${model:-rbrgs-qwen3.5-9b-F16.gguf}"
     echo "  ready after ~${LOAD_SECS}s: $(curl -s "localhost:$PORT/props" | grep -o '"model_path":"[^"]*"')"
 }
 
