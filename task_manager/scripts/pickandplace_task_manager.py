@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Pick and Place Challenge as a behaviour tree driven by frida_constants/data/tasks/ppc.json.
+Pick and Place Challenge as a behaviour tree driven by task_manager/config/tasks/ppc.json.
 Debug: -p start_at:=cleanup|breakfast -p state_file:=<snapshot.json>
 -p mock_areas:=navigation,vision -p step:=true -p spec_file:=<ppc.json>
 """
@@ -51,8 +51,8 @@ class PPCState:
 def load_spec(path: str = "") -> dict:
     """Task rules from the spec JSON (defaults to the installed one)."""
     if not path:
-        share = Path(get_package_share_directory("frida_constants"))
-        path = share / "data" / "tasks" / "ppc.json"
+        share = Path(get_package_share_directory("task_manager"))
+        path = share / "config" / "tasks" / "ppc.json"
     return json.loads(Path(path).read_text())
 
 
