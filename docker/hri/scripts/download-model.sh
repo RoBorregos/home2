@@ -18,7 +18,7 @@ ask_for_model() {
 
 echo "Which models do you want to download?"
 echo "  1) qwen3.5-4b       (Qwen3.5-4B UD-Q4_K_XL GGUF, for llama.cpp) [production]"
-echo "  2) rbrgs            (fine-tuned command interpreter GGUF, for llama.cpp)"
+echo "  2) rbrgs            (fine-tuned Qwen3.5-9B F16 command interpreter, for llama.cpp)"
 echo "  3) qwen3.5          (Qwen3.5-4B via Ollama)"
 echo "  4) nomic-embed-text (embeddings via Ollama)"
 echo "  5) DeepFilterNet3"
@@ -65,8 +65,8 @@ fi
 
 if ask_for_model rbrgs 2; then
     download_gguf "rbrgs" \
-        "https://huggingface.co/diegohc/rbrgs-finetuning/resolve/paraphrased-dataset/q4/unsloth.Q4_K_M.gguf" \
-        "$SCRIPT_DIR/rbrgs.F16.gguf"
+        "https://huggingface.co/LuisR852/RBRGS9B/resolve/main/rbrgs-qwen3.5-9b-F16.gguf" \
+        "$SCRIPT_DIR/rbrgs-qwen3.5-9b-F16.gguf"
 fi
 
 # Download and unzip DeepFilterNet model
