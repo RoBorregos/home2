@@ -140,9 +140,9 @@
 <text x="959" y="316.5" font-size="10.5" fill="#37474f">model: yolo11m-pose</text>
 <text x="959" y="330.0" font-size="10.5" fill="#37474f">srv DetectPointingObject</text>
 <text x="959" y="343.5" font-size="10.5" fill="#37474f">sub ZERO_SHOT_DETECTIONS</text>
-<text x="950" y="402" font-size="14" font-weight="bold" fill="#6a1b9a">moondream_run</text>
+<text x="950" y="402" font-size="14" font-weight="bold" fill="#6a1b9a">vlm_run</text>
 <rect x="950" y="412" width="340" height="106" rx="7" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.6"/>
-<text x="959" y="429" font-size="12.5" font-weight="bold" fill="#6a1b9a">moondream_node</text>
+<text x="959" y="429" font-size="12.5" font-weight="bold" fill="#6a1b9a">vlm_node</text>
 <text x="959" y="442.5" font-size="10.5" fill="#37474f">model: yolov8n (person crop)</text>
 <text x="959" y="456.0" font-size="10.5" fill="#37474f">srv QUERY / CROP_QUERY / BEVERAGE /</text>
 <text x="959" y="469.5" font-size="10.5" fill="#37474f">  OBJECT_POINTS / PERSON_POSTURE(!broken attr)</text>
@@ -206,7 +206,7 @@
 <rect x="25" y="336" width="16" height="14" rx="3" fill="#e8f5e9" stroke="#2e7d32"/>
 <text x="47" y="347" font-size="11" fill="#37474f">object_detector_2d pkg</text>
 <rect x="25" y="358" width="16" height="14" rx="3" fill="#f3e5f5" stroke="#6a1b9a"/>
-<text x="47" y="369" font-size="11" fill="#37474f">moondream_run pkg</text>
+<text x="47" y="369" font-size="11" fill="#37474f">vlm_run pkg</text>
 <rect x="25" y="380" width="16" height="14" rx="3" fill="#fff3e0" stroke="#e65100"/>
 <text x="47" y="391" font-size="11" fill="#37474f">subtask manager (integration)</text>
 <rect x="25" y="402" width="16" height="14" rx="3" fill="#f5f5f5" stroke="#757575"/>
@@ -224,5 +224,5 @@
 <text x="34" y="514.0" font-size="10.5" fill="#37474f">  hric_cmds, tracker, gpsr,</text>
 <text x="34" y="527.5" font-size="10.5" fill="#37474f">  customer, pointing</text>
 <text x="34" y="541.0" font-size="10.5" fill="#37474f">yolov8n loaded 2x:</text>
-<text x="34" y="554.5" font-size="10.5" fill="#37474f">  tracker, moondream_node</text>
+<text x="34" y="554.5" font-size="10.5" fill="#37474f">  tracker, vlm_node</text>
 </svg>

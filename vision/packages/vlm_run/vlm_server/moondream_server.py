@@ -1,40 +1,38 @@
 import grpc
 from concurrent import futures
-import moondream_proto_pb2
-import moondream_proto_pb2_grpc
+import vlm_pb2
+import vlm_pb2_grpc
 import argparse
 from moondream_lib import MoonDreamModel
 
 
-class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
+class MoonDreamServicer(vlm_pb2_grpc.VLMServiceServicer):
     def __init__(self, model):
         self.model = model
 
     def EncodeImage(self, request, context):
         print("Encoding image...")
         encoded_data = self.model.encode_image(request.image_data)
-        return moondream_proto_pb2.EncodedImageResponse(encoded_image=encoded_data)
+        return vlm_pb2.EncodedImageResponse(encoded_image=encoded_data)
 
     def FindObjectPoints(self, request, context):
         points = self.model.find_object_points(request.encoded_image, request.subject)
 
         if not points:
-            return moondream_proto_pb2.FindObjectPointsResponse(points=[], found=False)
+            return vlm_pb2.FindObjectPointsResponse(points=[], found=False)
 
         proto_points = [
-            moondream_proto_pb2.ObjectPoint(x=float(point["x"]), y=float(point["y"]))
+            vlm_pb2.ObjectPoint(x=float(point["x"]), y=float(point["y"]))
             for point in points
         ]
 
-        return moondream_proto_pb2.FindObjectPointsResponse(
-            points=proto_points, found=True
-        )
+        return vlm_pb2.FindObjectPointsResponse(points=proto_points, found=True)
 
     def Detect(self, request, context):
         objects = self.model.detect(request.encoded_image, request.subject)
 
         proto_objects = [
-            moondream_proto_pb2.DetectedObject(
+            vlm_pb2.DetectedObject(
                 x_min=obj["x_min"],
                 y_min=obj["y_min"],
                 x_max=obj["x_max"],
@@ -44,14 +42,12 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
             for obj in objects
         ]
 
-        return moondream_proto_pb2.DetectResponse(
-            objects=proto_objects, found=bool(proto_objects)
-        )
+        return vlm_pb2.DetectResponse(objects=proto_objects, found=bool(proto_objects))
 
     def Query(self, request, context):
         print("Querying image...")
         answer = self.model.query(request.encoded_image, request.query)
-        return moondream_proto_pb2.QueryResponse(answer=answer)
+        return vlm_pb2.QueryResponse(answer=answer)
 
 
 # Run the gRPC server
@@ -65,9 +61,7 @@ def serve(**kwargs):
     print("Loading MoonDream model...")
     md_model = MoonDreamModel(**kwargs)
 
-    moondream_proto_pb2_grpc.add_MoonDreamServiceServicer_to_server(
-        MoonDreamServicer(md_model), server
-    )
+    vlm_pb2_grpc.add_VLMServiceServicer_to_server(MoonDreamServicer(md_model), server)
     server.add_insecure_port("[::]:50052")
     print("gRPC server started on port 50052...")
     server.start()

@@ -34,7 +34,7 @@ Requires 2 terminals minimum (3 if using pose/color detection via moondream).
     zed
 
 --- Terminal 3 (optional): Moondream vision model (required for poses/color) ---
-    ros2 run vision_general moondream_node
+    ros2 run vlm_run vlm_node.py
 """
 
 import cv2

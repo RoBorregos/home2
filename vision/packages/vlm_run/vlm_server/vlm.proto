@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package moondream;
+package vlm;
 
-service MoonDreamService {
+service VLMService {
   rpc EncodeImage (ImageRequest) returns (EncodedImageResponse);
   rpc FindObjectPoints (FindObjectPointsRequest) returns (FindObjectPointsResponse);
   rpc Query (QueryRequest) returns (QueryResponse);

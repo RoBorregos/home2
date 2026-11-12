@@ -1,12 +1,12 @@
-"""gRPC server exposing LiquidAI LFM2.5-VL through the Moondream service contract."""
+"""gRPC server exposing LiquidAI LFM2.5-VL through the shared VLM service contract."""
 
 import argparse
 import io
 from concurrent import futures
 
 import grpc
-import moondream_proto_pb2
-import moondream_proto_pb2_grpc
+import vlm_pb2
+import vlm_pb2_grpc
 import torch
 from PIL import Image
 from transformers import AutoModelForImageTextToText, AutoProcessor
@@ -14,7 +14,7 @@ from transformers import AutoModelForImageTextToText, AutoProcessor
 PORT = 50053
 
 
-class LfmServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
+class LfmServicer(vlm_pb2_grpc.VLMServiceServicer):
     def __init__(self, model_name: str, revision: str, max_new_tokens: int):
         self.processor = AutoProcessor.from_pretrained(model_name, revision=revision)
         self.model = AutoModelForImageTextToText.from_pretrained(
@@ -49,7 +49,7 @@ class LfmServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
             output[:, inputs["input_ids"].shape[1] :], skip_special_tokens=True
         )[0].strip()
         print(f"Query: {request.query!r} -> {answer!r}")
-        return moondream_proto_pb2.QueryResponse(answer=answer)
+        return vlm_pb2.QueryResponse(answer=answer)
 
 
 def serve(model_name: str, revision: str, max_new_tokens: int):
@@ -60,7 +60,7 @@ def serve(model_name: str, revision: str, max_new_tokens: int):
     # One worker: generate() is not safe to run concurrently on the same model
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1), options=options)
     print(f"Loading {model_name}@{revision}...")
-    moondream_proto_pb2_grpc.add_MoonDreamServiceServicer_to_server(
+    vlm_pb2_grpc.add_VLMServiceServicer_to_server(
         LfmServicer(model_name, revision, max_new_tokens), server
     )
     server.add_insecure_port(f"[::]:{PORT}")
