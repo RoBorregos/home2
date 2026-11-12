@@ -2,7 +2,6 @@
 """Pose logic on YOLO keypoints; PoseDetection is the DetectPose client (model runs in ObjectDetect2D)."""
 
 import threading
-import time
 
 import cv2
 import numpy as np
@@ -61,9 +60,7 @@ class PoseDetection:
         """Call DetectPose on image; one dict per person, [] on failure."""
         if image is None or image.size == 0:
             return []
-        if not self.client.service_is_ready() and not self.client.wait_for_service(
-            timeout_sec=self.timeout
-        ):
+        if not self.client.service_is_ready():
             self.node.get_logger().warn(
                 f"Pose service {POSE_DETECTION_SERVICE} not available",
                 throttle_duration_sec=5.0,
@@ -74,11 +71,15 @@ class PoseDetection:
         request.image = self.bridge.cv2_to_imgmsg(np.ascontiguousarray(image), "bgr8")
         request.conf = float(conf)
 
+        done = threading.Event()
+
+        def waiting4object_detector(_future):
+            """Wake detect_people when ObjectDetect2D answers the DetectPose call."""
+            done.set()
+
         future = self.client.call_async(request)
-        deadline = time.time() + self.timeout
-        while not future.done() and time.time() < deadline:
-            time.sleep(0.002)
-        if not future.done():
+        future.add_done_callback(waiting4object_detector)
+        if not done.wait(self.timeout):
             self.client.remove_pending_request(future)
             self.node.get_logger().warn("Pose service call timed out")
             return []

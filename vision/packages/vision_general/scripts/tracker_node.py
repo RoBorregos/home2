@@ -253,9 +253,6 @@ class SingleTracker(Node):
         self._draw_debug = False
         pbar = tqdm.tqdm(total=2, desc="Loading models")
 
-        # Detection/tracking/ReID all live in the model class; YOLO (TensorRT on
-        # the Orin AGX) loads now, the heavy SWIN ReID on demand. Pose keypoints
-        # come from the shared model in ObjectDetect2D through the DetectPose client.
         self.pose_detection = PoseDetection(self, self.callback_group)
         pbar.update(1)
         self.model = TrackerModel()
