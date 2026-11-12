@@ -1,0 +1,18 @@
+{
+  "time_limit_s": 420,
+  "cleanup_until_s": 180,
+  "table": "dinner_table",
+  "destinations": {
+    "fruit": "trashbin",
+    "dish": "dishwasher",
+    "*": "cabinet"
+  },
+  "shelves": ["cabinet"],
+  "trash": ["trashbin"],
+  "breakfast": [
+    {"object": "bowl", "from": "dishwasher"},
+    {"object": "cornflakes", "from": "cabinet", "pour_into": "bowl", "next_to": "bowl"},
+    {"object": "milk", "from": "cabinet", "pour_into": "bowl", "next_to": "bowl"},
+    {"object": "spoon", "from": "dishwasher", "next_to": "bowl"}
+  ]
+}
