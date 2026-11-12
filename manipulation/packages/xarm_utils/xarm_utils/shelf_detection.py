@@ -23,7 +23,13 @@ NORMAL_RADIUS = 5
 MIN_SURFACE_POINTS = 100
 MIN_SURFACE_WIDTH = 0.35
 MIN_SURFACE_DEPTH = 0.08
+MIN_RELATIVE_SURFACE_WIDTH = 0.65
 MAX_PLANE_ERROR = 0.015
+# Neighbouring image pixels must also be neighbours in 3-D. This prevents
+# growth from jumping from a board to a distant, nearly coplanar surface.
+MAX_GROWTH_STEP = 0.04
+MAX_GROWTH_TILT_DEG = 60.0
+MAX_GROWTH_PASSES = 2
 CONNECTIVITY = np.ones((3, 3), dtype=bool)
 
 
@@ -122,13 +128,58 @@ def _merge_surfaces(points: np.ndarray, surfaces: list[_Surface], max_tilt_deg: 
     return merged
 
 
-def _has_surface_extent(cloud: np.ndarray) -> bool:
-    """Measure the footprint along its principal axes to support rotated shelves."""
+def _surface_extent(cloud: np.ndarray) -> np.ndarray:
+    """Measure depth and width along the footprint's own principal axes."""
     xy = cloud[:, :2] - np.median(cloud[:, :2], axis=0)
     _, axes = np.linalg.eigh(xy.T @ xy / len(xy))
     lower, upper = np.percentile(xy @ axes, [5, 95], axis=0)
-    depth, width = np.sort(upper - lower)
+    return np.sort(upper - lower)
+
+
+def _has_surface_extent(cloud: np.ndarray) -> bool:
+    """Reject thin edges and small object tops, independent of shelf yaw."""
+    depth, width = _surface_extent(cloud)
     return bool(depth >= MIN_SURFACE_DEPTH and width >= MIN_SURFACE_WIDTH)
+
+
+def _grow_surface(
+    points: np.ndarray, normals: np.ndarray, surface: _Surface, max_tilt_deg: float
+) -> _Surface:
+    """Grow a measured plane through unreliable normals, without filling depth.
+
+    Strict normals establish the seed. Growth uses point-to-plane distance;
+    available normals veto vertical faces and undersides. An edge lattice
+    preserves connectivity in both the image and the measured 3-D cloud.
+    """
+    height, width = surface.mask.shape
+    normal_valid = np.isfinite(normals).all(axis=-1)
+    support = ~normal_valid | (
+        normals[..., 2] >= np.cos(np.radians(MAX_GROWTH_TILT_DEG))
+    )
+    right = np.linalg.norm(points[:, 1:] - points[:, :-1], axis=-1)
+    down = np.linalg.norm(points[1:] - points[:-1], axis=-1)
+    for _ in range(MAX_GROWTH_PASSES):
+        distance = np.abs(np.sum((points - surface.center) * surface.normal, axis=-1))
+        compatible = support & np.isfinite(distance) & (distance <= MAX_PLANE_ERROR)
+        compatible |= surface.mask
+        lattice = np.zeros((2 * height - 1, 2 * width - 1), dtype=bool)
+        lattice[::2, ::2] = compatible
+        lattice[::2, 1::2] = (
+            compatible[:, :-1] & compatible[:, 1:] & (right <= MAX_GROWTH_STEP)
+        )
+        lattice[1::2, ::2] = (
+            compatible[:-1] & compatible[1:] & (down <= MAX_GROWTH_STEP)
+        )
+        seed = np.zeros_like(lattice)
+        seed[::2, ::2] = surface.mask
+        grown = ndimage.binary_propagation(seed, mask=lattice)[::2, ::2]
+        if np.array_equal(grown, surface.mask):
+            break
+        fitted = _fit_surface(points, grown, max_tilt_deg)
+        if fitted is None:
+            break
+        surface = fitted
+    return surface
 
 
 def detect_shelf_levels(
@@ -195,17 +246,17 @@ def detect_shelf_levels(
             surfaces.append(surface)
 
     candidates = []
-    growth_tilt = min(2 * max_tilt_deg, 89.0)
-    growth_normals = normals[..., 2] >= np.cos(np.radians(growth_tilt))
     for surface in _merge_surfaces(points, surfaces, max_tilt_deg):
-        distance = np.abs(np.sum((points - surface.center) * surface.normal, axis=-1))
-        compatible = growth_normals & (distance <= MAX_PLANE_ERROR)
-        grown = ndimage.binary_propagation(
-            surface.mask, structure=CONNECTIVITY, mask=compatible | surface.mask
-        )
-        surface = _fit_surface(points, grown, max_tilt_deg) or surface
+        surface = _grow_surface(points, normals, surface, max_tilt_deg)
         if _has_surface_extent(points[surface.mask]):
             candidates.append(surface)
+
+    # One view targets one shelf: its levels should span a comparable width.
+    # Plane growth alone can otherwise combine the tops of nearby stored items.
+    if candidates:
+        widths = [_surface_extent(points[s.mask])[1] for s in candidates]
+        minimum = max(widths) * MIN_RELATIVE_SURFACE_WIDTH
+        candidates = [s for s, width in zip(candidates, widths) if width >= minimum]
 
     selected = []
     for surface in sorted(candidates, key=lambda item: item.point_count, reverse=True):
