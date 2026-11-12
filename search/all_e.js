@@ -159,7 +159,7 @@ var searchData=
   ['nose_156',['NOSE',['../namespacemodels_1_1pose__detection.html#ab7210ca6205e020f4d764cde7fd19642',1,'models::pose_detection']]],
   ['not_5fall_5fobjects_5fpicked_157',['NOT_ALL_OBJECTS_PICKED',['../classstoring__groceries__manager_1_1ExecutionStates.html#aa3c4bdc2f769c7ddfcb587eadddaa165',1,'storing_groceries_manager::ExecutionStates']]],
   ['not_5fequal_158',['not_equal',['../structvamp_1_1VectorInterface.html#a04e2d88a6962de7afa9825b7278944fb',1,'vamp::VectorInterface::not_equal(T o) const noexcept -&gt; D'],['../structvamp_1_1VectorInterface.html#a04e2d88a6962de7afa9825b7278944fb',1,'vamp::VectorInterface::not_equal(T o) const noexcept -&gt; D']]],
-  ['not_5ffound_159',['NOT_FOUND',['../namespacemoondream__lib.html#a92853496cf2484aa703bdf5a8402bc73',1,'moondream_lib.NOT_FOUND()'],['../namespacemoondream__node.html#aa2e1e7b7b490eadcc4fe5414c36631b1',1,'moondream_node.NOT_FOUND()']]],
+  ['not_5ffound_159',['NOT_FOUND',['../namespacevlm__node.html#a6c668bc6b966dedef9d9fab04bfad7d8',1,'vlm_node.NOT_FOUND()'],['../namespacemoondream__lib.html#a92853496cf2484aa703bdf5a8402bc73',1,'moondream_lib.NOT_FOUND()']]],
   ['now_160',['now',['../classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a16252ccd6acd7abc8053ada5b3a0743b',1,'pick_and_place.robot.arm.RobotArm.now()'],['../classfakes_1_1FakeArm.html#ae69111773cdbdbface6d39145e0c69d7',1,'fakes.FakeArm.now()']]],
   ['npx_161',['npx',['../classIKSolver.html#a42126eca3b2110aff8451060bce76c9f',1,'IKSolver']]],
   ['npy_162',['npy',['../classIKSolver.html#ab79bcd5d003ba38f5c1926e35446d123',1,'IKSolver']]],

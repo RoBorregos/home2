@@ -9,14 +9,12 @@ var searchData=
   ['merge_5fmulti_6',['merge_multi',['../namespacemerge__multi.html',1,'']]],
   ['models_7',['models',['../namespacemodels.html',1,'']]],
   ['moondream_5flib_8',['moondream_lib',['../namespacemoondream__lib.html',1,'']]],
-  ['moondream_5fnode_9',['moondream_node',['../namespacemoondream__node.html',1,'']]],
-  ['moondream_5fproto_5fpb2_10',['moondream_proto_pb2',['../namespacemoondream__proto__pb2.html',1,'']]],
-  ['moondream_5fproto_5fpb2_5fgrpc_11',['moondream_proto_pb2_grpc',['../namespacemoondream__proto__pb2__grpc.html',1,'']]],
-  ['motion_5fplanning_5fserver_12',['motion_planning_server',['../namespacemotion__planning__server.html',1,'']]],
-  ['moveit_13',['moveit',['../namespacemoveit.html',1,'']]],
-  ['moveitplanner_14',['MoveItPlanner',['../namespaceMoveItPlanner.html',1,'']]],
-  ['moveitservo_15',['MoveItServo',['../namespaceMoveItServo.html',1,'']]],
-  ['pose_5fdetection_16',['pose_detection',['../namespacemodels_1_1pose__detection.html',1,'models']]],
-  ['talking_5fdetection_17',['talking_detection',['../namespacemodels_1_1talking__detection.html',1,'models']]],
-  ['tracker_18',['tracker',['../namespacemodels_1_1tracker.html',1,'models']]]
+  ['moondream_5fserver_9',['moondream_server',['../namespacemoondream__server.html',1,'']]],
+  ['motion_5fplanning_5fserver_10',['motion_planning_server',['../namespacemotion__planning__server.html',1,'']]],
+  ['moveit_11',['moveit',['../namespacemoveit.html',1,'']]],
+  ['moveitplanner_12',['MoveItPlanner',['../namespaceMoveItPlanner.html',1,'']]],
+  ['moveitservo_13',['MoveItServo',['../namespaceMoveItServo.html',1,'']]],
+  ['pose_5fdetection_14',['pose_detection',['../namespacemodels_1_1pose__detection.html',1,'models']]],
+  ['talking_5fdetection_15',['talking_detection',['../namespacemodels_1_1talking__detection.html',1,'models']]],
+  ['tracker_16',['tracker',['../namespacemodels_1_1tracker.html',1,'models']]]
 ];

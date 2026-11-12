@@ -15,7 +15,7 @@ demonstrates vision working per task step without eating bandwidth.
    (`./trt_cache:/home/ros/.insightface`).
 2. `object_detector_2d`: registry expects `.pt` files beside `scripts/detectors/`
    (`MODELS_PATH`), e.g. `robocup2026_v1.pt`, `yolo26n.pt`, `yoloe-11l-seg.pt`.
-3. `moondream_run`: HF cache mount `./moondream_cache:/home/ros/.cache/huggingface`.
+3. `vlm_run`: HF cache mount `./moondream_cache:/home/ros/.cache/huggingface`.
 
 `.gitignore` excludes all `.pt`/`.engine` (except `tmr2025.pt`), so a fresh machine or a
 recreated container **needs internet** to fetch weights, then minutes of TRT export.
@@ -23,7 +23,7 @@ recreated container **needs internet** to fetch weights, then minutes of TRT exp
 legacy **yolov5** repo (vestigial — `/workspace/yolov5`).
 
 **Duplication** — `yolo11m-pose` loaded 5× across the area (hric_commands, tracker,
-gpsr_commands, customer_node, pointing_detection); `yolov8n` 2× (tracker, moondream_node).
+gpsr_commands, customer_node, pointing_detection); `yolov8n` 2× (tracker, vlm_node).
 Each duplicate = its own CUDA context + engine in VRAM + startup export/load.
 
 **Runtime issues** — single-threaded executors with blocking in-callback service waits
@@ -31,7 +31,7 @@ Each duplicate = its own CUDA context + engine in VRAM + startup export/load.
 face_recognition + object_detector run inference always-hot (activity flags exist but
 half-wired — object detector's `DETECTIONS_ACTIVE_TOPIC` constant is literally `"asd"`);
 restaurant launch starts **two** image_orienters; trash_detection_node launched for
-gpsr/ppc/dlc with **zero** clients; moondream_node consumes the **raw** camera topic
+gpsr/ppc/dlc with **zero** clients; vlm_node consumes the **raw** camera topic
 (no rotation compensation).
 
 **Subtask manager** — 25 near-identical `call_async + spin_until_future_complete` blocks;
@@ -76,7 +76,7 @@ Steps:
    (hric_commands), gpsr_commands, customer_node, pointing_detection to it.
    5 engines → 1: saves roughly 1–2 GB VRAM (engine + CUDA workspace per process) and
    4 × the export/startup cost.
-2. **Drop moondream_node's yolov8n** — its person-crop can come from the YoloDetect
+2. **Drop vlm_node's yolov8n** — its person-crop can come from the YoloDetect
    service (class 0) it already lives next to, or from tracker detections.
 3. **Executor hygiene** — MultiThreadedExecutor (or async-everything) for `hric_commands`
    and `person_in_map`; async MapAreas cache (timer + `call_async`, the 2026-07-02 fix);
@@ -88,7 +88,7 @@ Steps:
    nav-starvation root cause in June).
 5. **Launch cleanups** (from the active-task audit): remove the duplicate image_orienter
    from restaurant_launch, trash_detection_node from gpsr/ppc launches,
-   face_recognition_node from restaurant_launch, moondream_node from the --dlc profile;
+   face_recognition_node from restaurant_launch, vlm_node from the --dlc profile;
    fix or delete the dangling `--carry` mapping; quarantine `is_person_inside.py`.
 6. **Orin platform** — FP16 TRT everywhere already (`half=True`); standardize
    `imgsz=640`; keep the cpuset partition (nav 0-3 / rest 4-11); add a `jetson_clocks` /

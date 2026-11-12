@@ -252,16 +252,7 @@ var namespaces_dup =
     ] ],
     [ "models", "namespacemodels.html", "namespacemodels" ],
     [ "moondream_lib", "namespacemoondream__lib.html", "namespacemoondream__lib" ],
-    [ "moondream_node", "namespacemoondream__node.html", "namespacemoondream__node" ],
-    [ "moondream_proto_pb2", "namespacemoondream__proto__pb2.html", [
-      [ "_globals", "namespacemoondream__proto__pb2.html#a1da83ca9e5d8a96c48370dabaa1d7603", null ],
-      [ "_loaded_options", "namespacemoondream__proto__pb2.html#a0c8c0cd876d97fa191cee4fc98977e35", null ],
-      [ "_serialized_end", "namespacemoondream__proto__pb2.html#aeef2cc93d63a3042479747f34b2dc602", null ],
-      [ "_serialized_start", "namespacemoondream__proto__pb2.html#af44b393f7046597be158d7105696f7f0", null ],
-      [ "_sym_db", "namespacemoondream__proto__pb2.html#a44bda6af6f063528ab8a3c9a3794122c", null ],
-      [ "DESCRIPTOR", "namespacemoondream__proto__pb2.html#a97486efd64346f9084f0a3bb7acf3e69", null ]
-    ] ],
-    [ "moondream_proto_pb2_grpc", "namespacemoondream__proto__pb2__grpc.html", "namespacemoondream__proto__pb2__grpc" ],
+    [ "moondream_server", "namespacemoondream__server.html", "namespacemoondream__server" ],
     [ "motion_planning_server", "namespacemotion__planning__server.html", [
       [ "generate_launch_description", "namespacemotion__planning__server.html#a00476858453e5e0a857af18e9d323e0b", null ]
     ] ],
@@ -382,7 +373,6 @@ var namespaces_dup =
       [ "IK_TIMEOUT_SEC", "namespaceself__collision__utils.html#ad75c962b15bb9c25c399069936671bb1", null ]
     ] ],
     [ "semantic_nav_node", "namespacesemantic__nav__node.html", "namespacesemantic__nav__node" ],
-    [ "server", "namespaceserver.html", "namespaceserver" ],
     [ "service_utils", "namespaceservice__utils.html", [
       [ "close_gripper", "namespaceservice__utils.html#a479ef9705921d2c4e6c2549e4731ef57", null ],
       [ "get_joint_positions", "namespaceservice__utils.html#a71accfcb34b0efa3659b647054fb840b", null ],
@@ -498,6 +488,16 @@ var namespaces_dup =
       [ "except", "namespacevisualize__ompl.html#ae245427310db70d41aee97ceb1927fc2", null ],
       [ "try", "namespacevisualize__ompl.html#a7edcc4c645ef011e992b567e1695655e", null ]
     ] ],
+    [ "vlm_node", "namespacevlm__node.html", "namespacevlm__node" ],
+    [ "vlm_pb2", "namespacevlm__pb2.html", [
+      [ "_globals", "namespacevlm__pb2.html#a16575914fa5233a72af916b342f28d07", null ],
+      [ "_loaded_options", "namespacevlm__pb2.html#a70bbcc1d5c4586a19a7bf4331ab81c7a", null ],
+      [ "_serialized_end", "namespacevlm__pb2.html#a20327ce912a9a9315112314255c3f966", null ],
+      [ "_serialized_start", "namespacevlm__pb2.html#aa330da97ff8a08cb609a7a1a15854f76", null ],
+      [ "_sym_db", "namespacevlm__pb2.html#aff8f904da315283447fc095e23dbc9c5", null ],
+      [ "DESCRIPTOR", "namespacevlm__pb2.html#a5e15df8ad7692d96a2143ad3ee1d264b", null ]
+    ] ],
+    [ "vlm_pb2_grpc", "namespacevlm__pb2__grpc.html", "namespacevlm__pb2__grpc" ],
     [ "wait_for_controller_input_node", "namespacewait__for__controller__input__node.html", "namespacewait__for__controller__input__node" ],
     [ "xarm6", "namespacexarm6.html", [
       [ "base_link_name", "namespacexarm6.html#a26baf8750ec84dc6d4deea500c98907a", null ],

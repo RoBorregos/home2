@@ -20,5 +20,9 @@ var searchData=
   ['viewpoint_17',['Viewpoint',['../classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html',1,'nav_main::semantic::surfaces']]],
   ['visionruntime_18',['VisionRuntime',['../classvision__runtime_1_1VisionRuntime.html',1,'vision_runtime']]],
   ['visiontasks_19',['VisionTasks',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html',1,'task_manager::subtask_managers::vision_tasks']]],
-  ['volume_20',['Volume',['../structvamp_1_1collision_1_1Volume.html',1,'vamp::collision']]]
+  ['vlmnode_20',['VLMNode',['../classvlm__node_1_1VLMNode.html',1,'vlm_node']]],
+  ['vlmservice_21',['VLMService',['../classvlm__pb2__grpc_1_1VLMService.html',1,'vlm_pb2_grpc']]],
+  ['vlmserviceservicer_22',['VLMServiceServicer',['../classvlm__pb2__grpc_1_1VLMServiceServicer.html',1,'vlm_pb2_grpc']]],
+  ['vlmservicestub_23',['VLMServiceStub',['../classvlm__pb2__grpc_1_1VLMServiceStub.html',1,'vlm_pb2_grpc']]],
+  ['volume_24',['Volume',['../structvamp_1_1collision_1_1Volume.html',1,'vamp::collision']]]
 ];

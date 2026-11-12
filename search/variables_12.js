@@ -101,7 +101,7 @@ var searchData=
   ['return_5flaser_5fdata_98',['RETURN_LASER_DATA',['../namespacefrida__constants_1_1integration__constants.html#a6afb4839f1987ec652b6d312adee8407',1,'frida_constants::integration_constants']]],
   ['return_5flocation_99',['RETURN_LOCATION',['../namespacefrida__constants_1_1integration__constants.html#a92bf4c688dac25bab266591c51f2956a',1,'frida_constants::integration_constants']]],
   ['return_5fto_5fcarry_100',['return_to_carry',['../classpick__and__place_1_1pipelines_1_1pick_1_1PickRequest.html#abb7bba0bc7e7e25a4f03b695170c2154',1,'pick_and_place::pipelines::pick::PickRequest']]],
-  ['revision_101',['revision',['../namespaceserver.html#a3c8df1657c541fd80fbb8ffef44e8451',1,'server']]],
+  ['revision_101',['revision',['../namespacemoondream__server.html#a1db6fc2afe11bd2126fc02fbe33967d4',1,'moondream_server']]],
   ['right_102',['RIGHT',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html#a746388fbd27b42395c987bbcdd527fc2',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks::Direction']]],
   ['right_5fankle_103',['RIGHT_ANKLE',['../namespacemodels_1_1pose__detection.html#ad7ebcbedbc2adedbf4db8c97a3956fd5',1,'models::pose_detection']]],
   ['right_5fcamera_5fframe_104',['RIGHT_CAMERA_FRAME',['../namespacefrida__constants_1_1vision__constants.html#a81be31e6afbd7a14c0fc60f163a1b3e3',1,'frida_constants::vision_constants']]],

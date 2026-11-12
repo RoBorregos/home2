@@ -3,7 +3,7 @@ var searchData=
   ['matrix_3c_20float_2c_20dim_5f_2c_201_20_3e_0',['Matrix&lt; float, dim_, 1 &gt;',['../structvamp_1_1planning_1_1NNFloatArray.html#a39f1253ae3dfcf388a6ebed685627698',1,'vamp::planning::NNFloatArray']]],
   ['object_5fheight_1',['object_height',['../classfakes_1_1FakeArm.html#a1a8b50ac3c8381be5e4c9e025fbb7a76',1,'fakes.FakeArm.object_height()'],['../classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a6f2b2793e53d0116812628da08a82b2e',1,'pick_and_place.robot.arm.RobotArm.object_height(self, lowest, highest)']]],
   ['object_5fpick_5fheight_2',['object_pick_height',['../classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ae0096c6e79f38e0608767f82b58f4ac0',1,'pick_and_place.robot.arm.RobotArm.object_pick_height()'],['../classfakes_1_1FakeArm.html#a2ff54dee32abde6ef0b1a5b16a8192f5',1,'fakes.FakeArm.object_pick_height()']]],
-  ['object_5fpoints_5fcallback_3',['object_points_callback',['../classmoondream__node_1_1MoondreamNode.html#a02f410112d5bb232983773f894b8861d',1,'moondream_node::MoondreamNode']]],
+  ['object_5fpoints_5fcallback_3',['object_points_callback',['../classvlm__node_1_1VLMNode.html#a57e934ecd199f1fde737c7c930fc6a68',1,'vlm_node::VLMNode']]],
   ['objects_5fcallback_4',['objects_callback',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a820801842f2c5e529b5672e18233d0f3',1,'pick_and_place::keyboard_input::KeyboardInput']]],
   ['objects_5fon_5ffloor_5',['objects_on_floor',['../classegsr__cut_1_1EGPSRTM.html#afffecb8b903035a4f9e29d5d5f9ebcc3',1,'egsr_cut::EGPSRTM']]],
   ['offset_5falong_5fapproach_6',['offset_along_approach',['../namespacepick__and__place_1_1robot_1_1geometry.html#a2e9a0b2da702b4a015e417f411b7d23d',1,'pick_and_place::robot::geometry']]],

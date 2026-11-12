@@ -36,7 +36,7 @@ var searchData=
   ['find_5fseat_5fservice_33',['find_seat_service',['../classhric__commands_1_1HRICCommands.html#ac67a9dba7555ce38b89f69fbdc8c695a',1,'hric_commands::HRICCommands']]],
   ['find_5fseat_5ftopic_34',['FIND_SEAT_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a81cbe5d1b77fa24c3b9197d8d0c9748c',1,'frida_constants::vision_constants']]],
   ['find_5ftimeout_5fs_35',['FIND_TIMEOUT_S',['../namespacetask__manager_1_1gpsr_1_1timeouts.html#ad5e188b80a0ad6f675fb7e17b29d87e2',1,'task_manager::gpsr::timeouts']]],
-  ['findobjectpoints_36',['FindObjectPoints',['../classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html#a359c94f22f46805208342de453514d2e',1,'moondream_proto_pb2_grpc::MoonDreamServiceStub']]],
+  ['findobjectpoints_36',['FindObjectPoints',['../classvlm__pb2__grpc_1_1VLMServiceStub.html#a983f7aded5cd765eacce696afb1e381d',1,'vlm_pb2_grpc::VLMServiceStub']]],
   ['finger_5fsweep_37',['FINGER_SWEEP',['../namespaceperception__3d_1_1geometric__grasps.html#aa4f7a688dff5bf634aa7fbd8dcef5478',1,'perception_3d::geometric_grasps']]],
   ['finished_5fcommand_38',['FINISHED_COMMAND',['../classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html#ac23337219172f54d49fb0b737609c506',1,'gpsr_task_manager.GPSRTM.TaskStates.FINISHED_COMMAND()'],['../classegsr__cut_1_1EGPSRTM_1_1States.html#adf8440c69422517913aeb4f510caff97',1,'egsr_cut.EGPSRTM.States.FINISHED_COMMAND()']]],
   ['first_5fguest_5fidx_39',['FIRST_GUEST_IDX',['../namespacehric__task__manager.html#a835645b490c465a8d1c416cc0b79d82c',1,'hric_task_manager']]],

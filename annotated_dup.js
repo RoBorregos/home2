@@ -245,13 +245,8 @@ var annotated_dup =
     [ "moondream_lib", "namespacemoondream__lib.html", [
       [ "MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", "classmoondream__lib_1_1MoonDreamModel" ]
     ] ],
-    [ "moondream_node", "namespacemoondream__node.html", [
-      [ "MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", "classmoondream__node_1_1MoondreamNode" ]
-    ] ],
-    [ "moondream_proto_pb2_grpc", "namespacemoondream__proto__pb2__grpc.html", [
-      [ "MoonDreamService", "classmoondream__proto__pb2__grpc_1_1MoonDreamService.html", null ],
-      [ "MoonDreamServiceServicer", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer.html", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer" ],
-      [ "MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub" ]
+    [ "moondream_server", "namespacemoondream__server.html", [
+      [ "MoonDreamServicer", "classmoondream__server_1_1MoonDreamServicer.html", "classmoondream__server_1_1MoonDreamServicer" ]
     ] ],
     [ "MoveItPlanner", "namespaceMoveItPlanner.html", [
       [ "_ThreadRate", "classMoveItPlanner_1_1__ThreadRate.html", "classMoveItPlanner_1_1__ThreadRate" ],
@@ -417,9 +412,6 @@ var annotated_dup =
     ] ],
     [ "semantic_nav_node", "namespacesemantic__nav__node.html", [
       [ "SemanticNav", "classsemantic__nav__node_1_1SemanticNav.html", "classsemantic__nav__node_1_1SemanticNav" ]
-    ] ],
-    [ "server", "namespaceserver.html", [
-      [ "MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", "classserver_1_1MoonDreamServicer" ]
     ] ],
     [ "Servo", "namespaceServo.html", [
       [ "Servo", "classServo_1_1Servo.html", "classServo_1_1Servo" ]
@@ -697,6 +689,14 @@ var annotated_dup =
     ] ],
     [ "vision_runtime", "namespacevision__runtime.html", [
       [ "VisionRuntime", "classvision__runtime_1_1VisionRuntime.html", "classvision__runtime_1_1VisionRuntime" ]
+    ] ],
+    [ "vlm_node", "namespacevlm__node.html", [
+      [ "VLMNode", "classvlm__node_1_1VLMNode.html", "classvlm__node_1_1VLMNode" ]
+    ] ],
+    [ "vlm_pb2_grpc", "namespacevlm__pb2__grpc.html", [
+      [ "VLMService", "classvlm__pb2__grpc_1_1VLMService.html", null ],
+      [ "VLMServiceServicer", "classvlm__pb2__grpc_1_1VLMServiceServicer.html", "classvlm__pb2__grpc_1_1VLMServiceServicer" ],
+      [ "VLMServiceStub", "classvlm__pb2__grpc_1_1VLMServiceStub.html", "classvlm__pb2__grpc_1_1VLMServiceStub" ]
     ] ],
     [ "wait_for_controller_input_node", "namespacewait__for__controller__input__node.html", [
       [ "WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", "classwait__for__controller__input__node_1_1WaitForControllerInputNode" ]

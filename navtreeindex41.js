@@ -1,9 +1,5 @@
 var NAVTREEINDEX41 =
 {
-"namespacefrida__constants_1_1manipulation__constants.html#a96beb25701dbaff9ccbb86d0b54bef01":[40,0,53,2,56],
-"namespacefrida__constants_1_1manipulation__constants.html#a9a1cee59e55b198168e8efe9a4b8acec":[40,0,53,2,84],
-"namespacefrida__constants_1_1manipulation__constants.html#a9aa59c02eb03093c8a80605a387b9f8d":[40,0,53,2,93],
-"namespacefrida__constants_1_1manipulation__constants.html#a9b1b384133b9135e786071e6e8b1b441":[40,0,53,2,55],
 "namespacefrida__constants_1_1manipulation__constants.html#a9d76d5cfead1632343520928ce472249":[40,0,53,2,98],
 "namespacefrida__constants_1_1manipulation__constants.html#aa69010a5d9d23023490d467c8a93b7e9":[40,0,53,2,74],
 "namespacefrida__constants_1_1manipulation__constants.html#aa6dedb5c9f72415daca739d19d817619":[40,0,53,2,92],
@@ -249,5 +245,9 @@ var NAVTREEINDEX41 =
 "namespacefrida__moveit__config.html":[40,0,58],
 "namespacefrida__moveit__config.html#a55fbe8117df991cd5a2af35a23d38579":[40,0,58,0],
 "namespacefrida__moveit__config.html#a5e023520268c7fc528bdef585510ea67":[40,0,58,1],
-"namespacegallery__object__detector__node.html":[40,0,59]
+"namespacegallery__object__detector__node.html":[40,0,59],
+"namespacegallery__object__detector__node.html#aec6c39d55451835e58239190b7aaa229":[40,0,59,1],
+"namespacegeneral__navigation.html":[40,0,60],
+"namespacegeneral__navigation.html#a7ef9e56e1cb54dea09714dcd59926838":[40,0,60,1],
+"namespacegeneral__navigation.html#af472e117a9a8a68b98c82219ed0d3a14":[40,0,60,0]
 };

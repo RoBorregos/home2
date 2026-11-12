@@ -108,7 +108,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="hric__commands_8py.html">hric_commands.py</a></code>   </td><td class="markdownTableBodyNone">YOLO <code>yolo11m-pose</code> (TRT)   </td><td class="markdownTableBodyNone">FindSeat srv, DetectPerson srv, DetectHand srv    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code>   </td><td class="markdownTableBodyNone"><code>moondream_run/moondream_node.py</code>   </td><td class="markdownTableBodyNone">YOLO <code>yolov8n</code> (person crop) + gRPC→ <b>Moondream2 2B VLM</b>   </td><td class="markdownTableBodyNone">describe_person queries, beverage location    </td></tr>
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacevlm__node.html">vlm_node</a></code>   </td><td class="markdownTableBodyNone"><code>vlm_run/vlm_node.py</code>   </td><td class="markdownTableBodyNone">YOLO <code>yolov8n</code> (person crop) + gRPC→ <b>Moondream2 2B VLM</b>   </td><td class="markdownTableBodyNone">describe_person queries, beverage location    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="image__orienter_8py.html">image_orienter.py</a></code>   </td><td class="markdownTableBodyNone">—   </td><td class="markdownTableBodyNone">rotate raw camera frames per CAMERA_ROTATION_TOPIC    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 </table>
 <p><b>Model duplication (VRAM cost, same weights loaded twice):</b></p><ul>
 <li><code>yolo11m-pose</code>: loaded by <b><a class="el" href="namespacehric__commands.html">hric_commands</a></b> (wrists only) <em>and</em> <b><a class="el" href="namespacetracker__node.html">tracker_node</a></b> (PoseDetection).</li>
-<li><code>yolov8n</code>: loaded by <b><a class="el" href="namespacetracker__node.html">tracker_node</a></b> <em>and</em> <b><a class="el" href="namespacemoondream__node.html">moondream_node</a></b> (person cropping).</li>
+<li><code>yolov8n</code>: loaded by <b><a class="el" href="namespacetracker__node.html">tracker_node</a></b> <em>and</em> <b><a class="el" href="namespacevlm__node.html">vlm_node</a></b> (person cropping).</li>
 <li>SWIN ReID loads in tracker even though re-acquisition is still a TODO.</li>
 </ul>
 <h1><a class="anchor" id="autotoc_md211"></a>
@@ -128,8 +128,8 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <div class="line">          ──CAMERA_INFO_TOPIC──┤        │ CAMERA_ROTATION_TOPIC (Int16 0/180)</div>
 <div class="line">                               │        │   published by vision_tasks.camera_upside_down()</div>
 <div class="line">                               ├─▶ tracker_node   (subscribes RAW + rotation, flips internally)</div>
-<div class="line">                               └─▶ moondream_node (subscribes RAW, NO rotation handling ⚠)</div>
-</div><!-- fragment --><p>⚠ <code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> consumes the <b>raw</b> camera topic with no rotation compensation. Today this is safe only because <code>describe_person</code> runs in SAVE_FACE (camera upright); any future moondream call while carrying the bag (camera at 180°) would query upside-down frames.</p>
+<div class="line">                               └─▶ vlm_node (subscribes RAW, NO rotation handling ⚠)</div>
+</div><!-- fragment --><p>⚠ <code><a class="el" href="namespacevlm__node.html">vlm_node</a></code> consumes the <b>raw</b> camera topic with no rotation compensation. Today this is safe only because <code>describe_person</code> runs in SAVE_FACE (camera upright); any future moondream call while carrying the bag (camera at 180°) would query upside-down frames.</p>
 <h1><a class="anchor" id="autotoc_md212"></a>
 3. FSM state → subtask call → interface → node → model</h1>
 <table class="markdownTable">
@@ -148,7 +148,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">SAVE_FACE   </td><td class="markdownTableBodyNone"><code>save_face_name(name)</code>   </td><td class="markdownTableBodyNone">srv SaveName @ SAVE_NAME_TOPIC   </td><td class="markdownTableBodyNone">face_recognition   </td><td class="markdownTableBodyNone">InsightFace    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">SAVE_FACE (guest 1)   </td><td class="markdownTableBodyNone"><code>describe_person(cb)</code> → N× <code>moondream_query_async</code>   </td><td class="markdownTableBodyNone">srv Query @ QUERY_TOPIC   </td><td class="markdownTableBodyNone"><a class="el" href="namespacemoondream__node.html">moondream_node</a> → gRPC :50052   </td><td class="markdownTableBodyNone">yolov8n crop + Moondream2    </td></tr>
+<td class="markdownTableBodyNone">SAVE_FACE (guest 1)   </td><td class="markdownTableBodyNone"><code>describe_person(cb)</code> → N× <code>moondream_query_async</code>   </td><td class="markdownTableBodyNone">srv Query @ QUERY_TOPIC   </td><td class="markdownTableBodyNone"><a class="el" href="namespacevlm__node.html">vlm_node</a> → gRPC :50052   </td><td class="markdownTableBodyNone">yolov8n crop + Moondream2    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">TAKE_BAG (guest 2)   </td><td class="markdownTableBodyNone"><code>detect_hand()</code> ×5 retries   </td><td class="markdownTableBodyNone">srv DetectHand @ DETECT_HAND_SERVICE   </td><td class="markdownTableBodyNone"><a class="el" href="namespacehric__commands.html">hric_commands</a>   </td><td class="markdownTableBodyNone">yolo11m-pose (wrists) + depth    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -187,7 +187,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <div class="line">        FR[&quot;face_recognition&lt;br/&gt;model: InsightFace buffalo_sc&quot;]</div>
 <div class="line">        TRK[&quot;tracker_node&lt;br/&gt;models: yolov8n+ByteTrack, yolo11m-pose, SWIN ReID&quot;]</div>
 <div class="line">        OD[&quot;ObjectDetect2D&lt;br/&gt;model: yolo26n&quot;]</div>
-<div class="line">        MD[&quot;moondream_node&lt;br/&gt;model: yolov8n&quot;]</div>
+<div class="line">        MD[&quot;vlm_node&lt;br/&gt;model: yolov8n&quot;]</div>
 <div class="line">        IO[image_orienter]</div>
 <div class="line">    end</div>
 <div class="line"> </div>
@@ -219,7 +219,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <p><b>Redundancies / improvement candidates:</b></p><ol type="1">
 <li>Double-loaded weights: <code>yolo11m-pose</code> ×2, <code>yolov8n</code> ×2 (§1). A shared pose service (or <a class="el" href="namespacehric__commands.html">hric_commands</a> reusing the tracker's PoseDetection via a srv) frees VRAM.</li>
 <li>Person detection exists 3 ways (YoloDetect class 0, tracker, face rec) — acceptable (different latencies), but detect_person could read the tracker topic instead of a fresh YOLO service round-trip.</li>
-<li><code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> should subscribe to IMAGE_ORIENTED_TOPIC (or handle rotation) — see §2.</li>
+<li><code><a class="el" href="namespacevlm__node.html">vlm_node</a></code> should subscribe to IMAGE_ORIENTED_TOPIC (or handle rotation) — see §2.</li>
 <li><code>find_seat</code> house-filter needs the async MapAreas cache pattern (blocking in-callback fetch can never complete on <a class="el" href="namespacehric__commands.html">hric_commands</a>' single-threaded executor; caused the 2026-07-02 8s-timeout loop). Fix exists on the Orin working tree.</li>
 <li><code>hric_commands.check_couches</code> must clamp bbox x2 (=image width crash, 2026-07-02).</li>
 <li>Hardcoded <code>"/vision/face_recognition/active"</code> topic string in both <a class="el" href="vision__tasks_8py.html">vision_tasks.py</a> and <a class="el" href="face__recognition__node_8py.html">face_recognition_node.py</a> — move to <a class="el" href="namespacefrida__constants.html">frida_constants</a>.</li>
@@ -241,7 +241,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><a class="el" href="namespacepick__and__place.html">pick_and_place</a>   </td><td class="markdownTableBodyNone"><code><a class="el" href="ppc__launch_8py.html">ppc_launch.py</a></code> (+detector include)   </td><td class="markdownTableBodyNone">trash_detection_node   </td><td class="markdownTableBodyNone">—    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><a class="el" href="namespacedoing__laundry.html">doing_laundry</a>   </td><td class="markdownTableBodyNone"><code><a class="el" href="ppc__launch_8py.html">ppc_launch.py</a></code>, PROFILES=vision only   </td><td class="markdownTableBodyNone">trash_detection_node <b>and</b> <a class="el" href="namespacemoondream__node.html">moondream_node</a> (its gRPC server container isn't started — no moondream profile for &ndash;dlc; laundry doesn't call moondream anyway)   </td><td class="markdownTableBodyNone">—   </td></tr>
+<td class="markdownTableBodyNone"><a class="el" href="namespacedoing__laundry.html">doing_laundry</a>   </td><td class="markdownTableBodyNone"><code><a class="el" href="ppc__launch_8py.html">ppc_launch.py</a></code>, PROFILES=vision only   </td><td class="markdownTableBodyNone">trash_detection_node <b>and</b> <a class="el" href="namespacevlm__node.html">vlm_node</a> (its gRPC server container isn't started — no vlm profile for &ndash;dlc; laundry doesn't call moondream anyway)   </td><td class="markdownTableBodyNone">—   </td></tr>
 </table>
 <p>Dead everywhere (safe to remove from launches / clean up):</p><ul>
 <li><code>trash_detection_node</code> — <b>no client anywhere in <a class="el" href="namespacetask__manager.html">task_manager</a></b> (TRASHCAN service unused; <code>detect_trash()</code> uses moondream instead). Also has broken response paths.</li>
@@ -260,7 +260,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <li><b>follow_person</b> (arm, hosted by <code>manipulation_core</code>): PID (kd computed at centroid rate in the subscriber, LPF'd), kp 1.0→1.8, max_vel 0.8→1.2, joint1 range widened to [-3.05, -0.2] with a velocity TAPER over the last 0.35 rad (no more hard-stop slams — the old xArm fault mode), recenters to neutral on centroid timeout, MultiThreadedExecutor (mode-switch sleeps no longer stall the control loop).</li>
 <li><b>nav2_omni_following.yaml</b>: vx/vy 0.35→0.5 (the 0.35 cap was the dominant loss cause — slower than a walking person).</li>
 </ul>
-<p>Suggested launch fixes: remove the explicit <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> Node from <code><a class="el" href="restaurant__launch_8py.html">restaurant_launch.py</a></code> (the detector include already starts it); drop <code>trash_detection_node</code> from gpsr/ppc launches; drop <code><a class="el" href="namespaceface__recognition__node.html">face_recognition_node</a></code> from <code><a class="el" href="restaurant__launch_8py.html">restaurant_launch.py</a></code>; for &ndash;dlc drop <code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> from the launch (or add the moondream profile if it should be available). </p>
+<p>Suggested launch fixes: remove the explicit <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> Node from <code><a class="el" href="restaurant__launch_8py.html">restaurant_launch.py</a></code> (the detector include already starts it); drop <code>trash_detection_node</code> from gpsr/ppc launches; drop <code><a class="el" href="namespaceface__recognition__node.html">face_recognition_node</a></code> from <code><a class="el" href="restaurant__launch_8py.html">restaurant_launch.py</a></code>; for &ndash;dlc drop <code><a class="el" href="namespacevlm__node.html">vlm_node</a></code> from the launch (or add the vlm profile if it should be available). </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->

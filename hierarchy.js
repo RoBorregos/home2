@@ -127,12 +127,6 @@ var hierarchy =
       [ "utils.models.swin.model.ft_net_swinv2", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__swinv2.html", null ]
     ] ],
     [ "moondream_lib.MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", null ],
-    [ "moondream_proto_pb2_grpc.MoonDreamService", "classmoondream__proto__pb2__grpc_1_1MoonDreamService.html", null ],
-    [ "moondream_proto_pb2_grpc.MoonDreamServiceServicer", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer.html", [
-      [ "lfm_server.LfmServicer", "classlfm__server_1_1LfmServicer.html", null ],
-      [ "server.MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", null ]
-    ] ],
-    [ "moondream_proto_pb2_grpc.MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", null ],
     [ "ompl::base::MotionValidator", null, [
       [ "VAMPMotionValidator", "structVAMPMotionValidator.html", null ]
     ] ],
@@ -173,7 +167,13 @@ var hierarchy =
     [ "vamp::planning::NearestNeighborsGNAT< _T >::Node", "classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html", null ],
     [ "vamp::planning::NearestNeighborsGNAT< _T >::NodeDistCompare", "structvamp_1_1planning_1_1NearestNeighborsGNAT_1_1NodeDistCompare.html", null ],
     [ "object", null, [
-      [ "vamp.transformations.Arcball", "classvamp_1_1transformations_1_1Arcball.html", null ]
+      [ "vamp.transformations.Arcball", "classvamp_1_1transformations_1_1Arcball.html", null ],
+      [ "vlm_pb2_grpc.VLMService", "classvlm__pb2__grpc_1_1VLMService.html", null ],
+      [ "vlm_pb2_grpc.VLMServiceServicer", "classvlm__pb2__grpc_1_1VLMServiceServicer.html", [
+        [ "lfm_server.LfmServicer", "classlfm__server_1_1LfmServicer.html", null ],
+        [ "moondream_server.MoonDreamServicer", "classmoondream__server_1_1MoonDreamServicer.html", null ]
+      ] ],
+      [ "vlm_pb2_grpc.VLMServiceStub", "classvlm__pb2__grpc_1_1VLMServiceStub.html", null ]
     ] ],
     [ "pickandplace_task_manager.ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", null ],
     [ "vamp::robots::Panda", "structvamp_1_1robots_1_1Panda.html", null ],
@@ -362,7 +362,6 @@ var hierarchy =
       [ "image_orienter.ImageOrienter", "classimage__orienter_1_1ImageOrienter.html", null ],
       [ "look_at_example.LookAt", "classlook__at__example_1_1LookAt.html", null ],
       [ "manipulation_general.manipulation_safeguard.ManipulationSafeguard", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html", null ],
-      [ "moondream_node.MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", null ],
       [ "nav_central.Nav_Central", "classnav__central_1_1Nav__Central.html", null ],
       [ "nav_ui.NavRosNode", "classnav__ui_1_1NavRosNode.html", null ],
       [ "node_monitor.NodeMonitor", "classnode__monitor_1_1NodeMonitor.html", null ],
@@ -417,6 +416,7 @@ var hierarchy =
         [ "restaurant_commands.RESTAURANTCommands", "classrestaurant__commands_1_1RESTAURANTCommands.html", null ],
         [ "talking_detection_node.TalkingDetectionNode", "classtalking__detection__node_1_1TalkingDetectionNode.html", null ]
       ] ],
+      [ "vlm_node.VLMNode", "classvlm__node_1_1VLMNode.html", null ],
       [ "wait_for_controller_input_node.WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", null ],
       [ "xarm_utils.grasp_detector.GraspDetector", "classxarm__utils_1_1grasp__detector_1_1GraspDetector.html", null ],
       [ "xarm_utils.shelf_height_calibrator.ShelfHeightCalibrator", "classxarm__utils_1_1shelf__height__calibrator_1_1ShelfHeightCalibrator.html", null ],

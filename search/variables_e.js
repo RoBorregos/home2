@@ -91,7 +91,7 @@ var searchData=
   ['normal_5fneighbours_88',['NORMAL_NEIGHBOURS',['../namespaceperception__3d_1_1geometric__grasps.html#a10c659f4859451dd372366d27f117f33',1,'perception_3d::geometric_grasps']]],
   ['nose_89',['NOSE',['../namespacemodels_1_1pose__detection.html#ab7210ca6205e020f4d764cde7fd19642',1,'models::pose_detection']]],
   ['not_5fall_5fobjects_5fpicked_90',['NOT_ALL_OBJECTS_PICKED',['../classstoring__groceries__manager_1_1ExecutionStates.html#aa3c4bdc2f769c7ddfcb587eadddaa165',1,'storing_groceries_manager::ExecutionStates']]],
-  ['not_5ffound_91',['NOT_FOUND',['../namespacemoondream__lib.html#a92853496cf2484aa703bdf5a8402bc73',1,'moondream_lib.NOT_FOUND()'],['../namespacemoondream__node.html#aa2e1e7b7b490eadcc4fe5414c36631b1',1,'moondream_node.NOT_FOUND()']]],
+  ['not_5ffound_91',['NOT_FOUND',['../namespacevlm__node.html#a6c668bc6b966dedef9d9fab04bfad7d8',1,'vlm_node.NOT_FOUND()'],['../namespacemoondream__lib.html#a92853496cf2484aa703bdf5a8402bc73',1,'moondream_lib.NOT_FOUND()']]],
   ['npx_92',['npx',['../classIKSolver.html#a42126eca3b2110aff8451060bce76c9f',1,'IKSolver']]],
   ['npy_93',['npy',['../classIKSolver.html#ab79bcd5d003ba38f5c1926e35446d123',1,'IKSolver']]],
   ['npz_94',['npz',['../classIKSolver.html#ac5ba601bbc95efd9881f70ebf871c5c1',1,'IKSolver']]],
