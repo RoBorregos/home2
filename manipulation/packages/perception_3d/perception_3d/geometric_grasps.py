@@ -28,6 +28,7 @@ from frida_constants.manipulation_constants import (
     RIM_NAMES,
     TOP_GRASP_DEPTH,
     TRASH_BIN_NAME,
+    ZED_DEPTH_SCALE,
 )
 
 GRASP_CLASS_OBJECTS = {
@@ -166,6 +167,7 @@ class Scene:
 
     def deproject(self, u, v, z) -> np.ndarray:
         u, v, z = map(np.atleast_1d, (u, v, z))
+        z = z * ZED_DEPTH_SCALE
         k = self.intrinsics
         cam = np.column_stack(
             ((u - k.cx) * z / k.fx, (v - k.cy) * z / k.fy, z, np.ones_like(z))
@@ -511,6 +513,16 @@ def pad_contact(center, normal, extent, bottom, span, tip, rotation) -> np.ndarr
     return section[on_pads]
 
 
+def behind_near_limb(
+    xy: np.ndarray, center: np.ndarray, camera: np.ndarray, radius: float
+) -> np.ndarray:
+    """Sphere centre: one radius behind the near limb (the far limb is trimmed)."""
+    ahead = center - camera[:2]
+    direction = ahead / max(np.linalg.norm(ahead), 1e-6)
+    near = np.percentile((xy - camera[:2]) @ direction, 1)
+    return center + direction * (near + radius - ahead @ direction)
+
+
 def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     """Rank grasps on a segmented solid of the given class; returns (fit, grasps)."""
     support_z, points, obstacles = segmented
@@ -518,6 +530,10 @@ def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     top_z = np.percentile(points[:, 2], SOLID_TOP_PERCENTILE)
     center, short_axis, long_axis, short, long = fit_box(points)
     require(np.linalg.norm(center) > 1e-6, "object at the robot origin")
+    if grasp_class == GRASP_CLASS_ROUND:
+        center = behind_near_limb(
+            points[:, :2], center, scene.cam_to_base[:3, 3], (top_z - support_z) / 2
+        )
     away = center / np.linalg.norm(center)
     middle = np.array([*center, (support_z + top_z) / 2])
     top_tip_z = max(top_z - TOP_GRASP_DEPTH, support_z + TABLE_CLEARANCE)
