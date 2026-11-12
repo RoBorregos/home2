@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(moondream_run)
+project(vlm_run)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -12,7 +12,7 @@ find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
 
 #Install directories
-install(DIRECTORY moondream_server
+install(DIRECTORY vlm_server
   DESTINATION share/${PROJECT_NAME})
 
 

@@ -10,7 +10,7 @@ import cv2
 import sys
 import os
 
-# from moondream_run.moondream_lib import MoonDreamModel, Position
+# from vlm_run.moondream_lib import MoonDreamModel, Position
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
@@ -30,12 +30,12 @@ from frida_constants.vision_constants import (
 
 from ament_index_python.packages import get_package_share_directory
 
-PATH = get_package_share_directory("moondream_run")
-sys.path.append(os.path.join(PATH, "moondream_server"))
+PATH = get_package_share_directory("vlm_run")
+sys.path.append(os.path.join(PATH, "vlm_server"))
 
 # Import the generated gRPC modules
-import moondream_proto_pb2  # noqa
-import moondream_proto_pb2_grpc  # noqa
+import vlm_pb2  # noqa
+import vlm_pb2_grpc  # noqa
 
 NOT_FOUND = "not found"
 
@@ -44,9 +44,9 @@ NOT_FOUND = "not found"
 CONF_THRESHOLD = 0.5
 
 
-class MoondreamNode(Node):
+class VLMNode(Node):
     def __init__(self):
-        super().__init__("moondream_node")
+        super().__init__("vlm_node")
         self.bridge = CvBridge()
         self.image = None
 
@@ -77,12 +77,12 @@ class MoondreamNode(Node):
             ("grpc.max_send_message_length", 200 * 1024 * 1024),
         ]
         channel = grpc.insecure_channel("localhost:50052", options=options)
-        self.stub = moondream_proto_pb2_grpc.MoonDreamServiceStub(channel)
+        self.stub = vlm_pb2_grpc.VLMServiceStub(channel)
         # LFM2.5-VL server speaks the same gRPC contract on its own port
         lfm_channel = grpc.insecure_channel("localhost:50053", options=options)
-        self.lfm_stub = moondream_proto_pb2_grpc.MoonDreamServiceStub(lfm_channel)
+        self.lfm_stub = vlm_pb2_grpc.VLMServiceStub(lfm_channel)
 
-        self.get_logger().info("MoondreamNode Ready.")
+        self.get_logger().info("VLMNode Ready.")
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -102,10 +102,10 @@ class MoondreamNode(Node):
 
         try:
             encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+                vlm_pb2.ImageRequest(image_data=image_bytes)
             )
             query_response = self.stub.Query(
-                moondream_proto_pb2.QueryRequest(
+                vlm_pb2.QueryRequest(
                     encoded_image=encoded.encoded_image, query=request.query
                 )
             )
@@ -174,12 +174,10 @@ class MoondreamNode(Node):
         try:
             if encode:
                 image_bytes = stub.EncodeImage(
-                    moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+                    vlm_pb2.ImageRequest(image_data=image_bytes)
                 ).encoded_image
             query_response = stub.Query(
-                moondream_proto_pb2.QueryRequest(
-                    encoded_image=image_bytes, query=request.query
-                )
+                vlm_pb2.QueryRequest(encoded_image=image_bytes, query=request.query)
             )
 
             response.result = query_response.answer
@@ -210,10 +208,10 @@ class MoondreamNode(Node):
 
         try:
             encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+                vlm_pb2.ImageRequest(image_data=image_bytes)
             )
             grpc_response = self.stub.FindObjectPoints(
-                moondream_proto_pb2.FindObjectPointsRequest(
+                vlm_pb2.FindObjectPointsRequest(
                     encoded_image=encoded.encoded_image,
                     subject=request.subject,
                 )
@@ -260,10 +258,10 @@ class MoondreamNode(Node):
 
         try:
             encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+                vlm_pb2.ImageRequest(image_data=image_bytes)
             )
             grpc_response = self.stub.Detect(
-                moondream_proto_pb2.DetectRequest(
+                vlm_pb2.DetectRequest(
                     encoded_image=encoded.encoded_image,
                     subject=request.subject,
                 )
@@ -301,7 +299,7 @@ class MoondreamNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = MoondreamNode()
+    node = VLMNode()
 
     try:
         rclpy.spin(node)

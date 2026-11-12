@@ -2,8 +2,8 @@
 
 The laundry task manager's only vision dependency is detect_objects
 (DetectionHandler / object_detector_node), so this launch brings up just the
-detector include (which also starts image_orienter). No moondream_node here:
---dlc does not enable the moondream-server compose profile, and the task makes
+detector include (which also starts image_orienter). No vlm_node here:
+--dlc does not enable the vlm compose profile, and the task makes
 no moondream calls.
 """
 

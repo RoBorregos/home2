@@ -7,7 +7,7 @@ needed). Publishes the image on the topics the pipeline consumes
 topic for moondream), calls the service, prints the result and saves the
 annotated frame next to the input image.
 
-Needs object_detector_2d, moondream_node (+ gRPC server) and hric_commands
+Needs object_detector_2d, vlm_node (+ gRPC server) and hric_commands
 running. Run it WITHOUT the camera / image_orienter, so the disk image is the
 only frame the nodes see.
 
