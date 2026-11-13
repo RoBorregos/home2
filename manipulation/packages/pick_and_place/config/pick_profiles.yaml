@@ -38,7 +38,9 @@ flat:
   post_contact_retract: 0.004 # m upward, relieves Z pressure so the gripper can close
   force_guard:
     descent_speed: 12.0 # mm/s (lowered from 20 for less impact force)
-    fast_descent_speed: 60.0 # mm/s, used until min_contact_descent; contact is never honored before that anyway
+    fast_descent_speed: 60.0 # mm/s, used until fast_until
+    fast_until: 0.105 # m; contact lands at ~0.12-0.13m in practice, so this keeps margin
+    ramp_distance: 0.02 # m; smooth the speed drop instead of an instant step
     timeout: 16.0 # s, must cover the 0.15 m pre-grasp at the speed above
     grace_period: 0.3 # s, ignore effort right after velocity starts
     contact_settle: 1.0 # s, skip the motion-onset spike before detecting

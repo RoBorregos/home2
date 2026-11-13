@@ -734,39 +734,50 @@ class RobotArm:
     def _monitor_for_contact(self, guard: ForceGuardProfile, baseline, label: str):
         """Watch joint effort at 50 Hz. Returns (contact, metres descended).
 
-        Descends at ``fast_descent_speed`` (if set) until ``min_contact_descent``,
-        then switches to the slower, guarded ``descent_speed`` for the rest --
-        contact is never honored before ``min_contact_descent`` anyway (see
-        below), so nothing is lost by covering that stretch faster.
+        Descends at ``fast_descent_speed`` (if set), ramping smoothly down to
+        the slower, guarded ``descent_speed`` over the last ``ramp_distance``
+        before ``fast_until``. Contact is never honored before
+        ``min_contact_descent`` (see below).
         """
         history = deque()  # (timestamp, effort) inside the jump window
         consecutive = 0
         last_log = 0.0
         start_time = time.time()
+        last_time = start_time
 
-        speed = guard.fast_descent_speed or guard.descent_speed
-        slowed = speed == guard.descent_speed
-        phase_start = start_time
-        phase_descended = 0.0
+        fast_until = guard.fast_until or guard.min_contact_descent
+        ramp_start = max(0.0, fast_until - guard.ramp_distance)
+        fast_speed = guard.fast_descent_speed or guard.descent_speed
+
+        def target_speed(d):
+            if d < ramp_start:
+                return fast_speed
+            if d < fast_until:
+                frac = (d - ramp_start) / (fast_until - ramp_start)
+                return fast_speed + (guard.descent_speed - fast_speed) * frac
+            return guard.descent_speed
+
+        speed = target_speed(0.0)
         descended = 0.0
+        entered_ramp = speed != fast_speed
 
         while (time.time() - start_time) < guard.timeout:
             time.sleep(0.02)
-            elapsed = time.time() - start_time
             now = time.time()
-            descended = phase_descended + (now - phase_start) * speed / 1000.0
+            elapsed = now - start_time
+            descended += (now - last_time) * speed / 1000.0
+            last_time = now
 
-            if not slowed and descended >= guard.min_contact_descent:
-                phase_descended = guard.min_contact_descent
-                phase_start = now
-                descended = phase_descended
-                speed = guard.descent_speed
-                slowed = True
+            new_speed = target_speed(descended)
+            if new_speed != speed:
+                speed = new_speed
                 self._send_cartesian_velocity(-speed, label)
-                self._log.info(
-                    f"[{label}] near the table (~{descended * 1000:.0f}mm), "
-                    f"slowing to {speed:.1f} mm/s"
-                )
+                if not entered_ramp:
+                    entered_ramp = True
+                    self._log.info(
+                        f"[{label}] near the table (~{descended * 1000:.0f}mm), "
+                        f"slowing toward {guard.descent_speed:.1f} mm/s"
+                    )
 
             # The mode-5 loop bypasses MoveIt, so nothing else would stop the arm
             # on an e-stop; the context manager restores mode 1 on the way out.
