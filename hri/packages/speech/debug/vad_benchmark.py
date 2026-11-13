@@ -677,7 +677,7 @@ def print_report(results: List[ScenarioResult], include_silero: bool) -> None:
     # ── False-positive spotlight (noise-only scenarios) ───────────────────
     noise_results = [r for r in results if r.scenario.category == "noise"]
     if noise_results:
-        print(f"\n  {'─'*60}")
+        print(f"\n  {'─' * 60}")
         print("  FALSE POSITIVES on pure-noise scenarios (key metric):")
         p_fp = sum(r.pitch_pred for r in noise_results)
         print(
@@ -692,7 +692,7 @@ def print_report(results: List[ScenarioResult], include_silero: bool) -> None:
                 f"    SileroVAD:         {s_fp}/{len(noise_results)} noise chunks "
                 f"incorrectly labelled as speech"
             )
-        print(f"  {'─'*60}")
+        print(f"  {'─' * 60}")
 
     # ── Timing ────────────────────────────────────────────────────────────
     dur_ms = len(results[0].scenario.audio) / SAMPLE_RATE * 1000
