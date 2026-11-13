@@ -100,6 +100,20 @@ def _yaw_to_quaternion(yaw_rad: float) -> Quaternion:
     half = 0.5 * yaw_rad
     return Quaternion(x=0.0, y=0.0, z=math.sin(half), w=math.cos(half))
 
+
+def _se2_mul(a, b):
+    """Compose two planar poses (x, y, yaw): a then b."""
+    c, s = math.cos(a[2]), math.sin(a[2])
+    return (a[0] + c * b[0] - s * b[1], a[1] + s * b[0] + c * b[1], a[2] + b[2])
+
+
+def _reanchor(off, last, raw):
+    """Offset that maps `raw` onto the pose that `off` gave to `last`."""
+    pub = _se2_mul(off, last)
+    dyaw = pub[2] - raw[2]
+    rot = _se2_mul((0.0, 0.0, dyaw), raw)
+    return (pub[0] - rot[0], pub[1] - rot[1], dyaw)
+
 AXIS_STATES = {
     0: "UNDEFINED", 1: "IDLE", 2: "STARTUP_SEQUENCE",
     3: "FULL_CALIBRATION", 4: "MOTOR_CALIBRATION",
@@ -347,6 +361,11 @@ class ODriveDashboardNode(Node):
         # Consecutive rejections. A real fast spin looks like a corrupted sample,
         # so after a few in a row we re-anchor instead of rejecting forever.
         self._imu_yaw_rejects = 0
+        # The firmware odometry restarts from zero when the STM32 reboots (USB
+        # replug, brown-out). _odom_off keeps the published pose continuous.
+        self._odom_off = (0.0, 0.0, 0.0)
+        self._odom_raw = None        # last raw firmware pose (x, y, yaw)
+        self._odom_reanchor = False  # set on serial reconnect
 
         # publishers
         self.pub_raw         = self.create_publisher(String,            'odrive/raw',               10)
@@ -675,6 +694,7 @@ class ODriveDashboardNode(Node):
                     with self._ser_lock:
                         self.ser = new_ser
                     self.discovered_node_ids.clear()
+                    self._odom_reanchor = True
                     self.get_logger().info(f"Serial reconnected: {port}")
                 except Exception as e:
                     self.get_logger().warn(
@@ -713,6 +733,10 @@ class ODriveDashboardNode(Node):
     # rate, so OK / WARN / LOST is a sensible split.
     _LINK_OK_S   = 0.5
     _LINK_WARN_S = 2.0
+    # Raw odometry step between two consecutive samples that can only be a
+    # firmware reset (or a garbled line), never real motion. Tune on the robot.
+    _ODOM_JUMP_M   = 0.5
+    _ODOM_JUMP_RAD = 0.7
 
     @classmethod
     def _link_status_label(cls, age_s):
@@ -811,6 +835,28 @@ class ODriveDashboardNode(Node):
                 x=o_qx, y=o_qy, z=o_qz, w=o_qw)
         else:
             odom_msg.pose.pose.orientation = _yaw_to_quaternion(o_phi)
+
+        # Keep the pose continuous across a firmware odometry reset: after a
+        # serial reconnect, or when the raw pose jumps further than the base can
+        # move between two samples, re-anchor the offset to the last pose.
+        q = odom_msg.pose.pose.orientation
+        raw = (o_x, o_y, math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                                    1.0 - 2.0 * (q.y * q.y + q.z * q.z)))
+        last = self._odom_raw
+        if last is not None and (
+                self._odom_reanchor
+                or math.hypot(raw[0] - last[0], raw[1] - last[1]) > self._ODOM_JUMP_M
+                or abs(math.remainder(raw[2] - last[2], math.tau)) > self._ODOM_JUMP_RAD):
+            self._odom_off = _reanchor(self._odom_off, last, raw)
+            self.get_logger().warn("Odometry re-anchored to the last pose (reconnect or raw jump)")
+        self._odom_raw, self._odom_reanchor = raw, False
+        odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y, _ = \
+            _se2_mul(self._odom_off, raw)
+        cz, sz = math.cos(0.5 * self._odom_off[2]), math.sin(0.5 * self._odom_off[2])
+        odom_msg.pose.pose.orientation = Quaternion(
+            x=cz * q.x - sz * q.y, y=cz * q.y + sz * q.x,
+            z=cz * q.z + sz * q.w, w=cz * q.w - sz * q.z)
+
         odom_msg.twist.twist.linear.x  = vx_body
         odom_msg.twist.twist.linear.y  = vy_body
         odom_msg.twist.twist.linear.z  = 0.0
