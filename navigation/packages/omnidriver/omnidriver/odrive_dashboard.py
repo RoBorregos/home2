@@ -676,7 +676,7 @@ class ODriveDashboardNode(Node):
                         self.ser = new_ser
                     self.discovered_node_ids.clear()
                     self.get_logger().info(f"Serial reconnected: {port}")
-                except serial.SerialException as e:
+                except Exception as e:
                     self.get_logger().warn(
                         f"Reconnect failed ({e}), retrying in {reconnect_delay:.0f}s")
                     time.sleep(reconnect_delay)
@@ -684,7 +684,7 @@ class ODriveDashboardNode(Node):
 
             try:
                 line = ser.readline().decode(errors='ignore').strip()
-            except serial.SerialException as e:
+            except Exception as e:  # close() from the writer makes readline raise TypeError
                 self.get_logger().error(f"Serial read: {e}")
                 with self._ser_lock:
                     if self.ser is ser:
