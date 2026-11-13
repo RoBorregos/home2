@@ -18,13 +18,8 @@ from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger, SetBool
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped, TwistStamped
 from nav_msgs.msg import OccupancyGrid
-<<<<<<< HEAD
 from map_msgs.msg import OccupancyGridUpdate
-from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
-from rclpy.qos import QoSProfile, DurabilityPolicy
-=======
 from tf2_geometry_msgs import do_transform_point
->>>>>>> origin/main
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         APPROACH_POINT_SERVICE,
@@ -98,13 +93,10 @@ from nav_main import approach_planner as ap
 # aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
 # the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
 NAV_GOAL_RETRY_DELAY = 2.0
-<<<<<<< HEAD
 # Old DockTable `offset` callers: the base used to stop `offset + 0.19` m (table_docker's
 # min_safe) from the face. Converted to the new robot-front gap so they dock unchanged.
 LEGACY_DOCK_MIN_SAFE = 0.19
-=======
 APPROACH_DIRECT_ALIGN_RANGE = 2.0
->>>>>>> origin/main
 # Max time to wait for the arm pointer to home back to its normal pose before
 # returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
 ARM_HOME_TIMEOUT = 10.0
@@ -809,17 +801,8 @@ class Nav_Central(Node):
                         + (f" at target {point} [{frame}]" if point else ""))
         # Bounded dock call, capturing the actual approach result.
         future = self.dock_client.call_async(Trigger.Request())
-<<<<<<< HEAD
-        elapsed = 0.0
-        while not future.done() and elapsed < 120.0:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            elapsed += 0.1
-        if not future.done():
+        if not self._wait(future, 120.0):
             return (False, "dock timed out", {})
-=======
-        if not self._wait(future, 90.0):
-            return (False, "dock timed out")
->>>>>>> origin/main
         res = future.result()
         return (res.success, res.message, self._dock_result())
 
@@ -846,13 +829,15 @@ class Nav_Central(Node):
         self.nav_logger("info", f"Dock_Table -> Service called (surface='{request.surface_type}', "
                                 f"offset={request.offset})")
         # The approach drives through MPPI (controller_server) and reads the local
-        # costmap, so nav2 runs for the duration of the dock.
-        self.resume_nav2()
+        # costmap, so nav2 runs for the duration of the dock; restore the prior state after.
+        was_paused = self.nav2_paused
+        self._set_paused(False)
         try:
             success, message, result = self._approach_table(
                 request.surface_type, request.target, request.offset, request.check_reach)
         finally:
-            self.pause_nav2()
+            if was_paused:
+                self._set_paused(True)
         response.success = success
         response.error = message
         response.lateral_error = float(result.get('lateral_error') or 0.0)
@@ -1013,16 +998,17 @@ class Nav_Central(Node):
                 f"({dist:.2f} m away, align={align})")
             response.goal = self._approach_pose(rx, ry, tx, ty)
             self._retreat_if_docked()
-            self.resume_slam()
+            self._set_paused(False)
             ok = self._align_parallel(tx, ty, align, request.final_distance)
             response.success = ok
             response.error = "" if ok else "parallel alignment failed"
-            self.pause_slam()
+            self._set_paused(True)
             return response
 
         if dist <= standoff + 0.05:
             # Already close enough: face the target, never drive into it.
             goal = self._approach_pose(rx, ry, tx, ty)
+            goals = [goal]
             self.nav_logger("info", "Approach_Point -> already close, facing target")
         else:
             goals = self._plan_approach_point(tx, ty, rx, ry, prof)
@@ -1039,33 +1025,11 @@ class Nav_Central(Node):
                 f"{len(goals) - 1} fallback(s)")
 
         response.goal = goal
-        self._retreat_if_docked()
-        self.resume_slam()
-        self.resume_nav2()
-        if self.nav2_paused or not self.rtabmap_loaded:
-            response.success = False
-            response.error = "Navigation not initialized"
-            return response
-        self._clear_costmaps()
-        if math.hypot(tx - rx, ty - ry) <= standoff + 0.05:
-            ok, msg = self.send_nav_goal(goal)
-        else:
-            # Least commitment: if nav2 cannot reach the best pose, try the next ones.
-            for i, goal in enumerate(goals):
-                ok, msg = self.send_nav_goal(goal, max_attempts=2)
-                if ok:
-                    response.goal = goal
-                    break
-                self.nav_logger("warn", f"Approach_Point -> candidate {i} failed ({msg}), trying next")
-        if ok:
-            # The goal checker can succeed inside xy tolerance without settling
-            # yaw — make sure the base front actually points at the person.
-            self._face_target(tx, ty)
 
         # align left/right: rotate abeam of the target instead of just facing it
-        # (e.g. picking the laundry basket up from the side). Runs as the
-        # `_navigate` after-hook, while nav2/slam are still resumed; a failure
-        # here overrides the otherwise-successful nav goal.
+        # (e.g. picking the laundry basket up from the side). Runs after the nav
+        # goal, while nav2/slam are still resumed; a failure here overrides the
+        # otherwise-successful nav goal.
         align_ok = True
 
         def _after():
@@ -1078,7 +1042,22 @@ class Nav_Central(Node):
                 # yaw — make sure the base front actually points at the person.
                 self._face_target(tx, ty)
 
-        ok, msg = self._navigate(goal, "Approach_Point", after=_after)
+        # Same pipeline as _navigate, but with least commitment: if nav2 cannot
+        # reach the best pose, try the next-best ones.
+        self._retreat_if_docked()
+        if not self._ready_to_drive("Approach_Point"):
+            response.success = False
+            response.error = "Navigation not initialized"
+            return response
+        ok, msg = False, "no approach pose"
+        for i, goal in enumerate(goals):
+            ok, msg = self.send_nav_goal(goal, max_attempts=2 if len(goals) > 1 else None)
+            if ok:
+                response.goal = goal
+                _after()
+                break
+            self.nav_logger("warn", f"Approach_Point -> candidate {i} failed ({msg}), trying next")
+        self._set_paused(True)
         if ok and not align_ok:
             ok, msg = False, "parallel alignment failed"
         response.success = ok
