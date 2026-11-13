@@ -185,8 +185,8 @@ class ForceGuardedDescentPick(PickStrategy):
     perceived height is not accurate to the millimetre, so a fixed descent
     either stops short or drives into the table.
 
-    The pre-grasp is a plain pose goal (top-down and unobstructed, so nearest-IK
-    seeding buys nothing) and the arm lifts back to it afterwards.
+    The pre-grasp seeds IK from the current joints, to avoid a flipped-wrist
+    solution that would hit the table on descent.
     """
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
@@ -199,7 +199,7 @@ class ForceGuardedDescentPick(PickStrategy):
         pre_grasp = offset_z(candidate.pose, profile.pre_grasp_height)
         with arm.phase("approach_pre_grasp"):
             arm.clear_octomap()
-            if not arm.move_to_pose(pre_grasp, velocity=profile.pre_grasp_velocity):
+            if not arm.move_to_pregrasp(pre_grasp, profile.pre_grasp_velocity):
                 raise PickAttemptFailed("pre-grasp unreachable")
 
         with arm.phase("descend"):

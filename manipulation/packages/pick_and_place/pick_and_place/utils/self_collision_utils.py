@@ -67,7 +67,7 @@ def endpoint_self_collides(
         logger: optional rclpy logger for diagnostics.
 
     Returns:
-        True if the pose should be skipped (self-collision or unreachable),
+        True if the pose should be skipped (collision or unreachable),
         False if it is safe to attempt. Fails open (False) if the MoveIt
         services are unavailable.
     """

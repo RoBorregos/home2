@@ -573,7 +573,7 @@ def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
     with arm.phase(f"return/{named}"):
         for _ in range(5):
             arm.clear_octomap()
-            if arm.move_to_named_position(named, velocity=0.65):
+            if arm.move_to_named_position(named, velocity=0.75):
                 return
         log.warn(f"Could not return to {named} after 5 attempts")
 
