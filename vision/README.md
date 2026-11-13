@@ -74,12 +74,13 @@ home2/
 │   │           ├── debug_pub.py           # Subscriber-gated, rate-limited debug images
 │   │           └── area_check.py          # Room filtering via nav MapAreas + TF     
 │   │
-│   └── moondream_run/                     # Moondream2 VLM bridge
-│       ├── scripts/moondream_node.py      # ROS node; gRPC client to localhost:50052
-│       └── moondream_server/              # Runs in its OWN container, not the ROS one
-│           ├── server.py                  # gRPC server on port 50052
+│   └── vlm_run/                           # Moondream2 and LFM2.5-VL bridge
+│       ├── scripts/vlm_node.py            # ROS node; gRPC client to :50052 (Moondream) and :50053 (LFM)
+│       └── vlm_server/                    # Runs in its OWN containers, not the ROS one
+│           ├── moondream_server.py        # Moondream gRPC server on port 50052
+│           ├── lfm_server.py              # LFM2.5-VL gRPC server on port 50053
 │           ├── moondream_lib.py           # HF vikhyatk/moondream2 wrapper
-│           └── moondream_proto.proto      # service MoonDreamService
+│           └── vlm.proto                  # service VLMService, shared by both servers
 │
 ├── requirements/                          # pip sets consumed by docker/vision/Dockerfile.*
 │   ├── opencv.txt                         # numpy pin (opencv-python is forbidden on L4T)
@@ -100,9 +101,9 @@ home2/
 docker/vision/                             # Images, compose and the area entrypoint
 ├── Dockerfile.{cpu,cuda,l4t}              # ROS container (builds iceoryx + CycloneDDS SHM)
 ├── Dockerfile.moondream.server            # VLM sidecar
-├── docker-compose.yaml                    # include: vision-general.yaml + moondream.yaml
+├── docker-compose.yaml                    # include: vision-general.yaml + vlm.yaml
 ├── vision-general.yaml                    # service `vision`      -> home2-vision
-├── moondream.yaml                         # service `moondream-server` (port 50052)
+├── vlm.yaml                               # services `moondream-server` (50052) and `lfm-server` (50053)
 ├── trt_cache/                             # Persisted weights + TensorRT engines
 └── run.sh                                 # Area entrypoint (called by root run.sh)
 ```
@@ -127,14 +128,15 @@ must therefore never start two `image_orienter` instances — the per-task launc
 | `embedding_box_proposer` | `yoloe-11l-seg-pf.pt` | `yolo_e` | 0.25 |
 | `embedding_gallery` | DINOv2 ViT-B/14 + `gallery/` | `embedding` | per-object similarity floor |
 
-`ObjectDetect2D` runs the models listed under `models:` in `config/parameters.yaml`
-(currently `yolo_finetuned` and `embedding_gallery`). `embedding_box_proposer` is not a
-detector on its own: `embedding_gallery` calls it to get class-agnostic boxes.
+`ObjectDetect2D` loads the models listed under `models:` in `config/parameters.yaml`
+(currently `yolo_finetuned`). `embedding_gallery` runs in its own node, `GalleryDetect2D`.
+`embedding_box_proposer` is not a detector on its own: `embedding_gallery` calls it to get
+class-agnostic boxes.
 
 Adding a model with the same architecture is a two-step change: drop the `.pt` beside
 `registry.py` and add one dict entry. A model with conflicting dependencies, or one needing
 more than ~4 GB of exclusive GPU, should become a new gRPC container in `docker/vision/`
-instead — that is exactly what `moondream_run` is.
+instead — that is exactly what `vlm_run` is.
 
 **2D boxes become 3D points in the base class.** `base_detector_node.py` pairs each
 detection with `DEPTH_IMAGE_TOPIC` and `CAMERA_INFO_TOPIC`, deprojects the box centroid via
@@ -173,7 +175,7 @@ flowchart LR
         FR["face_recognition<br/>InsightFace buffalo_sc"]
         HC["hric_commands<br/>yolo11m-pose"]
         GC["gpsr_commands<br/>yolo11m-pose"]
-        MD["moondream_node<br/>yolov8n person crop"]
+        MD["vlm_node<br/>yolov8n person crop"]
     end
 
     OD -->|/vision/detections + detections_3d| TM[task_manager<br/>vision_tasks.py]
@@ -205,11 +207,18 @@ handles projection and visualization. `vision_general` has the same pattern in
 Each node has a fixed activation topic (`/vision/object_detector/active`,
 `/vision/zero_shot_detector/active`) so a task manager can idle the GPU between steps.
 
+The gallery process is not started by default. Start it explicitly with:
+
+```bash
+ros2 launch object_detector_2d object_detector_node.launch.py enable_gallery:=true
+```
+
+
 #### Adding an object to the gallery (few-shot)
 
 `yolo_finetuned` only knows its training classes. Other objects can be added from photos, with
 no retraining: YOLOE proposes boxes and DINOv2 matches each crop against a per-object gallery.
-It runs alongside `yolo_finetuned` (both are listed in `config/parameters.yaml`).
+It runs alongside `yolo_finetuned`.
 
 Put 10-30 photos in
 `vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/`,
@@ -258,9 +267,9 @@ colour, RELIABLE depth) and a separate callback group per subscription so its 20
 tracking timer is never starved by a service blocking on moondream. `VisionRuntime`
 expresses neither.
 
-### `moondream_run`
+### `vlm_run`
 
-`moondream_node` is a thin ROS ⇄ gRPC bridge. The model itself lives in a separate container
+`vlm_node` is a thin ROS ⇄ gRPC bridge. The model itself lives in a separate container
 because its dependency set conflicts with the ROS one.
 
 | ROS service | Type | Does |
@@ -270,7 +279,7 @@ because its dependency set conflicts with the ROS one.
 | `/vision/object_points` | `ObjectPoints` | 2D points for a described subject |
 | `/vision/moondream_detection` | `MoondreamDetection` | Open-vocabulary detection (normalized bboxes) |
 
-The gRPC side (`MoonDreamService` on port `50052`) exposes `EncodeImage`,
+The gRPC side (`VLMService` on port `50052`) exposes `EncodeImage`,
 `FindObjectPoints`, `Query` and `Detect`, backed by `vikhyatk/moondream2`.
 
 
@@ -281,22 +290,22 @@ Each competition flag maps to one launch file and one set of compose profiles:
 | Command | Launch file | Extra container |
 | --- | --- | --- |
 | `./run.sh vision` | *(interactive shell)* | — |
-| `./run.sh vision --hric` | `vision_general hric_launch.py` | moondream |
-| `./run.sh vision --gpsr` | `vision_general gpsr_launch.py` | moondream |
-| `./run.sh vision --ppc` | `vision_general ppc_launch.py` | moondream |
-| `./run.sh vision --restaurant` | `vision_general restaurant_launch.py` | moondream |
+| `./run.sh vision --hric` | `vision_general hric_launch.py` | vlm |
+| `./run.sh vision --gpsr` | `vision_general gpsr_launch.py` | vlm |
+| `./run.sh vision --ppc` | `vision_general ppc_launch.py` | vlm |
+| `./run.sh vision --restaurant` | `vision_general restaurant_launch.py` | vlm |
 | `./run.sh vision --dlc` | `vision_general dlc_launch.py` | — |
-| `./run.sh vision --moondream` | *(VLM server only)* | moondream |
+| `./run.sh vision --vlm` | *(VLM server only)* | vlm |
 | `./run.sh vision --warmup` | *(runs `fetch_models.py --warmup`)* | — |
 
 What each launch file starts:
 
 | Launch file | Nodes |
 | --- | --- |
-| `hric_launch.py` | `face_recognition`, `hric_commands`, `moondream_node`, `image_orienter`, `ObjectDetect2D`, `tracker_node` |
-| `gpsr_launch.py` | `hric_commands`, `gpsr_commands`, `face_recognition`, `tracker_node`, `moondream_node` + the detector launch |
-| `ppc_launch.py` | `hric_commands`, `moondream_node` + the detector launch |
-| `restaurant_launch.py` | `restaurant_commands`, `customer_node`, `moondream_node` + the detector launch |
+| `hric_launch.py` | `face_recognition`, `hric_commands`, `vlm_node`, `image_orienter`, `ObjectDetect2D`, `tracker_node` |
+| `gpsr_launch.py` | `hric_commands`, `gpsr_commands`, `face_recognition`, `tracker_node`, `vlm_node` + the detector launch |
+| `ppc_launch.py` | `hric_commands`, `vlm_node` + the detector launch |
+| `restaurant_launch.py` | `restaurant_commands`, `customer_node`, `vlm_node` + the detector launch |
 | `dlc_launch.py` | the detector launch only (`image_orienter` + `ObjectDetect2D`) |
 
 Modifier flags, combinable with any of the above:
@@ -318,7 +327,7 @@ they come prebuilt from the shared cache container (`./run.sh frida_interfaces`)
 
 ```bash
 colcon build --packages-ignore frida_interfaces frida_constants \
-  --packages-up-to vision_general object_detector_2d moondream_run
+  --packages-up-to vision_general object_detector_2d vlm_run
 source install/setup.bash
 ```
 
@@ -365,7 +374,7 @@ ros2 service call /vision/is_tracking std_srvs/srv/Trigger
 # Save the face in front of the camera
 ros2 service call /vision/new_name frida_interfaces/srv/SaveName "{name: 'oscar'}"
 
-# Ask the VLM about the frame (needs the moondream profile running)
+# Ask the VLM about the frame (needs the vlm profile running)
 ros2 service call /vision/query frida_interfaces/srv/Query \
     "{query: 'describe the clothes of the person', person: true}"
 
@@ -431,7 +440,7 @@ None of them are fixed by this document.
 - Placeholder and typo'd constants in `vision_constants.py`: `DETECTIONS_ACTIVE_TOPIC` and
   `DEBUG_IMAGE_TOPIC` are both `"asd"`, and `SHELF_DETECTION_TOPIC` reads
   `/vision/storing_grocPeries/shelf_detection`.
-- `auto-complete.sh` does not know the vision-only flags (`--warmup`, `--moondream`,
+- `auto-complete.sh` does not know the vision-only flags (`--warmup`, `--vlm`,
   `--carry`, `--storing-groceries`).
 - `status/configs/vision_nodes.cfg` still refers to `/receptionist_commands`, which is now
   `hric_commands`.

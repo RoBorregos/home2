@@ -8,6 +8,7 @@ import os
 import cv2 as cv
 import rclpy
 from ament_index_python.packages import get_package_share_directory
+from rclpy.time import Time
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
     DETECTIONS_3D_TOPIC,
@@ -15,6 +16,7 @@ from frida_constants.vision_constants import (
     DETECTIONS_IMAGE_TOPIC,
     DETECTIONS_POSES_TOPIC,
     DETECTIONS_TOPIC,
+    GALLERY_DETECTIONS_TOPIC,
     TRASH_SERVICE_CATEGORY,
     YOLO_DETECTION_TOPIC,
     YOLO_DETECTIONS_PUBLISHER_TOPIC,
@@ -23,7 +25,7 @@ from frida_interfaces.msg import Detection, ObjectDetectionArray
 from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
 from sensor_msgs.msg import Image
 from detectors.registry import ModelRegistry
-from detectors.utils import iou_deduplicate
+from detectors.utils import iou_deduplicate, iou_msg
 from base_detector_node import BaseDetectorNode
 
 
@@ -39,13 +41,21 @@ class ObjectDetectorNode(BaseDetectorNode):
             fixed_active_topic="/vision/object_detector/active",
         )
 
+        # models: [""] runs no model here (gallery only)
         model_names = self.declare_param(
-            "models", ["yolo_v26_finetuned"]
+            "models", ["yolo_finetuned"]
         ).string_array_value
 
-        self.models = [ModelRegistry.get(name) for name in model_names if name]
+        self.models = [ModelRegistry.get(n) for n in model_names if n]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
         self.yolo_service_model = ModelRegistry.get("yolo_generic")
+
+        # Latest GalleryDetect2D output, merged into our detections while fresh
+        self.gallery_max_age = self.declare_param("GALLERY_MAX_AGE", 3.5).double_value
+        self.gallery = []
+        self.create_subscription(
+            ObjectDetectionArray, GALLERY_DETECTIONS_TOPIC, self.gallery_cb, 5
+        )
 
         self.category = None
         try:
@@ -72,6 +82,21 @@ class ObjectDetectorNode(BaseDetectorNode):
 
     def box_color(self, det):
         return (0, 0, 255) if det.label_text.startswith("trash/") else (0, 255, 0)
+
+    def gallery_cb(self, msg):
+        self.gallery = msg.detections
+
+    def fresh_gallery(self, detections, stamp):
+        """Gallery detections younger than GALLERY_MAX_AGE that don't overlap ours."""
+        now = Time.from_msg(stamp)
+        fresh = []
+        for g in self.gallery:
+            age = (now - Time.from_msg(g.point3d.header.stamp)).nanoseconds / 1e9
+            if age > self.gallery_max_age:
+                continue
+            if not any(iou_msg(g, d) > 0.6 for d in detections):
+                fresh.append(g)
+        return fresh
 
     # ------------------------------------------------------------------ services
 
@@ -150,7 +175,7 @@ class ObjectDetectorNode(BaseDetectorNode):
 
     # ------------------------------------------------------------------ inference
 
-    def run(self, frame):
+    def run(self, frame, depth_image, stamp):
         if self.flip_image:
             frame = cv.rotate(frame, cv.ROTATE_180)
         visual = copy.deepcopy(frame)
@@ -169,7 +194,7 @@ class ObjectDetectorNode(BaseDetectorNode):
                     1 - det.bbox_.x2,
                 )
 
-        all_detections = self.extract_3d(merged)
+        all_detections = self.extract_3d(merged, depth_image)
         all_detections = self.filter_by_distance(all_detections)
 
         self.publish_3d_markers(all_detections)
@@ -177,7 +202,8 @@ class ObjectDetectorNode(BaseDetectorNode):
 
         ros_detections = self.to_ros(all_detections)
         for det in ros_detections:
-            det.point3d.header.stamp = self.curr_clock
+            det.point3d.header.stamp = stamp
+        ros_detections += self.fresh_gallery(ros_detections, stamp)
 
         self.latest_detections = ros_detections
 

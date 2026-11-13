@@ -1,4 +1,4 @@
 include:
   - path: vision-general.yaml
-  - path: moondream.yaml
+  - path: vlm.yaml
  

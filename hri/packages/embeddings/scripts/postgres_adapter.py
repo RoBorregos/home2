@@ -11,7 +11,6 @@ from embeddings.postgres_collections import (
     Item,
     Knowledge,
     Location,
-    row_to_hand_item,
 )
 from sentence_transformers import SentenceTransformer
 
@@ -360,25 +359,6 @@ class PostgresAdapter:
             )
             for row in rows
         ]
-
-    def get_hand_items(
-        self, text: str, threshold: float = 0.0, top_k: int = 10000
-    ) -> list[Knowledge]:
-        """Method to get context from knowledge base based on a prompt"""
-        embedding = self.embedding_model.encode(text, convert_to_tensor=True)
-        self.cursor.execute(
-            "SELECT id, name, description, embedding_name, embedding_description, x_loc, y_loc, m_loc_x, m_loc_y, color, 1 - (embedding_name <=> %s) as similarity FROM hand_location WHERE 1 - (embedding_name <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
-            (embedding, embedding, threshold, top_k),
-        )
-        rows = self.cursor.fetchall()
-        rows_by_name = [row_to_hand_item(row) for row in rows]
-        self.cursor.execute(
-            "SELECT id, name, description, embedding_name, embedding_description, x_loc, y_loc, m_loc_x, m_loc_y, color, 1 - (embedding_description <=> %s) as similarity FROM hand_location WHERE 1 - (embedding_description <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
-            (embedding, embedding, threshold, top_k),
-        )
-        rows = self.cursor.fetchall()
-        rows_by_description = [row_to_hand_item(row) for row in rows]
-        return rows_by_name, rows_by_description
 
     def close(self):
         """Method to close the database connection"""

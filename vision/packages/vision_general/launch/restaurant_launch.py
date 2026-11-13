@@ -34,9 +34,9 @@ def generate_launch_description():
             # face_recognition_node removed: the restaurant task manager makes no
             # face-recognition calls; it only cost InsightFace VRAM + a hot 5 Hz timer.
             Node(
-                package="moondream_run",
-                executable="moondream_node.py",
-                name="moondream_node",
+                package="vlm_run",
+                executable="vlm_node.py",
+                name="vlm_node",
                 output="screen",
                 emulate_tty=True,
             ),

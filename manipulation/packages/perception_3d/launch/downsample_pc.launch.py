@@ -6,6 +6,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from frida_constants.manipulation_constants import (
+    ZED_DEPTH_SCALE,
     ZED_POINT_CLOUD_TOPIC,
 )
 
@@ -32,6 +33,7 @@ def generate_launch_description():
                     {
                         "input_topic": input_topic,
                         "use_sim_time": use_sim_time,
+                        "depth_scale": float(ZED_DEPTH_SCALE),
                     }
                 ],
             ),

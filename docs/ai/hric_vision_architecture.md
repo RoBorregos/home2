@@ -18,14 +18,14 @@ the ZED camera in `home2-zed`.
 |---|---|---|---|
 | `face_recognition` | `face_recognition_node.py` | InsightFace `buffalo_sc` (TRT/CUDA) | save/recognize guest faces, publish follow-face point |
 | `hric_commands` | `hric_commands.py` | YOLO `yolo11m-pose` (TRT) | FindSeat srv, DetectPerson srv, DetectHand srv |
-| `moondream_node` | `moondream_run/moondream_node.py` | YOLO `yolov8n` (person crop) + gRPC→ **Moondream2 2B VLM** | describe_person queries, beverage location |
+| `vlm_node` | `vlm_run/vlm_node.py` | YOLO `yolov8n` (person crop) + gRPC→ **Moondream2 2B VLM** | describe_person queries, beverage location |
 | `image_orienter` | `image_orienter.py` | — | rotate raw camera frames per CAMERA_ROTATION_TOPIC |
 | `ObjectDetect2D` | `object_detector_2d/object_detector_node.py` | YOLO `yolo26n` (`yolo_generic`) | serves `YoloDetect` (persons/chairs/couches for hric_commands) |
 | `tracker_node` | `tracker_node.py` | YOLO `yolov8n`+ByteTrack (TRT), `yolo11m-pose` (PoseDetection), SWIN ReID (lazy) | person tracking for FOLLOW_PERSON |
 
 **Model duplication (VRAM cost, same weights loaded twice):**
 - `yolo11m-pose`: loaded by **hric_commands** (wrists only) *and* **tracker_node** (PoseDetection).
-- `yolov8n`: loaded by **tracker_node** *and* **moondream_node** (person cropping).
+- `yolov8n`: loaded by **tracker_node** *and* **vlm_node** (person cropping).
 - SWIN ReID loads in tracker even though re-acquisition is still a TODO.
 
 ## 2. Camera/data plumbing
@@ -36,10 +36,10 @@ home2-zed ──CAMERA_TOPIC(raw)──┬─▶ image_orienter ──IMAGE_ORIE
           ──CAMERA_INFO_TOPIC──┤        │ CAMERA_ROTATION_TOPIC (Int16 0/180)
                                │        │   published by vision_tasks.camera_upside_down()
                                ├─▶ tracker_node   (subscribes RAW + rotation, flips internally)
-                               └─▶ moondream_node (subscribes RAW, NO rotation handling ⚠)
+                               └─▶ vlm_node (subscribes RAW, NO rotation handling ⚠)
 ```
 
-⚠ `moondream_node` consumes the **raw** camera topic with no rotation compensation. Today
+⚠ `vlm_node` consumes the **raw** camera topic with no rotation compensation. Today
 this is safe only because `describe_person` runs in SAVE_FACE (camera upright); any future
 moondream call while carrying the bag (camera at 180°) would query upside-down frames.
 
@@ -53,7 +53,7 @@ moondream call while carrying the bag (camera at 180°) would query upside-down 
 | GREETING | `activate_face_recognition()`; `follow_by_name("area")` | srv SaveName @ FOLLOW_BY_TOPIC | face_recognition | InsightFace |
 | GREETING (arm) | *(manipulation.follow_face)* consumes | topic FOLLOW_TOPIC (Point) | face_recognition → manipulation | InsightFace |
 | SAVE_FACE | `save_face_name(name)` | srv SaveName @ SAVE_NAME_TOPIC | face_recognition | InsightFace |
-| SAVE_FACE (guest 1) | `describe_person(cb)` → N× `moondream_query_async` | srv Query @ QUERY_TOPIC | moondream_node → gRPC :50052 | yolov8n crop + Moondream2 |
+| SAVE_FACE (guest 1) | `describe_person(cb)` → N× `moondream_query_async` | srv Query @ QUERY_TOPIC | vlm_node → gRPC :50052 | yolov8n crop + Moondream2 |
 | TAKE_BAG (guest 2) | `detect_hand()` ×5 retries | srv DetectHand @ DETECT_HAND_SERVICE | hric_commands | yolo11m-pose (wrists) + depth |
 | FIND_SEAT | `find_seat()` per pan angle (9-angle sweep) | srv FindSeat @ FIND_SEAT_TOPIC | hric_commands → `YoloDetect` srv + `MapAreas` srv (nav_central) + TF + depth | yolo26n (classes 0/56/57) |
 | INTRODUCTION | `follow_by_name(guest)`, `isPerson(name)` | FOLLOW_BY_TOPIC srv; PERSON_LIST_TOPIC topic (sub) | face_recognition | InsightFace |
@@ -92,7 +92,7 @@ flowchart LR
         FR["face_recognition<br/>model: InsightFace buffalo_sc"]
         TRK["tracker_node<br/>models: yolov8n+ByteTrack, yolo11m-pose, SWIN ReID"]
         OD["ObjectDetect2D<br/>model: yolo26n"]
-        MD["moondream_node<br/>model: yolov8n"]
+        MD["vlm_node<br/>model: yolov8n"]
         IO[image_orienter]
     end
 
@@ -134,7 +134,7 @@ the launch set (pointing_detection, gpsr_commands, etc. correctly excluded).
 2. Person detection exists 3 ways (YoloDetect class 0, tracker, face rec) — acceptable
    (different latencies), but detect_person could read the tracker topic instead of a
    fresh YOLO service round-trip.
-3. `moondream_node` should subscribe to IMAGE_ORIENTED_TOPIC (or handle rotation) — see §2.
+3. `vlm_node` should subscribe to IMAGE_ORIENTED_TOPIC (or handle rotation) — see §2.
 4. `find_seat` house-filter needs the async MapAreas cache pattern (blocking in-callback
    fetch can never complete on hric_commands' single-threaded executor; caused the
    2026-07-02 8s-timeout loop). Fix exists on the Orin working tree.
@@ -164,7 +164,7 @@ have servers in every active task.
 | gpsr | `gpsr_launch.py` (+detector include) | trash_detection_node | `read_qr` in GPSR dict has no server |
 | restaurant | `restaurant_launch.py` (+detector include) | **face_recognition_node** (zero face calls; InsightFace VRAM + always-hot 5 Hz timer) | **image_orienter launched TWICE** — explicit Node *and* via the include (duplicate IMAGE_ORIENTED frames, double rotation CPU); gpsr_launch's comment warns exactly against this |
 | pick_and_place | `ppc_launch.py` (+detector include) | trash_detection_node | — |
-| doing_laundry | `ppc_launch.py`, PROFILES=vision only | trash_detection_node **and** moondream_node (its gRPC server container isn't started — no moondream profile for --dlc; laundry doesn't call moondream anyway) | — |
+| doing_laundry | `ppc_launch.py`, PROFILES=vision only | trash_detection_node **and** vlm_node (its gRPC server container isn't started — no vlm profile for --dlc; laundry doesn't call moondream anyway) | — |
 
 Dead everywhere (safe to remove from launches / clean up):
 - `trash_detection_node` — **no client anywhere in task_manager** (TRASHCAN service unused;
@@ -204,5 +204,5 @@ Applied across tracker / smoother / arm controller to stop losing the person
 
 Suggested launch fixes: remove the explicit `image_orienter` Node from `restaurant_launch.py`
 (the detector include already starts it); drop `trash_detection_node` from gpsr/ppc launches;
-drop `face_recognition_node` from `restaurant_launch.py`; for --dlc drop `moondream_node`
-from the launch (or add the moondream profile if it should be available).
+drop `face_recognition_node` from `restaurant_launch.py`; for --dlc drop `vlm_node`
+from the launch (or add the vlm profile if it should be available).
