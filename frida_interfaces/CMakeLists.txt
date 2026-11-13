@@ -88,6 +88,7 @@ set(msg_files
   "vision/msg/ShelfArray.msg"
   "vision/msg/ShelfDetection.msg"
   "vision/msg/Detection.msg"
+  "vision/msg/SemanticObject.msg"
   "navigation/msg/NodeStatus.msg"
   "navigation/msg/MonitorReport.msg"
   )
@@ -184,6 +185,9 @@ set(srv_files
   "vision/srv/IsTalking.srv"
   "vision/srv/EmbedText.srv"
   "vision/srv/EmbedCrops.srv"
+  "vision/srv/QueryObjects.srv"
+  "vision/srv/ResolveCommand.srv"
+  "vision/srv/GetMisplaced.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

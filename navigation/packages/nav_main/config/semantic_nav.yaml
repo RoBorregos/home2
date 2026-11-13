@@ -7,10 +7,15 @@ semantic_nav:
     # Retry until nav_central serves the areas
     areas_retry_period: 10.0
 
-    # Scanned = within scan_radius of the tagged pose and facing it within the yaw tolerance
+    # Scanned = stopped within scan_radius of the tagged pose, facing it within the yaw
+    # tolerance, without leaving a scan_still_radius circle for scan_dwell_fraction of its dwell
     scan_radius: 1.0
     scan_yaw_tolerance_deg: 35.0
-    scan_check_period: 1.0
+    scan_still_radius: 0.15
+    # Below 1 so a caller that waits exactly dwell_s still gets the mark, given
+    # up to two scan_check_period of sampling delay
+    scan_dwell_fraction: 0.7
+    scan_check_period: 0.25
 
     # Scan log. "" -> /workspace/log/semantic_nav, else ~/.ros/semantic_nav
     snapshot_dir: ""
@@ -21,8 +26,10 @@ semantic_nav:
     # mode "quick": surfaces per area
     quick_mode_per_area: 1
 
-    # Relocate viewpoints that sit inside the costmap inflation
-    validate_with_costmap: true
+    # Relocate viewpoints that sit inside the costmap inflation. Off: the tagged poses
+    # sit in the inflation by design (go_to_area drives to them as they are), and on
+    # map23oct2026 the relocation sent 6 of 9 behind walls, out of reach.
+    validate_with_costmap: false
     viewpoint_check_radius: 0.25    # m, inscribed radius of the 0.65x0.50 footprint
     viewpoint_max_cost: 50          # same threshold as nav_central._grid_cell_free
     viewpoint_max_shift: 0.6        # m the replacement pose may move outward

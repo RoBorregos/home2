@@ -192,6 +192,11 @@ DISHWASHER_DEBUG_IMAGE_TOPIC = "/vision/dishwasher/debug_image"
 # Semantic mapping
 EMBED_TEXT_SERVICE = "/vision/embed_text"
 EMBED_CROPS_SERVICE = "/vision/embed_crops"
+SEMANTIC_QUERY_OBJECTS_SERVICE = "/vision/semantic_map/query_objects"
+SEMANTIC_RESOLVE_COMMAND_SERVICE = "/vision/semantic_map/resolve_command"
+SEMANTIC_GET_MISPLACED_SERVICE = "/vision/semantic_map/get_misplaced"
+SEMANTIC_RESET_SERVICE = "/vision/semantic_map/reset"
+SEMANTIC_MARKERS_TOPIC = "/vision/semantic_map/markers"
 
 CLIP_EMBEDDING_MODEL = "clip:ViT-B/32"
 FINALS_BUFFER_SECONDS = 3

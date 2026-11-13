@@ -1,0 +1,45 @@
+# Parameters for semantic_map_node.py
+semantic_map_node:
+  ros__parameters:
+    # Detection batches folded into the map per second
+    max_rate_hz: 2.0
+    # Below this detector score a detection is ignored
+    confidence_min: 0.4
+
+    # Fusion: a detection joins an object closer than this with a similar crop
+    merge_dist_m: 0.25
+    merge_sim_min: 0.8
+    # Detections before an object answers queries
+    confirm_min_observations: 3
+
+    # Forgetting: looks at its spot without detecting it, with the camera still
+    miss_limit: 4
+    # Camera movement between batches above this means detections are unreliable
+    still_threshold_m: 0.02
+    # Same as the detector's MAX_DEPTH_THRESH
+    max_range_m: 2.0
+
+    # Detections outside this height in map are depth noise
+    min_height_m: -0.1
+    max_height_m: 2.5
+
+    # A tagged pose is where the robot stands; the furniture is this far ahead of it
+    surface_standoff_m: 0.8
+    # Rooms are drawn up to the walls: furniture against one falls just outside
+    room_margin_m: 0.6
+    max_sublocation_distance_m: 1.5
+
+    # Retrieval: minimum CLIP text-to-crop similarity. Tune with real crops.
+    sim_min: 0.24
+    name_weight: 0.5
+
+    # JSON {"category": ["area", "sublocation"]}, per arena. "" keeps the library's table.
+    # map23oct2026 / lab_jazzy2 have no refrigerator or counter: drinks and fruit go in the cabinet.
+    category_to_furniture_json: '{"drink": ["kitchen", "cabinet"], "fruit": ["kitchen", "cabinet"], "food": ["kitchen", "cabinet"], "cleaning_supply": ["kitchen", "cabinet"], "snack": ["living_room", "coffee_table"], "dish": ["kitchen", "dishwasher"]}'
+
+    # "" -> /workspace/log/semantic_map, else ~/.ros/semantic_map
+    snapshot_dir: ""
+    snapshot_period_s: 10.0
+    # Retry until navigation and CLIP are up
+    startup_retry_s: 5.0
+    marker_period_s: 1.0

@@ -1,0 +1,11 @@
+# Objects in the semantic map. Every filter is optional: empty or 0 means no filter.
+string label
+string category
+string area
+string sublocation
+float32 max_age_s
+float32 min_confidence
+---
+bool success
+string error
+SemanticObject[] objects

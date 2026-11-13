@@ -220,3 +220,14 @@ def validate_viewpoints(
         relocated.append((vp.key, math.hypot(moved.x - vp.x, moved.y - vp.y)))
 
     return ValidationReport(kept=kept, relocated=relocated, dropped=dropped)
+
+
+def with_planned_poses(viewpoints: list[Viewpoint], planned: list[Viewpoint]) -> list[Viewpoint]:
+    """`viewpoints` with the poses of the last plan, matched by key.
+
+    The robot stands where the plan sent it. Scan marking has to compare against
+    that pose: a relocated viewpoint may face its furniture from another side, so
+    against the tagged pose it would never count as scanned.
+    """
+    by_key = {vp.key: vp for vp in planned}
+    return [by_key.get(vp.key, vp) for vp in viewpoints]

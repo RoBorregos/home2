@@ -1,6 +1,6 @@
 services:
   llama:
-    profiles: [hric, carry, gpsr, storing, restaurant]
+    profiles: [hric, carry, gpsr, storing, restaurant, finals]
     container_name: home2-hri-llamacpp-cuda
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
     runtime: nvidia
