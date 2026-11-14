@@ -4,8 +4,15 @@ from types import SimpleNamespace as NS
 
 import numpy as np
 import pytest
-
-from xarm_utils.shelf_detection import _grow_surface, _Surface, detect_shelf_levels
+import xarm_utils.shelf_detection as detector
+from scipy import ndimage
+from xarm_utils.shelf_detection import (
+    _grow_surface,
+    _Surface,
+    detect_shelf_geometry,
+    detect_shelf_levels,
+)
+from xarm_utils.shelf_geometry import BOARD_THICKNESS
 from xarm_utils.shelf_levels import ShelfCalibrationError
 
 
@@ -117,12 +124,74 @@ def test_moderately_narrower_shelf_level_is_preserved(scene):
     )
 
 
-def test_observed_undersides_are_not_reported_as_supports(scene):
+def test_observed_undersides_report_the_board_top_above_them(scene):
     # Reflect the view vertically and place the camera below the same boards.
     scene.info.k[5] = 480 - scene.info.k[5] - 1
     scene.transform.transform.translation.z = 0.0
-    with pytest.raises(ShelfCalibrationError, match="Detected 0 shelf levels"):
-        detect_shelf_levels(scene.depth[::-1], scene.info, scene.transform)
+    # Mirroring maps a board at z to 1.2 - z; the camera then sits below all of them.
+    observation = detect_shelf_geometry(scene.depth[::-1], scene.info, scene.transform)
+    assert observation.levels == pytest.approx(
+        sorted(1.2 - level + BOARD_THICKNESS for level in scene.levels), abs=0.01
+    )
+    assert {s.source for s in observation.surfaces} == {"underside"}
+    assert observation.diagnostics["underside_levels_m"] == observation.levels
+
+
+def test_board_above_the_camera_is_added_from_its_underside(scene):
+    # A fifth board at 1.40 m, above the 1.20 m camera, is only seen from below.
+    depth = scene.depth.copy()
+    board = np.divide(
+        1.2 - 1.40, scene.ny, out=np.full_like(scene.ny, np.nan), where=scene.ny < 0
+    )
+    inside = (board >= 1.1) & (board <= 2.2) & (abs(scene.nx * board) < 0.5)
+    depth[inside & ~np.isfinite(depth)] = board[inside & ~np.isfinite(depth)]
+    observation = detect_shelf_geometry(depth, scene.info, scene.transform)
+    assert observation.levels == pytest.approx(
+        scene.levels + [1.40 + BOARD_THICKNESS], abs=0.01
+    )
+    assert [s.source for s in observation.surfaces] == ["support"] * 4 + ["underside"]
+
+
+def _with_floor(scene, depth):
+    floor = np.divide(
+        1.2, scene.ny, out=np.full_like(scene.ny, np.nan), where=scene.ny > 0
+    )
+    inside = (floor >= 0.8) & (floor <= 3.5) & (abs(scene.nx * floor) < 1.0)
+    fill = inside & ~np.isfinite(depth)
+    depth = depth.copy()
+    depth[fill] = floor[fill]
+    return depth
+
+
+def test_floor_is_not_a_shelf_level(scene):
+    depth = _with_floor(scene, scene.depth)
+    observation = detect_shelf_geometry(depth, scene.info, scene.transform)
+    assert observation.levels == pytest.approx(scene.levels, abs=0.01)
+    assert not observation.diagnostics["invalid_frame"]
+
+
+def test_floor_next_to_a_single_shelf_is_excluded_not_counted(scene):
+    # With one board the stack coherence cannot reject the floor; the height band must.
+    z = 1.2 - scene.ny * scene.depth
+    single = np.where(abs(z - 0.72) < 0.01, scene.depth, np.nan)
+    depth = _with_floor(scene, single)
+    observation = detect_shelf_geometry(
+        depth, scene.info, scene.transform, min_levels=1
+    )
+    assert observation.levels == pytest.approx([0.72], abs=0.01)
+    assert observation.diagnostics["excluded_floor_heights_m"] == pytest.approx(
+        [0.0], abs=0.01
+    )
+    assert not observation.diagnostics["invalid_frame"]
+
+
+def test_wide_plane_below_the_floor_still_flags_the_frame(scene):
+    scene.transform.transform.translation.z = 1.2 - 0.45
+    observation = detect_shelf_geometry(
+        scene.depth, scene.info, scene.transform, min_levels=1
+    )
+    assert observation.diagnostics["invalid_frame"]
+    assert observation.levels[0] < -0.05
 
 
 @pytest.mark.parametrize("invalid_depth", [0.0, np.nan, np.inf])
@@ -204,3 +273,43 @@ def test_growth_excludes_observed_undersides(growing_board):
     board.normals[:, 80:] = [0, 0, -1]
     result = _grow_surface(board.points, board.normals, board.surface, 15)
     assert not result.mask[:, 80:].any()
+
+
+def test_small_normal_patches_grow_before_final_size_validation(scene, monkeypatch):
+    original = detector._surface_normals
+
+    def sparse_normals(points, position):
+        normals = original(points, position)
+        labels, count = ndimage.label(normals[..., 2] >= np.cos(np.radians(15)))
+        result = np.full_like(normals, np.nan)
+        for label in range(1, count + 1):
+            available = ndimage.binary_erosion(
+                labels == label, structure=np.ones((5, 12))
+            )
+            rows, cols = np.nonzero(available)
+            if len(rows):
+                y, x = rows[len(rows) // 2], cols[len(cols) // 2]
+                result[y - 2 : y + 3, x - 6 : x + 6] = normals[
+                    y - 2 : y + 3, x - 6 : x + 6
+                ]
+        return result
+
+    monkeypatch.setattr(detector, "_surface_normals", sparse_normals)
+    assert detect_shelf_levels(
+        scene.depth, scene.info, scene.transform
+    ) == pytest.approx(scene.levels, abs=0.01)
+
+
+def test_distant_coplanar_object_tops_do_not_form_one_wide_shelf(scene):
+    distance = np.divide(
+        1.2 - 0.75, scene.ny, out=np.full_like(scene.depth, np.nan), where=scene.ny > 0
+    )
+    lateral = -scene.nx * distance
+    inside = (
+        (distance > 1.0)
+        & (distance < 1.3)
+        & ((abs(lateral - 0.45) < 0.09) | (abs(lateral + 0.45) < 0.09))
+    )
+    depth = np.where(inside, distance, np.nan)
+    with pytest.raises(ShelfCalibrationError, match="Detected 0 shelf levels"):
+        detect_shelf_levels(depth, scene.info, scene.transform)

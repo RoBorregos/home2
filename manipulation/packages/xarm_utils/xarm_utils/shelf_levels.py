@@ -8,6 +8,8 @@ Read the heights for an arena with ``get_shelf_levels(arena)``; write them with
 import json
 import math
 import os
+import stat
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -66,6 +68,54 @@ def levels_file():
         return share / "config" / "shelf_levels.json"
     except Exception:
         return Path.home() / "frida_shelf_levels.json"
+
+
+def write_json_atomic(path: Path, data: dict, validate=None) -> None:
+    """Replace a JSON file only after serialization and optional validation."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
+        ) as stream:
+            temporary = Path(stream.name)
+            json.dump(data, stream, indent=2, allow_nan=False)
+            stream.write("\n")
+        if validate is not None:
+            validate(temporary)
+        mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
+        temporary.chmod(mode)
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def save_detected_levels(
+    arena: int,
+    levels: list[float],
+    path: Path,
+    *,
+    min_level_separation: float = DEFAULT_MIN_LEVEL_SEPARATION,
+) -> None:
+    """Validate the proposed arena calibration before replacing the old file."""
+    path = Path(path)
+    data = json.loads(path.read_text()) if path.exists() else {}
+    if data.get("frame", "base_link") != "base_link":
+        raise ShelfCalibrationError("Existing calibration is not in base_link")
+    data["frame"] = "base_link"
+    data.setdefault("compartment_height", 0.26)
+    data.setdefault("arenas", {})[str(arena)] = [
+        round(float(level), 4) for level in levels
+    ]
+    write_json_atomic(
+        path,
+        data,
+        lambda proposed: load_shelf_calibration(
+            arena, proposed, min_level_separation=min_level_separation
+        ),
+    )
 
 
 def load_shelf_calibration(

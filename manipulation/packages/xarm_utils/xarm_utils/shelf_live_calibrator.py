@@ -12,7 +12,6 @@ Use ``--dry-run`` to inspect the result without changing the file.
 
 import argparse
 from collections import deque
-import json
 import math
 import sys
 import time
@@ -30,13 +29,18 @@ import tf2_ros
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CameraInfo, Image, JointState
 
-from xarm_utils.shelf_detection import DEFAULT_MAX_TILT_DEG, detect_shelf_levels
+from xarm_utils.shelf_detection import DEFAULT_MAX_TILT_DEG, detect_shelf_geometry
+from xarm_utils.shelf_geometry import (
+    compare_reference_heights,
+    confirmed_geometry_report,
+)
 from xarm_utils.shelf_observations import ShelfLevelConsensus
 from xarm_utils.shelf_levels import (
     DEFAULT_MIN_LEVEL_SEPARATION,
     ShelfCalibrationError,
     levels_file,
-    load_shelf_calibration,
+    save_detected_levels,
+    write_json_atomic,
 )
 
 ARM_POSES_DEG = {
@@ -47,15 +51,6 @@ DOCK_TABLE_SERVICE = "/navigation/dock_table"
 DEFAULT_DOCK_OFFSET = 0.30
 DEFAULT_VALID_FRAMES = 12
 DEFAULT_MAX_FRAME_SPREAD = 0.015
-
-
-def save_detected_levels(arena: int, levels: list[float], path: Path) -> None:
-    """Update one arena while preserving the other calibration entries."""
-    data = json.loads(path.read_text()) if path.exists() else {}
-    data["frame"] = "base_link"
-    data.setdefault("compartment_height", 0.26)
-    data.setdefault("arenas", {})[str(arena)] = [round(level, 4) for level in levels]
-    path.write_text(json.dumps(data, indent=2) + "\n")
 
 
 class ShelfLiveCalibrator:
@@ -70,6 +65,7 @@ class ShelfLiveCalibrator:
         max_frame_spread: float = DEFAULT_MAX_FRAME_SPREAD,
         joint_states_topic: str = "/xarm/joint_states",
         max_frame_age: float = 1.0,
+        min_valid_frames: int | None = None,
     ):
         self.node = node
         self.bridge = CvBridge()
@@ -82,8 +78,14 @@ class ShelfLiveCalibrator:
         self.max_frame_age = max_frame_age
         self._frames = deque(maxlen=3)
         self._last_processed_stamp = None
+        self._processed_stamps = deque(maxlen=2 * valid_frames)
         self._last_warning = float("-inf")
-        self.consensus = ShelfLevelConsensus(valid_frames, max_frame_spread)
+        self.consensus = ShelfLevelConsensus(
+            valid_frames, max_frame_spread, min_frames=min_valid_frames
+        )
+        self.geometry_history = deque(maxlen=valid_frames)
+        self.geometry_report = None
+        self._calibration_warning_emitted = False
         self.min_level_separation = min_level_separation
         self.max_tilt_deg = max_tilt_deg
         qos = rclpy.qos.qos_profile_sensor_data
@@ -162,7 +164,8 @@ class ShelfLiveCalibrator:
                 )
                 self._warn_wait(last_reason)
                 pending = None
-                self.consensus.samples.clear()
+                self.consensus.reset()
+                self.geometry_history.clear()
                 continue
             if pending is None:
                 if not self._frames:
@@ -172,7 +175,7 @@ class ShelfLiveCalibrator:
                 pending_since = time.monotonic()
             depth, frame, stamp = pending
             stamp_ns = stamp.sec * 1_000_000_000 + stamp.nanosec
-            if stamp_ns == self._last_processed_stamp:
+            if stamp_ns in self._processed_stamps:
                 pending = None
                 continue
             if not frame or not self._stamp_is_fresh(stamp):
@@ -195,9 +198,10 @@ class ShelfLiveCalibrator:
                     pending = None
                 continue
             self._last_processed_stamp = stamp_ns
+            self._processed_stamps.append(stamp_ns)
             pending = None
             try:
-                levels = detect_shelf_levels(
+                observation = detect_shelf_geometry(
                     depth,
                     self.camera_info,
                     transform,
@@ -205,18 +209,46 @@ class ShelfLiveCalibrator:
                     min_level_separation=self.min_level_separation,
                     max_tilt_deg=self.max_tilt_deg,
                 )
+                if observation.diagnostics["invalid_frame"]:
+                    self.consensus.reset()
+                    self.geometry_history.clear()
+                    raise ShelfCalibrationError(
+                        "Support heights are below base_link; verify live joints and camera TF"
+                    )
+                levels = observation.levels
+                evidence = [
+                    s.evidence(observation.calibration_warning)
+                    for s in observation.surfaces
+                ]
+                if (
+                    observation.calibration_warning
+                    and not self._calibration_warning_emitted
+                ):
+                    for warning in observation.diagnostics["warnings"]:
+                        self.node.get_logger().warn(warning)
+                    self._calibration_warning_emitted = True
             except ShelfCalibrationError as exc:
                 levels = []
+                evidence = []
+                observation = None
                 last_reason = str(exc)
                 self._warn_wait(last_reason)
-            stable = self.consensus.add(levels)
+            self.geometry_history.append(observation)
+            stable = self.consensus.add(levels, evidence)
             if stable is not None and all(
                 current - previous >= self.min_level_separation
                 for previous, current in zip(stable, stable[1:])
             ):
+                self.geometry_report = confirmed_geometry_report(
+                    stable,
+                    self.geometry_history,
+                    self.consensus.max_spread,
+                    self.consensus.confirmation_mode,
+                )
                 self.node.get_logger().info(
                     f"Confirmed {len(stable)} shelf levels across "
-                    f"{len(self.consensus.samples)} distinct depth frames"
+                    f"{len(self.consensus.samples)} distinct depth frames "
+                    f"({self.consensus.confirmation_mode})"
                 )
                 return stable
             last_reason = "waiting for repeated, stable shelf heights"
@@ -231,6 +263,24 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=30.0)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--valid-frames", type=int, default=DEFAULT_VALID_FRAMES)
+    parser.add_argument(
+        "--min-valid-frames",
+        type=int,
+        default=None,
+        help="Earliest confirmation with high-quality, structurally bounded observations (default: up to 6 frames).",
+    )
+    parser.add_argument(
+        "--geometry-json",
+        type=Path,
+        help="Write measured planes, estimated outlines, obstacles, unknown cells and diagnostics to this separate JSON file.",
+    )
+    parser.add_argument(
+        "--reference-heights",
+        type=float,
+        nargs="+",
+        help="Optional externally measured heights in base_link, ordered low to high; verifies accuracy without changing TF.",
+    )
+    parser.add_argument("--max-reference-error", type=float, default=0.02)
     parser.add_argument(
         "--max-frame-spread",
         type=float,
@@ -263,7 +313,12 @@ def main() -> int:
     args = parser.parse_args()
     if args.valid_frames < 3:
         parser.error("--valid-frames must be at least 3")
-    for name in ("timeout", "max_frame_spread", "max_frame_age"):
+    if (
+        args.min_valid_frames is not None
+        and not 3 <= args.min_valid_frames <= args.valid_frames
+    ):
+        parser.error("--min-valid-frames must be between 3 and --valid-frames")
+    for name in ("timeout", "max_frame_spread", "max_frame_age", "max_reference_error"):
         if not math.isfinite(getattr(args, name)) or getattr(args, name) <= 0:
             parser.error(f"--{name.replace('_', '-')} must be positive and finite")
 
@@ -279,21 +334,44 @@ def main() -> int:
         max_frame_spread=args.max_frame_spread,
         joint_states_topic=args.joint_states_topic,
         max_frame_age=args.max_frame_age,
+        min_valid_frames=args.min_valid_frames,
     )
     try:
-        levels = calibrator.wait_for_calibration(args.timeout)
         path = levels_file()
+        if (
+            args.geometry_json is not None
+            and args.geometry_json.resolve() == path.resolve()
+        ):
+            raise ShelfCalibrationError(
+                "Geometry output must differ from the calibration file"
+            )
+        levels = calibrator.wait_for_calibration(args.timeout)
+        report = calibrator.geometry_report
+        reference = None
+        if args.reference_heights is not None:
+            reference = compare_reference_heights(
+                levels, args.reference_heights, args.max_reference_error
+            )
+            report["reference_check"] = reference
+        if args.geometry_json is not None:
+            write_json_atomic(args.geometry_json, report)
+            print(f"Saved shelf geometry and diagnostics to {args.geometry_json}")
+        if reference is not None and not reference["within_tolerance"]:
+            raise ShelfCalibrationError(
+                f"Reference height check failed: maximum error {reference['max_absolute_error_m']:.3f} m; calibration was not changed"
+            )
         print("Detected shelf levels in base_link:")
         for index, level in enumerate(levels, start=1):
             print(f"  level {index}: {level:.3f} m")
         if args.dry_run:
             print("Dry run: calibration file was not changed.")
         else:
-            save_detected_levels(args.arena, levels, path)
-            load_shelf_calibration(args.arena, path)
+            save_detected_levels(
+                args.arena, levels, path, min_level_separation=args.min_level_separation
+            )
             print(f"Saved automatic calibration to {path}")
         return 0
-    except ShelfCalibrationError as exc:
+    except (ShelfCalibrationError, OSError, ValueError) as exc:
         print(f"Automatic shelf calibration failed: {exc}", file=sys.stderr)
         return 1
     finally:

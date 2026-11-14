@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-from frida_constants.vision_constants import CAMERA_FRAME
+import os
 import random
 import time
 from collections import defaultdict
 from enum import Enum
 
 import rclpy
+from frida_constants.vision_constants import CAMERA_FRAME
 from frida_constants.vision_classes import BBOX
 from frida_interfaces.srv import PointTransformation
 from geometry_msgs.msg import PointStamped, Twist
@@ -15,6 +16,7 @@ from rclpy.node import Node
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
+from xarm_utils.shelf_levels import get_shelf_levels
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 ATTEMPT_LIMIT = 5
@@ -147,7 +149,8 @@ class StoringGroceriesManager(Node):
         # ]
         # self.manual_heights = [0.55, 0.9]
         # self.manual_heights = [0.36, 0.87, 1.38]
-        self.manual_heights = [0.4, 0.70, 1.05]
+        arena = int(os.environ.get("FRIDA_ARENA", "1"))
+        self.manual_heights = get_shelf_levels(arena)
         self.shelf_level_threshold = 0.20
 
         #         self.manual_heights = [0.04, 0.43, 0.67]
