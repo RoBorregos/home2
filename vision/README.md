@@ -244,13 +244,9 @@ The benchmark behind the defaults: [`benchmarks/embedding_gallery/`](benchmarks/
 | `image_orienter` | The single camera-rotation point (see Concepts) | pub `/vision/camera/image_oriented` | — |
 | `zed_simulator` | Publishes a plain webcam onto the ZED topics for laptop dev | params `video_id`, `use_zed`, `visualize` | — |
 
-`pose_detection.py` is a library, not a node: it holds the COCO keypoint constants and the
-gesture/pose classification used by `hric_commands`, `gpsr_commands`, `tracker_node` and
-`customer_node`. Its `PoseDetection` class does not load the model;
-it is a client of the `DetectPose` service that `ObjectDetect2D` always serves, so only one
-yolo11m-pose instance runs and every launch that starts `ObjectDetect2D` provides it. The client
-waits on a future, so call it from a node spun by a `MultiThreadedExecutor` (with a reentrant
-callback group) or from a non-executor thread; on a single-threaded executor callback it times out.
+`pose_detection.py` is a library, not a node: COCO keypoints and gesture/pose logic for
+`hric_commands`, `gpsr_commands`, `tracker_node` and `customer_node`. `PoseDetection` is a client of
+`ObjectDetect2D`'s `DetectPose` service (one shared yolo11m-pose); call it from a `MultiThreadedExecutor`.
 
 #### `VisionRuntime`
 

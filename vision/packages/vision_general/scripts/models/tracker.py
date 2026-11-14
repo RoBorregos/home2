@@ -1,4 +1,4 @@
-"""Person tracking model: YOLO + ByteTrack + ReID + pose client."""
+"""Person tracking: YOLO + ByteTrack + ReID."""
 
 import cv2
 import torch
@@ -28,7 +28,7 @@ class TrackerModel:
         self.reid = None
 
     def load(self, pose: PoseDetection) -> None:
-        """Load the per-frame YOLO and keep the node's pose client. ReID is loaded separately."""
+        """Load YOLO and keep the pose client."""
         self.yolo = load_yolo_trt("yolov8n.pt")
         self.pose = pose
 

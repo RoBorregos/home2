@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pose logic on YOLO keypoints; PoseDetection is the DetectPose client (model runs in ObjectDetect2D)."""
+"""Pose logic on YOLO keypoints; PoseDetection is the DetectPose client."""
 
 import threading
 
@@ -30,12 +30,12 @@ RIGHT_ANKLE = 16
 
 NUM_KEYPOINTS = 17
 KP_CONF = 0.3
-DEFAULT_TIMEOUT = 3.0  # s, per DetectPose call
+DEFAULT_TIMEOUT = 3.0  # s
 
 
 class PoseDetection:
     def __init__(self, node, callback_group=None, timeout: float = DEFAULT_TIMEOUT):
-        """Create the DetectPose client; call it from a MultiThreadedExecutor callback."""
+        """DetectPose client; use from a MultiThreadedExecutor."""
         self.node = node
         self.timeout = timeout
         self.bridge = CvBridge()
@@ -57,7 +57,7 @@ class PoseDetection:
     # ── Full-image detection ──
 
     def detect_people(self, image, conf=0.4):
-        """Call DetectPose on image; one dict per person, [] on failure."""
+        """One dict per person, [] on failure."""
         if image is None or image.size == 0:
             return []
         if not self.client.service_is_ready():
@@ -74,7 +74,7 @@ class PoseDetection:
         done = threading.Event()
 
         def waiting4object_detector(_future):
-            """Wake detect_people when ObjectDetect2D answers the DetectPose call."""
+            """Wake detect_people."""
             done.set()
 
         future = self.client.call_async(request)
@@ -141,7 +141,7 @@ class PoseDetection:
     # ── Core keypoint extraction ──
 
     def _get_keypoints(self, image):
-        """(points (17,2) normalized, conf (17,)) of the first person, or (None, None)."""
+        """First person's (points, conf), or (None, None)."""
         people = self.detect_people(image, conf=0.0)
         if not people:
             return None, None
@@ -419,7 +419,7 @@ class PoseDetection:
 
 
 def main():
-    """Webcam demo; needs object_detector_node.py running for DetectPose."""
+    """Webcam demo; needs object_detector_node.py."""
     rclpy.init()
     node = rclpy.create_node("pose_detection_demo")
     executor = MultiThreadedExecutor()

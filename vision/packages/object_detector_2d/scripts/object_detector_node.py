@@ -60,7 +60,7 @@ class ObjectDetectorNode(BaseDetectorNode):
         self.models = [ModelRegistry.get(n) for n in model_names if n]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
         self.yolo_service_model = ModelRegistry.get("yolo_generic")
-        # One yolo11m-pose shared by all nodes via DetectPose (executor thread only, no lock)
+        # Shared by all nodes via DetectPose
         self.pose_model = load_yolo_trt("yolo11m-pose.pt", task="pose")
 
         # Latest GalleryDetect2D output, merged into our detections while fresh

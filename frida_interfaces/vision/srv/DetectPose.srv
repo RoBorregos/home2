@@ -1,6 +1,6 @@
-# Run the shared YOLO pose model (ObjectDetect2D) on an image.
+# Shared pose model in ObjectDetect2D
 sensor_msgs/Image image
-float32 conf  # detection threshold; 0 = model default
+float32 conf  # 0 = default
 ---
 bool success
 frida_interfaces/PersonPose[] people

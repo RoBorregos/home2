@@ -112,8 +112,7 @@ class HRICCommands(VisionRuntime):
             2.0, self._poll_areas, callback_group=self.callback_group
         )
 
-        # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy.
-        # yolo11m-pose runs in ObjectDetect2D; this is the DetectPose client.
+        # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
         self.pose_detection = PoseDetection(self, self.callback_group)
 
         self.detect_hand_service = self.create_service(
@@ -153,7 +152,7 @@ class HRICCommands(VisionRuntime):
         )
 
     def run_hand_inference(self):
-        """Detect hand position using YOLO pose wrist keypoints (shared DetectPose service)."""
+        """Hand position from YOLO pose wrist keypoints."""
         if self.image is None:
             return
 

@@ -114,7 +114,6 @@ class GPSRCommands(VisionRuntime):
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
-        # yolo11m-pose runs in ObjectDetect2D; this is the DetectPose client.
         self.pose_detection = PoseDetection(self, self.callback_group)
         self.output_image = []
         self.people = []

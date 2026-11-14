@@ -89,7 +89,6 @@ class CustomerNode(VisionRuntime):
         self.output_image = []
         self.customer_image = []
 
-        # yolo11m-pose runs in ObjectDetect2D; this is the DetectPose client.
         self.pose_detection = PoseDetection(self, self.callback_group)
 
         self.create_timer(0.1, self.publish_image)
