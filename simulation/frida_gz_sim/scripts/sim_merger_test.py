@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 import rclpy
 from frida_constants.navigation_constants import TIMEOUT_NAV_QUERY_MATRIX
+from frida_interfaces.action import NavQueryMatrix
 from frida_gz_sim.nav import MAP_NAME
 from rclpy.node import Node
 from sim_nav_task_manager import gazebo_pose
@@ -134,6 +135,39 @@ class SimMergerTest(Node):
             flag = "" if solved == total else "  <- incomplete"
             self.get_logger().info(f"n={n:2d}  {elapsed:5.1f}s  {solved}/{total}{flag}")
 
+    def run_cache_modes(self):
+        """Exercise the same named-pair warmup and fixed origin row GPSR uses."""
+        areas = [
+            (loc, sub)
+            for loc, subareas in self.areas.items()
+            if isinstance(subareas, dict)
+            for sub, coords in subareas.items()
+            if isinstance(coords, list) and len(coords) == 7
+        ]
+        started = time.monotonic()
+        status, named = self.nav.get_path_matrix(
+            areas, mode=NavQueryMatrix.Goal.LOCATION_PAIRS, budget_seconds=120.0
+        )
+        if status != Status.EXECUTION_SUCCESS:
+            raise RuntimeError(f"Named-pair warmup failed: {named}")
+        if any(start is None for start, _ in named):
+            raise AssertionError("Named-pair warmup returned robot-origin entries")
+        self.get_logger().info(
+            f"GPSR warmup: {len(named)}/{len(areas) ** 2} pairs in "
+            f"{time.monotonic() - started:.1f}s"
+        )
+        status, snapshot = self.nav.get_current_pose()
+        if status != Status.EXECUTION_SUCCESS:
+            raise RuntimeError("Cannot capture robot pose for origin-mode check")
+        status, origin = self.nav.get_path_matrix(
+            areas, mode=NavQueryMatrix.Goal.ROBOT_ORIGIN, robot_start=snapshot
+        )
+        if status != Status.EXECUTION_SUCCESS:
+            raise RuntimeError(f"Robot-origin query failed: {origin}")
+        if any(start is not None for start, _ in origin):
+            raise AssertionError("Robot-origin query returned named-pair entries")
+        self.get_logger().info(f"GPSR origin row: {len(origin)}/{len(areas)} paths")
+
     def route_cost(self, plan, matrix, origin_xy):
         """Real meters for the plan's go_to legs; unsolved legs use straight line."""
         total, prev, missing = 0.0, None, 0
@@ -214,6 +248,7 @@ class SimMergerTest(Node):
         self.get_logger().info(f"{label} drive time {time.monotonic() - t0:.0f}s")
 
     def run(self):
+        self.run_cache_modes()
         self.run_timing()
         for name, spec in SCENARIOS.items():
             euclid, path = self.run_scenario(name, spec)

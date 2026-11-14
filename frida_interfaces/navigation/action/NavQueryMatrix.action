@@ -3,9 +3,21 @@
 # areas, plus from the robot's pose to each, in one nav2 resume/pause, no motion.
 string[] locations
 string[] sublocations
+# FULL preserves the original matrix layout. Other modes avoid recomputing
+# named pairs when only the robot's starting position has changed.
+uint8 FULL=0
+uint8 LOCATION_PAIRS=1
+uint8 ROBOT_ORIGIN=2
+uint8 mode
+# Empty frame_id: capture map -> base_link once, after acquiring navigation.
+# Otherwise this must be an explicit pose in the map frame.
+geometry_msgs/PoseStamped robot_start
+# Zero uses the normal eight-second budget; positive values override it.
+float64 budget_seconds
 ---
 # Result
-# Row-major (n + 1) x n: first row starts at the robot, then one row per area.
+# Row-major: FULL (n + 1) x n, LOCATION_PAIRS n x n, ROBOT_ORIGIN 1 x n.
+# FULL's first row starts at the robot, followed by one row per area.
 # -1.0 marks a pair that was unsolvable, past the budget or skipped by a cancel;
 # a cancelled goal still returns the pairs solved before it stopped.
 bool success

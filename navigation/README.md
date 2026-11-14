@@ -236,12 +236,44 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 | `/navigation/approach_point` | `ApproachPoint` | Approach a point at a standoff distance |
 | `/navigation/get_robot_pose` | `GetRobotPose` | Current pose from TF (map → base_link) |
 | `/navigation/query_path` | `NavQuery` | Path distance between two areas (no motion) |
-| `/navigation/query_path_matrix` | `NavQueryMatrix` (action) | Path distances between every pair of areas (+ robot) in one nav2 resume/pause; cancellable, returns partial results |
+| `/navigation/query_path_matrix` | `NavQueryMatrix` (action) | Full matrix, named pairs only, or robot-origin row; one nav2 resume/pause, cancellable with partial results |
 | `/navigation/dock_table` | `DockTable` | Dock to the surface in front (with offset) |
 | `/navigation/is_door_open` | `CheckDoor` | Door open/closed via lidar |
 | `/navigation/areas_json` | `MapAreas` | Return `areas.json` as a string |
 | `/navigation/follow_person` | `SetBool` | Start/stop person following |
 | `/navigation/resume_nav` | `Empty` | Resume paused Nav2 |
+
+### GPSR distance cache
+
+GPSR owns its distance cache in memory; `nav_central` only computes paths. On
+GPSR startup, before the start-button wait, it fetches live named locations and
+warms all ordered location pairs. `path_cache_warmup_seconds` defaults to 120 s,
+including waiting for navigation readiness. Successful pairs are retained for
+the GPSR process lifetime; missing pairs use the existing scaled straight-line
+estimate. Warmup logs coverage and elapsed time. Disable interleaving to skip it.
+
+After reaching `start_location`, GPSR snapshots the robot's complete pose and
+requests its distances to all named locations before collecting commands. Before
+merging the batch it checks that pose again, refreshing only the robot row if
+translation exceeds `path_origin_translation_tolerance` (0.1 m) or yaw exceeds
+`path_origin_rotation_tolerance` (0.174533 radians, 10 degrees). Missing TF or
+movement during the refresh drops origin costs. Test mode captures its initial
+origin after warmup, without driving to the instruction point.
+
+`NavQueryMatrix` accepts `mode` (`FULL=0`, `LOCATION_PAIRS=1`, `ROBOT_ORIGIN=2`),
+an optional `robot_start` in the `map` frame, and `budget_seconds`. Zero budget
+keeps the normal 8 s calculation budget; GPSR requests the remaining startup
+budget for named pairs. An empty start frame snapshots TF once after navigation
+is acquired. Results are row-major `(n+1)×n`, `n×n`, or `1×n` respectively, with
+`-1` for unsolved pairs. The Python wrapper still returns a pair-to-distance dict.
+The action definition changed: rebuild `frida_interfaces` and its navigation,
+task-manager, and simulation consumers together.
+
+Load any updated map, tags, or planner settings in navigation first. Then restart
+GPSR, or invoke its
+internal `_refresh_path_cache()` helper while it is idle to reload areas and
+replace the full matrix. This helper is not a public ROS service. Temporary
+obstacles are handled by live navigation and do not rebuild the baseline cache.
 
 ### Example service calls
 

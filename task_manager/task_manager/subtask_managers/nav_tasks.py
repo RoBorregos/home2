@@ -318,12 +318,25 @@ class NavigationTasks:
         (Status.EXECUTION_ERROR, "Action server not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def get_path_matrix(self, areas):
+    def get_path_matrix(
+        self, areas, *, mode=NavQueryMatrix.Goal.FULL, robot_start=None, budget_seconds=0.0
+    ):
         """Path distances (m) between every ordered pair of ``areas`` ((location,
         sublocation) tuples) without moving. Returns (Status, {(start, goal): m}),
-        start None = robot pose; unsolved pairs omitted. A slow query is cancelled
-        and returns what was solved, only once nav_central confirms it stopped."""
+        start None = robot pose; unsolved pairs omitted. ``mode`` can request
+        only named pairs or only the robot row, using an explicit map-frame
+        ``robot_start`` snapshot. Zero budget preserves the normal timeout.
+        A slow query is cancelled and returns what was solved, only once
+        nav_central confirms it stopped."""
         areas = [(loc, sub or "safe_place") for loc, sub in areas]
+        if mode not in (
+            NavQueryMatrix.Goal.FULL,
+            NavQueryMatrix.Goal.LOCATION_PAIRS,
+            NavQueryMatrix.Goal.ROBOT_ORIGIN,
+        ):
+            return (Status.EXECUTION_ERROR, "Unknown matrix mode")
+        if not math.isfinite(budget_seconds) or budget_seconds < 0.0:
+            return (Status.EXECUTION_ERROR, "Invalid matrix budget")
         n = len(areas)
         if n == 0:
             return (Status.EXECUTION_SUCCESS, {})
@@ -331,6 +344,10 @@ class NavigationTasks:
         goal = NavQueryMatrix.Goal()
         goal.locations = [loc for loc, _ in areas]
         goal.sublocations = [sub for _, sub in areas]
+        goal.mode = mode
+        goal.budget_seconds = float(budget_seconds)
+        if robot_start is not None:
+            goal.robot_start = robot_start
         send_future = self.nav_query_matrix_client.send_goal_async(goal)
         rclpy.spin_until_future_complete(
             self.node, send_future, timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
@@ -341,14 +358,17 @@ class NavigationTasks:
             return (Status.EXECUTION_ERROR, "Goal not accepted")
 
         result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(
-            self.node, result_future, timeout_sec=SUBTASK_MANAGER.NAV_QUERY_MATRIX_TIMEOUT.value
+        wait_seconds = (
+            budget_seconds + 4.0
+            if budget_seconds > 0.0
+            else SUBTASK_MANAGER.NAV_QUERY_MATRIX_TIMEOUT.value
         )
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=wait_seconds)
         if not result_future.done():
             CLog.nav(
                 self.node,
                 "WARN",
-                f"Path matrix exceeded {SUBTASK_MANAGER.NAV_QUERY_MATRIX_TIMEOUT.value:.0f}s, "
+                f"Path matrix exceeded {wait_seconds:.0f}s, "
                 "cancelling and waiting for nav_central to stop",
             )
             goal_handle.cancel_goal_async()
@@ -366,14 +386,20 @@ class NavigationTasks:
         if not result.success:
             CLog.nav(self.node, "ERROR", f"Path matrix query failed: {result.error}")
             return (Status.EXECUTION_ERROR, result.error)
-        starts = [None] + areas
+        starts = (
+            [None] + areas
+            if mode == NavQueryMatrix.Goal.FULL
+            else areas
+            if mode == NavQueryMatrix.Goal.LOCATION_PAIRS
+            else [None]
+        )
         if len(result.distances) != len(starts) * n:
             return (Status.EXECUTION_ERROR, "Malformed path matrix")
         matrix = {}
         for r, start in enumerate(starts):
             for c, goal in enumerate(areas):
                 d = result.distances[r * n + c]
-                if d >= 0.0:
+                if math.isfinite(d) and d >= 0.0:
                     matrix[(start, goal)] = d
         partial = " (partial, cancelled)" if response.status == GoalStatus.STATUS_CANCELED else ""
         CLog.nav(self.node, "SUCCESS", f"Path matrix: {len(matrix)} pairs solved{partial}")

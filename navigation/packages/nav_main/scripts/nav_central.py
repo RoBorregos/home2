@@ -1155,8 +1155,7 @@ class Nav_Central(Node):
         return response
 
     def query_path_matrix(self, goal_handle):
-        """Action execute: path lengths between every ordered pair of areas (plus
-        the robot's pose as an extra first start) in one nav2 resume/pause.
+        """Action execute: requested named-pair/robot rows in one nav2 resume/pause.
         The terminal state is set only after nav2 is restored and service_group freed."""
         result = self._run_path_matrix(goal_handle)
         if goal_handle.is_cancel_requested:
@@ -1186,13 +1185,29 @@ class Nav_Central(Node):
         if len(request.sublocations) != n:
             result.error = "locations and sublocations differ in length"
             return result
+        if request.mode not in (NavQueryMatrix.Goal.FULL, NavQueryMatrix.Goal.LOCATION_PAIRS,
+                                NavQueryMatrix.Goal.ROBOT_ORIGIN):
+            result.error = "Unknown matrix mode"
+            return result
+        if not math.isfinite(request.budget_seconds) or request.budget_seconds < 0.0:
+            result.error = "Invalid matrix budget"
+            return result
+        if request.mode != NavQueryMatrix.Goal.LOCATION_PAIRS and request.robot_start.header.frame_id:
+            pose = request.robot_start.pose
+            values = (pose.position.x, pose.position.y, pose.position.z,
+                      pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
+            if (request.robot_start.header.frame_id != "map"
+                    or not all(math.isfinite(v) for v in values)
+                    or sum(v * v for v in values[3:]) < 1e-12):
+                result.error = "robot_start must be a finite map-frame pose with a valid quaternion"
+                return result
 
         poses = []
         for loc, sub in zip(request.locations, request.sublocations):
             coords = self._fetch_area_coords(loc, sub or "safe_place")
             poses.append(self._pose_from_coords(coords) if coords is not None else None)
 
-        if not self.rtabmap_loaded:
+        if not self.rtabmap_loaded or not self.nodes_status:
             self.nav_logger("error", "Query_Path_Matrix -> Navigation not initialized")
             result.error = "Navigation not initialized"
             return result
@@ -1203,17 +1218,25 @@ class Nav_Central(Node):
             return result
         try:
             # Budget starts before the resume so the whole query stays bounded
-            deadline = t.monotonic() + TIMEOUT_NAV_QUERY_MATRIX
+            deadline = t.monotonic() + (request.budget_seconds or TIMEOUT_NAV_QUERY_MATRIX)
             # Planner needs nav2 active; remember prior state to restore it after
             was_paused = self.nav2_paused
-            self.resume_slam()
-            self.resume_nav2()
-            if self.nav2_paused:
-                self.nav_logger("error", "Query_Path_Matrix -> Could not resume nav2")
-                result.error = "Could not resume nav2"
-                return result
             try:
-                result.distances = self._plan_matrix(goal_handle, poses, deadline)
+                self.resume_slam()
+                self.resume_nav2()
+                if self.nav2_paused:
+                    self.nav_logger("error", "Query_Path_Matrix -> Could not resume nav2")
+                    result.error = "Could not resume nav2"
+                    return result
+                robot_start = None
+                if request.mode != NavQueryMatrix.Goal.LOCATION_PAIRS:
+                    if request.robot_start.header.frame_id:
+                        robot_start = request.robot_start
+                    else:
+                        snapshot = self.get_robot_pose_callback(None, GetRobotPose.Response())
+                        if snapshot.success:
+                            robot_start = snapshot.pose
+                result.distances = self._plan_matrix(goal_handle, poses, deadline, robot_start)
                 result.success = True
             finally:
                 if was_paused:
@@ -1232,24 +1255,28 @@ class Nav_Central(Node):
         self.nav_logger("info", f"Query_Path_Matrix -> {solved}/{len(result.distances)} pairs solved{note}")
         return result
 
-    def _plan_matrix(self, goal_handle, poses, deadline):
-        """Row-major (n + 1) x n path lengths, robot pose as the first start;
-        -1.0 when unsolvable, past the deadline or cancelled."""
+    def _plan_matrix(self, goal_handle, poses, deadline, robot_start=None):
+        """Compute the requested rows using one fixed robot pose, without caching."""
         def cancelled():
             return goal_handle.is_cancel_requested
 
         n = len(poses)
         feedback = NavQueryMatrix.Feedback()
-        feedback.pairs_total = (n + 1) * n
+        mode = goal_handle.request.mode
+        starts = ([None] + list(range(n)) if mode == NavQueryMatrix.Goal.FULL else
+                  list(range(n)) if mode == NavQueryMatrix.Goal.LOCATION_PAIRS else [None])
+        feedback.pairs_total = len(starts) * n
         distances = []
-        for i in [None] + list(range(n)):
+        for i in starts:
             for j in range(n):
                 if i == j:
                     distances.append(0.0)
-                elif poses[j] is None or (i is not None and poses[i] is None) or t.monotonic() >= deadline or cancelled():
+                elif (poses[j] is None or (i is not None and poses[i] is None)
+                      or (i is None and robot_start is None)
+                      or t.monotonic() >= deadline or cancelled()):
                     distances.append(-1.0)
                 else:
-                    path = self._compute_path(poses[j], None if i is None else poses[i], deadline, cancelled)
+                    path = self._compute_path(poses[j], robot_start if i is None else poses[i], deadline, cancelled)
                     distances.append(-1.0 if path is None else self._path_length(path))
                 feedback.pairs_done = len(distances)
                 goal_handle.publish_feedback(feedback)
