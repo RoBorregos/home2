@@ -116,9 +116,15 @@ SERVER = load_methods(
         "_refresh_path_cache",
         "_matrix_needs_planner",
         "_setup",
+        "_path_cache_inputs_ready",
+        "_path_planner_ready",
+        "_try_warm_path_cache",
     },
     GetRobotPose=NS(Response=NS),
+    GetState=NS(Request=NS),
+    State=NS(PRIMARY_STATE_ACTIVE=3),
     ReentrantCallbackGroup=NS,
+    MutuallyExclusiveCallbackGroup=NS,
     ManageLifecycleNodes=NS,
     NAV2_LIFECYCLE_SERVICE="/lifecycle_manager_navigation/manage_nodes",
     MONITOR_RATE=1.0,
@@ -166,6 +172,12 @@ def gpsr():
     return tm
 
 
+def grid():
+    return NS(
+        header=NS(frame_id="map"), info=NS(width=2, height=2, resolution=0.05), data=[0, 0, 100, -1]
+    )
+
+
 def server(mode=Goal.FULL, *, paused=True):
     nav = SERVER()
     nav.mapping = False
@@ -176,6 +188,19 @@ def server(mode=Goal.FULL, *, paused=True):
     nav._location_path_cache = {}
     nav._path_cache_context = None
     nav.use_nav2 = True
+    nav._static_grid = grid()
+    nav._costmap_grid = grid()
+    nav.compute_path_client = Mock()
+    nav.compute_path_client.server_is_ready.return_value = True
+    nav._path_state_clients = []
+    for _ in range(2):
+        client = Mock()
+        client.service_is_ready.return_value = True
+        future = Mock()
+        future.done.return_value = True
+        future.result.return_value = NS(current_state=NS(id=3))
+        client.call_async.return_value = future
+        nav._path_state_clients.append(client)
     nav.get_parameter = lambda _: NS(value=120.0)
     nav.rtabmap_loaded = True
     nav.nodes_status = True
@@ -389,6 +414,73 @@ class CacheTests(unittest.TestCase):
 
 
 class MatrixServerTests(unittest.TestCase):
+    def test_warmup_waits_for_populated_map_and_costmap(self):
+        for missing in ("map", "costmap", "unknown", "malformed", "wrong_frame", "locations"):
+            with self.subTest(missing=missing):
+                nav, _ = server()
+                nav._location_path_cache[(AREAS[0], AREAS[1])] = 8
+                if missing == "map":
+                    nav._static_grid = None
+                elif missing == "costmap":
+                    nav._costmap_grid = None
+                elif missing == "unknown":
+                    nav._costmap_grid.data = [-1] * 4
+                elif missing == "malformed":
+                    nav._static_grid.data = [0]
+                elif missing == "wrong_frame":
+                    nav._static_grid.header.frame_id = "odom"
+                else:
+                    nav.areas_data = {}
+                self.assertFalse(nav._refresh_path_cache())
+                nav._hold_service_group.assert_not_called()
+                nav._compute_path.assert_not_called()
+                self.assertEqual(nav._location_path_cache[(AREAS[0], AREAS[1])], 8)
+
+    def test_action_discovery_does_not_replace_active_lifecycle_check(self):
+        for client_index in range(2):
+            nav, _ = server()
+            nav._sync_path_cache()
+            nav._location_path_cache[(AREAS[0], AREAS[1])] = 8
+            nav._path_state_clients[
+                client_index
+            ].call_async.return_value.result.return_value.current_state.id = 2
+            self.assertFalse(nav._refresh_path_cache())
+            nav._compute_path.assert_not_called()
+            self.assertEqual(nav._location_path_cache[(AREAS[0], AREAS[1])], 8)
+            self.assertTrue(nav.nav2_paused)
+
+    def test_warmup_retries_then_stops_its_timer_when_ready(self):
+        nav, _ = server()
+        timer = Mock()
+        nav._path_cache_warmup_timer = timer
+        nav.destroy_timer = Mock()
+        nav._static_grid = None
+        nav._try_warm_path_cache()
+        timer.reset.assert_called_once()
+        nav._compute_path.assert_not_called()
+        nav._static_grid = grid()
+        nav._try_warm_path_cache()
+        nav.destroy_timer.assert_called_once_with(timer)
+        self.assertIsNone(nav._path_cache_warmup_timer)
+        self.assertEqual(len(nav._location_path_cache), 4)
+
+    def test_readiness_timeout_cancels_pending_state_requests(self):
+        nav, _ = server()
+        future = nav._path_state_clients[0].call_async.return_value
+        future.done.return_value = False
+        self.assertFalse(nav._path_planner_ready(time.monotonic() - 1, lambda: False))
+        future.cancel.assert_called_once()
+
+    def test_missing_state_service_or_planner_action_defers_warmup(self):
+        for unavailable in ("state", "action"):
+            nav, _ = server()
+            if unavailable == "state":
+                nav._path_state_clients[0].service_is_ready.return_value = False
+            else:
+                nav.compute_path_client.server_is_ready.return_value = False
+            self.assertFalse(nav._refresh_path_cache())
+            nav._compute_path.assert_not_called()
+
     def test_setup_warms_once_after_navigation_and_initial_pose(self):
         nav, _ = server()
         nav._setup_done = False
@@ -404,9 +496,11 @@ class MatrixServerTests(unittest.TestCase):
         nav.start_slam = lambda: events.append("slam")
         nav.load_nav2 = lambda: events.append("nav2")
         nav._wait_for_initial_pose = lambda: events.append("pose")
-        nav._refresh_path_cache = Mock(side_effect=lambda: events.append("warm"))
+        nav._refresh_path_cache = Mock(side_effect=lambda: events.append("warm") or True)
         nav._setup()
         nav._setup()
+        nav._refresh_path_cache.assert_not_called()
+        nav._try_warm_path_cache()
         self.assertEqual(events, ["areas", "requirements", "slam", "nav2", "pose", "warm"])
         self.assertTrue(nav.nodes_status)
         nav._refresh_path_cache.assert_called_once()

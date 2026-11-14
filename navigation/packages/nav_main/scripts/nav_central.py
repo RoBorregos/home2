@@ -16,6 +16,8 @@ from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
 from nav_msgs.msg import OccupancyGrid
+from lifecycle_msgs.srv import GetState
+from lifecycle_msgs.msg import State
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
 from rclpy.qos import QoSProfile, DurabilityPolicy
 from frida_constants.navigation_constants import(
@@ -165,6 +167,12 @@ class Nav_Central(Node):
         self.declare_parameter('path_cache_warmup_seconds', 120.0)
         self._location_path_cache = {}
         self._path_cache_context = None
+        self._path_cache_warmup_timer = None
+        self._path_cache_group = ReentrantCallbackGroup()
+        self._path_state_clients = [
+            self.create_client(GetState, service, callback_group=self._path_cache_group)
+            for service in ('/planner_server/get_state', '/global_costmap/global_costmap/get_state')
+        ]
 
         self.lidar_group = ReentrantCallbackGroup()
         self.service_group = MutuallyExclusiveCallbackGroup()
@@ -267,11 +275,11 @@ class Nav_Central(Node):
         self.create_subscription(
             OccupancyGrid, GLOBAL_COSTMAP_TOPIC,
             lambda msg: setattr(self, "_costmap_grid", msg), costmap_qos,
-            callback_group=self.service_group)
+            callback_group=self._path_cache_group)
         self.create_subscription(
             OccupancyGrid, MAP_TOPIC,
-            lambda msg: setattr(self, "_static_grid", msg), 1,
-            callback_group=self.service_group)
+            lambda msg: setattr(self, "_static_grid", msg), costmap_qos,
+            callback_group=self._path_cache_group)
 
         # Initial pose tracking
         self._initial_pose_set = False
@@ -330,7 +338,8 @@ class Nav_Central(Node):
         self._monitor_timer = self.create_timer(MONITOR_RATE, self._monitoring, callback_group=ReentrantCallbackGroup())
         self.nav_logger("info", "Monitor Started")
         if not self.mapping and self.use_nav2:
-            self._refresh_path_cache()
+            self._path_cache_warmup_timer = self.create_timer(
+                2.0, self._try_warm_path_cache, callback_group=MutuallyExclusiveCallbackGroup())
 
     def _monitoring(self):
         """General topics and tf monitor """
@@ -1184,6 +1193,57 @@ class Nav_Central(Node):
             self._location_path_cache.clear()
             self._path_cache_context = context
 
+    def _path_cache_inputs_ready(self):
+        """Require populated map-frame grids and at least one named pose."""
+        def grid_ready(grid):
+            return (grid is not None and grid.header.frame_id == 'map'
+                    and grid.info.width > 0 and grid.info.height > 0
+                    and math.isfinite(grid.info.resolution) and grid.info.resolution > 0.0
+                    and len(grid.data) == grid.info.width * grid.info.height
+                    and any(cell >= 0 for cell in grid.data))
+
+        return (grid_ready(self._static_grid) and grid_ready(self._costmap_grid)
+                and isinstance(self.areas_data, dict)
+                and any(isinstance(coords, (list, tuple)) and len(coords) == 7
+                        and all(isinstance(v, (int, float)) and math.isfinite(v) for v in coords)
+                        for subareas in self.areas_data.values() if isinstance(subareas, dict)
+                        for coords in subareas.values()))
+
+    def _path_planner_ready(self, deadline, cancelled):
+        """Action discovery alone is insufficient: both lifecycle nodes must be active."""
+        if not self.compute_path_client.server_is_ready():
+            return False
+        futures = []
+        try:
+            for client in self._path_state_clients:
+                if not client.service_is_ready():
+                    return False
+                futures.append(client.call_async(GetState.Request()))
+            while not all(future.done() for future in futures):
+                if cancelled() or t.monotonic() >= deadline:
+                    return False
+                t.sleep(0.05)
+            return all(future.result() is not None
+                       and future.result().current_state.id == State.PRIMARY_STATE_ACTIVE
+                       for future in futures)
+        except Exception as e:
+            self.nav_logger("warn", f"Path planner readiness check failed: {e}")
+            return False
+        finally:
+            for future in futures:
+                if not future.done():
+                    future.cancel()
+
+    def _try_warm_path_cache(self):
+        """Retry deferred warmup; cancel the timer while work is in progress."""
+        timer = self._path_cache_warmup_timer
+        timer.cancel()
+        if self._refresh_path_cache():
+            self.destroy_timer(timer)
+            self._path_cache_warmup_timer = None
+        else:
+            timer.reset()
+
     def _refresh_path_cache(self):
         """Warm all named pairs after setup, independently of GPSR's lifetime.
 
@@ -1192,7 +1252,9 @@ class Nav_Central(Node):
         invalidation and computation. Robot-origin distances are never retained.
         """
         if self.mapping or not self.use_nav2 or not self.nodes_status:
-            return
+            return False
+        if not self._path_cache_inputs_ready():
+            return False
         started = t.monotonic()
         budget = float(self.get_parameter('path_cache_warmup_seconds').value)
         if not math.isfinite(budget) or budget <= 0.0:
@@ -1219,9 +1281,11 @@ class Nav_Central(Node):
             self.nav_logger("info" if result.success else "warn",
                             f"Path cache warmup: {solved}/{len(areas) ** 2} named pairs "
                             f"in {t.monotonic() - started:.1f}s; {result.error}")
+            return result.success
         except Exception as e:
             # Path estimation must not prevent navigation from starting.
             self.nav_logger("warn", f"Path cache warmup failed: {e}")
+            return False
 
     def _matrix_needs_planner(self, request, poses):
         if request.mode != NavQueryMatrix.Goal.LOCATION_PAIRS and any(p is not None for p in poses):
@@ -1285,14 +1349,15 @@ class Nav_Central(Node):
             return result
         try:
             self._sync_path_cache()
-            if refresh_cache:
-                self._location_path_cache.clear()
             # Budget starts before the resume so the whole query stays bounded
             deadline = t.monotonic() + (request.budget_seconds or TIMEOUT_NAV_QUERY_MATRIX)
-            if not self._matrix_needs_planner(request, poses):
+            if not refresh_cache and not self._matrix_needs_planner(request, poses):
                 # A warmed named matrix does not need a Nav2 resume or robot TF.
                 result.distances = self._plan_matrix(goal_handle, poses, deadline)
                 result.success = True
+                return result
+            if not self._path_cache_inputs_ready():
+                result.error = "Map, global costmap, or named locations not ready"
                 return result
             # Planner needs nav2 active; remember prior state to restore it after
             was_paused = self.nav2_paused
@@ -1303,6 +1368,13 @@ class Nav_Central(Node):
                     self.nav_logger("error", "Query_Path_Matrix -> Could not resume nav2")
                     result.error = "Could not resume nav2"
                     return result
+                if (not self._path_planner_ready(min(deadline, t.monotonic() + 2.0),
+                                                 lambda: goal_handle.is_cancel_requested)
+                        or not self._path_cache_inputs_ready()):
+                    result.error = "Map or planner not ready"
+                    return result
+                if refresh_cache:
+                    self._location_path_cache.clear()
                 robot_start = None
                 if request.mode != NavQueryMatrix.Goal.LOCATION_PAIRS:
                     if request.robot_start.header.frame_id:

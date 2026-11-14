@@ -247,7 +247,12 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 
 `nav_central` owns the named location-pair cache in memory. Once navigation setup
 has loaded the finalized map and tagged locations, activated Nav2, and completed
-initial localization, it warms all ordered named pairs independently of GPSR.
+initial localization, it schedules warmup independently of GPSR. Warmup requires
+populated map-frame map and global-costmap grids, valid named poses, a discoverable
+planner action, and active planner/global-costmap lifecycle states. It retries
+every two seconds until these checks pass; merely being outside mapping mode or
+setting `nodes_status` does not establish readiness. Map/grid updates are received
+independently of the navigation-operation lock so they can arrive during checks.
 Its `path_cache_warmup_seconds` parameter defaults to 120 s. Warmup logs coverage
 and elapsed time; successful pairs survive GPSR exits/restarts until navigation
 is restarted or its cache is refreshed. Mapping mode does not warm the cache.
