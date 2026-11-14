@@ -107,7 +107,6 @@ class GPSRTM(Node):
         self.declare_parameter("interleave_enabled", True)
         self.declare_parameter("batch_size", BATCH_SIZE)
         self.declare_parameter("test_mode", False)
-        self.declare_parameter("path_cache_warmup_seconds", 120.0)
         self.declare_parameter("path_origin_translation_tolerance", 0.1)
         self.declare_parameter("path_origin_rotation_tolerance", math.radians(10.0))
         self.declare_parameter(
@@ -136,13 +135,13 @@ class GPSRTM(Node):
         self.batched_commands: list = []
         self._location_cache: dict[str, tuple[float, float] | None] = {}
         self._area_cache: dict[str, tuple[str, str] | None] = {}
-        # nav2 path lengths keyed by ((area, subarea) | None for robot, (area, subarea)).
+        # Per-batch snapshot of navigation's named-pair cache plus a fresh robot row.
+        # Navigation owns the reusable baseline across GPSR process restarts.
         self._path_cache: dict[tuple, float] = {}
         self._plan_origin: tuple[float, float] | None = None
         self._origin_pose: PoseStamped | None = None
-        self._distance_cache_started = False
-        # Live areas and named-pair distances live for this GPSR process.
-        # A full refresh replaces them together; robot-origin rows are separate.
+        self._test_origin_initialized = False
+        # Live area poses for coordinate fallback and location resolution.
         self._areas: dict | None = None
         # (source_cmd, source_idx) of actions that succeeded in the interleaved
         # branch, so the sequential fallback can resume instead of restarting.
@@ -199,8 +198,9 @@ class GPSRTM(Node):
         self._command_index_pub.publish(msg)
 
     def _get_areas(self):
-        """Areas table (poses) for distance estimation, fetched once per
-        GPSR run.
+        """Memoized area poses for origin preparation and the current batch.
+
+        Reloaded before fetching each batch's named-pair distances.
 
         Prefers the live ``retrieve_areas`` service so poses reflect the
         current map; falls back to the static ``nav.areas_backup`` (loaded
@@ -276,7 +276,7 @@ class GPSRTM(Node):
         return areas
 
     def _query_paths(self, areas, **kwargs):
-        """Navigation computes distances; only GPSR stores them."""
+        """Read navigation's named cache or request fresh robot-origin distances."""
         try:
             status, matrix = self.subtask_manager.nav.get_path_matrix(areas, **kwargs)
         except Exception as e:  # noqa: BLE001
@@ -289,59 +289,33 @@ class GPSRTM(Node):
             return status, matrix
         return status, matrix
 
-    def _refresh_path_cache(self):
-        """Bounded full refresh, also used once before the start-button wait.
+    def _load_batch_path_costs(self, commands):
+        """Fetch this batch's named pairs from navigation's shared cache.
 
-        Wait for the live areas/planner within the warmup budget. Replacing the
-        matrix (rather than updating it) removes obsolete or now-unsolved pairs.
-        Call again, or restart GPSR, after map/tag/planner configuration changes.
+        Missing pairs may be filled by navigation within its normal query budget.
+        GPSR keeps only a planning snapshot, not a process-wide baseline cache.
         """
-        started = time.monotonic()
-        budget = float(self.get_parameter("path_cache_warmup_seconds").value)
-        if not math.isfinite(budget) or budget <= 0.0:
-            self.get_logger().warning("Invalid path cache warmup budget; using 120 seconds")
-            budget = 120.0
-        deadline = started + budget
+        previous_areas = self._areas
         self._areas = None
         self._location_cache.clear()
         self._area_cache.clear()
-        self._discard_robot_paths()
-        matrix = {}
+        if self._get_areas() != previous_areas:
+            self._discard_robot_paths()
+        self._path_cache = {pair: d for pair, d in self._path_cache.items() if pair[0] is None}
         areas = []
-        while rclpy.ok() and time.monotonic() < deadline:
-            try:
-                status, live_areas = self.subtask_manager.nav.retrieve_areas()
-            except Exception as e:  # noqa: BLE001
-                self.get_logger().warning(f"Waiting for live map areas: {e}")
-                status, live_areas = Status.EXECUTION_ERROR, None
-            if status == Status.EXECUTION_SUCCESS and isinstance(live_areas, dict) and live_areas:
-                self._areas = live_areas
-                areas = self._named_areas()
-                if not areas:
-                    break
-                remaining = deadline - time.monotonic()
-                if remaining <= 0.0:
-                    break
-                status, result = self._query_paths(
-                    areas, mode=NavQueryMatrix.Goal.LOCATION_PAIRS, budget_seconds=remaining
+        for cmd in commands:
+            for action in getattr(cmd, "commands", []):
+                if getattr(action, "action", "") != "go_to":
+                    continue
+                area = self._resolve_area(getattr(action, "location_to_go", None))
+                if area is not None and area not in areas:
+                    areas.append(area)
+        if areas:
+            status, matrix = self._query_paths(areas, mode=NavQueryMatrix.Goal.LOCATION_PAIRS)
+            if status == Status.EXECUTION_SUCCESS and isinstance(matrix, dict):
+                self._path_cache.update(
+                    {pair: d for pair, d in matrix.items() if pair[0] is not None}
                 )
-                if status == Status.EXECUTION_SUCCESS and isinstance(result, dict):
-                    matrix = result
-                    break
-                if result not in (
-                    "Navigation not initialized",
-                    "Areas not loaded",
-                    "Action server not started",
-                ):
-                    break
-            rclpy.spin_once(self, timeout_sec=min(1.0, max(0.0, deadline - time.monotonic())))
-        self._path_cache = {
-            pair: distance for pair, distance in matrix.items() if pair[0] is not None
-        }
-        self.get_logger().info(
-            f"GPSR path cache: {len(self._path_cache)}/{len(areas) ** 2} named pairs "
-            f"in {time.monotonic() - started:.1f}s; missing pairs use straight-line estimates"
-        )
 
     def _discard_robot_paths(self):
         self._path_cache = {pair: d for pair, d in self._path_cache.items() if pair[0] is not None}
@@ -487,6 +461,7 @@ class GPSRTM(Node):
     def _execute_interleaved_batch(self):
         """Plan + tick the py_trees tree for the current batch."""
         self._completed.clear()
+        self._load_batch_path_costs(self.batched_commands)
         self._ensure_plan_origin()
         plan = merge(
             self.batched_commands,
@@ -551,6 +526,8 @@ class GPSRTM(Node):
         self._location_cache.clear()
         self._area_cache.clear()
         self._discard_robot_paths()
+        self._path_cache.clear()
+        self._areas = None
 
     def _execute_sequential_fallback(self, batched_commands):
         """Last-ditch path when py_trees is unavailable."""
@@ -588,12 +565,9 @@ class GPSRTM(Node):
     def run(self):
         """Finite State Machine"""
 
-        if not self._distance_cache_started:
-            self._distance_cache_started = True
-            if self.interleave_enabled:
-                self._refresh_path_cache()
-                if self.test_mode:
-                    self._refresh_robot_paths()
+        if self.interleave_enabled and self.test_mode and not self._test_origin_initialized:
+            self._test_origin_initialized = True
+            self._refresh_robot_paths()
 
         if self.current_state == GPSRTM.TaskStates.WAITING_FOR_BUTTON:
             self.subtask_manager.hri.publish_display_step(

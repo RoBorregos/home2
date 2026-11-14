@@ -6,6 +6,7 @@ hardware imports and node startup. ROS builds and Gazebo remain integration chec
 """
 
 import ast
+import json
 import math
 from pathlib import Path
 import time
@@ -59,6 +60,8 @@ def load_methods(path, class_name, names, **extra):
         math=math,
         time=time,
         t=time,
+        json=json,
+        SimpleNamespace=NS,
         Status=Status,
         PoseStamped=pose,
         NavQueryMatrix=NS(Goal=Goal, Result=NS, Feedback=NS),
@@ -76,7 +79,8 @@ GPSR = load_methods(
     {
         "_named_areas",
         "_query_paths",
-        "_refresh_path_cache",
+        "_get_areas",
+        "_load_batch_path_costs",
         "_discard_robot_paths",
         "_origin_matches",
         "_refresh_robot_paths",
@@ -108,8 +112,16 @@ SERVER = load_methods(
     {
         "_run_path_matrix",
         "_plan_matrix",
+        "_sync_path_cache",
+        "_refresh_path_cache",
+        "_matrix_needs_planner",
+        "_setup",
     },
     GetRobotPose=NS(Response=NS),
+    ReentrantCallbackGroup=NS,
+    ManageLifecycleNodes=NS,
+    NAV2_LIFECYCLE_SERVICE="/lifecycle_manager_navigation/manage_nodes",
+    MONITOR_RATE=1.0,
 )
 CLIENT_ROS = NS(spin_until_future_complete=Mock())
 CLIENT = load_methods(
@@ -137,10 +149,10 @@ def gpsr():
     tm._areas = LIVE
     tm._origin_pose = None
     tm._plan_origin = None
-    tm._get_areas = lambda: tm._areas or {}
+    tm._resolve_area = lambda name: {"sofa": AREAS[0], "table": AREAS[1]}.get(name)
+    tm._test_origin_initialized = False
     tm.get_logger = Mock(return_value=Mock())
     parameters = {
-        "path_cache_warmup_seconds": 120.0,
         "path_origin_translation_tolerance": 0.1,
         "path_origin_rotation_tolerance": math.radians(10),
     }
@@ -158,6 +170,13 @@ def server(mode=Goal.FULL, *, paused=True):
     nav = SERVER()
     nav.mapping = False
     nav.areas_data = LIVE
+    nav.map_name = "arena"
+    nav.areas_map_name = "arena"
+    nav.config_path = "localization.yaml"
+    nav._location_path_cache = {}
+    nav._path_cache_context = None
+    nav.use_nav2 = True
+    nav.get_parameter = lambda _: NS(value=120.0)
     nav.rtabmap_loaded = True
     nav.nodes_status = True
     nav.nav2_paused = paused
@@ -182,27 +201,37 @@ def server(mode=Goal.FULL, *, paused=True):
 
 
 class CacheTests(unittest.TestCase):
-    def test_full_refresh_replaces_obsolete_and_robot_entries(self):
+    def test_batch_reads_only_its_named_pairs_and_keeps_current_origin(self):
         tm = gpsr()
         tm._path_cache = {(AREAS[1], AREAS[0]): 99, (None, AREAS[0]): 88}
         tm._origin_pose = pose()
         fresh = {(AREAS[0], AREAS[1]): 6, (AREAS[0], AREAS[0]): 0}
         tm.subtask_manager.nav.get_path_matrix.return_value = (1, fresh)
-        tm._refresh_path_cache()
-        self.assertEqual(tm._path_cache, fresh)
+        commands = [
+            NS(
+                commands=[
+                    NS(action="go_to", location_to_go=name) for name in ("sofa", "table", "sofa")
+                ]
+            )
+        ]
+        tm._load_batch_path_costs(commands)
+        self.assertEqual(tm._path_cache, {**fresh, (None, AREAS[0]): 88})
         self.assertEqual(tm._location_cache, {})
         self.assertEqual(tm._area_cache, {})
-        self.assertIsNone(tm._origin_pose)
+        self.assertIsNotNone(tm._origin_pose)
         args, kwargs = tm.subtask_manager.nav.get_path_matrix.call_args
         self.assertEqual(args[0], AREAS)
-        self.assertEqual(kwargs["mode"], Goal.LOCATION_PAIRS)
-        self.assertGreater(kwargs["budget_seconds"], 119)
+        self.assertEqual(kwargs, {"mode": Goal.LOCATION_PAIRS})
 
-    def test_live_areas_replace_old_tags(self):
+    def test_changed_live_areas_discard_old_robot_row(self):
         tm = gpsr()
         tm._areas = {"old": {"place": [0] * 7}}
-        tm._refresh_path_cache()
+        tm._origin_pose = pose(10)
+        tm._path_cache[(None, AREAS[0])] = 88
+        tm._load_batch_path_costs([])
         self.assertEqual(tm._named_areas(), AREAS)
+        self.assertIsNone(tm._origin_pose)
+        self.assertEqual(tm._path_cache, {})
 
     def test_named_areas_excludes_metadata(self):
         tm = gpsr()
@@ -214,31 +243,17 @@ class CacheTests(unittest.TestCase):
         )
         self.assertEqual(tm._named_areas(), AREAS)
 
-    def test_startup_retries_until_navigation_is_initialized(self):
+    def test_no_destinations_does_not_query_a_matrix(self):
         tm = gpsr()
-        tm.subtask_manager.nav.get_path_matrix.side_effect = [
-            (0, "Navigation not initialized"),
-            (1, {(AREAS[0], AREAS[1]): 5}),
-        ]
-        tm._refresh_path_cache()
-        self.assertEqual(tm.subtask_manager.nav.get_path_matrix.call_count, 2)
-        self.assertEqual(tm._path_cache[(AREAS[0], AREAS[1])], 5)
-
-    def test_startup_budget_bounds_readiness_wait(self):
-        tm = gpsr()
-        tm.get_parameter = lambda key: NS(value=0.001)
-        tm.subtask_manager.nav.retrieve_areas.return_value = (0, {})
-        started = time.monotonic()
-        tm._refresh_path_cache()
-        self.assertLess(time.monotonic() - started, 0.2)
+        tm._load_batch_path_costs([NS(commands=[NS(action="say")])])
         tm.subtask_manager.nav.get_path_matrix.assert_not_called()
         self.assertEqual(tm._path_cache, {})
 
-    def test_failed_refresh_drops_obsolete_pairs(self):
+    def test_failed_query_drops_obsolete_batch_pairs(self):
         tm = gpsr()
         tm._path_cache = {(AREAS[0], AREAS[1]): 99}
         tm.subtask_manager.nav.get_path_matrix.return_value = (0, "Planner unavailable")
-        tm._refresh_path_cache()
+        tm._load_batch_path_costs([NS(commands=[NS(action="go_to", location_to_go="sofa")])])
         self.assertEqual(tm._path_cache, {})
 
     def test_origin_is_instruction_point_not_earlier_start(self):
@@ -298,28 +313,30 @@ class CacheTests(unittest.TestCase):
         tm._resolve_xy = lambda name: (0, 0)
         self.assertEqual(tm._path_cost(None, "sofa"), 14)
 
-    def test_startup_only_once_and_test_mode_captures_origin(self):
+    def test_gpsr_startup_never_warms_named_pairs(self):
         tm = gpsr()
         # An idle synthetic state exercises startup without HRI/navigation side effects.
         tm.current_state = "IDLE"
-        tm._distance_cache_started = False
         tm.interleave_enabled = True
-        tm.test_mode = True
-        tm._refresh_path_cache = Mock()
+        tm.test_mode = False
         tm._refresh_robot_paths = Mock()
         tm.run()
         tm.run()
-        tm._refresh_path_cache.assert_called_once()
+        tm._refresh_robot_paths.assert_not_called()
+        tm.subtask_manager.nav.get_path_matrix.assert_not_called()
+        tm.test_mode = True
+        tm.run()
+        tm.run()
         tm._refresh_robot_paths.assert_called_once()
-        tm._distance_cache_started = False
+        tm._test_origin_initialized = False
         tm.interleave_enabled = False
         tm.run()
-        tm._refresh_path_cache.assert_called_once()
+        tm._refresh_robot_paths.assert_called_once()
 
     def test_instruction_point_origin_is_captured_after_arrival_before_commands(self):
         tm = gpsr()
-        tm._distance_cache_started = True
         tm.interleave_enabled = True
+        tm.test_mode = False
         tm.current_state = GPSR.TaskStates.START
         tm._track_state_change = Mock()
         tm.subtask_manager.nav.check_door = Mock()
@@ -331,7 +348,7 @@ class CacheTests(unittest.TestCase):
         self.assertEqual(events, ["arrive", "origin", "announce"])
         self.assertEqual(tm.current_state, GPSR.TaskStates.WAIT_BUTTON_COMMAND)
 
-    def test_batch_cleanup_preserves_named_cache_and_areas(self):
+    def test_batch_cleanup_discards_its_snapshot_not_navigation_cache(self):
         tm = gpsr()
         named = {(AREAS[0], AREAS[1]): 6}
         tm._path_cache = dict(named)
@@ -341,6 +358,7 @@ class CacheTests(unittest.TestCase):
         tm._completed = set()
         tm.batched_commands = [NS(), NS(), NS()]
         tm._ensure_plan_origin = Mock()
+        tm._load_batch_path_costs = Mock()
         tm._spoken_merged_plan = Mock(return_value="Visit the kitchen")
         tm.subtask_manager.hri = Mock()
         tm.gpsr_tasks = tm.gpsr_individual_tasks = NS()
@@ -364,13 +382,129 @@ class CacheTests(unittest.TestCase):
             },
         ):
             tm._execute_interleaved_batch()
-        self.assertEqual(tm._path_cache, named)
-        self.assertIs(tm._areas, LIVE)
+        self.assertEqual(tm._path_cache, {})
+        self.assertIsNone(tm._areas)
         self.assertIsNone(tm._plan_origin)
         tm.subtask_manager.nav.get_path_matrix.assert_not_called()
 
 
 class MatrixServerTests(unittest.TestCase):
+    def test_setup_warms_once_after_navigation_and_initial_pose(self):
+        nav, _ = server()
+        nav._setup_done = False
+        nav._setup_timer = object()
+        nav.destroy_timer = Mock()
+        nav.create_client = Mock()
+        nav.create_timer = Mock()
+        nav.get_publishers_info_by_topic = Mock(return_value=[])
+        nav._monitoring = Mock()
+        events = []
+        nav.load_map_areas = lambda: events.append("areas")
+        nav.wait_for_requirements = lambda: events.append("requirements")
+        nav.start_slam = lambda: events.append("slam")
+        nav.load_nav2 = lambda: events.append("nav2")
+        nav._wait_for_initial_pose = lambda: events.append("pose")
+        nav._refresh_path_cache = Mock(side_effect=lambda: events.append("warm"))
+        nav._setup()
+        nav._setup()
+        self.assertEqual(events, ["areas", "requirements", "slam", "nav2", "pose", "warm"])
+        self.assertTrue(nav.nodes_status)
+        nav._refresh_path_cache.assert_called_once()
+
+    def test_navigation_warms_without_a_gpsr_process(self):
+        nav, _ = server()
+        nav._refresh_path_cache()
+        self.assertEqual(len(nav._location_path_cache), 4)
+        self.assertTrue(all(start is not None for start, _ in nav._location_path_cache))
+        self.assertEqual(nav._compute_path.call_count, 2)
+        self.assertTrue(nav.nav2_paused)
+
+    def test_mapping_and_uninitialized_navigation_do_not_warm(self):
+        for field, value in (("mapping", True), ("use_nav2", False), ("nodes_status", False)):
+            nav, _ = server()
+            setattr(nav, field, value)
+            nav._refresh_path_cache()
+            nav._hold_service_group.assert_not_called()
+
+    def test_warmed_queries_reuse_directed_pairs_in_any_request_order(self):
+        nav, handle = server(Goal.LOCATION_PAIRS)
+        nav._compute_path.side_effect = (
+            lambda goal, start, *_: 6 if start.pose.position.x == 0 else 9
+        )
+        nav._refresh_path_cache()
+        nav._compute_path.reset_mock()
+        nav.resume_nav2.reset_mock()
+        nav.pause_nav2.reset_mock()
+        handle.request.locations.reverse()
+        handle.request.sublocations.reverse()
+        self.assertEqual(nav._run_path_matrix(handle).distances, [0, 9, 6, 0])
+        self.assertEqual(nav._run_path_matrix(handle).distances, [0, 9, 6, 0])
+        nav._compute_path.assert_not_called()
+        nav.resume_nav2.assert_not_called()
+        nav.pause_nav2.assert_not_called()
+
+    def test_partial_cache_only_recomputes_missing_pairs(self):
+        nav, handle = server(Goal.LOCATION_PAIRS)
+        nav._compute_path.side_effect = [None, 4]
+        nav._refresh_path_cache()
+        self.assertNotIn((AREAS[0], AREAS[1]), nav._location_path_cache)
+        nav._compute_path.reset_mock()
+        nav._compute_path.side_effect = lambda *_: 6
+        self.assertEqual(nav._run_path_matrix(handle).distances, [0, 6, 4, 0])
+        nav._compute_path.assert_called_once()
+
+    def test_warmed_named_pairs_are_available_even_when_planning_budget_expires(self):
+        nav, handle = server()
+        nav._refresh_path_cache()
+        nav._compute_path.reset_mock()
+        self.assertEqual(
+            nav._plan_matrix(handle, [pose(), pose(4)], 0, pose(10)), [-1, -1, 0, 4, 4, 0]
+        )
+        nav._compute_path.assert_not_called()
+
+    def test_warmup_failure_does_not_prevent_navigation_starting(self):
+        nav, _ = server()
+        nav._compute_path.side_effect = RuntimeError("planner failed")
+        nav._refresh_path_cache()
+        nav.pause_nav2.assert_called_once()
+        nav._release_service_group.assert_called_once()
+        self.assertTrue(any("warmup failed" in c.args[1] for c in nav.nav_logger.call_args_list))
+
+    def test_full_refresh_removes_previously_solved_but_now_unsolved_pairs(self):
+        nav, _ = server()
+        nav._refresh_path_cache()
+        self.assertIn((AREAS[0], AREAS[1]), nav._location_path_cache)
+        nav._compute_path.side_effect = lambda *_: None
+        nav._refresh_path_cache()
+        self.assertEqual(
+            nav._location_path_cache, {(AREAS[0], AREAS[0]): 0, (AREAS[1], AREAS[1]): 0}
+        )
+
+    def test_reloaded_locations_or_map_identity_invalidate_cache(self):
+        for changed in ("locations", "map"):
+            with self.subTest(changed=changed):
+                nav, handle = server(Goal.LOCATION_PAIRS)
+                nav._refresh_path_cache()
+                nav._compute_path.reset_mock()
+                if changed == "locations":
+                    nav.areas_data = json.loads(json.dumps(LIVE))
+                    nav.areas_data["kitchen"]["table"][0] = 8
+                    nav._fetch_area_coords = lambda loc, sub: nav.areas_data.get(loc, {}).get(sub)
+                else:
+                    nav.map_name = "new_arena"
+                nav._run_path_matrix(handle)
+                self.assertEqual(nav._compute_path.call_count, 2)
+
+    def test_robot_rows_are_fresh_and_never_enter_navigation_cache(self):
+        nav, handle = server(Goal.ROBOT_ORIGIN)
+        nav._refresh_path_cache()
+        baseline = dict(nav._location_path_cache)
+        handle.request.robot_start = pose(10)
+        self.assertEqual(nav._run_path_matrix(handle).distances, [10, 6])
+        handle.request.robot_start = pose(20)
+        self.assertEqual(nav._run_path_matrix(handle).distances, [20, 16])
+        self.assertEqual(nav._location_path_cache, baseline)
+
     def test_modes_shapes_and_ordered_pairs(self):
         for mode, expected in (
             (Goal.FULL, [10, 6, 0, 4, 4, 0]),

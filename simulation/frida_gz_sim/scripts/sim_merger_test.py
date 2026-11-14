@@ -136,7 +136,7 @@ class SimMergerTest(Node):
             self.get_logger().info(f"n={n:2d}  {elapsed:5.1f}s  {solved}/{total}{flag}")
 
     def run_cache_modes(self):
-        """Exercise the same named-pair warmup and fixed origin row GPSR uses."""
+        """Read navigation's shared baseline twice, then request a fresh origin."""
         areas = [
             (loc, sub)
             for loc, subareas in self.areas.items()
@@ -146,16 +146,25 @@ class SimMergerTest(Node):
         ]
         started = time.monotonic()
         status, named = self.nav.get_path_matrix(
-            areas, mode=NavQueryMatrix.Goal.LOCATION_PAIRS, budget_seconds=120.0
+            areas, mode=NavQueryMatrix.Goal.LOCATION_PAIRS
         )
         if status != Status.EXECUTION_SUCCESS:
-            raise RuntimeError(f"Named-pair warmup failed: {named}")
+            raise RuntimeError(f"Named-pair cache read failed: {named}")
         if any(start is None for start, _ in named):
-            raise AssertionError("Named-pair warmup returned robot-origin entries")
+            raise AssertionError("Named-pair cache read returned robot-origin entries")
         self.get_logger().info(
-            f"GPSR warmup: {len(named)}/{len(areas) ** 2} pairs in "
+            f"Navigation cache read: {len(named)}/{len(areas) ** 2} pairs in "
             f"{time.monotonic() - started:.1f}s"
         )
+        status, repeated = self.nav.get_path_matrix(
+            areas, mode=NavQueryMatrix.Goal.LOCATION_PAIRS
+        )
+        if status != Status.EXECUTION_SUCCESS or any(
+            repeated.get(pair) != d for pair, d in named.items()
+        ):
+            raise AssertionError(
+                "Repeated cache query lost or changed previously cached pairs"
+            )
         status, snapshot = self.nav.get_current_pose()
         if status != Status.EXECUTION_SUCCESS:
             raise RuntimeError("Cannot capture robot pose for origin-mode check")

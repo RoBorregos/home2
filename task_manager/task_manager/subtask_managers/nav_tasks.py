@@ -325,7 +325,8 @@ class NavigationTasks:
         sublocation) tuples) without moving. Returns (Status, {(start, goal): m}),
         start None = robot pose; unsolved pairs omitted. ``mode`` can request
         only named pairs or only the robot row, using an explicit map-frame
-        ``robot_start`` snapshot. Zero budget preserves the normal timeout.
+        ``robot_start`` snapshot. Navigation reuses cached named pairs and always
+        computes the robot row fresh. Zero budget preserves the normal timeout.
         A slow query is cancelled and returns what was solved, only once
         nav_central confirms it stopped."""
         areas = [(loc, sub or "safe_place") for loc, sub in areas]

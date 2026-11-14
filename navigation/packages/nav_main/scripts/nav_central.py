@@ -85,6 +85,7 @@ import time as t
 import math
 import yaml
 import re
+from types import SimpleNamespace
 
 
 # Seconds to wait between NavigateToPose retries when a goal is rejected or
@@ -161,6 +162,9 @@ class Nav_Central(Node):
 
         self.areas_map_name = self.declare_parameter('areas_map_name', 'default_map').value
         self.areas_data = None
+        self.declare_parameter('path_cache_warmup_seconds', 120.0)
+        self._location_path_cache = {}
+        self._path_cache_context = None
 
         self.lidar_group = ReentrantCallbackGroup()
         self.service_group = MutuallyExclusiveCallbackGroup()
@@ -325,6 +329,8 @@ class Nav_Central(Node):
         self.nav_logger("info", f"Baseline /tf_static publishers: {self.baseline_tf_static_publishers}")
         self._monitor_timer = self.create_timer(MONITOR_RATE, self._monitoring, callback_group=ReentrantCallbackGroup())
         self.nav_logger("info", "Monitor Started")
+        if not self.mapping and self.use_nav2:
+            self._refresh_path_cache()
 
     def _monitoring(self):
         """General topics and tf monitor """
@@ -1166,7 +1172,68 @@ class Nav_Central(Node):
             goal_handle.abort()
         return result
 
-    def _run_path_matrix(self, goal_handle):
+    def _sync_path_cache(self):
+        """Invalidate named pairs when the loaded map or location table changes.
+
+        Planner configuration changes require restarting navigation or explicitly
+        calling _refresh_path_cache() after applying the new configuration.
+        """
+        context = (self.map_name, self.areas_map_name, self.config_path,
+                   json.dumps(self.areas_data, sort_keys=True))
+        if context != self._path_cache_context:
+            self._location_path_cache.clear()
+            self._path_cache_context = context
+
+    def _refresh_path_cache(self):
+        """Warm all named pairs after setup, independently of GPSR's lifetime.
+
+        Also usable for a full refresh while idle after reloading map areas or
+        changing planner settings. The normal navigation lock protects both
+        invalidation and computation. Robot-origin distances are never retained.
+        """
+        if self.mapping or not self.use_nav2 or not self.nodes_status:
+            return
+        started = t.monotonic()
+        budget = float(self.get_parameter('path_cache_warmup_seconds').value)
+        if not math.isfinite(budget) or budget <= 0.0:
+            self.nav_logger("warn", "Invalid path cache warmup budget; using 120 seconds")
+            budget = 120.0
+        goal = NavQueryMatrix.Goal()
+        goal.mode = NavQueryMatrix.Goal.LOCATION_PAIRS
+        goal.budget_seconds = budget
+        areas = []
+        for location, subareas in (self.areas_data or {}).items():
+            if not isinstance(subareas, dict):
+                continue
+            for sublocation, coords in subareas.items():
+                if (isinstance(coords, (list, tuple)) and len(coords) == 7
+                        and all(isinstance(v, (int, float)) and math.isfinite(v) for v in coords)):
+                    areas.append((location, sublocation))
+        goal.locations = [loc for loc, _ in areas]
+        goal.sublocations = [sub for _, sub in areas]
+        # Reuse the matrix executor without sending an action to this same node.
+        job = SimpleNamespace(request=goal, is_cancel_requested=False, publish_feedback=lambda _: None)
+        try:
+            result = self._run_path_matrix(job, refresh_cache=True)
+            solved = sum(d >= 0.0 for d in result.distances)
+            self.nav_logger("info" if result.success else "warn",
+                            f"Path cache warmup: {solved}/{len(areas) ** 2} named pairs "
+                            f"in {t.monotonic() - started:.1f}s; {result.error}")
+        except Exception as e:
+            # Path estimation must not prevent navigation from starting.
+            self.nav_logger("warn", f"Path cache warmup failed: {e}")
+
+    def _matrix_needs_planner(self, request, poses):
+        if request.mode != NavQueryMatrix.Goal.LOCATION_PAIRS and any(p is not None for p in poses):
+            return True
+        if request.mode == NavQueryMatrix.Goal.ROBOT_ORIGIN:
+            return False
+        areas = list(zip(request.locations, (sub or "safe_place" for sub in request.sublocations)))
+        return any(i != j and poses[i] is not None and poses[j] is not None
+                   and (src, dst) not in self._location_path_cache
+                   for i, src in enumerate(areas) for j, dst in enumerate(areas))
+
+    def _run_path_matrix(self, goal_handle, *, refresh_cache=False):
         request = goal_handle.request
         n = len(request.locations)
         self.nav_logger("info", f"Query_Path_Matrix -> Goal received ({n} areas)")
@@ -1217,8 +1284,16 @@ class Nav_Central(Node):
             result.error = "Cancelled before start"
             return result
         try:
+            self._sync_path_cache()
+            if refresh_cache:
+                self._location_path_cache.clear()
             # Budget starts before the resume so the whole query stays bounded
             deadline = t.monotonic() + (request.budget_seconds or TIMEOUT_NAV_QUERY_MATRIX)
+            if not self._matrix_needs_planner(request, poses):
+                # A warmed named matrix does not need a Nav2 resume or robot TF.
+                result.distances = self._plan_matrix(goal_handle, poses, deadline)
+                result.success = True
+                return result
             # Planner needs nav2 active; remember prior state to restore it after
             was_paused = self.nav2_paused
             try:
@@ -1256,7 +1331,7 @@ class Nav_Central(Node):
         return result
 
     def _plan_matrix(self, goal_handle, poses, deadline, robot_start=None):
-        """Compute the requested rows using one fixed robot pose, without caching."""
+        """Reuse named pairs; compute robot rows from one fixed pose every time."""
         def cancelled():
             return goal_handle.is_cancel_requested
 
@@ -1265,19 +1340,32 @@ class Nav_Central(Node):
         mode = goal_handle.request.mode
         starts = ([None] + list(range(n)) if mode == NavQueryMatrix.Goal.FULL else
                   list(range(n)) if mode == NavQueryMatrix.Goal.LOCATION_PAIRS else [None])
+        areas = list(zip(goal_handle.request.locations,
+                         (sub or "safe_place" for sub in goal_handle.request.sublocations)))
         feedback.pairs_total = len(starts) * n
         distances = []
         for i in starts:
             for j in range(n):
                 if i == j:
                     distances.append(0.0)
+                    if poses[i] is not None:
+                        self._location_path_cache[(areas[i], areas[j])] = 0.0
                 elif (poses[j] is None or (i is not None and poses[i] is None)
                       or (i is None and robot_start is None)
-                      or t.monotonic() >= deadline or cancelled()):
+                      or cancelled()):
                     distances.append(-1.0)
                 else:
-                    path = self._compute_path(poses[j], robot_start if i is None else poses[i], deadline, cancelled)
-                    distances.append(-1.0 if path is None else self._path_length(path))
+                    pair = (areas[i], areas[j]) if i is not None else None
+                    if pair is not None and pair in self._location_path_cache:
+                        distance = self._location_path_cache[pair]
+                    elif t.monotonic() >= deadline:
+                        distance = -1.0
+                    else:
+                        path = self._compute_path(poses[j], robot_start if i is None else poses[i], deadline, cancelled)
+                        distance = -1.0 if path is None else self._path_length(path)
+                        if pair is not None and math.isfinite(distance) and distance >= 0.0:
+                            self._location_path_cache[pair] = distance
+                    distances.append(distance)
                 feedback.pairs_done = len(distances)
                 goal_handle.publish_feedback(feedback)
         return distances

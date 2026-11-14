@@ -5,6 +5,7 @@ string[] locations
 string[] sublocations
 # FULL preserves the original matrix layout. Other modes avoid recomputing
 # named pairs when only the robot's starting position has changed.
+# Navigation reuses cached named pairs; robot-origin distances are always fresh.
 uint8 FULL=0
 uint8 LOCATION_PAIRS=1
 uint8 ROBOT_ORIGIN=2

@@ -245,12 +245,19 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 
 ### GPSR distance cache
 
-GPSR owns its distance cache in memory; `nav_central` only computes paths. On
-GPSR startup, before the start-button wait, it fetches live named locations and
-warms all ordered location pairs. `path_cache_warmup_seconds` defaults to 120 s,
-including waiting for navigation readiness. Successful pairs are retained for
-the GPSR process lifetime; missing pairs use the existing scaled straight-line
-estimate. Warmup logs coverage and elapsed time. Disable interleaving to skip it.
+`nav_central` owns the named location-pair cache in memory. Once navigation setup
+has loaded the finalized map and tagged locations, activated Nav2, and completed
+initial localization, it warms all ordered named pairs independently of GPSR.
+Its `path_cache_warmup_seconds` parameter defaults to 120 s. Warmup logs coverage
+and elapsed time; successful pairs survive GPSR exits/restarts until navigation
+is restarted or its cache is refreshed. Mapping mode does not warm the cache.
+
+Matrix queries reuse successful named pairs and compute only missing pairs within
+the query budget. A fully cached named-pair query does not resume/pause Nav2.
+Unsolved pairs are not cached as permanently unreachable. GPSR reads the subset
+needed by its three commands just before merging and keeps that result only for
+the batch. Missing pairs use its existing scaled straight-line estimate. GPSR
+startup no longer computes the full matrix or waits through the warmup budget.
 
 After reaching `start_location`, GPSR snapshots the robot's complete pose and
 requests its distances to all named locations before collecting commands. Before
@@ -258,21 +265,25 @@ merging the batch it checks that pose again, refreshing only the robot row if
 translation exceeds `path_origin_translation_tolerance` (0.1 m) or yaw exceeds
 `path_origin_rotation_tolerance` (0.174533 radians, 10 degrees). Missing TF or
 movement during the refresh drops origin costs. Test mode captures its initial
-origin after warmup, without driving to the instruction point.
+origin on its first state-machine iteration without driving to the instruction
+point. Navigation always computes robot-origin rows fresh and never caches them.
 
 `NavQueryMatrix` accepts `mode` (`FULL=0`, `LOCATION_PAIRS=1`, `ROBOT_ORIGIN=2`),
 an optional `robot_start` in the `map` frame, and `budget_seconds`. Zero budget
-keeps the normal 8 s calculation budget; GPSR requests the remaining startup
-budget for named pairs. An empty start frame snapshots TF once after navigation
+keeps the normal 8 s calculation budget; navigation uses its longer startup
+budget to warm named pairs. An empty start frame snapshots TF once after navigation
 is acquired. Results are row-major `(n+1)×n`, `n×n`, or `1×n` respectively, with
 `-1` for unsolved pairs. The Python wrapper still returns a pair-to-distance dict.
 The action definition changed: rebuild `frida_interfaces` and its navigation,
 task-manager, and simulation consumers together.
 
-Load any updated map, tags, or planner settings in navigation first. Then restart
-GPSR, or invoke its
-internal `_refresh_path_cache()` helper while it is idle to reload areas and
-replace the full matrix. This helper is not a public ROS service. Temporary
+Restart navigation after changing the map, tags, or planner settings to reload
+them and rebuild the full cache. For an in-process update while idle, apply the
+new configuration, call `load_map_areas()` if the tags changed, then invoke
+navigation's internal `_refresh_path_cache()` helper. It clears and rebuilds all
+named pairs under the navigation lock; this helper is not a public ROS service.
+Queries also invalidate stale entries when the loaded map identity or area table
+changes. Restarting GPSR does not rebuild the navigation cache. Temporary
 obstacles are handled by live navigation and do not rebuild the baseline cache.
 
 ### Example service calls
