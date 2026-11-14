@@ -164,7 +164,7 @@ class Nav_Central(Node):
 
         self.areas_map_name = self.declare_parameter('areas_map_name', 'default_map').value
         self.areas_data = None
-        self.declare_parameter('path_cache_warmup_seconds', 120.0)
+        self.declare_parameter('path_cache_warmup_seconds', 180.0)
         self._location_path_cache = {}
         self._path_cache_context = None
         self._path_cache_warmup_timer = None
@@ -1258,8 +1258,8 @@ class Nav_Central(Node):
         started = t.monotonic()
         budget = float(self.get_parameter('path_cache_warmup_seconds').value)
         if not math.isfinite(budget) or budget <= 0.0:
-            self.nav_logger("warn", "Invalid path cache warmup budget; using 120 seconds")
-            budget = 120.0
+            self.nav_logger("warn", "Invalid path cache warmup budget; using 180 seconds")
+            budget = 180.0
         goal = NavQueryMatrix.Goal()
         goal.mode = NavQueryMatrix.Goal.LOCATION_PAIRS
         goal.budget_seconds = budget

@@ -253,7 +253,7 @@ planner action, and active planner/global-costmap lifecycle states. It retries
 every two seconds until these checks pass; merely being outside mapping mode or
 setting `nodes_status` does not establish readiness. Map/grid updates are received
 independently of the navigation-operation lock so they can arrive during checks.
-Its `path_cache_warmup_seconds` parameter defaults to 120 s. Warmup logs coverage
+Its `path_cache_warmup_seconds` parameter defaults to 180 s. Warmup logs coverage
 and elapsed time; successful pairs survive GPSR exits/restarts until navigation
 is restarted or its cache is refreshed. Mapping mode does not warm the cache.
 
