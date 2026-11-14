@@ -1,0 +1,19 @@
+# Detect the shelf levels and geometry from the eye-in-hand depth camera, with no
+# prior model of the furniture. Typical use: move the arm to a survey pose, call
+# with capture=true, repeat for the other pose(s), then call with detect=true.
+bool reset                  # drop the frames captured so far before doing anything else
+bool capture                # capture one fresh depth frame from the current camera pose
+bool detect                 # run the detection on every captured frame
+bool add_collision_objects  # publish the boards and walls to the MoveIt planning scene
+                            # (with capture=false and detect=false: re-publish the last result)
+---
+bool success
+string message
+frida_interfaces/ShelfLevel[] levels   # ascending height; levels[0] is the lowest board
+float32 y_min            # shelf lateral extent (inner faces of the side walls when seen)
+float32 y_max
+float32 front_x          # front edge of the boards
+float32 back_x           # back wall (or farthest board point seen)
+float32 top_z            # underside of the top board, 0 when not seen
+int32 frames_used
+frida_interfaces/CollisionObject[] collision_objects

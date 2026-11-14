@@ -1,6 +1,10 @@
 """Shelf level heights, stored in config/shelf_levels.json so they can be edited
 on site without recompiling.
 
+FALLBACK ONLY: the live heights come from the model-free detection in
+``perception_3d/scripts/shelf_detector.py`` (DetectShelf service), which needs no
+arena calibration. These values are used when that detection is unavailable.
+
 Read the heights for an arena with ``get_shelf_levels(arena)``; write them with
 ``ros2 run xarm_utils shelf_height_calibrator.py --arena N``.
 """

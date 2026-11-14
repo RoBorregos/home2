@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from frida_interfaces.action import ManipulationAction
+from frida_interfaces.action import ManipulationAction, MoveJoints
 from frida_interfaces.msg import ManipulationTask
 import time
 from geometry_msgs.msg import PointStamped, PoseStamped
@@ -14,13 +14,16 @@ from frida_constants.vision_constants import (
     ZERO_SHOT_DETECTIONS_TOPIC,
 )
 from frida_constants.manipulation_constants import (
+    DETECT_SHELF_SERVICE,
     GENERATE_GRASPS_SERVICE,
     GRASP_CLASS_BOX,
     GRASP_CLASS_CYLINDRICAL,
     GRASP_CLASS_RIM,
     GRASP_CLASS_ROUND,
     MANIPULATION_ACTION_SERVER,
+    SHELF_SURVEY_POSES,
 )
+from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_GEOMETRIC,
@@ -31,7 +34,7 @@ from xarm_utils.shelf_levels import (
     SHELF_SCAN_TOLERANCE,
     get_shelf_levels,
 )
-from frida_interfaces.srv import GenerateGrasps, GetOptimalPositionForPlane
+from frida_interfaces.srv import DetectShelf, GenerateGrasps, GetOptimalPositionForPlane
 from std_srvs.srv import Empty
 import json
 
@@ -67,6 +70,15 @@ class KeyboardInput(Node):
         )
         self._generate_grasps_client = self.create_client(
             GenerateGrasps, GENERATE_GRASPS_SERVICE, callback_group=callback_group
+        )
+        self._detect_shelf_client = self.create_client(
+            DetectShelf, DETECT_SHELF_SERVICE, callback_group=callback_group
+        )
+        self._move_joints_client = ActionClient(
+            self,
+            MoveJoints,
+            "/manipulation/move_joints_action_server",
+            callback_group=callback_group,
         )
         self.objects = []  # Example list of objects
 
@@ -173,6 +185,67 @@ class KeyboardInput(Node):
             self._position_at_level(height)
             time.sleep(2.0)
         self.get_logger().info("Shelf scan done; now pick (-11) or place (-4).")
+
+    def _move_named(self, name, velocity=0.5):
+        """Blocking move to a named joint configuration (degrees in the table)."""
+        config = XARM_CONFIGURATIONS[name]
+        goal = MoveJoints.Goal()
+        goal.joint_names = list(config["joints"].keys())
+        scale = 3.14159265359 / 180 if config.get("degrees") else 1.0
+        goal.joint_positions = [v * scale for v in config["joints"].values()]
+        goal.velocity = velocity
+        if not self._move_joints_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error("move_joints action server unavailable")
+            return False
+        future = self._move_joints_client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
+        handle = future.result()
+        if handle is None or not handle.accepted:
+            return False
+        result = handle.get_result_async()
+        rclpy.spin_until_future_complete(self, result, timeout_sec=60.0)
+        return result.done() and bool(result.result().result.success)
+
+    def detect_shelf(
+        self, reset=False, capture=False, detect=False, add_collision=False
+    ):
+        """Call the model-free shelf detector; prints the levels when detecting."""
+        if not self._detect_shelf_client.wait_for_service(timeout_sec=3.0):
+            self.get_logger().error("detect_shelf service unavailable")
+            return None
+        req = DetectShelf.Request()
+        req.reset, req.capture, req.detect = reset, capture, detect
+        req.add_collision_objects = add_collision
+        future = self._detect_shelf_client.call_async(req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=30.0)
+        res = future.result()
+        if res is None:
+            self.get_logger().error("detect_shelf timed out")
+            return None
+        print(
+            f"detect_shelf: success={res.success} frames={res.frames_used} {res.message}"
+        )
+        for i, lvl in enumerate(res.levels, start=1):
+            print(
+                f"  L{i}: z={lvl.height:.3f} thick={lvl.thickness:.3f} clear={lvl.clearance:.2f} "
+                f"x[{lvl.front_x:.2f},{lvl.back_x:.2f}] y[{lvl.y_min:.2f},{lvl.y_max:.2f}] n={lvl.num_points}"
+            )
+        if res.levels:
+            print(
+                f"  shelf y[{res.y_min:.2f},{res.y_max:.2f}] x[{res.front_x:.2f},{res.back_x:.2f}] "
+                f"top_z={res.top_z:.2f} boxes={len(res.collision_objects)}"
+            )
+        return res
+
+    def survey_shelf(self):
+        """Dynamic scan: visit the survey poses, capture each view, then detect."""
+        for i, pose in enumerate(SHELF_SURVEY_POSES):
+            if not self._move_named(pose):
+                self.get_logger().warning(f"Could not reach {pose}; skipping this view")
+                continue
+            time.sleep(0.7)  # let the depth settle after the motion
+            self.detect_shelf(reset=(i == 0), capture=True)
+        self.detect_shelf(detect=True, add_collision=True)
 
     def preview_grasps(self, object_name):
         if not self._generate_grasps_client.wait_for_service(timeout_sec=2.0):
@@ -349,6 +422,11 @@ def main(args=None):
             print("-11. Pick from shelf (keep octomap)")
             print("-12. Scan shelf levels (do before -4/-11)")
             print("-13. Preview grasp candidates (no motion)")
+            print(
+                "-14. Dynamic shelf scan: survey poses + detect levels (MOVES THE ARM)"
+            )
+            print("-15. Shelf: capture one view from the current pose (no motion)")
+            print("-16. Shelf: detect from captured views + add collision boxes")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -469,6 +547,16 @@ def main(args=None):
 
             elif choice == "-12":
                 node.scan_shelf_levels()
+
+            elif choice == "-14":
+                node.survey_shelf()
+
+            elif choice == "-15":
+                first = input("Reset previous captures? [y/N]: ").strip().lower() == "y"
+                node.detect_shelf(reset=first, capture=True)
+
+            elif choice == "-16":
+                node.detect_shelf(detect=True, add_collision=True)
 
             elif choice == "-13":
                 number = input("Object number: ")

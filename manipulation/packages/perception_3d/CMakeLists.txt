@@ -35,9 +35,12 @@ endif()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+  find_package(ament_cmake_pytest REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+  # Pure-numpy tests of the shelf detection (no ROS needed).
+  ament_add_pytest_test(shelf_geometry_tests test/test_shelf_geometry.py)
 endif()
 
 include_directories(
@@ -152,6 +155,7 @@ install(PROGRAMS
   scripts/dock_to_handle.py
   scripts/grasp_generator.py
   scripts/hand_eye_calibration.py
+  scripts/shelf_detector.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

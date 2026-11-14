@@ -82,5 +82,12 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            Node(
+                package="perception_3d",
+                executable="shelf_detector.py",
+                name="shelf_detector",
+                output="screen",
+                emulate_tty=True,
+            ),
         ]
     )
