@@ -23,8 +23,10 @@ furniture:
     size: [1.20, 0.80]
     height: 0.75
     colour: [0.62, 0.46, 0.30]
-    # Strip of the top the docked robot can reach [x_min, y_min, x_max, y_max]
-    reach: [-0.85, -13.74, 0.05, -13.50]
+    overhang: 0.08
+    # Part of the top where objects are set [x_min, y_min, x_max, y_max]: the front
+    # 0.3 m, which the docked arm reaches
+    reach: [-0.85, -13.75, 0.05, -13.46]
   counter:
     shape: box
     center: [-3.00, -12.92]
@@ -38,7 +40,7 @@ furniture:
     size: [0.60, 0.70]
     height: 0.75
     colour: [0.85, 0.85, 0.88]
-    reach: [-2.74, -15.60, -2.52, -15.10]
+    reach: [-2.68, -15.60, -2.47, -15.10]
   trash:
     shape: bin
     center: [0.70, -15.62]

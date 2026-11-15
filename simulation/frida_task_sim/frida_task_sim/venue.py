@@ -69,7 +69,13 @@ def furniture_sdf(name: str, f: dict) -> str:
         )
         parts = _part("body", (0, 0, h / 2), geometry, rgb)
     elif f["shape"] == "box":
-        parts = _box("body", (0, 0, h / 2), (*f["size"], h), rgb)
+        # The top overhangs the body, as on a real table: the lidar docks on the body
+        inset = 2 * f.get("overhang", 0.0)
+        w, d = f["size"]
+        parts = _box(
+            "body", (0, 0, (h - BOARD) / 2), (w - inset, d - inset, h - BOARD), rgb
+        )
+        parts += _box("top", (0, 0, h - BOARD / 2), (w, d, BOARD), rgb)
     elif f["shape"] == "bin":
         r = f["radius"]
         parts = _box("bottom", (0, 0, PANEL / 2), (2 * r, 2 * r, PANEL), rgb)

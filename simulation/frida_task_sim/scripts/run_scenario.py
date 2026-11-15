@@ -303,7 +303,7 @@ def run(args) -> int:
         while time.time() < end:
             rclpy.spin_once(monitor, timeout_sec=0.1)
     except (RuntimeError, KeyboardInterrupt) as e:
-        status, code = f"infrastructure failure: {e or 'interrupted'}", 2
+        status, code = f"infrastructure failure: {str(e) or 'interrupted'}", 2
         print(f"\033[31m{status}{RESET}", flush=True)
     finally:
         stack.stop_all()
