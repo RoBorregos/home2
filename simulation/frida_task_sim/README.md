@@ -10,6 +10,7 @@ ground truth against the 2026 scoresheet and saves a replayable report.
 ./run.sh simulation --scenario docker/simulation/logs/runs/<run>/scenario.json   # replay
 ./run.sh simulation --suite --tasks ppc --seeds 1,2,3   # several seeds + summary.md
 ./run.sh simulation --task ppc --seed 3 --hold          # stack only, to drive it by hand
+./run.sh simulation --task ppc --seed 3 --spec <spec.json>   # another PPC spec
 ./run.sh simulation --test                  # unit tests, no simulator
 ```
 
