@@ -29,6 +29,11 @@ def launch_setup(context, *args, **kwargs):
     maps_dir = os.path.join(get_package_share_directory("map_context"), "maps")
     map_path = os.path.join(maps_dir, map_name)
     nav2_config_file = LaunchConfiguration("nav2_config_file").perform(context)
+    mapper_params = LaunchConfiguration("mapper_params_file").perform(context)
+    spawn = [
+        float(LaunchConfiguration(name).perform(context))
+        for name in ("spawn_x", "spawn_y", "spawn_yaw")
+    ]
 
     # Same merge the robot runs: two RPLIDARs -> one 360 deg /scan in base_link
     merger = Node(
@@ -59,7 +64,8 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             "map": map_path,
             "use_sim_time": "true",
-            "params_file": os.path.join(share, "config", "mapper_params_sim.yaml"),
+            "params_file": mapper_params
+            or os.path.join(share, "config", "mapper_params_sim.yaml"),
             "use_static_map_server": "true",
         }.items(),
     )
@@ -149,7 +155,7 @@ def launch_setup(context, *args, **kwargs):
         package="frida_gz_sim",
         executable="initial_pose.py",
         output="screen",
-        parameters=[{"x": SPAWN_POSE[0], "y": SPAWN_POSE[1], "yaw": SPAWN_POSE[2]}],
+        parameters=[{"x": spawn[0], "y": spawn[1], "yaw": spawn[2]}],
     )
 
     return [
@@ -172,6 +178,11 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("map_name", default_value="robocup2026_1"),
+            # Start pose; mapper_params_file must carry the same map_start_pose
+            DeclareLaunchArgument("spawn_x", default_value=str(SPAWN_POSE[0])),
+            DeclareLaunchArgument("spawn_y", default_value=str(SPAWN_POSE[1])),
+            DeclareLaunchArgument("spawn_yaw", default_value=str(SPAWN_POSE[2])),
+            DeclareLaunchArgument("mapper_params_file", default_value=""),
             DeclareLaunchArgument(
                 "nav2_config_file",
                 default_value="",

@@ -41,6 +41,10 @@ Tasks:
   --manip          Start the pick-and-place sim (pnp_table world, static base)
   --nav            Start the navigation sim (arena from the robocup2026_1 map)
   --all            Start both stacks in the arena world (no objects to pick there)
+  --task <name>    Run a real task manager on a seeded rulebook scenario and score it
+                   (ppc; flags: --seed N, --gui). Report in docker/simulation/logs/runs/
+  --scenario <f>   Replay a saved scenario.json
+  --test           Run the harness unit tests
   --tm             Run the pick-and-place task manager (foreground)
   --nav-tm         Run the navigation task manager (foreground)
   --rviz           Open RViz on the running sim
@@ -62,12 +66,19 @@ Examples:
   ./run.sh simulation --nav
   ./run.sh simulation --nav-tm
   ./run.sh simulation --manip --headless --no-rviz
+  ./run.sh simulation --task ppc --seed 3
 USAGE
 }
 
 case $TASK in
   -h|--help|help) usage; exit 0 ;;
 esac
+
+# Everything but the environment type goes to the task harness untouched
+HARNESS_ARGS=()
+for arg in "${ARGS[@]}"; do
+  [[ "$arg" =~ ^(cpu|cuda|l4t)$ ]] || HARNESS_ARGS+=("$arg")
+done
 
 #_________________________SETUP_________________________
 
@@ -83,7 +94,7 @@ mkdir -p build install log cache/gz cache/ultralytics logs
 
 COMPOSE="docker compose -f $COMPOSE_FILE"
 SETUP="source /opt/ros/jazzy/setup.bash && source /usr/local/bin/cyclonedds_setup.sh && if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-PACKAGES="frida_interfaces frida_constants frida_gz_sim manipulation_general xarm6_ikfast_plugin nav_main map_context ira_laser_tools"
+PACKAGES="frida_interfaces frida_constants frida_gz_sim frida_task_sim task_manager manipulation_general xarm6_ikfast_plugin nav_main map_context ira_laser_tools"
 IGNORE="realsense_gazebo_plugin xarm_gazebo mujoco_ros2_control mujoco_spawn vamp vamp_moveit_plugin omnidriver sllidar_ros2 p9n_node p9n_interface"
 
 ensure_container() {
@@ -107,7 +118,9 @@ in_background() {
 
 build_ws() {
   # Capped parallelism: PCL/MoveIt translation units need ~2 GB each
-  in_container "bash /workspace/src/simulation/frida_gz_sim/scripts/fetch_models.sh && MAKEFLAGS=-j${BUILD_JOBS:-4} colcon build --symlink-install --parallel-workers ${BUILD_WORKERS:-2} --packages-up-to $PACKAGES --packages-ignore $IGNORE --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF"
+  # baml_client is untracked codegen; baml-cli refuses to overwrite stale output
+  local baml="rm -rf /workspace/src/task_manager/task_manager/utils/baml_client /workspace/src/hri/packages/nlp/nlp/assets/baml_client && baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
+  in_container "$baml && bash /workspace/src/simulation/frida_gz_sim/scripts/fetch_models.sh && MAKEFLAGS=-j${BUILD_JOBS:-4} colcon build --symlink-install --parallel-workers ${BUILD_WORKERS:-2} --packages-up-to $PACKAGES --packages-ignore $IGNORE --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF"
 }
 
 # Blocks until every pattern appears in its log, or fails after a timeout
@@ -207,6 +220,10 @@ fi
 
 case $TASK in
   --manip|--nav|--all) start_all ;;
+  --task|--scenario)
+    kill_sim
+    in_container "ros2 run frida_task_sim run_scenario.py ${HARNESS_ARGS[*]}" ;;
+  --test) in_container "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q /workspace/src/simulation/frida_task_sim/test" ;;
   --tm) in_container "ros2 run frida_gz_sim sim_pnp_task_manager.py" ;;
   --nav-tm) in_container "ros2 run frida_gz_sim sim_nav_task_manager.py" ;;
   --rviz) start_rviz ;;

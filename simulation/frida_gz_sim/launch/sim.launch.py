@@ -52,6 +52,7 @@ def launch_setup(context, *args, **kwargs):
     spawn_yaw = LaunchConfiguration("spawn_yaw").perform(context)
     spawn_z = LaunchConfiguration("spawn_z").perform(context)
     lidar_rate = int(LaunchConfiguration("lidar_rate").perform(context))
+    objects_file = LaunchConfiguration("objects_file").perform(context)
 
     robot_description = build_robot_description(
         image_width=width,
@@ -164,7 +165,7 @@ def launch_setup(context, *args, **kwargs):
         package="frida_gz_sim",
         executable="grasp_attach.py",
         output="screen",
-        parameters=[sim_time],
+        parameters=[sim_time, {"objects_file": objects_file}],
     )
 
     return (
@@ -199,6 +200,8 @@ def generate_launch_description():
             # The chassis collision dips 12 mm below base_link; lift it clear of the floor
             DeclareLaunchArgument("spawn_z", default_value="0.0"),
             DeclareLaunchArgument("lidar_rate", default_value="10"),
+            # Graspable objects of a generated world (JSON); empty = the pnp_table set
+            DeclareLaunchArgument("objects_file", default_value=""),
             OpaqueFunction(function=launch_setup),
         ]
     )
