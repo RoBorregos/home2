@@ -11,6 +11,7 @@ control and provides a simple interface for the task manager to use.
 """
 
 import rclpy
+from rclpy.duration import Duration
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
 
@@ -54,6 +55,8 @@ XARM_SETSTATE_SERVICE = "/xarm/set_state"
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 
 TIMEOUT = 5.0
+# Time a cancelled manipulation goal gets to stop
+CANCEL_WAIT = 15.0
 
 RAD_TO_DEG = 180 / 3.14159265359
 DEG_TO_RAD = 3.14159265359 / 180
@@ -338,6 +341,20 @@ class ManipulationTasks:
         Logger.success(self.node, "Following face request successful")
         return Status.EXECUTION_SUCCESS
 
+    def _wait_result(self, goal_handle, timeout: float):
+        """Action result, or None after cancelling a goal that outlives timeout (node clock)."""
+        result_future = goal_handle.get_result_async()
+        deadline = self.node.get_clock().now() + Duration(seconds=timeout)
+        while not result_future.done() and self.node.get_clock().now() < deadline:
+            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=0.1)
+        if result_future.done():
+            return result_future.result().result
+        Logger.error(self.node, f"Action timed out after {timeout}s")
+        goal_handle.cancel_goal_async()
+        # The server rejects new goals until the cancelled one has stopped
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=CANCEL_WAIT)
+        return None
+
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
@@ -365,13 +382,9 @@ class ManipulationTasks:
 
         Logger.info(self.node, f"Pick request for {object_name} sent")
         # wait for result
-        result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
-        if not result_future.done():
-            Logger.error(self.node, "Action timed out after 60s")
-            future.result().cancel_goal_async()
+        result = self._wait_result(future.result(), 60.0)
+        if result is None:
             return Status.EXECUTION_ERROR
-        result = result_future.result().result
         Logger.info(self.node, f"Pick result: {result}")
         if result.success:
             Logger.success(self.node, f"Pick request for {object_name} successful")
@@ -406,13 +419,9 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         Logger.info(self.node, "Place request sent")
         # wait for result
-        result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
-        if not result_future.done():
-            Logger.error(self.node, "Action timed out after 60s")
-            future.result().cancel_goal_async()
+        result = self._wait_result(future.result(), 60.0)
+        if result is None:
             return Status.EXECUTION_ERROR
-        result = result_future.result().result
         Logger.info(self.node, f"Place result: {result}")
         if result.success:
             Logger.success(self.node, "Place request successful")
@@ -573,13 +582,9 @@ class ManipulationTasks:
         # executing the place, leaving the FSM in a bad state (object already
         # dropped in shelf but task_manager thought it failed and retried).
         SHELF_PLACE_TIMEOUT = 180.0
-        result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=SHELF_PLACE_TIMEOUT)
-        if not result_future.done():
-            Logger.error(self.node, f"Action timed out after {SHELF_PLACE_TIMEOUT}s")
-            future.result().cancel_goal_async()
+        result = self._wait_result(future.result(), SHELF_PLACE_TIMEOUT)
+        if result is None:
             return Status.EXECUTION_ERROR
-        result = result_future.result().result
         Logger.info(self.node, f"Place in shelf result: {result}")
         if result.success:
             Logger.success(self.node, "Place request successful")
@@ -604,13 +609,9 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         Logger.info(self.node, "Pour request sent")
         # wait for result
-        result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
-        if not result_future.done():
-            Logger.error(self.node, "Action timed out after 60s")
-            future.result().cancel_goal_async()
+        result = self._wait_result(future.result(), 60.0)
+        if result is None:
             return Status.EXECUTION_ERROR
-        result = result_future.result().result
         Logger.info(self.node, f"Pour result: {result}")
         if result.success:
             Logger.success(self.node, "Pour request successful")
@@ -851,13 +852,9 @@ class ManipulationTasks:
             Logger.error(self.node, "Failed to send place_in_point request")
             return Status.EXECUTION_ERROR
 
-        result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
-        if not result_future.done():
-            Logger.error(self.node, "Action timed out after 60s")
-            future.result().cancel_goal_async()
+        result = self._wait_result(future.result(), 60.0)
+        if result is None:
             return Status.EXECUTION_ERROR
-        result = result_future.result().result
         if result.success:
             Logger.success(self.node, "Place in point successful")
             return Status.EXECUTION_SUCCESS
