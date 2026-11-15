@@ -7,6 +7,8 @@ along that direction, timed at the commanded speed and sent to the trajectory co
 until the velocity is zeroed or the mode changes.
 """
 
+import time
+
 import numpy as np
 import rclpy
 import tf2_ros
@@ -44,6 +46,9 @@ class XArmVelocitySim(Node):
         super().__init__("xarm_velocity_sim")
         group = ReentrantCallbackGroup()
         self.mode = 1
+        # Sim seconds per wall second, so commanded speeds hold in wall time
+        self.rtf = 1.0
+        self._last_tick = None
         self.velocity = np.zeros(3)
         self.joints: dict[str, float] = {}
         self.tf_buffer = tf2_ros.Buffer()
@@ -97,6 +102,7 @@ class XArmVelocitySim(Node):
 
     def _set_cartesian_velocity(self, request, response):
         if self.mode != CARTESIAN_VELOCITY_MODE:
+            self.get_logger().warn(f"Velocity command ignored in mode {self.mode}")
             response.ret = 1
             response.message = "not in cartesian velocity mode"
             return response
@@ -117,7 +123,16 @@ class XArmVelocitySim(Node):
         except tf2_ros.TransformException:
             return None
 
+    def _update_rtf(self):
+        tick = (time.monotonic(), self.get_clock().now().nanoseconds / 1e9)
+        if self._last_tick is not None and tick[0] > self._last_tick[0]:
+            rtf = (tick[1] - self._last_tick[1]) / (tick[0] - self._last_tick[0])
+            if 0.05 < rtf < 2.0:
+                self.rtf = 0.9 * self.rtf + 0.1 * rtf
+        self._last_tick = tick
+
     def _step(self):
+        self._update_rtf()
         tcp = self.tcp()
         if tcp is None:
             return
@@ -133,7 +148,8 @@ class XArmVelocitySim(Node):
     def _start_line(self):
         """Plan a straight TCP line along the commanded velocity and stream it."""
         tcp = self.tcp()
-        speed = float(np.linalg.norm(self.velocity))
+        # The pick pipeline times its moves on the wall clock; the controller runs on sim time
+        speed = float(np.linalg.norm(self.velocity)) / self.rtf
         if (
             tcp is None
             or len(self.joints) < len(JOINTS)
@@ -141,7 +157,7 @@ class XArmVelocitySim(Node):
         ):
             self.get_logger().warn("Cannot start a cartesian velocity move yet")
             return
-        direction = self.velocity / speed
+        direction = self.velocity / np.linalg.norm(self.velocity)
         request = GetCartesianPath.Request()
         request.header.frame_id = ARM_BASE_FRAME
         request.group_name = "xarm6"
@@ -166,6 +182,10 @@ class XArmVelocitySim(Node):
         if len(points) < 2:
             self.get_logger().warn("No straight-line path for the velocity command")
             return
+        self.get_logger().info(
+            f"Straight line: {len(points)} points, {result.fraction * MAX_TRAVEL * 1000:.0f} mm "
+            f"at {speed * 1000:.0f} mm/s sim (rtf {self.rtf:.2f})"
+        )
         names = result.solution.joint_trajectory.joint_names
         order = [names.index(j) for j in JOINTS]
         travelled = result.fraction * MAX_TRAVEL

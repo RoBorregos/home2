@@ -26,7 +26,7 @@ furniture:
     overhang: 0.08
     # Part of the top where objects are set [x_min, y_min, x_max, y_max]: the front
     # 0.3 m, which the docked arm reaches
-    reach: [-0.85, -13.75, 0.05, -13.46]
+    reach: [-0.92, -13.76, 0.12, -13.46]
   counter:
     shape: box
     center: [-3.00, -12.92]

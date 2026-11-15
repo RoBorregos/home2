@@ -8,6 +8,8 @@ ground truth against the 2026 scoresheet and saves a replayable report.
 ./run.sh simulation --build                 # once, and after pulling
 ./run.sh simulation --task ppc --seed 3     # one run (add --gui for the Gazebo window)
 ./run.sh simulation --scenario docker/simulation/logs/runs/<run>/scenario.json   # replay
+./run.sh simulation --suite --tasks ppc --seeds 1,2,3   # several seeds + summary.md
+./run.sh simulation --task ppc --seed 3 --hold          # stack only, to drive it by hand
 ./run.sh simulation --test                  # unit tests, no simulator
 ```
 
@@ -76,7 +78,23 @@ To add a row: add it to the YAML and count it in the task's function in `scoring
 - Task: a generator in `scenario.py`, a scoresheet, a counter in `scoring.py` and an
   entry in `TASK_MANAGERS` in `run_scenario.py`.
 
+## CI
+
+- `.github/workflows/sim-tests.yml`: the unit tests on every pull request (hosted runner).
+- `.github/workflows/sim-tasks.yml`: the suite, nightly and on manual dispatch, on a
+  self-hosted runner labelled `frida-sim` (GPU + the sim image). It never runs on pull
+  requests because the repo is public. The score table lands in the job summary and the
+  run directories are uploaded as an artifact.
+
+Register the runner once on the machine that will run it (Settings > Actions > Runners >
+New self-hosted runner), adding the label `frida-sim`.
+
 ## Known limits
+
+- Grasp assist welds a grasp that ends within 6 cm of the object (`GRASP_MAX_GAP` in
+  `run_scenario.py`; 3.5 cm in the plain sim): task runs judge task logic, not grasp quality.
+- The cabinet is a guess at the real one; the shelf viewing poses do not see levels 2 and 3
+  from the docked pose, so shelf scans come back empty there.
 
 - Objects are coloured primitives; perception fidelity is not what this tests.
 - The base has no collisions (see `frida_gz_sim`), so driving through furniture is not caught.

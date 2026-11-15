@@ -44,6 +44,7 @@ Tasks:
   --task <name>    Run a real task manager on a seeded rulebook scenario and score it
                    (ppc; flags: --seed N, --gui). Report in docker/simulation/logs/runs/
   --scenario <f>   Replay a saved scenario.json
+  --suite          Run several seeds and summarize (flags: --tasks ppc --seeds 1,2,3)
   --test           Run the harness unit tests
   --tm             Run the pick-and-place task manager (foreground)
   --nav-tm         Run the navigation task manager (foreground)
@@ -223,6 +224,9 @@ case $TASK in
   --task|--scenario)
     kill_sim
     in_container "ros2 run frida_task_sim run_scenario.py ${HARNESS_ARGS[*]}" ;;
+  --suite)
+    kill_sim
+    in_container "ros2 run frida_task_sim run_suite.py ${HARNESS_ARGS[*]:1}" ;;
   --test) in_container "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q /workspace/src/simulation/frida_task_sim/test" ;;
   --tm) in_container "ros2 run frida_gz_sim sim_pnp_task_manager.py" ;;
   --nav-tm) in_container "ros2 run frida_gz_sim sim_nav_task_manager.py" ;;

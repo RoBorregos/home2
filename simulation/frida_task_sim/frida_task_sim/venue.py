@@ -20,7 +20,10 @@ def load(name: str) -> dict:
 
 
 def map_yaml(venue: dict) -> str:
-    maps = os.path.join(get_package_share_directory("map_context"), "maps")
+    # FRIDA_MAPS_DIR lets the unit tests run without building map_context
+    maps = os.environ.get("FRIDA_MAPS_DIR") or os.path.join(
+        get_package_share_directory("map_context"), "maps"
+    )
     return os.path.join(maps, venue["map_name"] + ".yaml")
 
 

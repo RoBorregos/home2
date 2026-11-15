@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 
+import psutil
 import rclpy
 import yaml
 from ament_index_python.packages import get_package_share_directory
@@ -37,6 +38,9 @@ from frida_task_sim.timeline import BOLD, DIM, RESET, Timeline
 READY_TIMEOUT = 420
 # Extra sim seconds after the rulebook limit before the task manager is stopped
 GRACE = 20
+
+# Task runs judge task logic, not grasp quality: a close miss still counts as a grasp
+GRASP_MAX_GAP = 0.06
 
 TASK_MANAGERS = {
     "ppc": ("pickandplace_task_manager.py", "PPC ready"),
@@ -97,15 +101,14 @@ class Stack:
             self.stop(name)
         # gz and nav2 leave children behind that hold the DDS endpoints of the next run
         patterns = ("gz sim", "/workspace/install/", "/opt/ros/jazzy/lib/")
-        for pid in filter(str.isdigit, os.listdir("/proc")):
-            try:
-                with open(f"/proc/{pid}/cmdline", "rb") as f:
-                    cmdline = f.read().replace(b"\0", b" ").decode(errors="replace")
-            except OSError:
+        # The shell, `ros2 run` and a suite above this process must survive
+        keep = {os.getpid(), *(p.pid for p in psutil.Process().parents())}
+        for process in psutil.process_iter(["pid", "cmdline"]):
+            cmdline = " ".join(process.info["cmdline"] or [])
+            if process.info["pid"] in keep or "run_scenario" in cmdline:
                 continue
-            if int(pid) != os.getpid() and "run_scenario" not in cmdline:
-                if any(pattern in cmdline for pattern in patterns):
-                    os.kill(int(pid), signal.SIGKILL)
+            if any(pattern in cmdline for pattern in patterns):
+                os.kill(process.info["pid"], signal.SIGKILL)
 
 
 class Monitor(Node):
@@ -195,6 +198,7 @@ def start_stack(stack: Stack, scenario: dict, run_dir: str, gui: bool):
             "grasp_assist:=true",
             "camera_rate:=5",
             f"objects_file:={run_dir}/grasp_objects.json",
+            f"grasp_max_gap:={GRASP_MAX_GAP}",
             f"spawn_x:={x}",
             f"spawn_y:={y}",
             f"spawn_z:={z}",
@@ -278,6 +282,10 @@ def run(args) -> int:
     status, code = "completed", 0
     try:
         start_stack(stack, scenario, run_dir, args.gui)
+        if args.hold:
+            print("stack ready; holding until interrupted", flush=True)
+            while True:
+                rclpy.spin_once(monitor, timeout_sec=0.5)
         _, ready = TASK_MANAGERS[scenario["task"]]
         stack.log_dir = run_dir
         stack.start("tm", task_manager_cmd(scenario, run_dir))
@@ -345,6 +353,11 @@ def main():
     )
     parser.add_argument("--runs-dir", default="/workspace/sim_logs/runs")
     parser.add_argument("--gui", action="store_true", help="open the Gazebo window")
+    parser.add_argument(
+        "--hold",
+        action="store_true",
+        help="start the stack without the task manager, to drive it by hand",
+    )
     sys.exit(run(parser.parse_args()))
 
 

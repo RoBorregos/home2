@@ -53,6 +53,7 @@ def launch_setup(context, *args, **kwargs):
     spawn_z = LaunchConfiguration("spawn_z").perform(context)
     lidar_rate = int(LaunchConfiguration("lidar_rate").perform(context))
     objects_file = LaunchConfiguration("objects_file").perform(context)
+    grasp_max_gap = float(LaunchConfiguration("grasp_max_gap").perform(context))
 
     robot_description = build_robot_description(
         image_width=width,
@@ -165,7 +166,7 @@ def launch_setup(context, *args, **kwargs):
         package="frida_gz_sim",
         executable="grasp_attach.py",
         output="screen",
-        parameters=[sim_time, {"objects_file": objects_file}],
+        parameters=[sim_time, {"objects_file": objects_file, "max_gap": grasp_max_gap}],
     )
 
     return (
@@ -202,6 +203,8 @@ def generate_launch_description():
             DeclareLaunchArgument("lidar_rate", default_value="10"),
             # Graspable objects of a generated world (JSON); empty = the pnp_table set
             DeclareLaunchArgument("objects_file", default_value=""),
+            # Largest finger-to-object gap grasp assist still welds (m)
+            DeclareLaunchArgument("grasp_max_gap", default_value="0.035"),
             OpaqueFunction(function=launch_setup),
         ]
     )

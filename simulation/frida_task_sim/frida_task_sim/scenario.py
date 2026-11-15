@@ -7,7 +7,7 @@ import random
 from frida_task_sim import catalog, venue as venues
 
 # Free space kept between two spawned objects (m)
-SPACING = 0.02
+SPACING = 0.07
 
 
 def _place(rng, region, names, z, restarts=200, tries=200):
