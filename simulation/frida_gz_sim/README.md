@@ -215,6 +215,39 @@ Navigation-only pieces:
 - `sim_nav_task_manager.py` uses the real `NavigationTasks.move_to_location()`
   and grades each goal against the robot's ground-truth Gazebo pose.
 
+### Follow person
+
+`./run.sh simulation --follow-test` runs the person-following scenarios on a
+running `--nav` sim. It starts two stand-ins and the scenario runner:
+
+- `sim_person.py` spawns a visual-only cylinder (`sim_person`) and walks it along
+  routes received on `/sim/person/route` (JSON waypoints `[x, y, speed, dwell]`,
+  speed 0 teleports). The lidars see it like a person's legs, so it is a live
+  obstacle in the costmaps. Ground truth on `/sim/person/pose`.
+- `sim_person_tracker.py` replaces vision's `tracker_node` with the same services
+  and topics (`/vision/set_tracking_target`, `/vision/is_tracking`,
+  `/vision/tracking_results` in the ZED optical frame, `/vision/tracker_centroid`).
+  It sees the person only inside ±100° of the base heading (the real camera pans
+  on the arm), within 0.4–7 m and with no wall in between (ray cast on the map),
+  and goes silent otherwise, exactly like the real tracker. Re-acquisition takes
+  `reacquire_delay_s` (1 s).
+- `sim_follow_test.py` drives the real `NavigationTasks.follow_person()` (so
+  `nav_central`, `person_goal_smoother`, the follow BT and the follow-mode Nav2
+  params are the ones under test) through: `straight_walk`, `fast_walk`,
+  `stop_and_go`, `corner_turn` (the person turns into the laundry doorway behind
+  the wall at x≈1.3, y≈-8.5 and the robot must find them again), `walk_back`,
+  `lost_then_return` (the person vanishes for 9 s) and `stop_service`. Each one is
+  graded on ground truth: robot–person gap, time out of `following` on
+  `/navigation/follow_status`, recovery time, footprint vs the walls, and that
+  stopping restores the standard controller limits.
+
+Results: `docker/simulation/logs/follow_test_results.json` plus a
+`follow_<scenario>_poses.csv` per scenario (robot pose, person pose, gap, status
+at 10 Hz). `-p scenarios:=corner_turn,fast_walk` selects scenarios,
+`-p tag:=baseline` suffixes the output files, `-p repeat:=3` loops the suite.
+Watch it on `/sim/overview_camera/image` or RViz (`--rviz`, the person shows up in
+the laser scan).
+
 ## Debugging headless
 
 - `/sim/overview_camera/image` is a fixed camera watching the robot and tables.

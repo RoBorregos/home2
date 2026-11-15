@@ -30,6 +30,12 @@ HOT_DRINKS = "fanta, water, lipton, coca-cola, soda, lemonade, pepsi, orange jui
 FOLLOW_STOP_KEYWORDS = ["stop", "stop following", "halt", "you can stop"]
 FOLLOW_LISTEN_TIMEOUT = 5.0
 FOLLOW_MAX_DURATION = 180.0
+# Navigation reports the follow state on /navigation/follow_status (nav.follow_status()).
+# On its own it drives to the person's last-known position and sweeps for them
+# ("lost" -> "searching"); only when that fails ("gave_up") or drags on longer than
+# FOLLOW_RELOCK_AFTER_S does the task manager step in and re-lock the tracker.
+FOLLOW_RELOCK_AFTER_S = 12.0
+FOLLOW_RELOCK_TRIES = 2
 DOOR_WAIT_TIMEOUT = 15.0
 
 
@@ -146,6 +152,28 @@ class HRIC_TM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 break
         return result
+
+    def _relock_person(self) -> bool:
+        """The follow lost the guest for good: pause base + arm follow, bring the
+        camera back to the front, ask them to come back and re-lock the tracker.
+        Mirrors gpsr_tasks._recover_lost_person. True when following resumed."""
+        self.subtask_manager.nav.follow_person(False)
+        self.subtask_manager.manipulation.follow_person(False)
+        self._move_arm_cleared("front_stare_carry_bag" if self.carrying_bag else "front_low_stare")
+        self.subtask_manager.hri.say(
+            "I lost you. Please come back and stand in front of me.", wait=True
+        )
+        for attempt in range(ATTEMPT_LIMIT):
+            if self.subtask_manager.vision.track_person(True) == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say("I found you again, let's continue.", wait=False)
+                self.subtask_manager.nav.follow_person(True)
+                self.subtask_manager.manipulation.follow_person(True)
+                return True
+            if attempt < ATTEMPT_LIMIT - 1:
+                self.subtask_manager.hri.say(
+                    "I cannot see you yet. Please stand right in front of me."
+                )
+        return False
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
@@ -598,7 +626,11 @@ class HRIC_TM(Node):
 
             # Keep following until the guest says a stop keyword. The duration cap is
             # a safety net so a missed "stop" never traps the robot in follow mode.
+            # Between listening windows, check whether navigation lost the guest:
+            # it recovers short losses by itself (last-known position + search), the
+            # task manager only re-locks the tracker when nav gives up.
             follow_start = time.time()
+            relocks = 0
             while self.running_task:
                 status, _ = self.subtask_manager.hri.interpret_keyword(
                     FOLLOW_STOP_KEYWORDS, timeout=FOLLOW_LISTEN_TIMEOUT, play_chime=False
@@ -608,6 +640,16 @@ class HRIC_TM(Node):
                 if time.time() - follow_start > FOLLOW_MAX_DURATION:
                     Logger.warn(self, "Follow person timed out without a stop keyword")
                     break
+                follow_status = self.subtask_manager.nav.follow_status()
+                lost_for = self.subtask_manager.nav.follow_lost_for()
+                if follow_status == "gave_up" or lost_for > FOLLOW_RELOCK_AFTER_S:
+                    Logger.warn(self, f"Follow lost the guest ({follow_status}, {lost_for:.0f}s)")
+                    relocks += 1
+                    if relocks > FOLLOW_RELOCK_TRIES or not self._relock_person():
+                        self.subtask_manager.hri.say(
+                            "I could not find you again, so I will stop following.", wait=True
+                        )
+                        break
 
             # Stop arm-follow, nav-follow AND the tracker before leaving the bag.
             self.subtask_manager.nav.follow_person(False)
