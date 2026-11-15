@@ -39,6 +39,8 @@ RATE = 20.0
 # Longest straight line planned for one velocity command (m) and its resolution
 MAX_TRAVEL = 0.30
 PATH_STEP = 0.005
+# How far ahead one joint velocity command moves the arm (s)
+JOINT_VELOCITY_HORIZON = 0.5
 
 
 class XArmVelocitySim(Node):
@@ -75,9 +77,11 @@ class XArmVelocitySim(Node):
             self._set_cartesian_velocity,
             callback_group=group,
         )
-        # Joint velocity mode (face following) is accepted but not simulated
         self.create_service(
-            MoveVelocity, XARM_MOVEVELOCITY_SERVICE, self._ok, callback_group=group
+            MoveVelocity,
+            XARM_MOVEVELOCITY_SERVICE,
+            self._set_joint_velocity,
+            callback_group=group,
         )
         # Wall clock: robot_states must keep flowing whatever the real-time factor
         self.create_timer(
@@ -97,6 +101,25 @@ class XArmVelocitySim(Node):
         if self.mode != CARTESIAN_VELOCITY_MODE and self.velocity.any():
             self.velocity = np.zeros(3)
             self._hold()
+        response.ret = 0
+        return response
+
+    def _set_joint_velocity(self, request, response):
+        """Joint velocity mode (face following): move at the commanded rates (rad/s)."""
+        speeds = np.array(request.speeds[: len(JOINTS)])
+        if len(self.joints) < len(JOINTS) or not speeds.any():
+            self._hold()
+        else:
+            now = np.array([self.joints[j] for j in JOINTS])
+            target = now + speeds * JOINT_VELOCITY_HORIZON
+            # Sim time for a horizon of wall time, so the rate looks real to the caller
+            sim = JOINT_VELOCITY_HORIZON * self.rtf
+            # Arriving at speed keeps the motion steady while commands keep replacing it
+            point = JointTrajectoryPoint(
+                positions=target.tolist(), velocities=(speeds / self.rtf).tolist()
+            )
+            point.time_from_start = Duration(sec=int(sim), nanosec=int((sim % 1) * 1e9))
+            self.traj_pub.publish(JointTrajectory(joint_names=JOINTS, points=[point]))
         response.ret = 0
         return response
 

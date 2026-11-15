@@ -23,6 +23,8 @@ from frida_task_sim.world import WORLD_NAME
 
 ROBOT_MODEL = "frida"
 EVENTS_TOPIC = "/sim/referee/events"
+# Judgements from a task director, re-emitted with the task clock
+NOTES_TOPIC = "/sim/referee/notes"
 FINISH_SERVICE = "/sim/referee/finish"
 REST_SPEED = 0.02
 REST_TIME = 0.5
@@ -70,6 +72,9 @@ class Referee(Node):
         self.create_subscription(Empty, START_BUTTON_CLIENT, self._on_start, 10)
         self.create_subscription(String, TASK_STEP_TOPIC, self._on_step, 10)
         self.create_subscription(String, DISPLAY_CAPTURE_TOPIC, self._on_capture, 10)
+        self.create_subscription(
+            String, NOTES_TOPIC, lambda m: self.emit(**json.loads(m.data)), 50
+        )
         self.create_service(Trigger, FINISH_SERVICE, self._finish)
         self.create_timer(0.1, self._track)
         self.get_logger().info(f"Referee ready ({len(self.objects)} objects)")
@@ -79,7 +84,8 @@ class Referee(Node):
     def now(self) -> float:
         return self.get_clock().now().nanoseconds / 1e9
 
-    def emit(self, kind: str, **data):
+    def emit(self, type: str, **data):
+        kind = type
         t = 0.0 if self.t0 is None else self.now() - self.t0
         event = {"t": round(t, 2), "type": kind, **data}
         self.events_pub.publish(String(data=json.dumps(event)))
@@ -91,9 +97,10 @@ class Referee(Node):
         if self.t0 is None:
             self.t0 = self.now()
             self.emit("start")
-            self.door_timer = self.create_timer(
-                self.venue["door"]["opens_after_s"], self._open_door
-            )
+            if self.scenario["task"] == "ppc":
+                self.door_timer = self.create_timer(
+                    self.venue["door"]["opens_after_s"], self._open_door
+                )
 
     def _open_door(self):
         self.door_timer.cancel()
@@ -194,8 +201,9 @@ class Referee(Node):
     def _track(self):
         now = self.now()
         xy = self.robot_xy()
-        table = self.venue["furniture"][self.venue["ppc"]["table"]]
-        if xy is not None and not self.at_table and self.t0 is not None:
+        ppc = self.scenario["task"] == "ppc"
+        if ppc and xy is not None and not self.at_table and self.t0 is not None:
+            table = self.venue["furniture"][self.venue["ppc"]["table"]]
             if venues.inside(table, xy[0], xy[1], margin=1.0):
                 self.at_table = True
                 self.emit("at_table")

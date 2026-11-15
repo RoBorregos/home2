@@ -1,0 +1,24 @@
+# RoboCup@Home 2026 rulebook, 5.1 Human Robot Interaction Challenge (max 7:00 minutes).
+# count = how many times a row can score; simulated: false rows are reported, never scored.
+task: hric
+time_limit_s: 420
+rows:
+  - {id: doorbell, label: "Detect the doorbell sound as a signal that a guest has arrived", points: 30, count: 2}
+  - {id: open_door, label: "Open the entrance door for a guest", points: 200, count: 2, simulated: false}
+  - {id: look_at_guest, label: "Look at the person talking, when receiving a guest", points: 50, count: 2}
+  - {id: offer_seat, label: "Offer a free seat to the new guest", points: 100, count: 2}
+  - {id: look_at_navigation, label: "Look in the direction of navigation or at the navigation goal", points: 15, count: 2, simulated: false}
+  - {id: attribute_correct, label: "Tell a correct visual attribute of the first guest", points: 20, count: 4}
+  - {id: attribute_incorrect, label: "Tell an incorrect visual attribute of the first guest", points: -20, count: 4, simulated: false}
+  - {id: no_confirmation, label: "Not asking non-essential questions to confirm or correct information", points: 15, count: 4}
+  - {id: intro_info, label: "Say name and favorite drink of each guest (during introduction)", points: 30, count: 4}
+  - {id: intro_gaze, label: "While introducing guests, look to the correct guest", points: 50, count: 2}
+  - {id: bag_handover, label: "Receive the bag from the guest via handover", points: 50, count: 1}
+  - {id: bag_assistance, label: "Requesting handover assistance from the guest", points: -25, count: 1, simulated: false}
+  - {id: bag_on_structure, label: "Bag placed on the robot structure instead of being handed over", points: -50, count: 1}
+  - {id: follow_host, label: "Following the host to the bag drop area", points: 200, count: 1, simulated: false}
+  - {id: bag_dropped_following, label: "Drop the bag while following the host", points: -50, count: 1, simulated: false}
+  - {id: bag_drop_area, label: "Drop the bag in the correct area", points: 50, count: 1}
+  - {id: wrong_info, label: "Wrong guest information was memorized", points: -40, count: 4}
+  - {id: alternative_hri, label: "Alternative HRI", points: -20, count: 6, simulated: false}
+  - {id: not_acknowledging, label: "Not acknowledging people", points: -200, count: 2, simulated: false}

@@ -3,6 +3,7 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import LaunchConfigurationEquals
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, SetParameter
 
@@ -18,6 +19,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("scenario_file"),
             DeclareLaunchArgument("run_dir"),
+            DeclareLaunchArgument("task", default_value="ppc"),
             SetParameter(name="use_sim_time", value=True),
             *[
                 Node(
@@ -33,5 +35,12 @@ def generate_launch_description():
                     "recorder.py",
                 )
             ],
+            Node(
+                package="frida_task_sim",
+                executable="hric_director.py",
+                output="screen",
+                parameters=params,
+                condition=LaunchConfigurationEquals("task", "hric"),
+            ),
         ]
     )

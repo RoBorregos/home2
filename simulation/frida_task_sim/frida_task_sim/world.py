@@ -2,13 +2,13 @@
 
 from frida_gz_sim.world import build_world
 
-from frida_task_sim import catalog, venue as venues
+from frida_task_sim import catalog, people, venue as venues
 
 WORLD_NAME = "task_sim"
 
 OVERVIEW_CAMERA = """    <model name="overview_camera">
       <static>true</static>
-      <pose>0.3 -13.4 7.0 0 1.5708 1.5708</pose>
+      <pose>{x} {y} {z} 0 1.5708 1.5708</pose>
       <link name="link">
         <sensor name="overview" type="camera">
           <always_on>true</always_on>
@@ -28,7 +28,15 @@ OVERVIEW_CAMERA = """    <model name="overview_camera">
 def build(scenario: dict) -> str:
     """SDF world string for a scenario, in map coordinates."""
     venue = venues.load(scenario["venue"])
-    models = OVERVIEW_CAMERA + venues.door_sdf(venue)
+    task = scenario["task"]
+    x, y, z = venue[task].get("overview", (0.3, -13.4, 7.0))
+    models = OVERVIEW_CAMERA.format(x=x, y=y, z=z)
+    if task == "ppc":
+        models += venues.door_sdf(venue)
+    for i, (sx, sy) in enumerate(scenario.get("seats", [])):
+        models += people.seat_sdf(f"seat_{i}", sx, sy)
+    for person in scenario.get("people", []):
+        models += people.person_sdf(person)
     for name, f in venue["furniture"].items():
         models += venues.furniture_sdf(name, f)
     for obj in scenario["objects"]:

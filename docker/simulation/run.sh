@@ -42,7 +42,7 @@ Tasks:
   --nav            Start the navigation sim (arena from the robocup2026_1 map)
   --all            Start both stacks in the arena world (no objects to pick there)
   --task <name>    Run a real task manager on a seeded rulebook scenario and score it
-                   (ppc; flags: --seed N, --gui). Report in docker/simulation/logs/runs/
+                   (ppc, hric; flags: --seed N, --headless, --no-rviz). Report in docker/simulation/logs/runs/
   --scenario <f>   Replay a saved scenario.json
   --suite          Run several seeds and summarize (flags: --tasks ppc --seeds 1,2,3)
   --test           Run the harness unit tests
@@ -223,6 +223,9 @@ case $TASK in
   --manip|--nav|--all) start_all ;;
   --task|--scenario)
     kill_sim
+    if [ "$GUI" = true ] || [ "$RVIZ_VIEW" = true ]; then
+      xhost +local: >/dev/null
+    fi
     in_container "ros2 run frida_task_sim run_scenario.py ${HARNESS_ARGS[*]}" ;;
   --suite)
     kill_sim

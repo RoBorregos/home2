@@ -4,6 +4,8 @@ import subprocess
 import threading
 
 import numpy as np
+from gz.msgs10.boolean_pb2 import Boolean
+from gz.msgs10.pose_pb2 import Pose
 from gz.msgs10.pose_v_pb2 import Pose_V
 from gz.transport13 import Node as GzNode
 from gz.transport13 import SubscribeOptions
@@ -38,6 +40,16 @@ class PoseStream:
         with self._lock:
             self._poses.update(update)
             self.sim_time = msg.header.stamp.sec + msg.header.stamp.nsec * 1e-9
+
+    def set_pose(self, world: str, name: str, x, y, z, yaw=0.0) -> bool:
+        """Teleport a model."""
+        pose = Pose(name=name)
+        pose.position.x, pose.position.y, pose.position.z = x, y, z
+        q = Rotation.from_euler("z", yaw).as_quat()
+        pose.orientation.x, pose.orientation.y = q[0], q[1]
+        pose.orientation.z, pose.orientation.w = q[2], q[3]
+        ok, _ = self._node.request(f"/world/{world}/set_pose", pose, Pose, Boolean, 500)
+        return ok
 
     def get(self, name: str):
         with self._lock:
