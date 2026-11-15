@@ -106,6 +106,18 @@ class SUBTASK_MANAGER(Enum):
 GOAL_UPDATE_TOPIC = "/goal_update"
 FOLLOW_MODE_SERVICE = "/navigation/set_follow_mode"
 FOLLOW_PERSON_NAV_SERVICE = "/navigation/follow_person"
+# person_goal_smoother's follow state, std_msgs/String (latched): one of
+# FOLLOW_STATUS_* below. The task manager polls it to decide when to re-lock.
+FOLLOW_STATUS_TOPIC = "/navigation/follow_status"
+FOLLOW_STATUS_IDLE = "idle"  # follow mode off
+FOLLOW_STATUS_FOLLOWING = "following"  # tracker data flowing, goal chasing the person
+FOLLOW_STATUS_LOST = "lost"  # tracker silent: driving to the last-known position
+FOLLOW_STATUS_SEARCHING = (
+    "searching"  # at the last-known position, sweeping yaw for the person
+)
+FOLLOW_STATUS_GAVE_UP = (
+    "gave_up"  # search timed out: base halted, waiting for a re-lock
+)
 
 # Timeouts for the follow-person orchestration
 FOLLOW_MODE_SERVICE_TIMEOUT = 2.0  # Wait for /navigation/set_follow_mode

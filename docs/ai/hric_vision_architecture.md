@@ -202,6 +202,28 @@ Applied across tracker / smoother / arm controller to stop losing the person
 - **nav2_omni_following.yaml**: vx/vy 0.35→0.5 (the 0.35 cap was the dominant
   loss cause — slower than a walking person).
 
+### Update 2026-11-15: closed loop + recovery + handoff
+
+The loop is now closed and self-healing on the navigation side (details in
+`docs/ai/navigation_architecture.md`, addendum 2026-11-15):
+- `nav_central` re-sends the follow BT whenever Nav2 aborts it; the BT replans at
+  4 Hz with per-leaf recoveries; the smoother re-publishes its goal at 2 Hz, keeps
+  it out of the person's own costmap footprint and transforms the tracker point at
+  its stamp (the camera pans on the arm).
+- Loss handling is a state machine reported on `/navigation/follow_status`
+  (`following | lost | searching | gave_up | idle`): drive to the last-known
+  position, sweep yaw there, give up after 15 s. The tracker's ReID re-lock
+  flips it back to `following` from any state.
+- **Handoff**: vision owns the lock (`track_person`), nav owns the base and the
+  status, manipulation owns the camera pan (`manipulation.follow_person`, joint1 PID
+  on `CENTROID_TOPIC`, recentres on centroid timeout). Start `track → nav → arm`,
+  stop `nav → arm → track`; stop the nav follow before any other arm action
+  (`_preempt_follow` kills the pan). The task manager re-locks only on `gave_up`
+  or a long loss (`nav.follow_status()`, `nav.follow_lost_for()`; HRIC
+  `_relock_person`, GPSR `_recover_lost_person`).
+- Validated in the Gazebo nav sim with a simulated walker and a tracker stand-in:
+  `./run.sh simulation --follow-test` (`simulation/frida_gz_sim/README.md`).
+
 Suggested launch fixes: remove the explicit `image_orienter` Node from `restaurant_launch.py`
 (the detector include already starts it); drop `trash_detection_node` from gpsr/ppc launches;
 drop `face_recognition_node` from `restaurant_launch.py`; for --dlc drop `vlm_node`
