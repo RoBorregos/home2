@@ -1,7 +1,7 @@
 #!/bin/bash
 # Shelf pick check (keyboard_input -11 flow) in one scene, with vision.
 # Inside the simulation container:
-#   bash /workspace/src/simulation/frida_gz_sim/scripts/run_shelf_pick.sh [scene] [level] [label] [noboxes]
+#   [PLACE_LEVEL=N] bash /workspace/src/simulation/frida_gz_sim/scripts/run_shelf_pick.sh [scene] [level] [label] [noboxes]
 # Results and video: /workspace/sim_logs/shelf/pick_<scene>[_noboxes].{json,mp4,log}
 # "noboxes" keeps the shelf boxes out of the planning scene (A/B against them).
 # no `set -u`: the ROS setup scripts read unset variables
@@ -73,9 +73,11 @@ pkill -f '[o]ctomap_cloud_filter.py'
 ros2 run frida_gz_sim octomap_cloud_filter.py --ros-args -p use_sim_time:=true \
   -p "drop_box:=$BOX" > "$OUT/${TAG}_octomap_filter.log" 2>&1 &
 sleep 5
+# PLACE_LEVEL=N: after the pick, place the object on shelf N (task manager flow)
 ros2 run frida_gz_sim sim_shelf_pick.py --ros-args -p use_sim_time:=true \
   -p scene:="$SCENE" -p level:="$LEVEL" -p label:="$LABEL" \
+  -p place_level:="${PLACE_LEVEL:-0}" \
   -p video:="$OUT/$TAG.mp4" > "$OUT/${TAG}_check.log" 2>&1
 echo "exit=$?"
-grep -h "shelf pick: \(PASS\|FAIL\)" "$OUT/${TAG}_check.log" | tail -1
+grep -hE "shelf (pick|pick \+ place): (PASS|FAIL)" "$OUT/${TAG}_check.log" | tail -1
 kill_sim

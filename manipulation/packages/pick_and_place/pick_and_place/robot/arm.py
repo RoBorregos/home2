@@ -8,7 +8,7 @@ lets them be unit-tested against a fake arm with no ROS graph.
 import time
 from collections import deque
 from contextlib import contextmanager
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
 from frida_constants.manipulation_constants import (
@@ -72,7 +72,10 @@ from xarm_utils.shelf_levels import get_compartment_height
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
-from pick_and_place.utils.self_collision_utils import endpoint_self_collides
+from pick_and_place.utils.self_collision_utils import (
+    compute_ik,
+    endpoint_self_collides,
+)
 
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
@@ -278,6 +281,41 @@ class RobotArm:
     @property
     def joint_state(self) -> Optional[JointState]:
         return self._latest_joint_state
+
+    def current_joints(self) -> Optional[Dict[str, float]]:
+        """Latest arm joint positions in radians, by name, or None."""
+        state = self._latest_joint_state
+        if state is None:
+            return None
+        return {
+            name: float(pos)
+            for name, pos in zip(state.name, state.position)
+            if name.startswith("joint")
+        }
+
+    def solve_ik(self, pose, seed: Optional[Dict[str, float]] = None):
+        """Arm joints (radians, by name) that put the grasp frame at ``pose``.
+
+        Seeded with ``seed`` (or the current joints) so the closest branch wins.
+        Collisions are not checked: the held object may rest on a surface.
+        """
+        seed_state = None
+        if seed:
+            seed_state = JointState(name=list(seed), position=list(seed.values()))
+        result = compute_ik(
+            self._compute_ik_client,
+            pose,
+            avoid_collisions=False,
+            seed_joint_state=seed_state or self._latest_joint_state,
+        )
+        if result is None or result.error_code.val != 1:
+            return None
+        js = result.solution.joint_state
+        return {
+            name: float(pos)
+            for name, pos in zip(js.name, js.position)
+            if name.startswith("joint")
+        }
 
     def tcp_xyz(self) -> Optional[np.ndarray]:
         """Current tool-centre-point XYZ in metres, or None if unknown."""
@@ -626,6 +664,27 @@ class RobotArm:
         if not result.success:
             return []
         return [(float(lv.height), float(lv.thickness)) for lv in result.levels]
+
+    def shelf_extent(self):
+        """(front_x, back_x, y_min, y_max) of the last shelf scan in base_link, or None.
+
+        Unlike the boxes this needs no motion check: callers only use it while
+        docked at the shelf they scanned.
+        """
+        if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
+            return None
+        future = self._detect_shelf_client.call_async(DetectShelf.Request())
+        if not self.wait_for_future(future, timeout=5.0) or future.result() is None:
+            return None
+        result = future.result()
+        if not result.success or not result.levels:
+            return None
+        return (
+            float(result.front_x),
+            float(result.back_x),
+            float(result.y_min),
+            float(result.y_max),
+        )
 
     def remove_shelf_scene(self) -> None:
         """Drop the shelf boxes (they are in base_link and must not leave with the robot)."""

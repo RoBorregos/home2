@@ -47,6 +47,9 @@ from task_manager.utils.task import Task
 LIFT_MIN = 0.20  # carried: at least this far above its board at the end (a drop
 # back onto the shelf or onto clutter must not count)
 PICK_OBJECT_HALF_HEIGHT = 0.095  # the mustard bottle is 19 cm tall
+# Place check: the object base on the target board, standing, inside the cabinet.
+PLACE_Z_TOLERANCE = 0.03
+PLACE_TILT_MAX = 0.35  # rad (~20 deg)
 
 
 class SceneWatcher(Node):
@@ -103,8 +106,8 @@ class SceneWatcher(Node):
         }
 
 
-def object_z(name: str) -> float | None:
-    """Ground-truth Z of a gz model, from the gz CLI."""
+def object_pose(name: str) -> tuple | None:
+    """Ground-truth (x, y, z, roll, pitch, yaw) of a gz model, from the gz CLI."""
     try:
         out = subprocess.run(
             ["gz", "model", "-m", name, "-p"],
@@ -115,14 +118,36 @@ def object_z(name: str) -> float | None:
         ).stdout
     except (OSError, subprocess.TimeoutExpired):
         return None
+    triples = []
     for line in out.splitlines():
         parts = line.replace("[", " ").replace("]", " ").split()
         if len(parts) == 3:
             try:
-                return float(parts[2])
+                triples.append(tuple(float(v) for v in parts))
             except ValueError:
                 continue
-    return None
+    if len(triples) < 2:
+        return None
+    return triples[0] + triples[1]  # position, then roll/pitch/yaw
+
+
+def object_z(name: str) -> float | None:
+    pose = object_pose(name)
+    return pose[2] if pose else None
+
+
+def placed_on(scene, level: int, pose) -> bool:
+    """Upright on board ``level`` (index) and inside the cabinet footprint."""
+    if pose is None:
+        return False
+    x, y, z, roll, pitch, _ = pose
+    on_board = abs(z - scene.boards[level]) < PLACE_Z_TOLERANCE
+    upright = abs(roll) < PLACE_TILT_MAX and abs(pitch) < PLACE_TILT_MAX
+    inside = (
+        scene.front_x < x < scene.front_x + scene.depth
+        and abs(y - scene.y_offset) < scene.width / 2
+    )
+    return on_board and upright and inside
 
 
 def pick_at(node: Node, label: str, point, timeout: float = 180.0) -> Status:
@@ -158,6 +183,8 @@ def main(args=None):
     level = node.declare_parameter("level", 2).value
     objects = node.declare_parameter("objects", True).value
     label = node.declare_parameter("label", "bottle").value
+    # 0: pick only; N: after the pick, place it on shelf N (1 = lowest board)
+    place_level = node.declare_parameter("place_level", 0).value
     video = node.declare_parameter("video", "").value
     manipulation = ManipulationTasks(node, task=Task.PICK_AND_PLACE)
     clear_octomap = node.create_client(Empty, "/clear_octomap")
@@ -260,6 +287,32 @@ def main(args=None):
         and lifted
         and len(boards) >= level  # its board and the one above (the ceiling)
     )
+
+    # 5. optional: place it on another shelf, the way the pick-and-place task
+    #    manager does (front_stare, look at the level, place_on_shelf)
+    if passed and 0 < place_level <= len(heights):
+        place_h = heights[place_level - 1]
+        report["place_level"] = place_level
+        report["place_height"] = place_h
+        show(
+            f"{scene.name}: placing the {label} on level {place_level} at "
+            f"{place_h:.3f} m (measured)",
+            f"measured levels: {[round(h, 3) for h in heights]}",
+        )
+        place_started = time.time()
+        manipulation.move_to_position("front_stare")
+        manipulation.get_optimal_position_for_plane(
+            place_h, tolerance=0.1, table_or_shelf=False, approach_plane=False
+        )
+        place_status = manipulation.place_on_shelf(plane_height=place_h, tolerance=0.1)
+        time.sleep(3.0)
+        pose = object_pose(PICK_MODEL[0])
+        report["place_seconds"] = round(time.time() - place_started, 1)
+        report["place_status"] = place_status.name
+        report["placed_pose"] = [round(v, 3) for v in pose] if pose else None
+        report["placed"] = placed_on(scene, place_level - 1, pose)
+        passed = report["placed"]
+
     report["seconds"] = round(time.time() - started, 1)
     return finish(node, recorder, executor, video, report, passed, show)
 
@@ -271,7 +324,13 @@ def finish(node, recorder, executor, video, report, passed, show):
         f"shelf boxes in the scene during the pick: {len(report.get('shelf_boxes_during_pick', []))}",
         f"pick {report.get('pick_status', '-')}, object z {report.get('object_z', '-')}",
     ]
-    show(f"{report['scene']} shelf pick: {'PASS' if passed else 'FAIL'}", *lines)
+    if "place_level" in report:
+        lines.append(
+            f"place on level {report['place_level']}: {report.get('place_status', '-')}, "
+            f"object at {report.get('placed_pose', '-')}"
+        )
+    task = "pick + place" if "place_level" in report else "pick"
+    show(f"{report['scene']} shelf {task}: {'PASS' if passed else 'FAIL'}", *lines)
     out = Path(video).with_suffix(".json") if video else Path("/tmp/shelf_pick.json")
     out.write_text(json.dumps(report, indent=2))
     node.get_logger().info(f"report: {out} {json.dumps(report)}")

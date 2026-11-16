@@ -253,13 +253,20 @@ class KeyboardInput(Node):
 
     def survey_shelf(self):
         """Dynamic scan: visit the survey poses, capture each view, then detect."""
-        for i, pose in enumerate(SHELF_SURVEY_POSES):
+        # Drop earlier captures first: a skipped first pose used to leave them in.
+        self.detect_shelf(reset=True)
+        captured = 0
+        for pose in SHELF_SURVEY_POSES:
             if not self._move_named(pose):
                 self.get_logger().warning(f"Could not reach {pose}; skipping this view")
                 continue
             time.sleep(0.7)  # let the depth settle after the motion
-            self.detect_shelf(reset=(i == 0), capture=True)
-        self.detect_shelf(detect=True, add_collision=True)
+            res = self.detect_shelf(capture=True)
+            captured += int(res is not None and res.success)
+        if captured == 0:
+            self.get_logger().error("No survey view captured; not detecting")
+            return None
+        return self.detect_shelf(detect=True, add_collision=True)
 
     def preview_grasps(self, object_name):
         if not self._generate_grasps_client.wait_for_service(timeout_sec=2.0):

@@ -104,6 +104,14 @@ SHELF_FRONTAL_OPEN_TOP_PITCHES = (30.0, 45.0)
 SHELF_EXIT_LIFT = 0.02
 SHELF_EXIT_RETREAT = 0.15
 SHELF_EXIT_SPEED = 50.0  # mm/s
+# Near a wrist singularity (joint5 near 0) a slow cartesian velocity move needs fast
+# joint4/joint6 turns: on FRIDA the xArm stopped with C24 (speed exceeds limit) on the
+# 2 cm lift after a shelf grasp at joint5 -13 deg, and the error reset opened the
+# gripper. There the exit runs as planned joint moves instead.
+SHELF_EXIT_SINGULAR_J5 = np.radians(25.0)
+SHELF_EXIT_MAX_JOINT_STEP = np.radians(40.0)  # more means an IK branch flip
+SHELF_EXIT_JOINT_VELOCITY = 0.15
+SHELF_EXIT_SINGULAR_SPEED = 15.0  # mm/s, cartesian fallback near the singularity
 
 # The ZED hangs below the gripper and grazes the shelf surface on a low frontal
 # grasp; the offset is used to decide whether flipping lifts the camera clear.
@@ -758,18 +766,65 @@ def _shelf_exit(arm, pick_pose: Optional[PoseStamped]) -> None:
     that. Cartesian moves are in link_base (the xArm TCP frame), so the retreat
     only runs for grasps expressed there; Z is the same in both base frames.
     """
-    with arm.phase("shelf_exit"):
-        arm.cartesian_approach(
-            np.array([0.0, 0.0, 1.0]), SHELF_EXIT_LIFT, SHELF_EXIT_SPEED
-        )
-        if pick_pose is None or pick_pose.header.frame_id != "link_base":
-            return
+    steps = [(np.array([0.0, 0.0, 1.0]), SHELF_EXIT_LIFT)]
+    in_link_base = pick_pose is not None and pick_pose.header.frame_id == "link_base"
+    if in_link_base:
         back = -approach_axis(pick_pose)
         back[2] = 0.0
         norm = float(np.linalg.norm(back))
-        if norm < 0.5:  # a steep grasp has no meaningful "straight back"
-            return
-        arm.cartesian_approach(back / norm, SHELF_EXIT_RETREAT, SHELF_EXIT_SPEED)
+        if norm >= 0.5:  # a steep grasp has no meaningful "straight back"
+            steps.append((back / norm, SHELF_EXIT_RETREAT))
+    with arm.phase("shelf_exit"):
+        target = copy.deepcopy(pick_pose) if in_link_base else None
+        for direction, distance in steps:
+            if target is not None:
+                target.pose.position.x += float(direction[0]) * distance
+                target.pose.position.y += float(direction[1]) * distance
+                target.pose.position.z += float(direction[2]) * distance
+            singular = _near_wrist_singularity(arm)
+            if singular and target is not None and _exit_step_by_joints(arm, target):
+                continue
+            speed = SHELF_EXIT_SINGULAR_SPEED if singular else SHELF_EXIT_SPEED
+            arm.cartesian_approach(direction, distance, speed)
+
+
+def _near_wrist_singularity(arm) -> bool:
+    joints = arm.current_joints()
+    if not joints or "joint5" not in joints:
+        return False
+    near = abs(joints["joint5"]) < SHELF_EXIT_SINGULAR_J5
+    if near:
+        arm.logger.info(
+            f"Shelf exit: joint5 {np.degrees(joints['joint5']):.0f} deg is near the "
+            "wrist singularity; moving by joints"
+        )
+    return near
+
+
+def _exit_step_by_joints(arm, target: PoseStamped) -> bool:
+    """One shelf exit step as a planned joint move to the IK of ``target``."""
+    current = arm.current_joints()
+    solution = arm.solve_ik(target, seed=current)
+    if solution is None:
+        arm.logger.warn("Shelf exit: no IK for the exit step")
+        return False
+    step = max(abs(solution[n] - current[n]) for n in solution if n in current)
+    if step > SHELF_EXIT_MAX_JOINT_STEP:
+        arm.logger.warn(
+            f"Shelf exit: IK turns a joint {np.degrees(step):.0f} deg; not using it"
+        )
+        return False
+    try:
+        moved = arm.move_joints(
+            {"joints": solution, "degrees": False},
+            velocity=SHELF_EXIT_JOINT_VELOCITY,
+        )
+    except Exception as e:  # a planning-side failure must not abort the pick
+        arm.logger.warn(f"Shelf exit: joint move raised {e!r}")
+        moved = False
+    if not moved:
+        arm.logger.warn("Shelf exit: joint move failed")
+    return bool(moved)
 
 
 def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:

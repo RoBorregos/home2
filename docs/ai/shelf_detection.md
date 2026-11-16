@@ -159,6 +159,25 @@ sim's COCO YOLO). PASS means the bottle ended carried, at least 20 cm above its 
 The sim needs `xarm_velocity_sim.py` from the `sim/task-harness` branch for the
 cartesian approach (`XARM_VELOCITY_SIM`); without it there is no `/xarm/robot_states`.
 
+## Shelf place
+
+Two fixes in `pipelines/place.py`, found with `PLACE_LEVEL=N run_shelf_pick.sh`
+(pick on one shelf, place on another, as the task manager does):
+
+- **Release over the board.** With a shelf scan (`RobotArm.shelf_extent()`), the
+  release keeps the held object's centre at least 8 cm behind the board front and
+  away from the back and sides (`_shelf_place_bounds`). Before, on the 1.30 m shelf,
+  the reach clamp plus the 7 cm pull put the object on the front edge and it fell.
+- **Keep the object upright.** The shelf place used a fixed EE quaternion that
+  turned a frontally picked bottle upside down. It now keeps that approach but rolls
+  so the object's "up", as held at the pick, points up (`_shelf_place_quat`; pick
+  poses are `gripper_grasp_frame` poses, the place targets `link_eef`, 45 deg apart).
+  After a top-down pick the old quaternion is kept.
+
+Results on 2026-11-16, high cabinet, both directions PASS. The bottle ended upright
+on the target board, inside the cabinet. Each run was a pick (36-41 s) plus a place
+(34-37 s), 112 s in total with the scan.
+
 ## Known limits / not done yet
 
 - Not yet run on the real robot (ZED noise, real hand-eye calibration).

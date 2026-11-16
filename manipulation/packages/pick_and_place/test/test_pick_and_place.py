@@ -542,6 +542,59 @@ def test_shelf_scan_boxes_replace_the_configured_guard():
     assert "remove_shelf_scene" in arm.calls
 
 
+def test_shelf_place_keeps_a_frontally_picked_object_upright():
+    # A frontal shelf grasp holds the object camera-up; the fixed shelf place
+    # quaternion is the opposite roll and turned the bottle upside down in Gazebo.
+    pick = make_pose()
+    q = Rotation.from_euler("y", 100, degrees=True).as_quat()
+    pick.pose.orientation.x, pick.pose.orientation.y = q[0], q[1]
+    pick.pose.orientation.z, pick.pose.orientation.w = q[2], q[3]
+    outcome = PickOutcome(pick_pose=pick, object_pick_height=0.1)
+    arm = FakeArm(shelf_scan=True)
+    run_place(arm, place_perception(), params(is_shelf=True), outcome)
+    final = arm.poses["move_to_pose"][1].pose.orientation
+    eef = Rotation.from_quat([final.x, final.y, final.z, final.w])
+    # pick poses are gripper_grasp_frame poses, the shelf place targets link_eef
+    grasp = eef * Rotation.from_euler("z", place_pipeline.GRASP_FRAME_YAW_FROM_EEF)
+    up = grasp.apply(Rotation.from_quat(q).inv().apply([0.0, 0.0, 1.0]))
+    assert up[2] > 0.95
+    # same approach direction as the fixed shelf quaternion it replaces
+    aim = Rotation.from_quat(place_pipeline.AIM_STRAIGHT_FRONT_QUAT)
+    assert eef.apply([0, 0, 1]) == pytest.approx(aim.apply([0, 0, 1]), abs=1e-6)
+
+
+def test_shelf_place_keeps_the_fixed_quaternion_after_a_top_down_pick():
+    # Held along the approach, the object has no "up" across it to keep.
+    pick = make_pose()
+    q = Rotation.from_euler("y", 180, degrees=True).as_quat()
+    pick.pose.orientation.x, pick.pose.orientation.y = q[0], q[1]
+    pick.pose.orientation.z, pick.pose.orientation.w = q[2], q[3]
+    arm = FakeArm(shelf_scan=True)
+    run_place(
+        arm,
+        place_perception(),
+        params(is_shelf=True),
+        PickOutcome(pick_pose=pick, object_pick_height=0.1),
+    )
+    final = arm.poses["move_to_pose"][1].pose.orientation
+    got = [final.x, final.y, final.z, final.w]
+    assert got == pytest.approx(list(place_pipeline.AIM_STRAIGHT_FRONT_QUAT))
+
+
+@pytest.mark.parametrize("extent", [(0.50, 0.85, -0.40, 0.40), None])
+def test_shelf_place_releases_over_the_board(extent):
+    # In Gazebo the reach clamp plus the 7 cm pull put the held object on the front
+    # edge of a 1.30 m shelf and it fell. With a scan the release stays on the board.
+    arm = FakeArm(shelf_scan=True, shelf_extent=extent)
+    assert run_place(arm, place_perception(), params(is_shelf=True)) is True
+    final = arm.poses["move_to_pose"][1]  # pre-place, then the place itself
+    object_x = final.pose.position.x + place_pipeline.SHELF_PLACE_OBJECT_OFFSET
+    if extent is None:
+        assert object_x < 0.50 + place_pipeline.SHELF_PLACE_FRONT_MARGIN
+    else:
+        assert object_x >= extent[0] + place_pipeline.SHELF_PLACE_FRONT_MARGIN - 1e-9
+
+
 def test_shelf_boxes_never_leave_with_the_robot():
     # The boxes are in base_link: a failed return must still remove them.
     arm = FakeArm(shelf_scan=True, named_position_results=[False] * 10)
@@ -847,8 +900,8 @@ def test_a_second_goal_is_rejected_once_one_is_accepted(core):
 
 def test_a_go_to_hand_goal_holds_the_same_lock(core):
     seen = []
-    core.arm.move_to_pose = (
-        lambda pose, **kwargs: seen.append(core.goal_callback(None)) or True
+    core.arm.move_to_pose = lambda pose, **kwargs: (
+        seen.append(core.goal_callback(None)) or True
     )
     point = PointStamped()
     point.header.frame_id = "base_link"
@@ -1104,3 +1157,46 @@ def test_pipelines_do_not_import_ros_clients():
             if banned in source:
                 offenders.append(f"{path.name}: {banned}")
     assert not offenders, f"pipelines must not create ROS clients: {offenders}"
+
+
+def _shelf_exit_pose():
+    pose = make_pose(x=0.0, y=-0.44, z=0.535)
+    pose.header.frame_id = "link_base"
+    q = Rotation.from_euler("x", 100, degrees=True).as_quat()  # approach ~ -y, down
+    pose.pose.orientation.x, pose.pose.orientation.y = q[0], q[1]
+    pose.pose.orientation.z, pose.pose.orientation.w = q[2], q[3]
+    return pose
+
+
+SINGULAR = {f"joint{i}": 0.5 for i in range(1, 7)} | {"joint5": -0.23}
+
+
+def test_shelf_exit_moves_by_joints_near_the_wrist_singularity():
+    # FRIDA: the 2 cm cartesian lift at joint5 -13 deg tripped xArm C24.
+    near = {k: v + 0.02 for k, v in SINGULAR.items()}
+    arm = FakeArm(joints=SINGULAR, ik_solution=near)
+    pick_pipeline._shelf_exit(arm, _shelf_exit_pose())
+    assert arm.calls.count("move_joints") == 2  # lift, then straight back
+    # move_joint_positions takes {"joints": {name: value}, "degrees": bool}
+    assert arm.joint_moves[0] == {"joints": near, "degrees": False}
+    assert "cartesian_approach" not in arm.calls
+
+
+def test_shelf_exit_falls_back_to_a_slow_cartesian_move_on_an_ik_flip():
+    flipped = dict(SINGULAR) | {"joint4": SINGULAR["joint4"] + 3.0}
+    arm = FakeArm(joints=SINGULAR, ik_solution=flipped)
+    pick_pipeline._shelf_exit(arm, _shelf_exit_pose())
+    assert "move_joints" not in arm.calls
+    assert [speed for _, _, speed in arm.approaches] == [
+        pick_pipeline.SHELF_EXIT_SINGULAR_SPEED
+    ] * 2
+
+
+def test_shelf_exit_stays_cartesian_away_from_the_singularity():
+    clear = dict(SINGULAR) | {"joint5": 1.0}
+    arm = FakeArm(joints=clear, ik_solution=clear)
+    pick_pipeline._shelf_exit(arm, _shelf_exit_pose())
+    assert "move_joints" not in arm.calls
+    assert [speed for _, _, speed in arm.approaches] == [
+        pick_pipeline.SHELF_EXIT_SPEED
+    ] * 2

@@ -85,6 +85,9 @@ class FakeArm:
         estop: bool = False,
         shelf_scan: bool = False,
         shelf_levels: Optional[List[tuple]] = None,
+        shelf_extent: Optional[tuple] = None,
+        joints: Optional[dict] = None,
+        ik_solution: Optional[dict] = None,
     ):
         self._estop = estop
         # Whether a shelf scan is available to restore (DetectShelf would refuse
@@ -92,6 +95,8 @@ class FakeArm:
         self._shelf_scan = shelf_scan
         # (height, thickness) of the scanned boards; empty = no scan.
         self._shelf_levels = list(shelf_levels or [])
+        # (front_x, back_x, y_min, y_max) of the scanned shelf; None = no scan.
+        self._shelf_extent = shelf_extent
         self.calls: List[str] = []
         self.phases: List[str] = []
         self.contexts: List[str] = []
@@ -109,6 +114,9 @@ class FakeArm:
         self.published_place_poses: List[PoseStamped] = []
         self.published_points: List[PointStamped] = []
         self.joint_velocities: List[list] = []
+        self.joint_moves: List[dict] = []
+        self._joints = joints
+        self._ik_solution = ik_solution
         self.joint_velocity_busy = False
         self._logger = FakeLogger()
 
@@ -155,7 +163,15 @@ class FakeArm:
 
     def move_joints(self, joint_positions, velocity=None):
         self.calls.append("move_joints")
+        self.joint_moves.append(dict(joint_positions))
         return True
+
+    def current_joints(self):
+        return dict(self._joints) if self._joints else None
+
+    def solve_ik(self, pose, seed=None):
+        self.calls.append("solve_ik")
+        return dict(self._ik_solution) if self._ik_solution else None
 
     def get_joints(self, degrees=True):
         self.calls.append("get_joints")
@@ -261,6 +277,10 @@ class FakeArm:
     def shelf_levels(self):
         self.calls.append("shelf_levels")
         return list(self._shelf_levels)
+
+    def shelf_extent(self):
+        self.calls.append("shelf_extent")
+        return self._shelf_extent
 
     def remove_shelf_scene(self):
         self.calls.append("remove_shelf_scene")
