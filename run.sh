@@ -65,19 +65,28 @@ Additional Flags:
   --recreate         Forces the recreation of containers (useful for network or .env changes).
   --clean            Deletes the build/, log/, and install/ folders and frida_interfaces_cache/.
 
+frida_interfaces Module Flags (optional, default is all modules):
+  --hri              Build only the hri interfaces.
+  --vision           Build only the vision interfaces.
+  --manipulation     Build only the manipulation interfaces.
+  --navigation       Build only the navigation interfaces.
+  --task-manager     Build only the task_manager interfaces.
+  --all              Build all interfaces (default).
+
 Examples:
   ./run.sh hri --receptionist
   ./run.sh simulation --nav
   ./run.sh vision --build
   ./run.sh --gpsr --recreate
   ./run.sh --down
+  ./run.sh frida_interfaces --vision --hri
 EOF
   exit 0
 fi
 
 case $INPUT in
   frida_interfaces)
-    run_frida_interfaces
+    run_frida_interfaces "${@:2}"
     ;;
   --stop|--down|--clean|--build)
     control "$INPUT"
