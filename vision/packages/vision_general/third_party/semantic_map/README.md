@@ -22,8 +22,3 @@ Changed since that commit, for building the map online:
 - Without calibration, a command for something absent is `not_found`, not the best match.
 - Malformed map entries are skipped, and an LLM or service failure degrades or times
   out instead of hanging.
-
-```bash
-cd vision/packages/vision_general/third_party/semantic_map
-PYTHONPATH=. python3 -m pytest tests
-```
