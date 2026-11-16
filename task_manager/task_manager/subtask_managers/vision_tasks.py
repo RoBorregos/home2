@@ -220,6 +220,7 @@ class VisionTasks:
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
             Task.FINALS: {
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
                 "embed_text": {"client": self.embed_text_client, "type": "service"},
                 "embed_crops": {"client": self.embed_crops_client, "type": "service"},
             },

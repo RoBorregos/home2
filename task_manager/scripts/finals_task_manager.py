@@ -12,14 +12,23 @@ of time goes straight to the report with whatever it has seen.
 import json
 import os
 import time
+from dataclasses import replace
 from enum import Enum
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC
+from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
-from task_manager.utils.scene_memory import SceneMemory, SeenObject
+from task_manager.utils.scene_memory import (
+    Query,
+    SceneMemory,
+    SeenObject,
+    fuse,
+    parse_prompt,
+    parse_query,
+)
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
@@ -51,6 +60,11 @@ class FinalsTaskManager(Node):
         self.max_silent_rounds = self._param("max_silent_rounds", 2)
         self.listen_retries = self._param("listen_retries", 3)
         self.listen_start_s = self._param("listen_start_s", 8.0)
+        # Detections an object needs, sampled every sample_period_s while the robot dwells
+        self.confirm_min_observations = self._param("confirm_min_observations", 3)
+        self.sample_period_s = self._param("sample_period_s", 0.5)
+        # JSON {"category": ["area", "sublocation"]} for this arena; "" uses objects.json
+        default_location_json = self._param("default_location_json", "")
         mock_areas = self._param("mock_areas", [""])
 
         self.subtask_manager = SubtaskManager(
@@ -62,7 +76,11 @@ class FinalsTaskManager(Node):
         with open(objects_file) as file:
             objects = json.load(file)
         self.object_to_category = objects["object_to_category"]
-        self.memory = SceneMemory(objects["default_location"])
+        self.memory = SceneMemory(
+            json.loads(default_location_json)
+            if default_location_json
+            else objects["default_location"]
+        )
         self.areas = {}
 
         self.state = ExecutionStates.WAIT_START
@@ -152,7 +170,6 @@ class FinalsTaskManager(Node):
                 continue
             self.subtask_manager.manipulation.move_to_position(step["arm_pose"])
             arm_pose = step["arm_pose"]
-            self._wait(step["dwell_s"])
             self._look(step)
             reached += 1
         self.subtask_manager.manipulation.move_to_position(ARM_TRAVEL_POSE)
@@ -171,37 +188,54 @@ class FinalsTaskManager(Node):
         return False
 
     def _look(self, step: dict) -> None:
-        """Record the objects in view as what this viewpoint sees now."""
-        vision, nav = self.subtask_manager.vision, self.subtask_manager.nav
-        status, boxes = vision.detect_objects()
-        if status not in (Status.EXECUTION_SUCCESS, Status.TARGET_NOT_FOUND):
+        """Watch a viewpoint for its dwell and record the objects detected often enough."""
+        samples, last_stamp, looked = [], None, False
+        deadline = time.monotonic() + step["dwell_s"]
+        while time.monotonic() < deadline:
+            status, boxes = self.subtask_manager.vision.detect_objects()
+            if status in (Status.EXECUTION_SUCCESS, Status.TARGET_NOT_FOUND):
+                looked = True
+                stamp = boxes[0].point3d.header.stamp if boxes else None
+                if stamp is None or stamp != last_stamp:
+                    samples.append(self._to_map(boxes))
+                    last_stamp = stamp
+            self._wait(self.sample_period_s)
+        if not looked:
             return
-        boxes = [box for box in boxes if box.distance > 0.0]
-        _, embeddings = vision.embed_crops(boxes)
-        if len(embeddings) != len(boxes):
-            embeddings = [None] * len(boxes)
+        seen = [self._locate(obj) for obj in fuse(samples, self.confirm_min_observations)]
+        self.memory.record(f"{step['area']}/{step['sublocation']}", [o for o in seen if o])
 
-        seen = []
-        for box, embedding in zip(boxes, embeddings):
-            point = nav.to_map_point(box.point3d)
-            if point is None:
-                continue
-            status, place = nav.get_area_for_point(point)
-            if status != Status.EXECUTION_SUCCESS:
-                continue
-            seen.append(
-                SeenObject(
-                    label=box.classname,
-                    category=self.object_to_category.get(box.classname, ""),
-                    area=place["area"],
-                    sublocation=(place["sublocations"] or [""])[0],
-                    x=point.point.x,
-                    y=point.point.y,
-                    z=point.point.z,
-                    embedding=embedding,
-                )
-            )
-        self.memory.record(f"{step['area']}/{step['sublocation']}", seen)
+    def _to_map(self, boxes: list) -> list[SeenObject]:
+        """Detections with depth as map-frame objects, with crop vectors for the newest frame."""
+        boxes = [box for box in boxes if box.distance > 0.0]
+        # Gallery detections come from older frames, which embed_crops cannot crop
+        stamp = boxes[0].point3d.header.stamp if boxes else None
+        current = [box for box in boxes if box.point3d.header.stamp == stamp]
+        _, vectors = self.subtask_manager.vision.embed_crops(current)
+        crops = dict(zip(map(id, current), vectors)) if len(vectors) == len(current) else {}
+        objects = []
+        for box in boxes:
+            point = self.subtask_manager.nav.to_map_point(box.point3d)
+            if point is not None:
+                p = point.point
+                embedding = crops.get(id(box))
+                objects.append(SeenObject(box.classname, p.x, p.y, p.z, embedding=embedding))
+        return objects
+
+    def _locate(self, obj: SeenObject) -> SeenObject | None:
+        """The object with its category and the room and furniture it is on."""
+        point = PointStamped()
+        point.header.frame_id = "map"
+        point.point.x, point.point.y, point.point.z = obj.x, obj.y, obj.z
+        status, place = self.subtask_manager.nav.get_area_for_point(point)
+        if status != Status.EXECUTION_SUCCESS:
+            return None
+        return replace(
+            obj,
+            category=self.object_to_category.get(obj.label.strip().lower(), ""),
+            area=place["area"],
+            sublocation=(place["sublocations"] or [""])[0],
+        )
 
     def _has_furniture(self, area: str, sublocation: str) -> bool:
         return sublocation in self.areas.get(area, {})
@@ -231,23 +265,48 @@ class FinalsTaskManager(Node):
     # ----------------------------------------------------------------- commands
 
     def handle_command(self, text: str) -> None:
-        """Guide to the object a spoken command names, looking again if it was not seen."""
+        """Answer one spoken command, and guide to the object when there is one."""
         self._step(f"Looking for: {text}")
-        matches = self._find(text)
-        if not matches:
+        query = self._parse(text)
+        matches = self._select(query)
+        if not matches and query.target:
             self._step(f"Not seen yet: {text}. Looking again")
             self.subtask_manager.hri.say("I have not seen that. I will take another look.")
             self.patrol("revisit", self.patrol_time_limit_s, max_viewpoints=3)
-            matches = self._find(text)
+            matches = self._select(query)
+        if not query.target:
+            self._say_list(matches)
+            return
         if not matches:
             self._step(f"Not found: {text}")
             self.subtask_manager.hri.say("Sorry, I could not find it anywhere.")
             return
         self._guide_to(matches[0])
 
-    def _find(self, text: str) -> list:
-        _, text_embedding = self.subtask_manager.vision.embed_text(text)
-        return self.memory.find(text, text_embedding)
+    def _parse(self, text: str) -> Query:
+        """Split a command with the LLM; the whole text is the target if that fails."""
+        rooms = [
+            n for n, data in self.areas.items() if isinstance(data, dict) and data.get("polygon")
+        ]
+        status, reply = self.subtask_manager.hri.answer_with_context(parse_prompt(text, rooms), "")
+        if status != Status.EXECUTION_SUCCESS:
+            return Query(target=text)
+        return parse_query(text, reply, rooms)
+
+    def _select(self, query: Query) -> list[SeenObject]:
+        text_embedding = None
+        if query.target:
+            _, text_embedding = self.subtask_manager.vision.embed_text(query.target)
+        return self.memory.select(query, text_embedding)
+
+    def _say_list(self, objects: list) -> None:
+        if not objects:
+            self._step("Nothing seen there")
+            self.subtask_manager.hri.say("I did not see anything there.")
+            return
+        self._step("Seen: " + ", ".join(f"{obj.label} -> {self._where(obj)}" for obj in objects))
+        names = ", ".join(self._speakable(obj.label) for obj in objects)
+        self.subtask_manager.hri.say(f"I saw: {names}.")
 
     def _guide_to(self, obj) -> None:
         label = self._speakable(obj.label)

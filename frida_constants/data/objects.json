@@ -68,9 +68,9 @@
     "bowl": "dish"
   },
   "default_location": {
-    "drink": ["kitchen", "refrigerator"],
+    "drink": ["kitchen", "cabinet"],
     "food": ["kitchen", "cabinet"],
-    "fruit": ["kitchen", "counter"],
+    "fruit": ["kitchen", "cabinet"],
     "snack": ["living_room", "coffee_table"],
     "dish": ["kitchen", "dishwasher"],
     "cleaning_supply": ["kitchen", "cabinet"]
