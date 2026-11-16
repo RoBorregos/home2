@@ -238,6 +238,11 @@ class ManipulationCore(Node):
         )
 
         self.arm.remove_all_collision_objects(attached=True)
+        if pick_request.is_shelf:
+            # The wipe above also took the shelf boards and walls; the octomap never
+            # sees the compartment ceiling, so put the last shelf scan back. The
+            # wipes below remove them again whatever the outcome.
+            self.arm.restore_shelf_scene()
         try:
             success, outcome = pick_pipeline.execute(
                 self.arm, self.perception, pick_request, self.strategies

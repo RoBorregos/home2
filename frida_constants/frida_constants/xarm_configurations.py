@@ -206,18 +206,25 @@ LOOK_SIDE_LOW_STARE = {
     "degrees": True,
 }
 
-# Shelf survey: the eye-in-hand camera frames the whole cabinet in two views from
-# the front_stare arm configuration, changing only the wrist pitch (joint5): up for
-# the high boards, down for the low ones. joint1 stays at the front reference so the
-# arm never winds. VALIDATE ON THE ROBOT: the camera must stay >= 0.3 m from the
-# shelf front (ZED2 min depth) with the base docked 15-20 cm away.
+# Shelf survey: two views that together see every board of a cabinet in front of the
+# robot, measured in the Gazebo sim with the robot 15-20 cm from the shelf
+# (simulation/frida_gz_sim/scripts/sim_shelf_check.py). joint1 stays at the front
+# reference so the arm never winds; joint5 > 0 tilts the camera down.
+# HIGH: front_stare with the wrist down, camera ~(0.19, 0.06, 1.40) m in base_link,
+#   23 deg down: the upper boards from above and, since the top of the image looks
+#   ~11 deg up, the underside of a board above the camera (a cabinet taller than the
+#   robot). At 43 deg down it saw nothing above the camera.
+# LOW: shoulder back and elbow straight, camera ~(0.21, 0.06, 0.95) m, 48 deg down:
+#   looks under the upper boards into the low compartments. The camera cannot get
+#   lower without reaching past ~0.25 m, where it would end up closer than the ZED2
+#   minimum depth (0.3 m) to the shelf front.
 SHELF_SURVEY_HIGH = {
     "joints": {
         "joint1": -90.0,
         "joint2": -45.0,
         "joint3": -90.0,
         "joint4": 0.0,
-        "joint5": -25.0,
+        "joint5": 20.0,
         "joint6": 45.0,
     },
     "degrees": True,
@@ -226,10 +233,10 @@ SHELF_SURVEY_HIGH = {
 SHELF_SURVEY_LOW = {
     "joints": {
         "joint1": -90.0,
-        "joint2": -45.0,
-        "joint3": -90.0,
+        "joint2": -105.0,
+        "joint3": 0.0,
         "joint4": 0.0,
-        "joint5": 40.0,
+        "joint5": 15.0,
         "joint6": 45.0,
     },
     "degrees": True,

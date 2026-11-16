@@ -78,6 +78,11 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
     )
     arm.publish_place_pose(place_pose)
 
+    # The eye-in-hand octomap never sees the compartment ceiling or walls: put the
+    # boards and walls of the shelf scan in the scene for the whole place. Choosing
+    # the pose may have wiped the scene, so this comes after it.
+    shelf_boxes = place_params.is_shelf and arm.restore_shelf_scene()
+
     reached = _reach_place_pose(arm, place_pose, place_params.is_shelf)
 
     if reached:
@@ -85,9 +90,10 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
             arm.detach_pick_objects()
             arm.open_gripper(settle_s=1.0)
 
-    # The eye-in-hand octomap never sees the compartment ceiling, so add an
-    # explicit slab there before planning the return.
-    if place_params.is_shelf:
+    # Without a shelf scan, fall back to a slab at the configured compartment
+    # height so the return does not route up into the ceiling.
+    guard = place_params.is_shelf and not shelf_boxes
+    if guard:
         arm.add_shelf_ceiling_guard(place_pose, place_params.table_height)
     returned = False
     try:
@@ -102,9 +108,12 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
                     break
                 log.info("Retry sending return joint goal")
     finally:
-        # Always drop the guard so it does not constrain later motions.
-        if place_params.is_shelf:
+        # Always drop the guard and the shelf boxes: they are in base_link and
+        # would follow the robot to the next piece of furniture.
+        if guard:
             arm.remove_shelf_ceiling_guard()
+        if shelf_boxes:
+            arm.remove_shelf_scene()
 
     if reached and not returned:
         log.error("Object released but could not return to table_stare")

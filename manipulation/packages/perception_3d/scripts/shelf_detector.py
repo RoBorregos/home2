@@ -67,11 +67,30 @@ class ShelfDetector(Node):
         self._frames: list[Frame] = []
         self._geometry: ShelfGeometry | None = None
         self._published_ids: list[str] = []
+        self._scan_base = None  # odom -> base_link when the geometry was detected
         self._busy = threading.Lock()
 
         # Every pixel of a HD720/2 depth image is far more than the 1 cm voxels
         # need; stride 2 keeps ~60k points per frame.
         self.declare_parameter("depth_stride", 2)
+        # The real ZED2 returns nothing closer than 0.3 m (min_depth in zed2.yaml) and is
+        # too noisy past ~2.5 m; the sim camera sees from 0.2 m, so clip it the same way.
+        self.declare_parameter("min_range", 0.3)
+        # The real ZED reads ~1.4% short (ZED_DEPTH_SCALE); a simulated camera is exact
+        # and needs 1.0 here, or every height comes out low by ~1 cm per 0.7 m of range.
+        self.declare_parameter("depth_scale", float(ZED_DEPTH_SCALE))
+        # Non-empty: save the captured frames there on every detect (offline tuning).
+        self.declare_parameter("dump_path", "")
+        # The boxes are in base_link, so they are only valid while the base has not
+        # moved since the scan. Re-publishing is refused once odom -> base_link moved
+        # more than this. Without an odom frame (static sim base) there is no check.
+        self.declare_parameter("odom_frame", "odom")
+        self.declare_parameter("max_base_shift", 0.03)
+        self.declare_parameter("max_base_turn_deg", 3.0)
+        # False: never put the shelf boxes in the planning scene (the levels are still
+        # detected and served). A field switch if the boxes ever block good motions.
+        self.declare_parameter("publish_boxes", True)
+        self.declare_parameter("max_range", 2.5)
         defaults = ShelfParams()
         for name, value in asdict(defaults).items():
             self.declare_parameter(name, value)
@@ -127,9 +146,11 @@ class ShelfDetector(Node):
                     response, "nothing captured: call with capture=true first"
                 )
             params = self._params()
+            self._dump()
             started = time.time()
             try:
                 self._geometry = detect_shelf(self._frames, params)
+                self._scan_base = self._odom_base()
             except ShelfNotFound as why:
                 self._publish_debug(params, None)
                 return self._fail(response, f"no shelf: {why}")
@@ -148,7 +169,19 @@ class ShelfDetector(Node):
                 return self._fail(
                     response, "no shelf geometry to add to the planning scene"
                 )
-            self._replace_scene_objects(self._collision_objects(self._geometry))
+            moved = self._base_moved()
+            if moved:
+                return self._fail(
+                    response, f"robot moved since the shelf scan: {moved}"
+                )
+            if not self.get_parameter("publish_boxes").value:
+                # A failure, so callers fall back to their own protection (the
+                # place ceiling guard) instead of assuming the boxes are there.
+                return self._fail(response, "shelf boxes disabled (publish_boxes)")
+            if not self._replace_scene_objects(self._collision_objects(self._geometry)):
+                return self._fail(
+                    response, "planning scene did not take the shelf boxes"
+                )
 
         response.frames_used = len(self._frames)
         if self._geometry is not None:
@@ -187,7 +220,11 @@ class ShelfDetector(Node):
         sub = image[::stride, ::stride]
         valid = np.isfinite(sub) & (sub > 0.0)
         v, u = np.nonzero(valid)
-        z = sub[v, u].astype(float) * ZED_DEPTH_SCALE
+        z = sub[v, u].astype(float) * float(self.get_parameter("depth_scale").value)
+        in_range = (z >= self.get_parameter("min_range").value) & (
+            z <= self.get_parameter("max_range").value
+        )
+        v, u, z = v[in_range], u[in_range], z[in_range]
         fx, fy, cx, cy = self._intrinsics
         u = u * stride
         v = v * stride
@@ -197,15 +234,54 @@ class ShelfDetector(Node):
         points = (cam_to_base @ cam.T).T[:, :3]
         return Frame(points=points, viewpoint=cam_to_base[:3, 3].copy()), "ok"
 
-    def _to_base(self, frame: str) -> np.ndarray:
+    def _dump(self) -> None:
+        path = self.get_parameter("dump_path").value
+        if not path:
+            return
+        np.savez_compressed(
+            path,
+            **{f"points_{i}": f.points for i, f in enumerate(self._frames)},
+            **{f"viewpoint_{i}": f.viewpoint for i, f in enumerate(self._frames)},
+        )
+        self.get_logger().info(f"Dumped {len(self._frames)} frame(s) to {path}")
+
+    def _odom_base(self):
+        """odom -> base_link as a 4x4 matrix, or None without odometry."""
+        try:
+            return self._lookup(
+                self.get_parameter("odom_frame").value, SHELF_FRAME, 0.2
+            )
+        except TransformException:
+            return None
+
+    def _base_moved(self) -> str:
+        """Why the stored geometry no longer matches the base pose, or ''."""
+        if self._scan_base is None:
+            return ""  # no odometry at scan time: a static base (simulation)
+        now = self._odom_base()
+        if now is None:
+            return "odometry lost since the scan"
+        delta = np.linalg.inv(self._scan_base) @ now
+        shift = float(np.linalg.norm(delta[:2, 3]))
+        turn = float(np.degrees(abs(np.arctan2(delta[1, 0], delta[0, 0]))))
+        if shift > self.get_parameter("max_base_shift").value or turn > (
+            self.get_parameter("max_base_turn_deg").value
+        ):
+            return f"base moved {shift * 100:.1f} cm / {turn:.1f} deg"
+        return ""
+
+    def _lookup(self, target: str, source: str, timeout: float) -> np.ndarray:
         transform = self._tf_buffer.lookup_transform(
-            SHELF_FRAME, frame, rclpy.time.Time(), timeout=Duration(seconds=TF_TIMEOUT)
+            target, source, rclpy.time.Time(), timeout=Duration(seconds=timeout)
         ).transform
         r, t = transform.rotation, transform.translation
         matrix = np.eye(4)
         matrix[:3, :3] = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_matrix()
         matrix[:3, 3] = [t.x, t.y, t.z]
         return matrix
+
+    def _to_base(self, frame: str) -> np.ndarray:
+        return self._lookup(SHELF_FRAME, frame, TF_TIMEOUT)
 
     def _depth_cb(self, msg: Image) -> None:
         image = self._bridge.imgmsg_to_cv2(msg, desired_encoding="32FC1")
@@ -237,6 +313,7 @@ class ShelfDetector(Node):
             msg.y_max = float(level.y_max)
             msg.clearance = float(level.clearance)
             msg.num_points = int(level.num_points)
+            msg.seen_from_below = bool(level.seen_from_below)
             response.levels.append(msg)
         response.y_min = float(g.y_min)
         response.y_max = float(g.y_max)
@@ -263,25 +340,43 @@ class ShelfDetector(Node):
             objects.append(obj)
         return objects
 
-    def _replace_scene_objects(self, objects: list) -> None:
-        """Drop the previously published shelf boxes, then add the current ones."""
-        if self._remove_object_client.wait_for_service(timeout_sec=2.0):
-            for object_id in self._published_ids:
+    def _replace_scene_objects(self, objects: list) -> bool:
+        """Publish the shelf boxes and wait for the planning scene to take them.
+
+        Boxes keep their ids between scans, so adding replaces them in place; only
+        ids the new geometry no longer has are removed. Removing everything first
+        raced the add (both async, same ids) and could delete the new boxes.
+        """
+        new_ids = {obj.id for obj in objects}
+        stale = [i for i in self._published_ids if i not in new_ids]
+        if stale and self._remove_object_client.wait_for_service(timeout_sec=2.0):
+            for object_id in stale:
                 request = RemoveCollisionObject.Request()
                 request.id = object_id
-                self._remove_object_client.call_async(request)
+                self._wait(self._remove_object_client.call_async(request), 3.0)
         if not self._add_objects_client.wait_for_service(timeout_sec=3.0):
             self.get_logger().warn(
                 "add_collision_objects unavailable; shelf not in the scene"
             )
-            return
+            return False
         request = AddCollisionObjects.Request()
         request.collision_objects = objects
-        self._add_objects_client.call_async(request)
-        self._published_ids = [obj.id for obj in objects]
+        if not self._wait(self._add_objects_client.call_async(request), 5.0):
+            self.get_logger().warn("add_collision_objects did not answer")
+            return False
+        self._published_ids = sorted(new_ids)
         self.get_logger().info(
             f"Planning scene: {len(objects)} shelf boxes ({SHELF_COLLISION_NAMESPACE}*)"
         )
+        return True
+
+    @staticmethod
+    def _wait(future, timeout: float) -> bool:
+        """Block this callback until ``future`` is done (other threads keep spinning)."""
+        deadline = time.time() + timeout
+        while not future.done() and time.time() < deadline:
+            time.sleep(0.01)
+        return future.done()
 
     def _publish_debug(self, params: ShelfParams, g: ShelfGeometry | None) -> None:
         header = Header()

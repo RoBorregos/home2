@@ -14,6 +14,7 @@ Points are filtered in base_link but republished in the sensor frame, because th
 octomap updater needs the sensor origin.
 """
 
+import numpy as np
 import rclpy
 import tf2_ros
 from rclpy.node import Node
@@ -35,6 +36,12 @@ class OctomapCloudFilter(Node):
         ).value
         # Just above the dining table top, so the table stays and the objects go
         self.max_z = self.declare_parameter("max_z", 0.76).value
+        # Optional [x_min, y_min, z_min, x_max, y_max, z_max] in the reference frame:
+        # when set, drop only the points inside this box (one object to grasp, e.g.
+        # on a shelf) and keep everything else; max_z is then ignored. A height cut would
+        # also drop the other objects on that shelf, and the arm would then plan
+        # straight through them.
+        self.drop_box = list(self.declare_parameter("drop_box", [0.0] * 6).value)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
         self.pub = self.create_publisher(
@@ -68,6 +75,18 @@ class OctomapCloudFilter(Node):
                 transform.rotation.w,
             ]
         ).as_matrix()
+        if any(self.drop_box):
+            lo, hi = np.array(self.drop_box[:3]), np.array(self.drop_box[3:])
+            in_ref = points @ rotation.T + [
+                transform.translation.x,
+                transform.translation.y,
+                transform.translation.z,
+            ]
+            inside = np.all((in_ref >= lo) & (in_ref <= hi), axis=1)
+            self.pub.publish(
+                point_cloud2.create_cloud_xyz32(msg.header, points[~inside])
+            )
+            return
         height = points @ rotation[2] + transform.translation.z
         self.pub.publish(
             point_cloud2.create_cloud_xyz32(msg.header, points[height <= self.max_z])

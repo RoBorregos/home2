@@ -221,6 +221,38 @@ Navigation-only pieces:
 - `gz model -m <name> -p` prints an object's pose.
 - The ZED topics match `frida_constants` (`/zed/zed_node/...`).
 
+## Shelf detection check
+
+Grades the model-free shelf detection (`perception_3d/scripts/shelf_detector.py`)
+on cabinets that differ in level count, spacing, depth, walls and docking error,
+each with and without objects (`frida_gz_sim/shelf_scenes.py`). The robot is static
+and the shelf sits 15-20 cm in front of it, as navigation leaves it.
+
+```bash
+# every scene, headless; results + video per scene in docker/simulation/logs/shelf/
+bash /workspace/src/simulation/frida_gz_sim/scripts/run_shelf_checks.sh
+# one scene by hand
+ros2 run frida_gz_sim shelf_world.py competition 1 /tmp/shelf.sdf
+ros2 launch frida_gz_sim sim.launch.py world:=/tmp/shelf.sdf grasp_assist:=false
+ros2 launch frida_gz_sim sim_manipulation.launch.py
+ros2 param set /shelf_detector depth_scale 1.0   # gz depth is exact, no ZED correction
+ros2 run frida_gz_sim sim_shelf_check.py --ros-args -p scene:=competition \
+    -p objects:=true -p video:=/workspace/sim_logs/shelf.mp4
+```
+
+Shelf pick (the `keyboard_input` -11 flow: measure, face level 2 at the measured
+height, clear the octomap, pick a graspable bottle with the shelf boards restored in
+the planning scene), with vision:
+
+```bash
+bash /workspace/src/simulation/frida_gz_sim/scripts/run_shelf_pick.sh competition 2 bottle
+```
+
+The detection check needs no vision stack or YOLO. It runs
+`ManipulationTasks.detect_shelf_levels()`, the same call the pick-and-place task
+manager makes, and passes when every surface is found within 1.5 cm with nothing
+extra.
+
 ## Adding objects
 
 Add a model under `models/` (primitive collisions, real mass), fetch its mesh in

@@ -83,15 +83,24 @@ class Perception:
         point: PointStamped,
         add_collision_objects: bool = True,
         timeout: float = CLUSTER_TIMEOUT,
+        band: Optional[Tuple[float, float]] = None,
     ):
         """Segment the object at ``point`` into a point cloud, or None.
 
         ``add_collision_objects=False`` is used when only the geometry is
         wanted: the place flow would otherwise add the table as an obstacle and
-        make MoveIt reject every near-table path.
+        make MoveIt reject every near-table path. ``band`` is a base_link
+        (min_z, max_z) to crop to first, e.g. a shelf compartment; 0 on either
+        side keeps the service default there.
         """
+        min_height, max_height = band if band is not None else (0.0, 0.0)
         return get_object_cluster(
-            point, self.pick_perception_client, add_collision_objects, timeout
+            point,
+            self.pick_perception_client,
+            add_collision_objects,
+            timeout,
+            min_height=min_height,
+            max_height=max_height,
         )
 
     def detect_grasps(self, cluster, cfg_path: str) -> Tuple[List, List]:

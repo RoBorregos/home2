@@ -7,3 +7,4 @@ float32 y_min
 float32 y_max
 float32 clearance   # free height above the surface up to the next board (0 = unknown)
 int32 num_points    # surface points that voted for this level
+bool seen_from_below  # only the underside was in view (board above the camera)

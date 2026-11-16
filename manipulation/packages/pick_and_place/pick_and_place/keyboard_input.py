@@ -30,10 +30,7 @@ from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_GPD,
     resolve_pick_strategy,
 )
-from xarm_utils.shelf_levels import (
-    SHELF_SCAN_TOLERANCE,
-    get_shelf_levels,
-)
+from xarm_utils.shelf_levels import SHELF_SCAN_TOLERANCE
 from frida_interfaces.srv import DetectShelf, GenerateGrasps, GetOptimalPositionForPlane
 from std_srvs.srv import Empty
 import json
@@ -179,12 +176,29 @@ class KeyboardInput(Node):
             self.get_logger().warning("clear_octomap unavailable")
 
     def scan_shelf_levels(self):
-        """Face each shelf level so the octomap/spheres build before a shelf pick or
-        place. Mirrors the task manager cabinet scan; run before option -4 or -11."""
-        for height in get_shelf_levels(self.arena):
+        """Face each measured shelf level so the octomap builds before a shelf pick
+        or place. Mirrors the task manager cabinet scan; run before -4 or -11."""
+        for height in self.shelf_heights():
             self._position_at_level(height)
             time.sleep(2.0)
         self.get_logger().info("Shelf scan done; now pick (-11) or place (-4).")
+
+    def shelf_heights(self):
+        """Measured shelf heights (1 = lowest), never the per-arena JSON.
+
+        Re-publishing the last scan's boxes doubles as a freshness check: the
+        detector refuses it with no scan yet or once the base moved since the scan,
+        and then the shelf is surveyed again.
+        """
+        result = self.detect_shelf(add_collision=True)
+        if result is None or not result.success or not result.levels:
+            self.get_logger().info("No valid shelf scan here: surveying the shelf")
+            self.survey_shelf()
+            result = self.detect_shelf()
+        if result is None or not result.success or not result.levels:
+            self.get_logger().error("Shelf detection failed: no shelf levels")
+            return []
+        return [level.height for level in result.levels]
 
     def _move_named(self, name, velocity=0.5):
         """Blocking move to a named joint configuration (degrees in the table)."""
@@ -419,8 +433,8 @@ def main(args=None):
             print("-8. Place closeto")
             print("-9. Special Request Place")
             print("-10. Pour (object already grasped)")
-            print("-11. Pick from shelf (keep octomap)")
-            print("-12. Scan shelf levels (do before -4/-11)")
+            print("-11. Pick from shelf (measures the shelf first if needed)")
+            print("-12. Face each measured shelf level (octomap, before -4/-11)")
             print("-13. Preview grasp candidates (no motion)")
             print(
                 "-14. Dynamic shelf scan: survey poses + detect levels (MOVES THE ARM)"
@@ -523,7 +537,10 @@ def main(args=None):
 
             elif choice == "-11":
                 object_name = input("Enter object name on shelf: ")
-                levels = get_shelf_levels(node.arena)
+                levels = node.shelf_heights()
+                if not levels:
+                    print("No shelf detected; not picking.")
+                    continue
                 lvl = input(
                     f"Shelf level 1-{len(levels)} (Enter = keep current pose): "
                 ).strip()

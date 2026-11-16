@@ -389,9 +389,17 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_radius_out(
         new pcl::PointCloud<pcl::PointXYZ>);
 
-    // radial filter, to eliminate chance of error by planes far from the point
+    // radial filter, to eliminate chance of error by planes far from the point.
+    // A caller that knows the surroundings (a shelf compartment from the shelf
+    // scan) passes its own height band: in a closed cabinet the default band holds
+    // the board below, the one above and the walls, and the object merges with
+    // them into one cluster too large to keep.
+    const float band_min =
+        request->min_height > 0.0f ? request->min_height : point.z - 0.3f;
+    const float band_max =
+        request->max_height > 0.0f ? request->max_height : point.z + 0.3f;
     response->status = this->DistanceFilterFromPoint(
-        last_, point, cloud_radius_out, 0.5, point.z - 0.3, point.z + 0.3);
+        last_, point, cloud_radius_out, 0.5, band_min, band_max);
     std::string base_path = this->package_path;
     response->status =
         savePointCloud(base_path + "/radial_filtered.pcd", cloud_radius_out);

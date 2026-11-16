@@ -232,6 +232,155 @@ def test_gpd_falls_back_to_the_next_config(strategies):
     assert perception.calls.count("detect_grasps") == 2
 
 
+# Boards of the Gazebo competition cabinet: (surface height, thickness).
+SHELF = [(0.096, 0.02), (0.391, 0.02), (0.681, 0.02), (1.051, 0.02)]
+
+
+@pytest.mark.parametrize(
+    "z, band",
+    [
+        (0.50, (0.401, 0.651)),  # bottle on board 2, ceiling = board 3 underside
+        (0.385, (0.401, 0.651)),  # detection point a little under its own board
+        (1.20, (1.061, 0.0)),  # top level: nothing above, service default there
+        (0.03, None),  # under the lowest board: not on the shelf
+    ],
+)
+def test_compartment_band_is_the_board_below_to_the_board_above(z, band):
+    result = pick_pipeline.compartment_band(z, SHELF)
+    if band is None:
+        assert result is None
+    else:
+        assert result == pytest.approx(band)
+
+
+def test_a_shelf_pick_clusters_inside_the_measured_compartment(strategies):
+    """In a closed cabinet the default band merges the object with the boards."""
+    perception = FakePerception(
+        located_point=make_point(z=0.50),
+        cluster=make_cluster(),
+        grasps=[([make_pose()], [0.9])],
+    )
+    arm = FakeArm(shelf_levels=SHELF)
+    run_pick(arm, perception, strategies, object_name="bottle", is_shelf=True)
+    assert perception.cluster_bands[0] == pytest.approx((0.401, 0.651))
+
+
+def bottle_points(width=0.06, depth=0.09, z=(0.40, 0.58), front=0.60):
+    """Front and top faces of a box standing on board 2, as a z-up cloud."""
+    ys = np.linspace(-width / 2, width / 2, 7)
+    zs = np.linspace(z[0], z[1], 10)
+    xs = np.linspace(front, front + depth, 7)
+    face = [(front, yy, zz) for yy in ys for zz in zs]
+    top = [(xx, yy, z[1]) for xx in xs for yy in ys]
+    return np.array(face + top)
+
+
+def bottle_cluster(frame="link_base", **kwargs):
+    from sensor_msgs_py import point_cloud2
+    from std_msgs.msg import Header
+
+    header = Header()
+    header.frame_id = frame
+    return point_cloud2.create_cloud_xyz32(header, bottle_points(**kwargs).tolist())
+
+
+def test_shelf_frontal_grasp_goes_into_the_compartment_from_the_front():
+    poses = pick_pipeline.shelf_frontal_grasps(
+        bottle_points(), (0.401, 0.651), "base_link"
+    )
+    pitches = pick_pipeline.SHELF_FRONTAL_PITCHES
+    assert poses and len(poses) % len(pitches) == 0
+    for index, pose in enumerate(poses):
+        p, q = pose.pose.position, pose.pose.orientation
+        rotation = Rotation.from_quat([q.x, q.y, q.z, q.w])
+        approach = rotation.apply([0, 0, 1])
+        pitch = np.degrees(np.arcsin(-approach[2]))
+        assert pitch == pytest.approx(pitches[index % len(pitches)], abs=1e-4)
+        assert abs(approach[1]) < 1e-6  # straight in, no sideways component
+        assert abs(rotation.apply([0, 1, 0])[2]) < 1e-6  # fingers close sideways
+        assert rotation.apply(pick_pipeline.ZED_OFFSET)[2] > 0  # camera up
+        assert p.x == pytest.approx(0.675, abs=0.005)  # past the middle (0.645)
+        assert abs(p.y) < 0.005
+        # off the board (0.391) and under the object top and the ceiling (0.661)
+        assert 0.391 + 0.06 - 1e-6 <= p.z <= 0.58 - 0.02 + 1e-6
+    heights = [round(pose.pose.position.z, 3) for pose in poses[:: len(pitches)]]
+    assert len(set(heights)) == len(heights)
+
+
+def test_open_top_shelf_also_tries_steeper_approaches():
+    open_top = pick_pipeline.shelf_frontal_grasps(
+        bottle_points(z=(1.30, 1.49), front=0.60), (1.311, 0.0), "base_link"
+    )
+    pitches = (
+        pick_pipeline.SHELF_FRONTAL_PITCHES
+        + pick_pipeline.SHELF_FRONTAL_OPEN_TOP_PITCHES
+    )
+    assert open_top and len(open_top) % len(pitches) == 0
+    seen = set()
+    for pose in open_top:
+        q = pose.pose.orientation
+        approach = Rotation.from_quat([q.x, q.y, q.z, q.w]).apply([0, 0, 1])
+        seen.add(round(float(np.degrees(np.arcsin(-approach[2]))), 3))
+    assert seen == set(pitches)
+    # under a ceiling the steep ones would hit it: never offered there
+    closed = pick_pipeline.shelf_frontal_grasps(bottle_points(), (0.401, 0.651), "x")
+    assert len(closed) % len(pick_pipeline.SHELF_FRONTAL_PITCHES) == 0
+    assert len(closed) < len(open_top)
+
+
+@pytest.mark.parametrize(
+    "kwargs, band",
+    [
+        ({"width": 0.12}, (0.401, 0.651)),  # wider than the open gripper
+        ({"z": (0.40, 0.44)}, (0.401, 0.651)),  # too short to grip above the board
+        ({}, (0.401, 0.47)),  # compartment too low for the fingers
+    ],
+)
+def test_no_shelf_frontal_grasp_when_it_cannot_fit(kwargs, band):
+    assert pick_pipeline.shelf_frontal_grasps(bottle_points(**kwargs), band, "x") == []
+
+
+def test_a_shelf_pick_tries_the_frontal_grasp_and_backs_out(strategies):
+    perception = FakePerception(
+        located_point=make_point(z=0.50),
+        cluster=bottle_cluster(),
+        grasps=[([make_pose()], [0.9])],
+    )
+    arm = FakeArm(shelf_levels=SHELF)
+    success, outcome = run_pick(
+        arm,
+        perception,
+        strategies,
+        object_name="bottle",
+        is_shelf=True,
+        in_configuration=True,
+    )
+    assert success
+    assert "detect_grasps" not in perception.calls  # GPD never needed
+    assert outcome.pick_pose.header.frame_id == "link_base"
+    # pre-grasp, in along the (tilted) approach, then off the board and straight
+    # back out horizontally
+    directions = [np.round(d, 3).tolist() for d, _, _ in arm.approaches]
+    tilt = np.radians(pick_pipeline.SHELF_FRONTAL_PITCHES[0])
+    assert directions[0] == pytest.approx([np.cos(tilt), 0.0, -np.sin(tilt)], abs=1e-3)
+    assert directions[-2:] == [[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0]]
+    assert arm.calls.index("move_to_pregrasp") < arm.calls.index("cartesian_approach")
+
+
+@pytest.mark.parametrize("is_shelf, levels", [(False, SHELF), (True, [])])
+def test_default_band_off_the_shelf_or_without_a_scan(strategies, is_shelf, levels):
+    perception = FakePerception(
+        located_point=make_point(z=0.50),
+        cluster=make_cluster(),
+        grasps=[([make_pose()], [0.9])],
+    )
+    arm = FakeArm(shelf_levels=levels)
+    run_pick(
+        arm, perception, strategies, object_name="coke", is_shelf=is_shelf, use_gpd=True
+    )
+    assert perception.cluster_bands[0] is None
+
+
 def test_a_failed_rim_pick_does_not_fall_back_to_gpd(strategies):
     perception = flat_perception()
     arm = FakeArm(pregrasp_results=[False] * 10)
@@ -381,6 +530,30 @@ def test_shelf_guard_is_added_and_always_removed():
     assert arm.calls.index("add_shelf_ceiling_guard") < arm.calls.index(
         "remove_shelf_ceiling_guard"
     )
+
+
+def test_shelf_scan_boxes_replace_the_configured_guard():
+    # With a shelf scan the measured boards and walls protect the place; the slab
+    # at the configured compartment height is only a fallback without one.
+    arm = FakeArm(shelf_scan=True)
+    assert run_place(arm, place_perception(), params(is_shelf=True)) is True
+    assert "add_shelf_ceiling_guard" not in arm.calls
+    assert arm.calls.index("restore_shelf_scene") < arm.calls.index("move_to_pose")
+    assert "remove_shelf_scene" in arm.calls
+
+
+def test_shelf_boxes_never_leave_with_the_robot():
+    # The boxes are in base_link: a failed return must still remove them.
+    arm = FakeArm(shelf_scan=True, named_position_results=[False] * 10)
+    assert run_place(arm, place_perception(), params(is_shelf=True)) is False
+    assert "remove_shelf_scene" in arm.calls
+
+
+def test_table_place_never_touches_the_shelf_scene():
+    arm = FakeArm(shelf_scan=True)
+    run_place(arm, place_perception(), params(is_shelf=False))
+    assert "restore_shelf_scene" not in arm.calls
+    assert "add_shelf_ceiling_guard" not in arm.calls
 
 
 def test_guard_is_removed_even_when_the_return_fails():
@@ -738,6 +911,29 @@ def test_a_failed_pick_clears_the_remembered_outcome(core, monkeypatch):
     )
     assert core._run_pick(_Request()) is False
     assert core._last_pick.pick_pose is None
+
+
+def test_shelf_pick_restores_the_shelf_after_the_initial_wipe(core, monkeypatch):
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.pick.execute",
+        lambda *a, **k: (False, PickOutcome()),
+    )
+    core._run_pick(_Request(scan_environment=True))
+    calls = core.arm.calls
+    assert calls.index("remove_all_collision_objects") < calls.index(
+        "restore_shelf_scene"
+    )
+    # ...and the wipe after the pick removes it again.
+    assert calls[-1] == "remove_all_collision_objects"
+
+
+def test_table_pick_does_not_restore_the_shelf(core, monkeypatch):
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.pick.execute",
+        lambda *a, **k: (False, PickOutcome()),
+    )
+    core._run_pick(_Request(scan_environment=False))
+    assert "restore_shelf_scene" not in core.arm.calls
 
 
 def test_a_raising_pour_does_not_leave_a_stale_outcome_behind(core, monkeypatch):

@@ -14,6 +14,7 @@ import numpy as np
 from frida_constants.manipulation_constants import (
     ADD_COLLISION_OBJECT_SERVICE,
     ATTACH_COLLISION_OBJECT_SERVICE,
+    DETECT_SHELF_SERVICE,
     EEF_CONTACT_LINKS,
     EEF_LINK_NAME,
     ESTOP_TOPIC,
@@ -34,6 +35,7 @@ from frida_constants.manipulation_constants import (
     SAFETY_HEIGHT,
     SCAN_ANGLE_HORIZONTAL,
     SCAN_ANGLE_VERTICAL,
+    SHELF_COLLISION_NAMESPACE,
     XARM_MOVEVELOCITY_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
 )
@@ -42,6 +44,7 @@ from frida_interfaces.msg import CollisionObject
 from frida_interfaces.srv import (
     AddCollisionObjects,
     AttachCollisionObject,
+    DetectShelf,
     GetCollisionObjects,
     GetJoints,
     RemoveCollisionObject,
@@ -168,6 +171,9 @@ class RobotArm:
         )
         self._clear_octomap_client = node.create_client(
             Empty, "/clear_octomap", callback_group=group
+        )
+        self._detect_shelf_client = node.create_client(
+            DetectShelf, DETECT_SHELF_SERVICE, callback_group=group
         )
 
         # --- MoveIt validation -------------------------------------------------------
@@ -577,6 +583,55 @@ class RobotArm:
             self._log.warn(f"add_collision_objects unavailable; '{obj.id}' not added")
             return
         self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
+
+    def restore_shelf_scene(self) -> bool:
+        """Put the boards and walls of the last shelf scan back in the planning scene.
+
+        The core wipes the scene at the start of every task, and the eye-in-hand
+        octomap never sees the compartment ceiling or walls. The detector refuses
+        when the base moved since the scan (the boxes are in base_link), so a stale
+        shelf never ends up in front of another piece of furniture.
+        """
+        if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
+            self._log.warn("detect_shelf unavailable; no shelf boxes in the scene")
+            return False
+        request = DetectShelf.Request()
+        request.add_collision_objects = True
+        future = self._detect_shelf_client.call_async(request)
+        if not self.wait_for_future(future, timeout=8.0) or future.result() is None:
+            self._log.warn("detect_shelf did not answer; no shelf boxes in the scene")
+            return False
+        result = future.result()
+        if not result.success:
+            self._log.warn(f"No shelf boxes in the scene: {result.message}")
+            return False
+        self._log.info(
+            f"Shelf boxes restored: {len(result.collision_objects)} "
+            f"(levels {[round(lv.height, 3) for lv in result.levels]})"
+        )
+        return True
+
+    def shelf_levels(self) -> list:
+        """(height, thickness) of every board of the last shelf scan, ascending.
+
+        Empty without a scan. Heights are base_link Z and stay valid when the
+        base moves, so unlike the boxes they need no motion check.
+        """
+        if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
+            return []
+        future = self._detect_shelf_client.call_async(DetectShelf.Request())
+        if not self.wait_for_future(future, timeout=5.0) or future.result() is None:
+            return []
+        result = future.result()
+        if not result.success:
+            return []
+        return [(float(lv.height), float(lv.thickness)) for lv in result.levels]
+
+    def remove_shelf_scene(self) -> None:
+        """Drop the shelf boxes (they are in base_link and must not leave with the robot)."""
+        for obj in self.get_collision_objects():
+            if obj.id.startswith(SHELF_COLLISION_NAMESPACE):
+                self.remove_collision_object(obj.id)
 
     def add_shelf_ceiling_guard(self, place_pose, table_height: float) -> None:
         """Block the place return from routing up into the compartment ceiling.

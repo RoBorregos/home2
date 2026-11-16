@@ -83,8 +83,15 @@ class FakeArm:
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
         estop: bool = False,
+        shelf_scan: bool = False,
+        shelf_levels: Optional[List[tuple]] = None,
     ):
         self._estop = estop
+        # Whether a shelf scan is available to restore (DetectShelf would refuse
+        # without one, or when the base moved since it).
+        self._shelf_scan = shelf_scan
+        # (height, thickness) of the scanned boards; empty = no scan.
+        self._shelf_levels = list(shelf_levels or [])
         self.calls: List[str] = []
         self.phases: List[str] = []
         self.contexts: List[str] = []
@@ -247,6 +254,17 @@ class FakeArm:
     def add_collision_object(self, obj):
         self.calls.append("add_collision_object")
 
+    def restore_shelf_scene(self):
+        self.calls.append("restore_shelf_scene")
+        return self._shelf_scan
+
+    def shelf_levels(self):
+        self.calls.append("shelf_levels")
+        return list(self._shelf_levels)
+
+    def remove_shelf_scene(self):
+        self.calls.append("remove_shelf_scene")
+
     def add_shelf_ceiling_guard(self, place_pose, table_height):
         self.calls.append("add_shelf_ceiling_guard")
 
@@ -364,6 +382,7 @@ class FakePerception:
         self.generate_timeouts: List[float] = []
         self.detect_timeouts: List[float] = []
         self.cluster_timeouts: List[float] = []
+        self.cluster_bands: List[Any] = []
 
         self.heatmap_place_client = ServiceStub(
             reply=type("R", (), {"place_point": heatmap_point})()
@@ -389,9 +408,10 @@ class FakePerception:
     def point_in_range(point, min_distance, max_distance):
         return True
 
-    def cluster_at(self, point, add_collision_objects=True, timeout=60.0):
+    def cluster_at(self, point, add_collision_objects=True, timeout=60.0, band=None):
         self.calls.append("cluster_at")
         self.cluster_timeouts.append(timeout)
+        self.cluster_bands.append(band)
         return self._cluster
 
     def detect_grasps(self, cluster, cfg_path):

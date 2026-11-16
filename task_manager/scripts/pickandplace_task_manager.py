@@ -186,6 +186,9 @@ class PickAndPlaceTM(Node):
         # planner route through shelf structure it can no longer see — a failed pick is
         # recoverable, a collision is not. (Stability decision 2026-07-02.)
         self.use_octomap_clearing = False
+        # Detect the shelf levels live at the cabinet (DetectShelf, no calibration).
+        # False, or a failed scan, falls back to the arena JSON heights below.
+        self.use_dynamic_shelf_detection = True
         self.max_cleanup_objects = 3  # how many to clean before breakfast
 
         # YOLO name mapping: logical → detection class (the model's actual labels).
@@ -212,8 +215,8 @@ class PickAndPlaceTM(Node):
         except Exception as e:
             self.get_logger().warn(f"Arena shelf JSON unavailable ({e}); using fallback heights.")
             self.shelf_level_heights = {1: 0.095, 2: 0.39, 3: 0.68, 4: 1.05}
-        reachable = [h for h in self.shelf_level_heights.values() if h >= MIN_REACHABLE_SHELF_Z]
-        self.default_shelf_height = min(reachable or self.shelf_level_heights.values())
+        self._set_shelf_heights(self.shelf_level_heights)
+        self._shelf_heights_detected = False
 
         # ==========================================================
         # END COMPETITION CONFIG
@@ -415,6 +418,10 @@ class PickAndPlaceTM(Node):
 
     def dock_at(self, location: Location):
         """Dock at `location` with its DOCK_OFFSETS stand-off; skips places marked None."""
+        if location == Location.CABINET:
+            # A new visit: the base stopped somewhere else, so the shelf boxes the
+            # pick/place restore must come from a scan taken here.
+            self._shelf_heights_detected = False
         offset = DOCK_OFFSETS.get(location)
         if offset is None:
             CLog.nav(self, "DOCK", f"No dock configured for {location.value}, skipping.")
@@ -543,6 +550,39 @@ class PickAndPlaceTM(Node):
                     f"{det.classname} at height {height:.2f}m skipped (target {target_height:.2f}m)",
                 )
         return filtered
+
+    def _set_shelf_heights(self, levels: dict) -> None:
+        """Install {level: height} and recompute the lowest reachable (default) level."""
+        self.shelf_level_heights = dict(levels)
+        reachable = [h for h in levels.values() if h >= MIN_REACHABLE_SHELF_Z]
+        self.default_shelf_height = min(reachable or levels.values())
+
+    def _ensure_shelf_heights(self) -> None:
+        """Measure the shelf with a live scan, once per cabinet visit.
+
+        Must run while docked at the cabinet. The heights would survive a move of
+        the base, but the boards and walls the shelf pick/place put in the planning
+        scene are in base_link, and the detector refuses them once the base moved;
+        dock_at() therefore asks for a new scan on every cabinet visit. A failed scan
+        keeps the previous heights (the arena JSON before the first success).
+        """
+        if self._shelf_heights_detected or not self.use_dynamic_shelf_detection:
+            return
+        self.subtask_manager.hri.say("Measuring the shelves.", wait=False)
+        status, heights = self.subtask_manager.manipulation.detect_shelf_levels()
+        if status != Status.EXECUTION_SUCCESS or len(heights) < 2:
+            CLog.vision(
+                self,
+                "SHELF",
+                f"Dynamic shelf scan failed ({status}, {heights}); keeping "
+                f"fallback heights {self.shelf_level_heights}.",
+                level="warn",
+            )
+            return
+        self._set_shelf_heights(levels_from_sorted_heights(heights))
+        self._shelf_level_cache.clear()  # cached heights belong to the old table
+        self._shelf_heights_detected = True
+        CLog.vision(self, "SHELF", f"Detected shelf levels: {self.shelf_level_heights}")
 
     def _scan_shelf_level(self, height: float) -> None:
         """Scan a single shelf level: move arm, wait for octomap, detect objects."""
@@ -1242,6 +1282,7 @@ class PickAndPlaceTM(Node):
         elif self.current_state == PickAndPlaceTM.TaskStates.SCAN_CABINET_SHELVES:
             self._track_state_change(PickAndPlaceTM.TaskStates.SCAN_CABINET_SHELVES)
             self.subtask_manager.hri.say("Scanning cabinet shelves.", wait=False)
+            self._ensure_shelf_heights()
 
             # Scan each shelf level (move arm, build octomap, detect + filter by height)
             shelf_levels = sorted(self.shelf_level_heights.keys())
@@ -1566,6 +1607,7 @@ class PickAndPlaceTM(Node):
             is_cabinet = item_location == Location.CABINET
             yolo_name = self._to_yolo_name(item_name)
             if is_cabinet:
+                self._ensure_shelf_heights()
                 # Per-level detect-then-pick so a high-shelf object (e.g. cereal on L3)
                 # is framed and picked; table_stare frames only the lower levels.
                 # say_name makes it announce the pick intent after the detection.
@@ -1753,6 +1795,7 @@ def main(args=None):
 
     if os.environ.get("SHELF_TEST"):
         tgt = node._to_yolo_name(os.environ.get("SHELF_TARGET", "cereal"))
+        node._ensure_shelf_heights()
         CLog.fsm(node, "SHELF_TEST", f"target={tgt} heights={node.shelf_level_heights}")
         st = node._pick_from_shelf(tgt, node.shelf_level_heights)
         CLog.fsm(node, "SHELF_TEST", f"RESULT _pick_from_shelf -> {st}")

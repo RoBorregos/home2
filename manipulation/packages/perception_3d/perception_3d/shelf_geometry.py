@@ -56,6 +56,7 @@ class ShelfParams:
     wall_thickness: float = 0.02
 
     board_sink: float = 0.01  # collision box top sits this far below the surface
+    padding: float = 0.02  # every other box face grown this far into the free space
 
 
 @dataclass(frozen=True)
@@ -68,6 +69,9 @@ class ShelfLevel:
     y_max: float
     clearance: float = 0.0
     num_points: int = 0
+    # Only its underside was in view (a board above the camera): height is the
+    # underside plus the default thickness.
+    seen_from_below: bool = False
 
 
 @dataclass(frozen=True)
@@ -86,7 +90,7 @@ class ShelfGeometry:
     y_max: float
     front_x: float
     back_x: float
-    top_z: float = 0.0  # underside of the top board, 0 = not seen
+    top_z: float = 0.0  # underside of the top board when only seen from below, else 0
     has_left_wall: bool = False
     has_right_wall: bool = False
     has_back_wall: bool = False
@@ -271,16 +275,66 @@ def _walls(
             or abs(y_peak - boards_y[1]) < abs(found["right"] - boards_y[1])
         ):
             found["right"] = y_peak
+    # The boards hide most of the back panel, so only a strip of it may be in view:
+    # a robot-facing plane behind the boards counts when it is tall OR spans most of
+    # the shelf width. Board front edges and object faces sit in front of
+    # boards_back_x - wall_search and never qualify.
+    width = boards_y[1] - boards_y[0]
     back = vertical[np.abs(normals[:, 0]) > 0.8]
     for x_peak, _ in _histogram_peaks(
         back[:, 0], p.x_min, p.x_max, p.wall_bin, p.min_wall_points
     ):
+        if x_peak < boards_back_x - p.wall_search:
+            continue
         strip = back[np.abs(back[:, 0] - x_peak) <= 1.5 * p.wall_bin]
         z_lo, z_hi = _extent(strip[:, 2])
-        if z_hi - z_lo < p.wall_min_height or x_peak < boards_back_x - p.wall_search:
+        y_lo, y_hi = _extent(strip[:, 1])
+        tall = z_hi - z_lo >= p.wall_min_height
+        wide = y_hi - y_lo >= p.min_width_fraction * width
+        if not (tall or wide):
             continue
         if found["back"] is None or x_peak < found["back"]:
             found["back"] = x_peak  # the nearest tall plane behind the boards
+    return found
+
+
+def _boards_seen_from_below(
+    down: np.ndarray, undersides, levels: list, reference: float, p: ShelfParams
+) -> list:
+    """Wide down-facing planes that are not the underside of a detected surface.
+
+    The surface height is estimated as underside + default thickness. Planes below
+    the lowest detected surface are ignored (nothing explains them as a board).
+    """
+    found = []
+    lowest = levels[0].height
+    for z, _ in undersides:
+        if z < lowest:
+            continue
+        known = [lv.height for lv in levels] + [lv.height for lv in found]
+        if any(
+            -p.min_level_spacing / 2 < h - z <= p.max_board_thickness for h in known
+        ):
+            continue  # the underside of a board already seen, or noise next to one
+        slab = down[np.abs(down[:, 2] - z) <= 1.5 * p.z_bin]
+        y_lo, y_hi = _extent(slab[:, 1])
+        if (y_hi - y_lo) < p.min_width_fraction * reference:
+            continue
+        if _fill_fraction(slab[:, 1], y_lo, y_hi, p.extent_bin) < p.min_fill_fraction:
+            continue
+        x_lo, x_hi = _extent(slab[:, 0])
+        found.append(
+            ShelfLevel(
+                height=float(z + p.default_thickness),
+                thickness=p.default_thickness,
+                front_x=x_lo,
+                back_x=x_hi,
+                y_min=y_lo,
+                y_max=y_hi,
+                num_points=len(slab),
+                seen_from_below=True,
+            )
+        )
     return found
 
 
@@ -330,7 +384,9 @@ def detect_shelf(
             continue
         merged.append(c)
 
-    # Undersides: thickness of each board, and the ceiling above the top level.
+    # Undersides: the thickness of each board seen from above, and the boards the
+    # camera only sees from below (above the camera, e.g. the top of a cabinet taller
+    # than the robot): those still bound the compartment under them.
     undersides = _histogram_peaks(
         down[:, 2], p.z_min, p.z_max, p.z_bin, p.min_level_points
     )
@@ -349,15 +405,12 @@ def detect_shelf(
                 num_points=int(c["n"]),
             )
         )
-    top_candidates = []
-    for z, _ in undersides:
-        if z - levels[-1].height < p.min_level_spacing:
-            continue
-        slab = down[np.abs(down[:, 2] - z) <= 1.5 * p.z_bin]
-        y_lo, y_hi = _extent(slab[:, 1])
-        if (y_hi - y_lo) >= p.min_width_fraction * reference:
-            top_candidates.append(z)
-    top_z = min(top_candidates) if top_candidates else 0.0
+    levels.extend(_boards_seen_from_below(down, undersides, levels, reference, p))
+    levels.sort(key=lambda level: level.height)
+    # Underside of the topmost board when the camera only saw it from below.
+    top_z = (
+        levels[-1].height - levels[-1].thickness if levels[-1].seen_from_below else 0.0
+    )
 
     with_clearance = []
     for i, level in enumerate(levels):
@@ -365,7 +418,7 @@ def detect_shelf(
             above = levels[i + 1]
             clearance = above.height - above.thickness - level.height
         else:
-            clearance = top_z - level.height if top_z else 0.0
+            clearance = 0.0  # nothing seen above the top board
         with_clearance.append(replace(level, clearance=float(max(clearance, 0.0))))
 
     geometry = ShelfGeometry(
@@ -390,62 +443,58 @@ def detect_shelf(
 def collision_boxes(
     g: ShelfGeometry, p: ShelfParams, namespace: str = "frida_shelf_"
 ) -> list:
-    """Boards, side walls, back wall and top board as axis-aligned boxes.
+    """Boards (a closed top included), side walls and back wall as axis-aligned boxes.
 
     Board tops are sunk ``board_sink`` below the measured surface so the fingertips
-    touching an object's base do not register as a collision with the board.
+    touching an object's base do not register as a collision with the board. Every
+    other face is grown by ``padding`` towards the free space (the fronts towards
+    the robot, the undersides down, the walls inwards): planning flush against the
+    measured faces left no room for scan or hand-eye error, and in Gazebo the
+    gripper ran into the cabinet front on paths MoveIt accepted.
     """
     boxes = []
-    depth = max(g.back_x - g.front_x, 0.05)
-    x_centre = (g.front_x + g.back_x) / 2
-    width = max(g.y_max - g.y_min, 0.05)
-    y_centre = (g.y_min + g.y_max) / 2
+    pad = p.padding
+
+    def box(name, lo, hi):
+        lo, hi = np.asarray(lo, float), np.asarray(hi, float)
+        boxes.append(
+            Box(
+                id=f"{namespace}{name}",
+                center=tuple((lo + hi) / 2),
+                size=tuple(hi - lo),
+            )
+        )
+
+    front = g.front_x - pad
+    back = max(g.back_x, g.front_x + 0.05)
     for i, level in enumerate(g.levels):
         top = level.height - p.board_sink
-        boxes.append(
-            Box(
-                id=f"{namespace}board_{i + 1}",
-                center=(x_centre, y_centre, top - level.thickness / 2),
-                size=(depth, width, level.thickness),
-            )
+        box(
+            f"board_{i + 1}",
+            (front, g.y_min, top - level.thickness - pad),
+            (back, g.y_max, top),
         )
+    # Every board, including a closed top seen from below, is already a box above;
+    # the walls run from the lowest board to the highest one.
     bottom = g.levels[0].height - g.levels[0].thickness
-    if g.top_z:
-        top = g.top_z + p.default_thickness
-        boxes.append(
-            Box(
-                id=f"{namespace}top",
-                center=(x_centre, y_centre, g.top_z + p.default_thickness / 2),
-                size=(depth, width, p.default_thickness),
-            )
-        )
-    else:
-        top = g.levels[-1].height + p.default_thickness
-    height = top - bottom
-    z_centre = (top + bottom) / 2
+    top = g.levels[-1].height
     if g.has_left_wall:
-        boxes.append(
-            Box(
-                id=f"{namespace}wall_left",
-                center=(x_centre, g.y_min - p.wall_thickness / 2, z_centre),
-                size=(depth, p.wall_thickness, height),
-            )
+        box(
+            "wall_left",
+            (front, g.y_min - p.wall_thickness, bottom),
+            (back, g.y_min + pad, top),
         )
     if g.has_right_wall:
-        boxes.append(
-            Box(
-                id=f"{namespace}wall_right",
-                center=(x_centre, g.y_max + p.wall_thickness / 2, z_centre),
-                size=(depth, p.wall_thickness, height),
-            )
+        box(
+            "wall_right",
+            (front, g.y_max - pad, bottom),
+            (back, g.y_max + p.wall_thickness, top),
         )
     if g.has_back_wall:
-        boxes.append(
-            Box(
-                id=f"{namespace}wall_back",
-                center=(g.back_x + p.wall_thickness / 2, y_centre, z_centre),
-                size=(p.wall_thickness, width, height),
-            )
+        box(
+            "wall_back",
+            (g.back_x - pad, g.y_min, bottom),
+            (g.back_x + p.wall_thickness, g.y_max, top),
         )
     return boxes
 

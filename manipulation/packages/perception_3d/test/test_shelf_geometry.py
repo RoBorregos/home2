@@ -96,9 +96,15 @@ def geometry():
 
 
 def test_every_board_found_at_its_height(geometry):
-    assert len(geometry.levels) == len(BOARDS)
+    # The four boards seen from above, plus the closed top above both cameras, seen
+    # only from below: its surface is estimated as underside + default thickness.
+    assert len(geometry.levels) == len(BOARDS) + 1
     for level, expected in zip(geometry.levels, BOARDS):
         assert abs(level.height - expected) < 0.01, (level.height, expected)
+        assert not level.seen_from_below
+    top = geometry.levels[-1]
+    assert top.seen_from_below
+    assert abs(top.height - (TOP_UNDERSIDE + ShelfParams().default_thickness)) < 0.01
 
 
 def test_objects_are_not_levels(geometry):
@@ -121,7 +127,9 @@ def test_clearances_and_ceiling(geometry):
         expected = upper.height - THICKNESS - lower.height
         assert abs(lower.clearance - expected) < 0.015
     assert abs(geometry.top_z - TOP_UNDERSIDE) < 0.01
-    assert abs(levels[-1].clearance - (TOP_UNDERSIDE - BOARDS[-1])) < 0.015
+    # The compartment under the closed top is bounded by it; nothing above the top.
+    assert abs(levels[-2].clearance - (TOP_UNDERSIDE - BOARDS[-1])) < 0.015
+    assert levels[-1].clearance == 0.0
 
 
 def test_walls_and_extents(geometry):
@@ -134,7 +142,7 @@ def test_walls_and_extents(geometry):
 
 def test_collision_boxes_enclose_the_structure(geometry):
     ids = {box.id for box in geometry.boxes}
-    assert {"frida_shelf_board_1", "frida_shelf_board_4", "frida_shelf_top"} <= ids
+    assert {"frida_shelf_board_1", "frida_shelf_board_4", "frida_shelf_board_5"} <= ids
     assert {
         "frida_shelf_wall_left",
         "frida_shelf_wall_right",
@@ -185,3 +193,70 @@ def test_level_for_height():
     assert level_for_height(0.37, BOARDS) == 0.39  # depth noise just under the surface
     assert level_for_height(1.20, BOARDS) == 1.05
     assert level_for_height(0.01, BOARDS) is None
+
+
+def test_back_wall_seen_only_as_a_strip():
+    # From the survey poses the boards hide most of the back panel; in the Gazebo
+    # competition scene only a ~9 cm strip behind one compartment was in view.
+    frames = shelf_frames(walls=False)
+    strip = _patch(
+        [BACK], np.arange(-Y_HALF, Y_HALF, STEP), np.arange(0.69, 0.78, STEP)
+    )
+    frames[0] = Frame(
+        points=np.vstack([frames[0].points, strip]), viewpoint=frames[0].viewpoint
+    )
+    geometry = detect_shelf(frames)
+    assert geometry.has_back_wall
+    assert abs(geometry.back_x - BACK) < 0.03
+
+
+def test_narrow_face_behind_the_boards_is_not_a_back_wall():
+    # A box face near the back is robot-facing and behind the boards, but narrow.
+    frames = shelf_frames(walls=False)
+    face = _patch(
+        [BACK - 0.02], np.arange(-0.05, 0.05, STEP), np.arange(0.40, 0.50, STEP)
+    )
+    frames[1] = Frame(
+        points=np.vstack([frames[1].points, face]), viewpoint=frames[1].viewpoint
+    )
+    assert not detect_shelf(frames).has_back_wall
+
+
+def test_board_above_the_cameras_bounds_the_compartment():
+    # Cabinet taller than the robot: a board above every camera is only seen from
+    # below, yet it must still become the ceiling of the compartment under it.
+    frames = shelf_frames(objects=False, top=False)
+    ceiling = 1.40
+    frames = [
+        Frame(points=np.vstack([f.points, _horizontal(ceiling)]), viewpoint=f.viewpoint)
+        for f in frames
+    ]
+    geometry = detect_shelf(frames)
+    assert geometry.levels[-1].seen_from_below
+    assert abs(geometry.levels[-2].height - BOARDS[-1]) < 0.01
+    assert abs(geometry.levels[-2].clearance - (ceiling - BOARDS[-1])) < 0.015
+
+
+def test_boxes_keep_a_safety_margin_except_on_board_tops(geometry):
+    # In Gazebo the gripper ran into the cabinet front on paths MoveIt accepted
+    # flush against the measured faces; the boxes are grown into the free space.
+    p = ShelfParams()
+    boxes = {box.id: box for box in geometry.boxes}
+    board = boxes["frida_shelf_board_2"]
+    level = geometry.levels[1]
+    front = board.center[0] - board.size[0] / 2
+    under = board.center[2] - board.size[2] / 2
+    top = board.center[2] + board.size[2] / 2
+    assert front == pytest.approx(geometry.front_x - p.padding)
+    assert under == pytest.approx(
+        level.height - p.board_sink - level.thickness - p.padding
+    )
+    assert top == pytest.approx(level.height - p.board_sink)  # grasps reach the base
+    left = boxes["frida_shelf_wall_left"]
+    assert left.center[1] + left.size[1] / 2 == pytest.approx(
+        geometry.y_min + p.padding
+    )
+    right = boxes["frida_shelf_wall_right"]
+    assert right.center[1] - right.size[1] / 2 == pytest.approx(
+        geometry.y_max - p.padding
+    )
