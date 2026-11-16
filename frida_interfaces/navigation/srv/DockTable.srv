@@ -1,8 +1,32 @@
 # Request
 
-# Desired front offset for the approach (m). 0.0 -> use the docker default.
+# Surface type to dock at (a key of nav_main/config/approach_profiles.yaml:
+# table, round_table, counter, dishwasher, cabinet, shelf ...). Selects the arm's
+# reach band; the docker plans the base pose inside it. Empty -> legacy `offset`.
+string surface_type
+# Optional object to work on (any TF frame). The base stands in front of it
+# instead of the centre of the detected face. Empty frame_id -> no target.
+geometry_msgs/PointStamped target
+# Verify the best candidate poses with the arm's IK (MoveIt /compute_ik) against
+# `target` (its z included) before committing. Only meaningful when `target` is
+# the object to grasp, not e.g. the centre of a table.
+bool check_reach
+# DEPRECATED (kept for old callers): legacy front offset (m) when surface_type is
+# empty. 0.0 -> the 'default' surface profile.
 float32 offset
 ---
 #Response
 bool success
 string error
+# Where the target ended up relative to the docked base (m, + = robot's left).
+# 0 without a target.
+float32 lateral_error
+# "ok" | "unreachable" (no checked candidate had IK; docked at the best free one)
+# | "unchecked" (not requested, no 3D target, or /compute_ik unavailable)
+string reach
+# The pose straight in front of the target was blocked (e.g. a chair): `blocker`
+# is the centre of what blocks it (map frame) and `blocker_side` where it sits
+# seen from that pose ("left" | "center" | "right"). Empty when nothing blocked.
+bool target_blocked
+geometry_msgs/PointStamped blocker
+string blocker_side

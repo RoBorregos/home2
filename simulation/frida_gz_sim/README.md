@@ -87,6 +87,9 @@ ros2 launch frida_gz_sim sim.launch.py gui:=true world:=arena_robocup2026_1.sdf 
 ros2 launch frida_gz_sim sim_nav.launch.py map_name:=robocup2026_1
 ros2 run frida_gz_sim sim_nav_task_manager.py \
     --ros-args -p route:="kitchen/sink,bedroom/bed"
+ros2 run frida_gz_sim sim_dock_test.py      # planned docking, all scenarios
+ros2 run frida_gz_sim sim_dock_test.py --ros-args -p scenarios:="island_chair"
+rviz2 -d $(ros2 pkg prefix frida_gz_sim)/share/frida_gz_sim/config/sim_approach.rviz
 ros2 launch frida_gz_sim sim_rviz.launch.py config:=sim_nav.rviz
 ```
 
@@ -214,6 +217,31 @@ Navigation-only pieces:
   time and `map_start_pose` set to the spawn pose. Keep the two in sync.
 - `sim_nav_task_manager.py` uses the real `NavigationTasks.move_to_location()`
   and grades each goal against the robot's ground-truth Gazebo pose.
+- `sim_dock_test.py` tests the planned table approach (`table_docker` +
+  `nav_main/approach_planner.py`). It spawns `TEST_FURNITURE` from
+  `frida_gz_sim/nav.py`: a living-room island with a chair in front of the
+  target object. It then docks with `dock_table(surface_type=..., target=...)` in
+  nine scenarios: the round dinner table, the counter, the island (three
+  times), the dishwasher, the cabinet, a legacy `offset` call, and
+  `approach_point`. Two of the island scenarios also ask for the arm's reach
+  check (`check_reach`), so they need `move_group` running (`--all`, or
+  `sim_manipulation.launch.py`):
+  - `island_reach_blocked`: the target is the mug behind the chair. The
+    chair only leaves poses well to the side free, so the dock must report
+    `reach: unreachable` and the chair as the blocker.
+  - `island_reach_free`: the target is near the free end of the island. The
+    dock must report `reach: ok` and no blocker.
+
+  Each result is graded against the Gazebo pose and the true geometry in
+  `frida_gz_sim/ground_truth.py`:
+  - the gap is inside the surface's reach band,
+  - the robot is square to the surface,
+  - the target is straight ahead,
+  - the footprint overlaps nothing,
+  - the `DockTable` diagnostics match the scene (blocker, reach verdict).
+
+  Results are written to `logs/dock_test_results.json`. `config/sim_approach.rviz`
+  shows the candidate poses, the chosen pose, the MPPI path and the furniture.
 
 ## Debugging headless
 
