@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """Finals routine: patrol the house, report what is out of place, guide people to objects.
 
-The robot drives past every tagged piece of furniture while the semantic map
-(vision_general/semantic_map_node.py) fills up on its own from the detector, then
-says what is misplaced and answers spoken commands about what it has seen. It never
-grasps anything.
+The robot stops at every tagged piece of furniture and records what it sees there
+(task_manager/utils/scene_memory.py), then says what is misplaced and answers spoken
+commands about what it has seen. It never grasps anything.
 
 A failure anywhere degrades: a viewpoint it cannot reach is skipped, and running out
 of time goes straight to the report with whatever it has seen.
 """
 
+import json
+import os
 import time
 from enum import Enum
 
 import rclpy
+from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
+from task_manager.utils.scene_memory import SceneMemory, SeenObject
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
@@ -53,6 +56,15 @@ class FinalsTaskManager(Node):
         self.subtask_manager = SubtaskManager(
             self, task=Task.FINALS, mock_areas=[area for area in mock_areas if area]
         )
+        objects_file = os.path.join(
+            get_package_share_directory("frida_constants"), "data/objects.json"
+        )
+        with open(objects_file) as file:
+            objects = json.load(file)
+        self.object_to_category = objects["object_to_category"]
+        self.memory = SceneMemory(objects["default_location"])
+        self.areas = {}
+
         self.state = ExecutionStates.WAIT_START
         self.started_at = 0.0
         Logger.info(self, f"Finals task manager ready, mocking: {mock_areas}")
@@ -141,6 +153,7 @@ class FinalsTaskManager(Node):
             self.subtask_manager.manipulation.move_to_position(step["arm_pose"])
             arm_pose = step["arm_pose"]
             self._wait(step["dwell_s"])
+            self._look(step)
             reached += 1
         self.subtask_manager.manipulation.move_to_position(ARM_TRAVEL_POSE)
         Logger.info(self, f"Patrol done: {reached}/{len(route)} viewpoints")
@@ -157,16 +170,48 @@ class FinalsTaskManager(Node):
         Logger.error(self, f"Skipping {name}")
         return False
 
+    def _look(self, step: dict) -> None:
+        """Record the objects in view as what this viewpoint sees now."""
+        vision, nav = self.subtask_manager.vision, self.subtask_manager.nav
+        status, boxes = vision.detect_objects()
+        if status not in (Status.EXECUTION_SUCCESS, Status.TARGET_NOT_FOUND):
+            return
+        boxes = [box for box in boxes if box.distance > 0.0]
+        _, embeddings = vision.embed_crops(boxes)
+        if len(embeddings) != len(boxes):
+            embeddings = [None] * len(boxes)
+
+        seen = []
+        for box, embedding in zip(boxes, embeddings):
+            point = nav.to_map_point(box.point3d)
+            if point is None:
+                continue
+            status, place = nav.get_area_for_point(point)
+            if status != Status.EXECUTION_SUCCESS:
+                continue
+            seen.append(
+                SeenObject(
+                    label=box.classname,
+                    category=self.object_to_category.get(box.classname, ""),
+                    area=place["area"],
+                    sublocation=(place["sublocations"] or [""])[0],
+                    x=point.point.x,
+                    y=point.point.y,
+                    z=point.point.z,
+                    embedding=embedding,
+                )
+            )
+        self.memory.record(f"{step['area']}/{step['sublocation']}", seen)
+
+    def _has_furniture(self, area: str, sublocation: str) -> bool:
+        return sublocation in self.areas.get(area, {})
+
     # ------------------------------------------------------------------- report
 
     def report_misplaced(self) -> int:
         """Say every object that is not where it belongs. Returns how many."""
         self._step("Checking for objects out of place")
-        status, misplaced = self.subtask_manager.vision.get_misplaced()
-        if status != Status.EXECUTION_SUCCESS:
-            self._step("Could not read the semantic map")
-            self.subtask_manager.hri.say("I could not check my map of the house.")
-            return 0
+        misplaced = self.memory.misplaced(self._has_furniture)
         if not misplaced:
             self._step("Everything is in its place")
             self.subtask_manager.hri.say("Everything I saw is in its place.")
@@ -186,35 +231,23 @@ class FinalsTaskManager(Node):
     # ----------------------------------------------------------------- commands
 
     def handle_command(self, text: str) -> None:
-        """Answer one spoken command, and guide to the object when there is one."""
+        """Guide to the object a spoken command names, looking again if it was not seen."""
         self._step(f"Looking for: {text}")
-        status, answer, objects = self.subtask_manager.vision.resolve_command(text)
-        if status != Status.EXECUTION_SUCCESS:
-            self._step("Could not read the semantic map")
-            self.subtask_manager.hri.say("Sorry, I could not check my map of the house.")
-            return
-        if answer == "not_found":
+        matches = self._find(text)
+        if not matches:
             self._step(f"Not seen yet: {text}. Looking again")
             self.subtask_manager.hri.say("I have not seen that. I will take another look.")
             self.patrol("revisit", self.patrol_time_limit_s, max_viewpoints=3)
-            status, answer, objects = self.subtask_manager.vision.resolve_command(text)
-            if status != Status.EXECUTION_SUCCESS or answer == "not_found":
-                self._step(f"Not found: {text}")
-                self.subtask_manager.hri.say("Sorry, I could not find it anywhere.")
-                return
-        if answer == "list":
-            self._say_list(objects)
+            matches = self._find(text)
+        if not matches:
+            self._step(f"Not found: {text}")
+            self.subtask_manager.hri.say("Sorry, I could not find it anywhere.")
             return
-        self._guide_to(objects[0])
+        self._guide_to(matches[0])
 
-    def _say_list(self, objects: list) -> None:
-        if not objects:
-            self._step("Nothing seen there")
-            self.subtask_manager.hri.say("I did not see anything there.")
-            return
-        self._step("Seen: " + ", ".join(f"{obj.label} -> {self._where(obj)}" for obj in objects))
-        names = ", ".join(self._speakable(obj.label) for obj in objects)
-        self.subtask_manager.hri.say(f"I saw: {names}.")
+    def _find(self, text: str) -> list:
+        _, text_embedding = self.subtask_manager.vision.embed_text(text)
+        return self.memory.find(text, text_embedding)
 
     def _guide_to(self, obj) -> None:
         label = self._speakable(obj.label)
@@ -223,7 +256,7 @@ class FinalsTaskManager(Node):
         self._step(f"Found: {obj.label} -> {self._where(obj)}. Guiding there")
         self.subtask_manager.hri.say(f"The {label} is {where}. Please follow me.")
         status, error = self.subtask_manager.nav.approach_point(
-            obj.position, standoff=self.approach_standoff_m
+            (obj.x, obj.y), standoff=self.approach_standoff_m
         )
         if status == Status.EXECUTION_SUCCESS:
             self._step(f"Here is the {obj.label}")
@@ -298,7 +331,7 @@ class FinalsTaskManager(Node):
     # ---------------------------------------------------------------------- run
 
     def run(self) -> None:
-        hri, vision = self.subtask_manager.hri, self.subtask_manager.vision
+        hri = self.subtask_manager.hri
 
         self.state = ExecutionStates.WAIT_START
         hri.reset_task_status()
@@ -307,8 +340,9 @@ class FinalsTaskManager(Node):
         while not hri.start_button_clicked and not self.subtask_manager.get_mocked_areas():
             rclpy.spin_once(self, timeout_sec=0.1)
         self.started_at = time.monotonic()
-        if vision.reset_semantic_map() != Status.EXECUTION_SUCCESS:
-            Logger.warn(self, "Could not reset the semantic map, it may hold a previous run")
+        self.memory.clear()
+        _, areas = self.subtask_manager.nav.retrieve_areas()
+        self.areas = areas or {}
 
         self.state = ExecutionStates.PATROL
         hri.say("I will look around the house.", wait=False)

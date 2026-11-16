@@ -66,5 +66,13 @@
     "knife": "dish",
     "fork": "dish",
     "bowl": "dish"
+  },
+  "default_location": {
+    "drink": ["kitchen", "refrigerator"],
+    "food": ["kitchen", "cabinet"],
+    "fruit": ["kitchen", "counter"],
+    "snack": ["living_room", "coffee_table"],
+    "dish": ["kitchen", "dishwasher"],
+    "cleaning_supply": ["kitchen", "cabinet"]
   }
 }
