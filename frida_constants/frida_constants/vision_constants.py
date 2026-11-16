@@ -108,6 +108,7 @@ PERSON_POSTURE_TOPIC = "/vision/person_posture"
 QUERY_TOPIC = "/vision/query"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 CROP_QUERY_TOPIC = "/vision/crop_query"
+LFM_CROP_QUERY_TOPIC = "/vision/lfm_crop_query"
 OBJECT_POINTS_TOPIC = "/vision/object_points"
 MOONDREAM_DETECTION_TOPIC = "/vision/moondream_detection"
 

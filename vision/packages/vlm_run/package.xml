@@ -1,5 +1,5 @@
 <package format="3">
-  <name>moondream_run</name>
+  <name>vlm_run</name>
   <version>0.1.0</version>
   <description>Package containing shared message and service definitions.</description>
 
@@ -15,7 +15,7 @@
  
 
   <!-- Runtime dependencies -->
-  <!-- <exec_depend>rosidl_default_vision/packages/moondream_run/moondream_serverruntime</exec_depend> -->
+  <!-- <exec_depend>rosidl_default_vision/packages/vlm_run/vlm_serverruntime</exec_depend> -->
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>

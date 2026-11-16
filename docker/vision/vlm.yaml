@@ -2,7 +2,7 @@ services:
   moondream-server:
     container_name: home2-moondream-server
     image: roborregos/home2:moondream-server
-    profiles: ["moondream"]
+    profiles: ["vlm"]
     build:
       context: ../..
       dockerfile: docker/vision/Dockerfile.moondream.server
@@ -17,10 +17,10 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - $HOME/.Xauthority:/home/ros/.Xauthority:rw
       - /run/jtop.sock:/run/jtop.sock
-      - ../../vision/packages/moondream_run/:/workspace
+      - ../../vision/packages/vlm_run/:/workspace
       - ./moondream_cache:/home/ros/.cache/huggingface
 
-    working_dir: /workspace/moondream_server
+    working_dir: /workspace/vlm_server
     network_mode: host
     pid: host
     privileged: true
@@ -41,4 +41,29 @@ services:
       HF_HUB_CACHE: /home/ros/.cache/huggingface
     tty: true
     stdin_open: true
-    command: ["bash", "-c", "python3 -u server.py"]
+    command: ["bash", "-c", "python3 -u moondream_server.py"]
+
+  lfm-server:
+    container_name: home2-lfm-server
+    image: roborregos/home2:lfm-server
+    profiles: ["vlm"]
+    build:
+      context: ../..
+      dockerfile: docker/vision/Dockerfile.lfm.server
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
+    volumes:
+      - ../../vision/packages/vlm_run/:/workspace
+      - ./lfm_cache:/home/ros/.cache/huggingface
+    working_dir: /workspace/vlm_server
+    network_mode: host
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
+    runtime: ${DOCKER_RUNTIME:-nvidia}
+    # Same cores as the moondream server, off navigation's reserved 0-3.
+    cpuset: "${COMPUTE_CPUSET:-4-11}"
+    environment:
+      HF_HUB_OFFLINE: ${LFM_HF_OFFLINE:-1}
+      HF_HOME: /home/ros/.cache/huggingface
+      HF_HUB_CACHE: /home/ros/.cache/huggingface
+    tty: true
+    command: ["bash", "-c", "python3 -u lfm_server.py"]
