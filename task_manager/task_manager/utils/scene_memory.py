@@ -86,6 +86,8 @@ def same(a: SeenObject, b: SeenObject) -> bool:
         return False
     if a.label == b.label:
         return True
+    if a.embedding is None or b.embedding is None:
+        return False
     return float(a.embedding @ b.embedding) >= SAME_CROP_SIMILARITY
 
 
