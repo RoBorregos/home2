@@ -33,7 +33,7 @@ from frida_constants.navigation_constants import (
 )
 from frida_constants.vision_constants import SET_TARGET_TOPIC
 from frida_gz_sim import ground_truth as gt
-from frida_gz_sim.nav import MAP_NAME, SPAWN_POSE
+from frida_gz_sim.nav import MAP_NAME
 from frida_interfaces.srv import GoToPose
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
@@ -47,7 +47,7 @@ from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
 LOGS = "/workspace/sim_logs"
-STAGING_TIMEOUT = 120.0
+STAGING_TIMEOUT = 300.0
 SAMPLE_DT = 0.1
 
 # Living-room corridor along y = -9.6: free from x ~ -2.6 to x ~ 4.4 (see the arena
@@ -155,8 +155,8 @@ class SimFollowTest(Node):
             meta["occupied_thresh"],
         )
 
-        # Ground truth: gz's OdometryPublisher reports the base pose relative to its
-        # spawn pose, which is where the world (= map) frame places the robot.
+        # Ground truth: gz's OdometryPublisher reports the base pose in the world
+        # frame, and the arena world frame IS the map frame (world_from_map.py).
         self.robot = None
         self.person = None
         self.status = "unknown"
@@ -175,9 +175,7 @@ class SimFollowTest(Node):
         yaw = math.atan2(
             2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         )
-        sx, sy, syaw = SPAWN_POSE
-        c, s = math.cos(syaw), math.sin(syaw)
-        self.robot = (sx + c * p.x - s * p.y, sy + s * p.x + c * p.y, syaw + yaw)
+        self.robot = (p.x, p.y, yaw)
 
     def _person_cb(self, msg):
         self.person = (msg.pose.position.x, msg.pose.position.y)

@@ -30,6 +30,13 @@ controller_server:
       # ---- Critic weights tuned for chasing a moving goal ----
       GoalCritic:
         cost_weight: 3.0        # std 5.0 — moving target, don't over-commit
+      # Keep the base FACING the person the whole way (the goal yaw points at
+      # them): standard only aligns yaw within 0.5 m of the goal, so while
+      # chasing, the omni base drifted sideways and relied on the arm pan alone
+      # to keep the camera on the person — losing them on every corner.
+      GoalAngleCritic:
+        cost_weight: 5.0        # std 3.0
+        threshold_to_consider: 3.0   # std 0.5 m
       PathFollowCritic:
         cost_weight: 8.0        # std 5.0 — hug the replanned path
       PathAlignCritic:
@@ -38,6 +45,12 @@ controller_server:
         cost_weight: 2.0        # std 2.0 (unchanged; kept for completeness)
       CostCritic:
         cost_weight: 4.0        # std 4.0 — keep obstacle avoidance at full strength
+    # Tighter goal checker than the 0.35 m zone tolerance: the goal already
+    # sits follow_distance short of the person, every extra tolerance is
+    # distance the robot stops short of them.
+    general_goal_checker:
+      xy_goal_tolerance: 0.25   # std 0.35
+      yaw_goal_tolerance: 0.25  # std 0.25
 
 local_costmap:
   local_costmap:

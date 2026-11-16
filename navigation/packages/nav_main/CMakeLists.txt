@@ -1,4 +1,4 @@
-nncmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.8)
 project(nav_main)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -45,6 +45,7 @@ if(BUILD_TESTING)
 
   find_package(ament_cmake_pytest REQUIRED)
   ament_add_pytest_test(test_door_window test/test_door_window.py)
+  ament_add_pytest_test(test_follow_planner test/test_follow_planner.py)
 
 endif()
 
