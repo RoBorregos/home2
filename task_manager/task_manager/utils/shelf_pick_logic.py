@@ -19,6 +19,8 @@ SHELF_LEVELS_FILE = Path(
 # shelf_level_down_threshold). A detection counts as "on this level" if it sits just
 # below or up to UP_THRESHOLD above the level height.
 LEVEL_UP_THRESHOLD = 0.20
+# The arm cannot pick or place below this base_link Z
+MIN_REACHABLE_SHELF_Z = 0.20
 LEVEL_DOWN_THRESHOLD = 0.05
 
 

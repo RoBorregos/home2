@@ -26,6 +26,7 @@ from task_manager.utils.shelf_pick_logic import (
     find_target_on_level,
     height_matches_level,
     levels_from_sorted_heights,
+    MIN_REACHABLE_SHELF_Z,
 )
 from task_manager.utils.status import Status
 
@@ -33,8 +34,6 @@ from task_manager.subtask_managers.generic_tasks import GenericTask
 
 RETRIES = 1
 
-# The arm cannot pick or place below this base_link Z
-MIN_REACHABLE_SHELF_Z = 0.20
 # A pick/place location whose name contains one of these is treated as a shelf:
 SHELF_FURNITURE_HINTS = ("shelf", "cabinet", "rack", "pantry", "bookcase")
 SHELF_SETTLE_S = 3.0  # let the octomap build at a level's viewing pose

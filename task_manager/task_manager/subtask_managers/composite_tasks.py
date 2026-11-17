@@ -14,7 +14,11 @@ from frida_constants.vision_constants import CAMERA_FRAME
 from frida_interfaces.msg import GripperGraspState
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.grasp_confirmation import count_by_class, picked_ok
-from task_manager.utils.shelf_pick_logic import find_target_on_level, height_matches_level
+from task_manager.utils.shelf_pick_logic import (
+    MIN_REACHABLE_SHELF_Z,
+    find_target_on_level,
+    height_matches_level,
+)
 from task_manager.utils.status import Status
 from xarm_utils.shelf_levels import get_shelf_levels
 
@@ -312,14 +316,17 @@ class CompositeTasks:
         heights = self.shelf_heights()
         if self._shelves is None:
             self._shelves = self.scan_shelves(heights)
-        status, _, to_add, _ = self.hri.categorize_objects([name], self._shelves)
+        # Levels the arm cannot reach are scanned for categories but never offered
+        reachable = {i for i, h in enumerate(heights) if h >= MIN_REACHABLE_SHELF_Z}
+        shelves = {i: names for i, names in self._shelves.items() if i in reachable}
+        status, _, to_add, _ = self.hri.categorize_objects([name], shelves)
         idx = None
         if status == Status.EXECUTION_SUCCESS:
             idx = next((int(i) for i, names in to_add.items() if name in names), None)
-        order = list(heights)
-        if idx is not None and idx < len(heights):
+        order = [heights[i] for i in sorted(reachable)]
+        if idx is not None and idx in reachable:
             self.hri.say(f"The {name} goes on shelf {idx + 1}.", wait=False)
-            order = [heights[idx]] + [h for h in heights if h != heights[idx]]
+            order = [heights[idx]] + [h for h in order if h != heights[idx]]
         status, height = self.place_on_shelf_fallback(order, attempts)
         if status == Status.EXECUTION_SUCCESS:
             self._shelves.setdefault(heights.index(height), []).append(name)
