@@ -114,6 +114,23 @@ def _reanchor(off, last, raw):
     rot = _se2_mul((0.0, 0.0, dyaw), raw)
     return (pub[0] - rot[0], pub[1] - rot[1], dyaw)
 
+
+def _anchor(off, last, raw, hold, jump_m, jump_rad):
+    """Offset to publish `raw` with: unchanged for real motion, re-anchored to
+    the last published pose while holding or when the raw step is too big to
+    be motion. Returns `off` itself when nothing changed."""
+    if last is None:
+        return off
+    if (hold
+            or math.hypot(raw[0] - last[0], raw[1] - last[1]) > jump_m
+            or abs(math.remainder(raw[2] - last[2], math.tau)) > jump_rad):
+        return _reanchor(off, last, raw)
+    return off
+
+
+def _fmt_pose(p):
+    return f"({p[0]:.3f}, {p[1]:.3f}, {p[2]:.3f})"
+
 AXIS_STATES = {
     0: "UNDEFINED", 1: "IDLE", 2: "STARTUP_SEQUENCE",
     3: "FULL_CALIBRATION", 4: "MOTOR_CALIBRATION",
@@ -296,6 +313,10 @@ class ODriveDashboardNode(Node):
         # corrections, independent of the EKF rollout, and still apply.
         self.declare_parameter('linear_scale_x', 0.97)
         self.declare_parameter('linear_scale_y', 1.0)
+        # Odometry samples (~50/s) to keep the published pose pinned after a
+        # serial reconnect or a firmware boot, while the on-MCU EKF settles.
+        # Raise it if the pose still shifts right after a replug.
+        self.declare_parameter('odom_settle_samples', 50)
 
         port             = _find_stm_port(self.get_parameter('serial_port').value)
         baud             = self.get_parameter('baud_rate').value
@@ -366,6 +387,7 @@ class ODriveDashboardNode(Node):
         self._odom_off = (0.0, 0.0, 0.0)
         self._odom_raw = None        # last raw firmware pose (x, y, yaw)
         self._odom_reanchor = False  # set on serial reconnect
+        self._odom_hold = 0          # samples left with the pose pinned
 
         # publishers
         self.pub_raw         = self.create_publisher(String,            'odrive/raw',               10)
@@ -679,6 +701,7 @@ class ODriveDashboardNode(Node):
 
     def _receiver(self):
         reconnect_delay = 2.0
+        skip_line = True  # the first line after opening the port starts mid-line
         while rclpy.ok():
             # No lock here: _serial_write holds it across a blocking write, and if
             # this thread stops draining RX the ST-Link stalls TX -> deadlock.
@@ -695,6 +718,7 @@ class ODriveDashboardNode(Node):
                         self.ser = new_ser
                     self.discovered_node_ids.clear()
                     self._odom_reanchor = True
+                    skip_line = True
                     self.get_logger().info(f"Serial reconnected: {port}")
                 except Exception as e:
                     self.get_logger().warn(
@@ -703,7 +727,7 @@ class ODriveDashboardNode(Node):
                 continue
 
             try:
-                line = ser.readline().decode(errors='ignore').strip()
+                raw_line = ser.readline()
             except Exception as e:  # close() from the writer makes readline raise TypeError
                 self.get_logger().error(f"Serial read: {e}")
                 with self._ser_lock:
@@ -715,6 +739,14 @@ class ODriveDashboardNode(Node):
                         self.ser = None
                 time.sleep(0.5)
                 continue
+            # No terminator = the read timed out mid-line (link dying). Its last
+            # number is cut short but still parses, so it must not reach ROS.
+            if not raw_line.endswith(b'\n'):
+                continue
+            if skip_line:
+                skip_line = False
+                continue
+            line = raw_line.decode(errors='ignore').strip()
             if not line:
                 continue
             # Stamp the STM32→PC link timestamp on every line we successfully
@@ -836,20 +868,38 @@ class ODriveDashboardNode(Node):
         else:
             odom_msg.pose.pose.orientation = _yaw_to_quaternion(o_phi)
 
-        # Keep the pose continuous across a firmware odometry reset: after a
-        # serial reconnect, or when the raw pose jumps further than the base can
-        # move between two samples, re-anchor the offset to the last pose.
+        # Keep the pose continuous across a firmware odometry reset. After a
+        # serial reconnect, and while the firmware is in BOOT/STARTUP (SM_state
+        # 0/1), the pose stays pinned to the last one: the EKF restarts from
+        # zero and keeps shifting until the axes are armed. A raw jump further
+        # than the base can move between two samples re-anchors too.
+        # ponytail: the hold assumes the base is not moving; a push during the
+        # boot goes unseen. Re-localize on release if that ever matters.
         q = odom_msg.pose.pose.orientation
         raw = (o_x, o_y, math.atan2(2.0 * (q.w * q.z + q.x * q.y),
                                     1.0 - 2.0 * (q.y * q.y + q.z * q.z)))
         last = self._odom_raw
-        if last is not None and (
-                self._odom_reanchor
-                or math.hypot(raw[0] - last[0], raw[1] - last[1]) > self._ODOM_JUMP_M
-                or abs(math.remainder(raw[2] - last[2], math.tau)) > self._ODOM_JUMP_RAD):
-            self._odom_off = _reanchor(self._odom_off, last, raw)
-            self.get_logger().warn("Odometry re-anchored to the last pose (reconnect or raw jump)")
-        self._odom_raw, self._odom_reanchor = raw, False
+        if self._odom_reanchor or data.get('SM_state', 2.0) < 2.0:
+            if self._odom_hold == 0 and last is not None:
+                self.get_logger().warn(
+                    "Odometry held at the last pose "
+                    f"({'reconnect' if self._odom_reanchor else 'firmware booting'}): "
+                    f"last raw={_fmt_pose(last)} offset={_fmt_pose(self._odom_off)}")
+            self._odom_hold = int(self.get_parameter('odom_settle_samples').value)
+            self._odom_reanchor = False
+        holding = self._odom_hold > 0
+        off = _anchor(self._odom_off, last, raw, holding,
+                      self._ODOM_JUMP_M, self._ODOM_JUMP_RAD)
+        if off is not self._odom_off and not holding:
+            self.get_logger().warn(
+                "Odometry re-anchored on a raw jump: "
+                f"last raw={_fmt_pose(last)} raw={_fmt_pose(raw)}")
+        self._odom_off, self._odom_raw = off, raw
+        if holding:
+            self._odom_hold -= 1
+            if self._odom_hold == 0:
+                self.get_logger().warn(
+                    f"Odometry released: raw={_fmt_pose(raw)} offset={_fmt_pose(off)}")
         odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y, _ = \
             _se2_mul(self._odom_off, raw)
         cz, sz = math.cos(0.5 * self._odom_off[2]), math.sin(0.5 * self._odom_off[2])
