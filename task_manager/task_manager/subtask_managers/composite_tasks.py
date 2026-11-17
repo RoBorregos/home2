@@ -77,15 +77,10 @@ class CompositeTasks:
         if status != Status.EXECUTION_SUCCESS:
             CLog.nav(self.node, "FAIL", f"Could not reach {place}.", level="error")
             return status
-        if not dock:
-            return Status.EXECUTION_SUCCESS
-        # TODO(navigation): table_docker picks a safe stand-off per surface on its own
-        status, _ = self.nav.dock_table()
-        if status != Status.EXECUTION_SUCCESS:
-            # A fresh approach usually faces the surface again; manipulating undocked fails
-            self.nav.move_to_location(self.room_of(place), place)
-            status, _ = self.nav.dock_table()
-        return status
+        if dock:
+            # TODO(navigation): table_docker picks a safe stand-off per surface on its own
+            self.nav.dock_table()
+        return Status.EXECUTION_SUCCESS
 
     def shelf_heights(self) -> list[float]:
         """Shelf level surface heights (base_link Z), lowest first."""
