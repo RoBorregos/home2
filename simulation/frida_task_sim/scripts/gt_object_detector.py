@@ -12,6 +12,7 @@ import numpy as np
 import rclpy
 import tf2_ros
 from cv_bridge import CvBridge
+from frida_constants.manipulation_constants import TRASH_BIN_NAME
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
     CAMERA_INFO_TOPIC,
@@ -29,7 +30,7 @@ from rclpy.time import Time
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 
-from frida_task_sim import catalog, scenario as scenarios
+from frida_task_sim import catalog, scenario as scenarios, venue as venues
 from frida_task_sim.gz import PoseStream
 from frida_task_sim.world import WORLD_NAME
 
@@ -44,6 +45,13 @@ class GtObjectDetector(Node):
         self.min_depth = self.declare_parameter("min_depth", 0.25).value
         self.objects = {o["id"]: o["name"] for o in scenario["objects"]}
         self.noise = scenario["detector"]
+        furniture = venues.load(scenario["venue"])["furniture"].values()
+        # Bins are static furniture, so their pose comes from the venue instead of Gazebo
+        self.bins = [
+            (np.array([*f["center"], f["height"] / 2]), f["height"], f["radius"])
+            for f in furniture
+            if f["shape"] == "bin"
+        ]
         self.rng = random.Random(self.noise["seed"])
         self.poses = PoseStream(WORLD_NAME, names=[*self.objects, ROBOT_MODEL])
         self.bridge = CvBridge()
@@ -100,14 +108,18 @@ class GtObjectDetector(Node):
         fx, fy, cx, cy = self.info.k[0], self.info.k[4], self.info.k[2], self.info.k[5]
         width, height = self.info.width, self.info.height
         stamp = self.get_clock().now().to_msg()
-        detections = []
+        targets = [(TRASH_BIN_NAME, *b) for b in self.bins]
         for model, name in self.objects.items():
             pose = self.poses.get(model)
             if pose is None:
                 continue
             position, orientation = pose
             h, r = catalog.height(name), catalog.footprint(name)
-            centre = position + orientation.apply([0.0, 0.0, h / 2])
+            targets.append(
+                (name, position + orientation.apply([0.0, 0.0, h / 2]), h, r)
+            )
+        detections = []
+        for name, centre, h, r in targets:
             x, y, z = rotation.apply(centre) + translation
             if not self.min_depth < z < self.max_depth:
                 continue
