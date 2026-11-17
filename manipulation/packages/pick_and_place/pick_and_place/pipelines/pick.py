@@ -162,7 +162,7 @@ def _pick(
     arm.snapshot_scene()
 
     outcome = None
-    for grasp_set in _grasp_sets(perception, perceived, request):
+    for grasp_set in _grasp_sets(perception, perceived, request, strategy_key):
         outcome = _run_strategy(arm, strategy, grasp_set)
         if outcome is not None:
             break
@@ -335,7 +335,7 @@ def _cluster_height(cluster) -> Optional[float]:
 
 
 def _grasp_sets(
-    perception, perceived: Perceived, request: PickRequest
+    perception, perceived: Perceived, request: PickRequest, strategy_key: str = ""
 ) -> Iterator[GraspSet]:
     """Yield batches of candidates, best source first.
 
@@ -348,6 +348,9 @@ def _grasp_sets(
         if perceived.fitted is not None:
             # Already ranked across every approach, flips included.
             poses, scores = list(response.grasps[:5]), list(response.scores[:5])
+        elif strategy_key == PICK_STRATEGY_PLATE:
+            # Every rim azimuth (0, -5, +5 ... deg) and flip clear of neighbours, so a drive through the wrist singularity falls through to the next
+            poses, scores = list(response.grasps), list(response.scores)
         else:
             # A 90 deg alternative would align the fingers with a fork's long axis
             # and collide with it, so the only alternative is the symmetric flip.
@@ -568,10 +571,6 @@ def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
     if strategy_key == PICK_STRATEGY_RIM:
         # Hold where the strategy left the arm; a basket must be carried in place.
         log.info("Rim pick: holding position (skipping return to stare)")
-        return
-
-    if strategy_key == PICK_STRATEGY_PLATE:
-        log.info("Plate pick: holding position (skipping return to stare)")
         return
 
     named = "look_side_stare" if strategy_key == PICK_STRATEGY_PEAK else "table_stare"

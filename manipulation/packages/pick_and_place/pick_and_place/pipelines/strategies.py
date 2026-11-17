@@ -154,6 +154,8 @@ class CartesianApproachPick(PickStrategy):
         pre_grasp = offset_along_approach(candidate.pose, -profile.pre_grasp_height)
         with arm.phase("approach_pre_grasp"):
             arm.clear_octomap()
+            if profile.max_drive_joint_speed is not None:
+                self._check_drive(arm, pre_grasp, approach_axis(candidate.pose))
             if not arm.move_to_pregrasp(pre_grasp, profile.pre_grasp_velocity):
                 raise PickAttemptFailed("pre-grasp unreachable")
 
@@ -161,11 +163,16 @@ class CartesianApproachPick(PickStrategy):
             arm.check_abort()
             distance = profile.effective_descent_distance
             if profile.force_guard:
-                result = arm.force_guarded_descent(
-                    profile.force_guard, approach_axis(candidate.pose)
-                )
+                direction = approach_axis(candidate.pose)
+                result = arm.force_guarded_descent(profile.force_guard, direction)
                 if result.descended_m == 0.0:
                     raise PickAttemptFailed("force-guarded approach could not start")
+                past = result.descended_m - profile.pre_grasp_height
+                arm.logger.info(
+                    f"[{self.name}] {'contact' if result.contact else 'no contact'} "
+                    f"{past * 1000:+.1f} mm past the endpoint along the approach, "
+                    f"{-past * direction[2] * 1000:+.1f} mm below it"
+                )
                 arm.close_gripper(settle_s=profile.close_settle)
             elif not arm.cartesian_approach(
                 approach_axis(candidate.pose),
@@ -188,6 +195,23 @@ class CartesianApproachPick(PickStrategy):
                 )
 
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
+
+    def _check_drive(self, arm, pre_grasp, direction) -> None:
+        """Skip the candidate before moving if its drive crosses the wrist singularity."""
+        profile, guard = self.profile, self.profile.force_guard
+        if guard is not None:
+            distance = guard.max_descent or profile.pre_grasp_height
+            speed = guard.descent_speed
+        else:
+            distance, speed = profile.effective_descent_distance, profile.descent_speed
+        rate = arm.drive_joint_rate(pre_grasp, direction, distance)
+        if rate is None:
+            raise PickAttemptFailed("no IK along the drive")
+        joint_speed = rate * speed / 1000.0
+        if joint_speed > profile.max_drive_joint_speed:
+            raise PickAttemptFailed(
+                f"drive crosses the wrist singularity ({joint_speed:.2f} rad/s)"
+            )
 
 
 class ForceGuardedDescentPick(PickStrategy):

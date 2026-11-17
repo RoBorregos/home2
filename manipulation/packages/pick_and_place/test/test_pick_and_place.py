@@ -201,6 +201,17 @@ def test_plate_approach_is_force_guarded_and_the_grasp_closes_either_way(
     )
 
 
+@pytest.mark.parametrize("rate", [None, 100.0])
+def test_plate_skips_a_drive_through_the_wrist_singularity_before_moving(
+    strategies, rate
+):
+    """A wrist flip mid-drive is xArm C24, which aborts the whole task."""
+    arm = FakeArm(drive_rates=[rate])  # rad/m: 100 at 12 mm/s is 1.2 rad/s
+    with pytest.raises(PickAttemptFailed, match="singularity|no IK"):
+        strategies["plate"].attempt(arm, candidate())
+    assert "move_to_pregrasp" not in arm.calls
+
+
 def test_plate_approach_fails_when_the_guard_never_ran(strategies):
     arm = FakeArm(contact_results=[ContactResult(contact=False, descended_m=0.0)])
     with pytest.raises(PickAttemptFailed, match="could not start"):
@@ -838,6 +849,9 @@ def test_plate_newtons_to_contact_are_independent_of_flat(tmp_path):
         ("flat", "force_guard.jump_trip", 99.0, "hard_ceiling"),
         ("flat", "force_guard.timeout", 2.0, "less than pre_grasp_height"),
         ("plate", "force_guard.jump_trip", 99.0, "hard_ceiling"),
+        ("plate", "force_guard.max_descent", 0.5, "less than max_descent"),
+        ("plate", "force_guard.min_contact_descent", 0.06, "below max_descent"),
+        ("plate", "max_drive_joint_speed", 0.0, "max_drive_joint_speed"),
         ("gpd", "num_alternatives", 0, "num_alternatives"),
         ("rim", "pre_grasp_height", "abc", "must be a float"),
         ("rim", "descent_speed", 0.0, "descent_speed"),

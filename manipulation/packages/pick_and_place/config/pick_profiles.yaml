@@ -56,19 +56,21 @@ plate:
   <<: *defaults
   strategy: cartesian
   tip_offset_param: geometric_tip_offset
-  pre_grasp_height: 0.05
+  pre_grasp_height: 0.035
   pre_grasp_velocity: 0.5
-  post_grasp_height: 0.25
+  post_grasp_height: 0.0
   descent_speed: 12.0
   validate_endpoint: true
   lift_after_grasp: false
   attach_collision_object: true
   fallback_to_gpd: true
+  max_drive_joint_speed: 0.5
   force_guard:
     <<: *force_guard
-    timeout: 4.2 # s, 0.05 m at 12 mm/s
+    max_descent: 0.055 # m on the TCP, pre_grasp_height + 0.02: drives up to 20 mm (~11 mm lower) past the endpoint until the finger touches the table (camera's table reads up to ~1 cm off)
+    timeout: 7.0 # s, safety net only: 0.055 m at 12 mm/s is 4.6 s
     min_contact_descent: 0.02 # m
-    jump_trip: 1.5 # N over jump_window that counts as contact
+    jump_trip: 2.5 # N over jump_window that counts as contact
     hard_ceiling: 10 # N, last-resort stop
 # Baskets: straddle the rim so the fingers close around the wall.
 rim:

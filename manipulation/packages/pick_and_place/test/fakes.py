@@ -79,6 +79,7 @@ class FakeArm:
         descent_results: Optional[List[bool]] = None,
         contact_results: Optional[List[ContactResult]] = None,
         self_collides: Optional[List[bool]] = None,
+        drive_rates: Optional[List[Optional[float]]] = None,
         attach_result: Optional[AttachResult] = None,
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
@@ -118,6 +119,7 @@ class FakeArm:
         self._descent_results = list(descent_results or [])
         self._contact_results = list(contact_results or [])
         self._self_collides = list(self_collides or [])
+        self._drive_rates = list(drive_rates or [])
         self._named_position_results = list(named_position_results or [])
         self._attach_result = attach_result or AttachResult(
             attached=True, lowest_object=FakeObject(), highest_object=FakeObject()
@@ -209,6 +211,10 @@ class FakeArm:
         self.calls.append("endpoint_self_collides")
         self.poses["endpoint_self_collides"].append(pose)
         return self._next(self._self_collides, False)
+
+    def drive_joint_rate(self, pose, direction, distance):
+        self.calls.append("drive_joint_rate")
+        return self._next(self._drive_rates, 0.0)
 
     # --- gripper and scene --------------------------------------------------
 

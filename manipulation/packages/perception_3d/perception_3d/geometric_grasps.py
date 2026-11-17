@@ -4,7 +4,7 @@ from typing import Callable
 
 import numpy as np
 import scipy.ndimage as ndi
-from scipy.spatial import ConvexHull, cKDTree
+from scipy.spatial import cKDTree
 from scipy.spatial.transform import Rotation
 
 from frida_constants.manipulation_constants import (
@@ -30,6 +30,7 @@ from frida_constants.manipulation_constants import (
     RIM_NAMES,
     TOP_GRASP_DEPTH,
     TRASH_BIN_NAME,
+    ZED_DEPTH_SCALE,
 )
 
 GRASP_CLASS_OBJECTS = {
@@ -131,12 +132,25 @@ SHAPE_CLASS = {
 
 LEDGE_DIRECTION = np.array([0.0, 1.0])
 PLATE_TABLE_BAND = 0.04
+PLATE_TABLE_FIT = 0.005
+PLATE_EDGE_FIT = 0.01
+PLATE_DIAMETER = (0.12, 0.60)
 PLATE_TILT = 35  # gripper geometry based
-PLATE_TABLE_PUSH = 0.007  # 7 mm below the table so the fingertip presses
-PLATE_MIN_DEPTH = 0.010  # m the lower fingertip ends up under the lip: enough for the pads to hold the rim
-GRIPPER_TIP_THICKNESS = 0.003
+PLATE_TABLE_CLEARANCE = -0.011
 PLATE_SWEEP = 15
 PLATE_SWEEP_STEP = 5
+PLATE_PRE_GRASP = 0.035
+PLATE_PAST_ENDPOINT = 0.02
+PLATE_NEIGHBOUR_MARGIN = 0.01
+PLATE_SWEEP_GROW = np.array(
+    [
+        [-PLATE_NEIGHBOUR_MARGIN] * 2
+        + [PRE_GRASP_DISTANCE - PLATE_PRE_GRASP - PLATE_NEIGHBOUR_MARGIN],
+        [PLATE_NEIGHBOUR_MARGIN] * 2 + [PLATE_PAST_ENDPOINT + PLATE_NEIGHBOUR_MARGIN],
+    ]
+)
+PLATE_FINGER_SWEEP = FINGER_SWEEP + PLATE_SWEEP_GROW
+PLATE_BODY_SWEEP = BODY_SWEEP + PLATE_SWEEP_GROW
 
 UP = np.array([0.0, 0.0, 1.0])
 
@@ -181,6 +195,7 @@ class Scene:
 
     def deproject(self, u, v, z) -> np.ndarray:
         u, v, z = map(np.atleast_1d, (u, v, z))
+        z = z * ZED_DEPTH_SCALE
         k = self.intrinsics
         cam = np.column_stack(
             ((u - k.cx) * z / k.fx, (v - k.cy) * z / k.fy, z, np.ones_like(z))
@@ -233,6 +248,19 @@ def above_support(points: np.ndarray, margin: float) -> tuple:
     return support_z, above if len(above) >= MIN_POINTS_FOR_PCA else points
 
 
+def depth_edges(depth: np.ndarray) -> np.ndarray:
+    """Pixels on either side of a depth step larger than DEPTH_JUMP (NaN = no depth)."""
+    with np.errstate(invalid="ignore"):
+        jump_v = np.abs(np.diff(depth, axis=0)) > DEPTH_JUMP
+        jump_u = np.abs(np.diff(depth, axis=1)) > DEPTH_JUMP
+    edges = np.zeros(depth.shape, dtype=bool)
+    edges[1:] |= jump_v
+    edges[:-1] |= jump_v
+    edges[:, 1:] |= jump_u
+    edges[:, :-1] |= jump_u
+    return edges
+
+
 def segment(scene: Scene, margin: float) -> tuple:
     # Object = blob with most pixels in the bbox; everything else is an obstacle.
     xmin, ymin, xmax, ymax = scene.bbox
@@ -256,15 +284,8 @@ def segment(scene: Scene, margin: float) -> tuple:
 
     with np.errstate(invalid="ignore"):
         above = xyz[..., 2] > support_z + margin
-        jump_v = np.abs(np.diff(depth, axis=0)) > DEPTH_JUMP
-        jump_u = np.abs(np.diff(depth, axis=1)) > DEPTH_JUMP
-    edges = np.zeros_like(above)
-    edges[1:] |= jump_v
-    edges[:-1] |= jump_v
-    edges[:, 1:] |= jump_u
-    edges[:, :-1] |= jump_u
 
-    labels, _ = ndi.label(above & ~edges)
+    labels, _ = ndi.label(above & ~depth_edges(depth))
     counts = np.bincount(labels[inside])
     counts[0] = 0
     target = np.argmax(counts)
@@ -407,50 +428,112 @@ def fit_box(points: np.ndarray, trim: float = 1) -> tuple:
     return center, axes[k], axes[j], high[k] - low[k], high[j] - low[j]
 
 
-def fit_plate(points: np.ndarray) -> tuple:
-    "Center an outer diameter"
-    outline = points[ConvexHull(points[:, :2]).vertices, :2]
+def fit_circle(xy: np.ndarray) -> tuple:
+    """center, radius"""
     sol = np.linalg.lstsq(
-        np.column_stack((2 * outline, np.ones(len(outline)))),
-        (outline**2).sum(axis=1),
-        rcond=None,
+        np.column_stack((2 * xy, np.ones(len(xy)))), (xy**2).sum(axis=1), rcond=None
     )[0]
-    return sol[:2], 2 * np.sqrt(sol[2] + sol[:2] @ sol[:2])
+    return sol[:2], np.sqrt(sol[2] + sol[:2] @ sol[:2])
+
+
+def fit_plate(scene: Scene) -> tuple:
+    """Plate circle (center, radius), table plane (a, b, c) and neighbour points: plane from the ring around the bbox, circle from the near half of the blob over it (the far edge smears)."""
+    xmin, ymin, xmax, ymax = scene.bbox
+    rows, cols = scene.depth.shape
+    pad_x = int((xmax - xmin) * NEIGHBOUR_PAD)
+    pad_y = int((ymax - ymin) * NEIGHBOUR_PAD)
+    x0, y0 = max(0, xmin - pad_x), max(0, ymin - pad_y)
+    window = replace(
+        scene, bbox=(x0, y0, min(cols, xmax + pad_x), min(rows, ymax + pad_y))
+    )
+    valid = window.valid
+    v, u = np.nonzero(valid)
+    xyz = np.full(valid.shape + (3,), np.nan)
+    xyz[v, u] = scene.deproject(u + x0, v + y0, window.roi[v, u])
+    inside = np.zeros_like(valid)
+    inside[ymin - y0 : ymax - y0, xmin - x0 : xmax - x0] = True
+
+    level = np.nanmedian(xyz[inside, 2])
+    ring = xyz[valid & ~inside]
+    ring = ring[
+        (ring[:, 2] > level - PLATE_TABLE_BAND) & (ring[:, 2] < level + PLATE_CUT)
+    ]
+    require(
+        len(ring) >= MIN_POINTS_FOR_PCA,
+        "no table visible around the plate, may hit the table",
+    )
+    plane = np.array([0.0, 0.0, np.median(ring[:, 2])])
+    flat = np.column_stack((ring[:, :2], np.ones(len(ring))))
+    for _ in range(3):
+        near = np.abs(flat @ plane - ring[:, 2]) < PLATE_TABLE_FIT
+        require(near.sum() >= MIN_POINTS_FOR_PCA, "table around the plate not flat")
+        plane = np.linalg.lstsq(flat[near], ring[near, 2], rcond=None)[0]
+
+    depth = window.roi.astype(float)
+    depth[~valid] = np.nan
+    with np.errstate(invalid="ignore"):
+        height = xyz[..., 2] - xyz[..., :2] @ plane[:2] - plane[2]
+        standing = (height > PLATE_CUT) & (height < PLATE_TABLE_BAND)
+    labels, _ = ndi.label(ndi.binary_opening(standing & ~depth_edges(depth)))
+    counts = np.bincount(labels[inside])
+    counts[0] = 0
+    require(counts.max() >= MIN_POINTS_FOR_PCA, "no plate over the table")
+    blob = ndi.binary_fill_holes(labels == np.argmax(counts))
+    outline = xyz[blob & ~ndi.binary_erosion(blob), :2]
+    outline = outline[np.isfinite(outline).all(axis=1)]
+    require(len(outline) >= MIN_POINTS_FOR_PCA, "plate outline not visible")
+
+    center, radius = fit_circle(outline)
+    # Refit on the half nearest the circle: a touching neighbour merges into the blob and drags the first fit
+    for _ in range(3):
+        res = np.abs(np.linalg.norm(outline - center, axis=1) - radius)
+        center, radius = fit_circle(outline[res <= np.median(res)])
+    camera = scene.cam_to_base[:2, 3]
+    for _ in range(3):
+        offset = outline - center
+        keep = (np.abs(np.linalg.norm(offset, axis=1) - radius) < PLATE_EDGE_FIT) & (
+            offset @ (camera - center) > 0
+        )
+        require(keep.sum() >= MIN_POINTS_FOR_PCA, "near edge of the plate not visible")
+        center, radius = fit_circle(outline[keep])
+    require(
+        PLATE_DIAMETER[0] < 2 * radius < PLATE_DIAMETER[1],
+        f"plate measured {200 * radius:.0f} cm wide",
+    )
+    with np.errstate(invalid="ignore"):
+        outside = np.linalg.norm(xyz[..., :2] - center, axis=-1) > radius + SELF_MARGIN
+        neighbours = xyz[((height > PLATE_CUT) & outside) | (height > PLATE_TABLE_BAND)]
+    return center, radius, plane, neighbours
 
 
 def plate(scene: Scene) -> tuple:
-    points = scene.points(scene.valid)
-    median = np.median(points[:, 2])
-    center, diameter = fit_plate(points[points[:, 2] > median])
-    radius = diameter / 2
-    require(radius > 1e-3, "plate measured wrong")
-    table = points[
-        (points[:, 2] < median - PLATE_CUT) & (points[:, 2] > median - PLATE_TABLE_BAND)
-    ]
-    require(
-        len(table) >= MIN_POINTS_FOR_PCA,
-        "no table visible around the plate, may hit the table",
-    )
+    center, radius, plane, neighbours = fit_plate(scene)
     tilt = np.radians(PLATE_TILT)
-    z = (
-        np.median(table[:, 2])
-        - PLATE_TABLE_PUSH
-        + GRIPPER_MAX_APERTURE / 2 * np.cos(tilt)
-    )
-    lip = (
-        GRIPPER_MAX_APERTURE / 2 * np.sin(tilt)
-        + (PLATE_TABLE_PUSH + GRIPPER_TIP_THICKNESS) / np.tan(tilt)
-        + PLATE_MIN_DEPTH
-    )
+    lip = GRIPPER_MAX_APERTURE / 2 * np.sin(tilt)
     grasps = []
     for azimuth in sorted(
         range(-PLATE_SWEEP, PLATE_SWEEP + 1, PLATE_SWEEP_STEP), key=abs
     ):
         out = turn(LEDGE_DIRECTION, azimuth)
-
+        finger = center + radius * out
+        z = (
+            plane @ [*finger, 1.0]
+            + PLATE_TABLE_CLEARANCE
+            + GRIPPER_MAX_APERTURE / 2 * np.cos(tilt)
+        )
         tip = np.array([*(center + (radius - lip) * out), z])
         approach = np.array([*(-out * np.cos(tilt)), -np.sin(tilt)])
-        grasps.append(Grasp(tip, grasp_frame(approach, UP), f"az{azimuth:+d}"))
+        rotation = Rotation.from_quat(grasp_frame(approach, UP)).as_matrix()
+        flange = tip - approach * GRIPPER_REACH
+        for sign, suffix in ((1, ""), (-1, " flipped")):
+            flipped = rotation * [sign, sign, 1]
+            hits = count_inside(
+                (neighbours - tip) @ flipped, PLATE_FINGER_SWEEP
+            ) + count_inside((neighbours - flange) @ flipped, PLATE_BODY_SWEEP)
+            if hits < OBSTACLE_MIN_POINTS:
+                orientation = Rotation.from_matrix(flipped).as_quat()
+                grasps.append(Grasp(tip, orientation, f"az{azimuth:+d}{suffix}", 1.0))
+    require(grasps, "a neighbour blocks every rim grasp")
     return None, grasps
 
 
@@ -573,6 +656,16 @@ def pad_contact(center, normal, extent, bottom, span, tip, rotation) -> np.ndarr
     return section[on_pads]
 
 
+def behind_near_limb(
+    xy: np.ndarray, center: np.ndarray, camera: np.ndarray, radius: float
+) -> np.ndarray:
+    """Sphere centre: one radius behind the near limb (the far limb is trimmed)."""
+    ahead = center - camera[:2]
+    direction = ahead / max(np.linalg.norm(ahead), 1e-6)
+    near = np.percentile((xy - camera[:2]) @ direction, 1)
+    return center + direction * (near + radius - ahead @ direction)
+
+
 def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     """Rank grasps on a segmented solid of the given class; returns (fit, grasps)."""
     support_z, points, obstacles = segmented
@@ -580,6 +673,10 @@ def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     top_z = np.percentile(points[:, 2], SOLID_TOP_PERCENTILE)
     center, short_axis, long_axis, short, long = fit_box(points)
     require(np.linalg.norm(center) > 1e-6, "object at the robot origin")
+    if grasp_class == GRASP_CLASS_ROUND:
+        center = behind_near_limb(
+            points[:, :2], center, scene.cam_to_base[:3, 3], (top_z - support_z) / 2
+        )
     away = center / np.linalg.norm(center)
     middle = np.array([*center, (support_z + top_z) / 2])
     top_tip_z = max(top_z - TOP_GRASP_DEPTH, support_z + TABLE_CLEARANCE)
