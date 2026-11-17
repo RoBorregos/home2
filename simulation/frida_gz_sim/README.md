@@ -223,7 +223,7 @@ Navigation-only pieces:
 
 ## Shelf detection check
 
-Grades the model-free shelf detection (`perception_3d/scripts/shelf_detector.py`)
+Grades the model-free shelf detection (`perception_3d/perception_3d/shelf_service.py`)
 on cabinets that differ in level count, spacing, depth, walls and docking error,
 each with and without objects (`frida_gz_sim/shelf_scenes.py`). The robot is static
 and the shelf sits 15-20 cm in front of it, as navigation leaves it.
@@ -235,7 +235,7 @@ bash /workspace/src/simulation/frida_gz_sim/scripts/run_shelf_checks.sh
 ros2 run frida_gz_sim shelf_world.py competition 1 /tmp/shelf.sdf
 ros2 launch frida_gz_sim sim.launch.py world:=/tmp/shelf.sdf grasp_assist:=false
 ros2 launch frida_gz_sim sim_manipulation.launch.py
-ros2 param set /shelf_detector depth_scale 1.0   # gz depth is exact, no ZED correction
+ros2 param set /grasp_generator shelf.depth_scale 1.0   # gz depth is exact, no ZED correction
 ros2 run frida_gz_sim sim_shelf_check.py --ros-args -p scene:=competition \
     -p objects:=true -p video:=/workspace/sim_logs/shelf.mp4
 ```

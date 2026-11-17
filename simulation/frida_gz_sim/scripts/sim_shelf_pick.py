@@ -1,17 +1,7 @@
 #!/usr/bin/env python3
-"""Shelf pick check: the keyboard_input -11 flow, end to end, in Gazebo.
+"""Shelf pick (and place) check in Gazebo: the keyboard_input -14/-11 flow end to end.
 
-1. Measure the shelf (survey poses + DetectShelf), no per-arena heights.
-2. Face the requested level at its MEASURED height.
-3. Clear the octomap and pick the object with the shelf pick (scan_environment).
-4. Check the shelf boards/walls were in the planning scene during the pick, the
-   pick succeeded and the object left the shelf.
-
-    ros2 run frida_gz_sim sim_shelf_pick.py --ros-args -p scene:=competition \
-        -p level:=2 -p label:=bottle -p video:=/workspace/sim_logs/shelf_pick.mp4
-
-Needs the world from ``shelf_world.py <scene> <0|1> <out.sdf> pick`` and the sim
-vision stack (sim_vision.launch.py) for the detection.
+Run through scripts/run_shelf_pick.sh; passes when the object leaves (or lands on) its board.
 """
 
 import json

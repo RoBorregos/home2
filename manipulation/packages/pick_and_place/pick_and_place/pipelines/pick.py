@@ -13,6 +13,8 @@ from typing import Iterator, List, Optional, Tuple
 
 import numpy as np
 from frida_constants.manipulation_constants import (
+    CARTESIAN_PLANNER,
+    EEF_LINK_NAME,
     GRIPPER_MAX_APERTURE,
     GRIPPER_REACH,
     PICK_MAX_DISTANCE,
@@ -73,16 +75,11 @@ FLAT_GRASP_Z_TWEAK = 0.076
 # Objects shorter than this cannot be grasped from a reversed approach.
 MIN_REVERSIBLE_HEIGHT = 0.06
 
-# Shelf pick clustering band: crop to the compartment between the board under the
-# object and the one above, this far inside both. The detection point may sit up
-# to the tolerance under its own board surface.
+# Shelf clustering crops to the object's compartment, this far inside its boards.
 SHELF_BAND_MARGIN = 0.01
-SHELF_BAND_DOWN_TOLERANCE = 0.05
+SHELF_BAND_DOWN_TOLERANCE = 0.05  # a detection point may sit this far under its board
 
-# Shelf frontal grasp: reach horizontally into the compartment, fingers closing
-# across the object, the ZED (it hangs under the palm) turned up off the board.
-# GPD, seeing the object from above, proposes tilted grasps that do not fit a
-# ~26 cm compartment. Heights are of the fingertip point, base frame.
+# Shelf frontal grasp (fingertip heights, base frame): GPD's tilted grasps do not fit a compartment.
 SHELF_FRONTAL_BOARD_CLEARANCE = 0.06  # fingertips this far above the board
 SHELF_FRONTAL_CEILING_CLEARANCE = 0.06  # ...and this far under the ceiling
 SHELF_FRONTAL_TOP_MARGIN = 0.02  # never above the object's top minus this
@@ -90,29 +87,15 @@ SHELF_FRONTAL_Z_STEPS = (0.0, 0.025, -0.025)
 SHELF_FRONTAL_WIDTH_MARGIN = 0.01  # the object must fit the open gripper
 SHELF_FRONTAL_MAX_HALF_DEPTH = 0.05
 SHELF_FRONTAL_PAST_CENTER = 0.03  # the finger pads sit behind the fingertip point
-# Approach tilt down from horizontal, tried in order. Measured with MoveIt IK in the
-# Gazebo competition cabinet (robot 15-20 cm away, board at 0.39 m): a horizontal
-# approach cannot fold the flange closer than x ~0.47 m at that height, so its 6 cm
-# pre-grasp falls out of reach; 10 deg down reaches flange x 0.44-0.56 m.
+# Tilt down from horizontal, in order; level alone cannot reach a 0.39 m board (sim IK).
 SHELF_FRONTAL_PITCHES = (10.0, 0.0, 20.0)
-# Extra, steeper tilts for a level with nothing above it (the top of a cabinet).
-# Measured in Gazebo on a 1.30 m top shelf: the grasp sits ~1.40 m high, where the
-# flange cannot reach in level or 10 deg down; coming from above, it sits higher and
-# further back, inside the arm's comfortable range.
+# Steeper tilts for a level with nothing above it: a 1.30 m top shelf is only reachable so (sim).
 SHELF_FRONTAL_OPEN_TOP_PITCHES = (30.0, 45.0)
-# Leaving the compartment with the object: off the board, then straight back out.
+# Leaving the compartment: a straight MoveIt path this far up and back out.
 SHELF_EXIT_LIFT = 0.02
 SHELF_EXIT_RETREAT = 0.15
-# A cartesian velocity move near a singularity needs fast joint turns: on FRIDA the
-# xArm stopped with C24 (speed exceeds limit) on the 2 cm lift after shelf grasps,
-# once at the wrist singularity (joint5 -13 deg) and once with the elbow nearly
-# stretched (joint3 -155 deg, a box high on the left), and the stop could open the
-# gripper. The exit runs as planned joint moves (time-parameterised within the
-# joint limits) to the IK of each exit pose; the cartesian move is only a slow
-# fallback when that is not possible.
-SHELF_EXIT_MAX_JOINT_STEP = np.radians(40.0)  # more means an IK branch flip
-SHELF_EXIT_JOINT_VELOCITY = 0.15
-SHELF_EXIT_FALLBACK_SPEED = 15.0  # mm/s, cartesian fallback without a joint move
+SHELF_EXIT_VELOCITY = 0.3
+SHELF_RETURN_VELOCITY = 0.75
 
 # The ZED hangs below the gripper and grazes the shelf surface on a low frontal
 # grasp; the offset is used to decide whether flipping lifts the camera clear.
@@ -213,8 +196,7 @@ def _pick(
     outcome = None
     frontal = _shelf_frontal_set(arm, perceived) if request.is_shelf else None
     if frontal is not None:
-        # Pre-grasp in front of the object, straight in, close: the cartesian
-        # strategy the geometric picks use.
+        # Pre-grasp, straight in, close: the geometric picks' cartesian strategy.
         outcome = _run_strategy(arm, strategies[PICK_STRATEGY_GEOMETRIC], frontal)
     if outcome is None:
         for grasp_set in _grasp_sets(perception, perceived, request):
@@ -242,7 +224,7 @@ def _pick(
             outcome.place_top_down = True
             outcome.object_pick_height = _top_down_pick_height(outcome.object_height)
     if request.is_shelf:
-        _shelf_exit(arm, outcome.pick_pose)
+        _shelf_exit(arm)
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
@@ -344,14 +326,7 @@ def _perceive_cluster(arm, perception, request: PickRequest) -> Optional[Perceiv
 
 
 def _shelf_band(arm, point: PointStamped) -> Optional[Tuple[float, float]]:
-    """The compartment of the last shelf scan the object sits in, as a Z band.
-
-    The cluster service's default band (object -/+ 0.3 m) holds the board below,
-    the board above and the walls of a closed cabinet, so the object merges with
-    them into one cluster too large to keep. Measured in the Gazebo competition
-    cabinet: 6038 points (over the 6000 limit) with the default band, 253 (the
-    bottle alone) cropped to the compartment. None without a scan: the default band.
-    """
+    """Z band of the object's compartment; the default -/+0.3 m band merges it with the boards."""
     levels = arm.shelf_levels()
     if not levels:
         arm.logger.warn("No shelf scan: clustering with the default height band")
@@ -385,7 +360,11 @@ def _shelf_frontal_set(arm, perceived: Perceived) -> Optional[GraspSet]:
     )
     poses = shelf_frontal_grasps(points, perceived.band, cloud.header.frame_id)
     if not poses:
-        arm.logger.info("Shelf frontal grasp: the object does not fit; using GPD")
+        size = np.ptp(points, axis=0) if len(points) else np.zeros(3)
+        arm.logger.info(
+            f"Shelf frontal grasp: a {size[0]:.2f} x {size[1]:.2f} x {size[2]:.2f} m "
+            f"cluster ({len(points)} points) does not fit; using GPD"
+        )
         return None
     # The cartesian approach drives the xArm TCP, whose frame is link_base.
     if cloud.header.frame_id != "link_base":
@@ -405,17 +384,10 @@ def _shelf_frontal_set(arm, perceived: Perceived) -> Optional[GraspSet]:
 
 
 def shelf_frontal_grasps(points, band, frame_id: str) -> List[PoseStamped]:
-    """Frontal grasps into a shelf compartment, from the object's cluster.
+    """Frontal grasps from a z-up cluster in compartment ``band`` (max_z 0: nothing above).
 
-    ``points`` (N, 3) are the object's cluster in a z-up base frame with x pointing
-    away from the robot; ``band`` is its compartment (min_z, max_z) with max_z 0
-    when nothing is above. The fingertip point goes just past the middle of the
-    object (front face + half its depth + SHELF_FRONTAL_PAST_CENTER), at mid height
-    between board and object top, kept clear of the board and the ceiling. The
-    approach is +x tilted down by each of SHELF_FRONTAL_PITCHES (plus the steeper
-    SHELF_FRONTAL_OPEN_TOP_PITCHES with nothing above), the fingers close
-    across y, and the ZED (it hangs under the palm) is turned up. Ordered by height,
-    then pitch. Empty when the object is too wide for the gripper or no height fits.
+    Tip just past the object's middle at mid height, approach +x tilted down, closing
+    across y, camera up; ordered by height then pitch, empty when the object does not fit.
     """
     if points is None or len(points) < 10 or band is None:
         return []
@@ -445,9 +417,6 @@ def shelf_frontal_grasps(points, band, frame_id: str) -> List[PoseStamped]:
         if all(abs(h - other) > 0.01 for other in heights):
             heights.append(h)
 
-    # Approach along +x tilted down by each pitch, closing across y; the ZED offset
-    # (local -x) points up. The fingertip point sits past the object's middle: the
-    # finger pads are behind the tip.
     pitches = SHELF_FRONTAL_PITCHES
     if not band[1]:  # nothing above: steeper approaches cannot hit a ceiling
         pitches = pitches + SHELF_FRONTAL_OPEN_TOP_PITCHES
@@ -474,13 +443,7 @@ def shelf_frontal_grasps(points, band, frame_id: str) -> List[PoseStamped]:
 def compartment_band(
     z: float, levels, margin: float = SHELF_BAND_MARGIN
 ) -> Optional[Tuple[float, float]]:
-    """(min_z, max_z) of the compartment holding a point at height ``z``.
-
-    ``levels`` are (surface height, thickness) of the boards, any order. The floor
-    is the highest board surface at or just under ``z`` (a detection point can sit
-    a little under its own surface); the ceiling is the underside of the next board
-    up. max_z is 0 on the top level (nothing above: the service default there).
-    """
+    """(min_z, max_z) of the compartment at ``z`` from (height, thickness) boards; max_z 0 on top."""
     ordered = sorted(levels)
     below = [lv for lv in ordered if lv[0] - SHELF_BAND_DOWN_TOLERANCE <= z]
     if not below:
@@ -759,85 +722,53 @@ def _top_down_pick_height(object_height: float) -> float:
 # ======================================================================
 
 
-def _shelf_exit(arm, pick_pose: Optional[PoseStamped]) -> None:
-    """Leave the compartment with the object: off the board, then straight out.
-
-    A planned move from inside the compartment to a stare pose can sweep the held
-    object through the ceiling or the walls; backing out along the way in avoids
-    that. Cartesian moves are in link_base (the xArm TCP frame), so the retreat
-    only runs for grasps expressed there; Z is the same in both base frames.
-    """
-    steps = [(np.array([0.0, 0.0, 1.0]), SHELF_EXIT_LIFT)]
-    in_link_base = pick_pose is not None and pick_pose.header.frame_id == "link_base"
-    if in_link_base:
-        back = -approach_axis(pick_pose)
-        back[2] = 0.0
-        norm = float(np.linalg.norm(back))
-        if norm >= 0.5:  # a steep grasp has no meaningful "straight back"
-            steps.append((back / norm, SHELF_EXIT_RETREAT))
+def _shelf_exit(arm) -> bool:
+    """Lift off the board, then back out along the way in, as straight MoveIt paths."""
+    target = arm.link_pose(EEF_LINK_NAME)  # straight-line plans always move link_eef
+    if target is None:
+        return False
+    back = -approach_axis(target)
+    back[2] = 0.0
+    norm = float(np.linalg.norm(back))
+    steps = [np.array([0.0, 0.0, SHELF_EXIT_LIFT])]
+    if norm >= 0.5:  # a steep grasp has no meaningful "straight back"
+        steps.append(back / norm * SHELF_EXIT_RETREAT)
     with arm.phase("shelf_exit"):
-        target = copy.deepcopy(pick_pose) if in_link_base else None
-        for direction, distance in steps:
-            if target is not None:
-                target.pose.position.x += float(direction[0]) * distance
-                target.pose.position.y += float(direction[1]) * distance
-                target.pose.position.z += float(direction[2]) * distance
-            if target is not None and _exit_step_by_joints(arm, target):
-                continue
-            arm.logger.warn("Shelf exit: slow cartesian fallback")
-            arm.cartesian_approach(direction, distance, SHELF_EXIT_FALLBACK_SPEED)
-
-
-def _exit_step_by_joints(arm, target: PoseStamped) -> bool:
-    """One shelf exit step as a planned joint move to the IK of ``target``."""
-    current = arm.current_joints()
-    if not current:
-        return False
-    solution = arm.solve_ik(target, seed=current)
-    if solution is None:
-        arm.logger.warn("Shelf exit: no IK for the exit step")
-        return False
-    step = max(abs(solution[n] - current[n]) for n in solution if n in current)
-    if step > SHELF_EXIT_MAX_JOINT_STEP:
-        arm.logger.warn(
-            f"Shelf exit: IK turns a joint {np.degrees(step):.0f} deg; not using it"
-        )
-        return False
-    try:
-        moved = arm.move_joints(
-            {"joints": solution, "degrees": False},
-            velocity=SHELF_EXIT_JOINT_VELOCITY,
-        )
-    except Exception as e:  # a planning-side failure must not abort the pick
-        arm.logger.warn(f"Shelf exit: joint move raised {e!r}")
-        moved = False
-    if not moved:
-        arm.logger.warn("Shelf exit: joint move failed")
-    return bool(moved)
+        for step in steps:
+            target = copy.deepcopy(target)
+            target.pose.position.x += float(step[0])
+            target.pose.position.y += float(step[1])
+            target.pose.position.z += float(step[2])
+            if not arm.move_to_pose(
+                target,
+                velocity=SHELF_EXIT_VELOCITY,
+                planner_id=CARTESIAN_PLANNER,
+                target_link=EEF_LINK_NAME,
+            ):
+                arm.logger.warn(
+                    "Shelf exit: no straight path; the return plans around the boxes"
+                )
+                return False
+    return True
 
 
 def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
     """Where the arm goes once it is holding the object."""
     log = arm.logger
-
-    if is_shelf:
-        # Retract to front_stare first to clear the compartment ceiling; the
-        # strategy-specific return below still runs afterwards.
-        log.info("Shelf pick: retracting to front_stare")
-        with arm.phase("return/front_stare"):
-            arm.move_to_named_position("front_stare", velocity=0.3)
-
     if strategy_key == PICK_STRATEGY_RIM:
-        # Hold where the strategy left the arm; a basket must be carried in place.
-        log.info("Rim pick: holding position (skipping return to stare)")
+        log.info(
+            "Rim pick: holding position (a basket is carried where it was grasped)"
+        )
         return
 
     named = "look_side_stare" if strategy_key == PICK_STRATEGY_PEAK else "table_stare"
+    # The shelf boxes are still in the scene, so one planned move leaves the shelf.
+    velocity = SHELF_RETURN_VELOCITY if is_shelf else 0.5
     log.info(f"Returning to {named}")
     with arm.phase(f"return/{named}"):
         for _ in range(5):
             arm.clear_octomap()
-            if arm.move_to_named_position(named, velocity=0.5):
+            if arm.move_to_named_position(named, velocity=velocity):
                 return
         log.warn(f"Could not return to {named} after 5 attempts")
 

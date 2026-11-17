@@ -86,12 +86,10 @@ class FakeArm:
         shelf_scan: bool = False,
         shelf_levels: Optional[List[tuple]] = None,
         shelf_extent: Optional[tuple] = None,
-        joints: Optional[dict] = None,
-        ik_solution: Optional[dict] = None,
+        link_pose: Optional[PoseStamped] = None,
     ):
         self._estop = estop
-        # Whether a shelf scan is available to restore (DetectShelf would refuse
-        # without one, or when the base moved since it).
+        # Whether a shelf scan can be restored (none yet, or the base moved since).
         self._shelf_scan = shelf_scan
         # (height, thickness) of the scanned boards; empty = no scan.
         self._shelf_levels = list(shelf_levels or [])
@@ -114,9 +112,8 @@ class FakeArm:
         self.published_place_poses: List[PoseStamped] = []
         self.published_points: List[PointStamped] = []
         self.joint_velocities: List[list] = []
-        self.joint_moves: List[dict] = []
-        self._joints = joints
-        self._ik_solution = ik_solution
+        self._link_pose = link_pose
+        self.accelerations: List[float] = []
         self.joint_velocity_busy = False
         self._logger = FakeLogger()
 
@@ -163,15 +160,16 @@ class FakeArm:
 
     def move_joints(self, joint_positions, velocity=None):
         self.calls.append("move_joints")
-        self.joint_moves.append(dict(joint_positions))
         return True
 
-    def current_joints(self):
-        return dict(self._joints) if self._joints else None
+    @contextmanager
+    def acceleration_scaling(self, acceleration):
+        self.accelerations.append(acceleration)
+        yield
 
-    def solve_ik(self, pose, seed=None):
-        self.calls.append("solve_ik")
-        return dict(self._ik_solution) if self._ik_solution else None
+    def link_pose(self, link, frame="link_base"):
+        self.calls.append(f"link_pose:{link}")
+        return self._link_pose
 
     def get_joints(self, degrees=True):
         self.calls.append("get_joints")
@@ -284,12 +282,6 @@ class FakeArm:
 
     def remove_shelf_scene(self):
         self.calls.append("remove_shelf_scene")
-
-    def add_shelf_ceiling_guard(self, place_pose, table_height):
-        self.calls.append("add_shelf_ceiling_guard")
-
-    def remove_shelf_ceiling_guard(self):
-        self.calls.append("remove_shelf_ceiling_guard")
 
     def object_pick_height(self, obj, grasp_pose):
         self.calls.append("object_pick_height")

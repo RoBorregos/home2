@@ -1,10 +1,4 @@
-"""Synthetic-cloud tests for the model-free shelf detection.
-
-They pin the decisions the robot depends on: every board is found at the right
-height with nothing known beforehand, objects standing on a board are not boards,
-the undersides give thickness and ceiling, and the planning-scene boxes enclose the
-structure. Pure numpy: run with ``pytest manipulation/packages/perception_3d/test``.
-"""
+"""Synthetic-cloud tests for the model-free shelf detection (pure numpy)."""
 
 import itertools
 import sys
@@ -96,8 +90,7 @@ def geometry():
 
 
 def test_every_board_found_at_its_height(geometry):
-    # The four boards seen from above, plus the closed top above both cameras, seen
-    # only from below: its surface is estimated as underside + default thickness.
+    # Four boards from above plus the closed top, seen only from below.
     assert len(geometry.levels) == len(BOARDS) + 1
     for level, expected in zip(geometry.levels, BOARDS):
         assert abs(level.height - expected) < 0.01, (level.height, expected)
@@ -108,8 +101,7 @@ def test_every_board_found_at_its_height(geometry):
 
 
 def test_objects_are_not_levels(geometry):
-    # The box top (0.54) is too narrow to be a board. The tray top (0.71) sits within
-    # one compartment of board 3 (0.68): the better supported surface, the board, wins.
+    # The box top (0.54) is too narrow; the tray top (0.71) loses to board 3 (0.68).
     assert all(abs(level.height - 0.54) > 0.02 for level in geometry.levels)
     third = min(geometry.levels, key=lambda level: abs(level.height - 0.68))
     assert abs(third.height - 0.68) < 0.01
@@ -183,8 +175,7 @@ def test_only_objects_raises():
     )
     params = ShelfParams(min_level_points=20)
     geometry = detect_shelf([frame], params)
-    # With a single surface it IS the widest one, so it is accepted: the caller must
-    # judge the result (one level, 10 cm wide). Pin that behaviour.
+    # A lone surface is the widest one, so it is accepted; the caller must judge it.
     assert len(geometry.levels) == 1 and geometry.y_max - geometry.y_min < 0.15
 
 
@@ -196,8 +187,7 @@ def test_level_for_height():
 
 
 def test_back_wall_seen_only_as_a_strip():
-    # From the survey poses the boards hide most of the back panel; in the Gazebo
-    # competition scene only a ~9 cm strip behind one compartment was in view.
+    # In the sim only a ~9 cm strip of the back panel was in view.
     frames = shelf_frames(walls=False)
     strip = _patch(
         [BACK], np.arange(-Y_HALF, Y_HALF, STEP), np.arange(0.69, 0.78, STEP)
@@ -223,8 +213,7 @@ def test_narrow_face_behind_the_boards_is_not_a_back_wall():
 
 
 def test_board_above_the_cameras_bounds_the_compartment():
-    # Cabinet taller than the robot: a board above every camera is only seen from
-    # below, yet it must still become the ceiling of the compartment under it.
+    # A board above every camera is seen only from below and still bounds the compartment.
     frames = shelf_frames(objects=False, top=False)
     ceiling = 1.40
     frames = [
@@ -238,8 +227,7 @@ def test_board_above_the_cameras_bounds_the_compartment():
 
 
 def test_boxes_keep_a_safety_margin_except_on_board_tops(geometry):
-    # In Gazebo the gripper ran into the cabinet front on paths MoveIt accepted
-    # flush against the measured faces; the boxes are grown into the free space.
+    # Flush boxes let MoveIt run the gripper into the cabinet front in the sim.
     p = ShelfParams()
     boxes = {box.id: box for box in geometry.boxes}
     board = boxes["frida_shelf_board_2"]

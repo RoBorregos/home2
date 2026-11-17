@@ -1,20 +1,7 @@
-"""Model-free shelf detection from depth points expressed in a z-up frame.
+"""Model-free shelf detection from z-up depth points (no ROS, tested with synthetic clouds).
 
-No ROS here, so the whole thing is unit-testable with synthetic clouds.
-
-The idea: a shelf is a stack of horizontal boards. Points whose normal is vertical
-pile up at a few heights, so a histogram of their Z has one peak per board face.
-Up-facing peaks are surfaces objects rest on, down-facing peaks are the undersides
-(which give the board thickness and the ceiling of each compartment). Nothing is
-assumed about the number of levels or their spacing beyond physics:
-
-* a board spans (almost) the whole shelf width, an object on it does not;
-* a board is thin, so its underside sits a few centimetres below its surface;
-* two consecutive levels are far enough apart to put something in between.
-
-Side and back walls are the vertical planes at the lateral/far extremes. The
-result also carries axis-aligned boxes for the planning scene so MoveIt knows about
-the compartment ceiling and walls the eye-in-hand octomap never sees.
+Board faces are peaks in the Z histogram of horizontal points; walls are the vertical
+planes at the extremes. See docs/ai/shelf_detection.md.
 """
 
 from collections.abc import Sequence
@@ -69,8 +56,7 @@ class ShelfLevel:
     y_max: float
     clearance: float = 0.0
     num_points: int = 0
-    # Only its underside was in view (a board above the camera): height is the
-    # underside plus the default thickness.
+    # Only the underside was in view: height = underside + default thickness.
     seen_from_below: bool = False
 
 
@@ -160,9 +146,7 @@ def estimate_normals(points: np.ndarray, viewpoint: np.ndarray, k: int) -> np.nd
     to_camera = viewpoint[None, :] - points
     flip = np.einsum("ij,ij->i", normals, to_camera) < 0
     normals[flip] *= -1.0
-    # A horizontal face is only visible from the side the camera is on, and the
-    # view-vector test above is unreliable at grazing angles (a far board seen from
-    # almost its own height), so settle up/down from the camera height alone.
+    # Up/down from the camera height: the view-vector test fails at grazing angles.
     horizontal = np.abs(normals[:, 2]) > 0.8
     want_up = viewpoint[2] > points[horizontal, 2]
     sign = np.where(want_up, 1.0, -1.0)
@@ -275,10 +259,7 @@ def _walls(
             or abs(y_peak - boards_y[1]) < abs(found["right"] - boards_y[1])
         ):
             found["right"] = y_peak
-    # The boards hide most of the back panel, so only a strip of it may be in view:
-    # a robot-facing plane behind the boards counts when it is tall OR spans most of
-    # the shelf width. Board front edges and object faces sit in front of
-    # boards_back_x - wall_search and never qualify.
+    # Back wall: a plane behind the boards that is tall or spans most of the width.
     width = boards_y[1] - boards_y[0]
     back = vertical[np.abs(normals[:, 0]) > 0.8]
     for x_peak, _ in _histogram_peaks(
@@ -301,11 +282,7 @@ def _walls(
 def _boards_seen_from_below(
     down: np.ndarray, undersides, levels: list, reference: float, p: ShelfParams
 ) -> list:
-    """Wide down-facing planes that are not the underside of a detected surface.
-
-    The surface height is estimated as underside + default thickness. Planes below
-    the lowest detected surface are ignored (nothing explains them as a board).
-    """
+    """Boards seen only from below: wide down-facing planes above the lowest surface."""
     found = []
     lowest = levels[0].height
     for z, _ in undersides:
@@ -384,9 +361,7 @@ def detect_shelf(
             continue
         merged.append(c)
 
-    # Undersides: the thickness of each board seen from above, and the boards the
-    # camera only sees from below (above the camera, e.g. the top of a cabinet taller
-    # than the robot): those still bound the compartment under them.
+    # Undersides give each board's thickness and the boards above the camera.
     undersides = _histogram_peaks(
         down[:, 2], p.z_min, p.z_max, p.z_bin, p.min_level_points
     )
@@ -443,14 +418,10 @@ def detect_shelf(
 def collision_boxes(
     g: ShelfGeometry, p: ShelfParams, namespace: str = "frida_shelf_"
 ) -> list:
-    """Boards (a closed top included), side walls and back wall as axis-aligned boxes.
+    """Boards, side walls and back wall as axis-aligned boxes.
 
-    Board tops are sunk ``board_sink`` below the measured surface so the fingertips
-    touching an object's base do not register as a collision with the board. Every
-    other face is grown by ``padding`` towards the free space (the fronts towards
-    the robot, the undersides down, the walls inwards): planning flush against the
-    measured faces left no room for scan or hand-eye error, and in Gazebo the
-    gripper ran into the cabinet front on paths MoveIt accepted.
+    Board tops sink ``board_sink`` so fingertips at an object's base do not collide;
+    every other face grows ``padding`` into the free space for scan and hand-eye error.
     """
     boxes = []
     pad = p.padding
@@ -474,8 +445,7 @@ def collision_boxes(
             (front, g.y_min, top - level.thickness - pad),
             (back, g.y_max, top),
         )
-    # Every board, including a closed top seen from below, is already a box above;
-    # the walls run from the lowest board to the highest one.
+    # Walls run from the lowest board to the highest one.
     bottom = g.levels[0].height - g.levels[0].thickness
     top = g.levels[-1].height
     if g.has_left_wall:
@@ -505,11 +475,7 @@ def collision_boxes(
 
 
 def level_for_height(z: float, heights: Sequence[float], down_tolerance: float = 0.05):
-    """Height of the level a point at ``z`` rests on: the highest surface below it.
-
-    ``down_tolerance`` absorbs depth noise that puts an object's point slightly under
-    its own surface. Returns None below the lowest level.
-    """
+    """Highest surface at most ``down_tolerance`` above ``z``, or None below the lowest."""
     resting = [h for h in sorted(heights) if h - down_tolerance <= z]
     return resting[-1] if resting else None
 

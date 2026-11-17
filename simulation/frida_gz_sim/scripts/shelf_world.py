@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
-"""Write a shelf world for the shelf checks.
+"""Write a shelf world: ``shelf_world.py <scene> <clutter 0|1> <out.sdf> [pick[:N]]``.
 
-    ros2 run frida_gz_sim shelf_world.py competition 1 /tmp/shelf.sdf
-    ros2 run frida_gz_sim shelf_world.py competition_tall 1 /tmp/shelf.sdf pick:3
-
-Scenes live in frida_gz_sim/shelf_scenes.py; the second argument toggles the clutter
-objects. A trailing ``pick`` adds a graspable bottle on the second shelf, ``pick:N``
-on shelf N (1 = lowest board), placed clear of that shelf's clutter.
+``pick:N`` adds a graspable bottle on shelf N (1 = lowest, default 2).
 """
 
 import sys

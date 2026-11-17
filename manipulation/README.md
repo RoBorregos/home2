@@ -61,12 +61,12 @@ Only what the pick-and-place path uses.
 |---|---|---|
 | **`pick_and_place`** | `manipulation_core`, `keyboard_input`, `fix_position_to_plane` | The pipelines. Decides *what* to do |
 | **`frida_motion_planning`** | `motion_planning_server` | The only node that commands the arm. Decides *how* to move |
-| **`perception_3d`** | `test_only_orchestrator`, `pick_primitives`, `plane_service`, `grasp_generator`, `downsample_pc` | Segments objects and surfaces from the point cloud; `grasp_generator` fits flat objects and solids and ranks their grasps |
+| **`perception_3d`** | `test_only_orchestrator`, `pick_primitives`, `plane_service`, `grasp_generator`, `downsample_pc` | Segments objects and surfaces from the point cloud; `grasp_generator` fits flat objects and solids, ranks their grasps and measures shelves (`detect_shelf`) |
 | **`place`** | `heatmapPlace_Server` | Scores a surface and returns the best free spot |
 | **`arm_pkg`** | `gpd_service` | Wraps the GPD library; also owns the MoveIt launch files |
 | **`manipulation_general`** | `manipulation_safeguard` | Task launch files (`ppc`, `gpsr`, …); watches the xArm state and clears errors / re-enables motion |
 | **`frida_pymoveit2`** | *(library)* | xArm6 joint names and `JOINT_POSITION_LIMITS` |
-| **`xarm_utils`** | *(library)* | Shelf level geometry |
+| **`xarm_utils`** | `grasp_detector` | Publishes whether the gripper holds something |
 | **`vamp_moveit_plugin`** | *(MoveIt plugin)* | VAMP planner, with OMPL fallback |
 | **`xarm6_ikfast_plugin`** | *(MoveIt plugin)* | Analytical IK for the xArm6 |
 
@@ -142,7 +142,7 @@ different paths**, and knowing which one is active explains most failures:
 | | Path A — MoveIt | Path B — cartesian velocity |
 |---|---|---|
 | xArm mode | **1** | **5** |
-| Used by | every `move_to_pose` / `move_joints` | force-guarded and fixed-distance descents, the geometric approach |
+| Used by | every `move_to_pose` / `move_joints`, and straight-line paths (`planner_id="cartesian"`, e.g. the shelf exit) | force-guarded and fixed-distance descents, the geometric approach |
 | Collision checking | yes, full planning scene | **none** |
 | Stops on e-stop | via the controller | only because the pipeline polls it |
 
@@ -242,6 +242,7 @@ plus two lines. Only a genuinely new motion needs a new class.
 | `/manipulation/pick_perception_service` | `test_only_orchestrator` | Object cluster |
 | `/manipulation/place_perception_service` | `test_only_orchestrator` | Place surface cloud |
 | `/manipulation/generate_grasps` | `grasp_generator` | Ranked grasp poses, plus the fitted shape of a solid |
+| `/manipulation/detect_shelf` | `grasp_generator` | Shelf levels and walls from the eye-in-hand camera, and their planning scene boxes |
 | `/manipulation/detect_grasps` | `gpd_service` | GPD grasp candidates |
 | `/manipulation/heatmap_place_service` | `heatmapPlace_Server` | Best free spot on a surface |
 | `/manipulation/estop` | *(topic)* | Aborts any motion in progress |
@@ -270,6 +271,7 @@ Face following also needs `face_recognition` enabled (it starts paused). If the 
 | Change where a place lands | `place/scripts/heatmapPlace_Server.py` |
 | Change object/surface segmentation | `perception_3d/` |
 | Change how flat objects and solids are grasped (geometry) | `perception_3d/perception_3d/geometric_grasps.py` |
+| Change how shelves are measured | `perception_3d/perception_3d/shelf_geometry.py` (see `docs/ai/shelf_detection.md`) |
 | Change the gripper dimensions | `frida_constants/manipulation_constants.py` |
 | Add a named arm pose | `frida_constants/xarm_configurations.py` |
 | Tune face / person following | `pick_and_place/pipelines/follow.py` (person gains: `follow_person.*` parameters); face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |

@@ -23,6 +23,7 @@ from frida_constants.manipulation_constants import (
     GO_TO_HAND_ACTION_SERVER,
     GRIPPER_REACH,
     MANIPULATION_ACTION_SERVER,
+    PICK_ACCELERATION,
     RIM_DESCENT_SPEED,
 )
 from frida_constants.vision_constants import CENTROID_TOPIC, FOLLOW_TOPIC
@@ -80,6 +81,9 @@ class ManipulationCore(Node):
         self.declare_parameter("pick_profiles_file", "")
         # Benchmark switch: auto, gpd, or geometric (no GPD fallback).
         self.declare_parameter("pick_method", "auto")
+        # Shelf speed-ups to try on the robot one at a time (defaults: as validated).
+        self.declare_parameter("shelf_acceleration", PICK_ACCELERATION)
+        self.declare_parameter("shelf_place_straight", False)
         self.add_on_set_parameters_callback(self._validate_parameters)
 
         self.arm = RobotArm(self)
@@ -214,12 +218,16 @@ class ManipulationCore(Node):
     # ==================================================================
 
     def _validate_parameters(self, parameters):
-        """Reject a pick_method typo instead of silently running auto."""
+        """Reject a pick_method typo or an acceleration outside (0, 1]."""
         for parameter in parameters:
             if parameter.name == "pick_method" and parameter.value not in PICK_METHODS:
                 return SetParametersResult(
                     successful=False,
                     reason=f"pick_method must be one of {PICK_METHODS}",
+                )
+            if parameter.name == "shelf_acceleration" and not 0 < parameter.value <= 1:
+                return SetParametersResult(
+                    successful=False, reason="shelf_acceleration must be in (0, 1]"
                 )
         return SetParametersResult(successful=True)
 
@@ -238,15 +246,18 @@ class ManipulationCore(Node):
         )
 
         self.arm.remove_all_collision_objects(attached=True)
-        if pick_request.is_shelf:
-            # The wipe above also took the shelf boards and walls; the octomap never
-            # sees the compartment ceiling, so put the last shelf scan back. The
-            # wipes below remove them again whatever the outcome.
-            self.arm.restore_shelf_scene()
-        try:
-            success, outcome = pick_pipeline.execute(
-                self.arm, self.perception, pick_request, self.strategies
+        # The wipe took the shelf boxes too; the wipes below remove them again.
+        if pick_request.is_shelf and not self.arm.restore_shelf_scene():
+            self.get_logger().error(
+                "Shelf pick needs a shelf scan from where the robot stands"
             )
+            self._last_pick = PickOutcome()
+            return False
+        try:
+            with self._shelf_motion(pick_request.is_shelf):
+                success, outcome = pick_pipeline.execute(
+                    self.arm, self.perception, pick_request, self.strategies
+                )
         except (PickAborted, PickHardwareError):
             self.arm.remove_all_collision_objects(attached=True)
             raise
@@ -260,15 +271,27 @@ class ManipulationCore(Node):
         self._last_pick = outcome
         return True
 
+    def _shelf_motion(self, is_shelf: bool):
+        """The shelf acceleration for a shelf task, the default otherwise."""
+        value = self.get_parameter("shelf_acceleration").value if is_shelf else None
+        return self.arm.acceleration_scaling(value or PICK_ACCELERATION)
+
     def _run_pick_closest(self, request) -> bool:
         """PICK_CLOSEST has never been implemented."""
         self.get_logger().error("PICK_CLOSEST is not implemented")
         return False
 
     def _run_place(self, request) -> bool:
-        success = place_pipeline.execute(
-            self.arm, self.perception, request.place_params, self._last_pick
-        )
+        is_shelf = request.place_params.is_shelf
+        with self._shelf_motion(is_shelf):
+            success = place_pipeline.execute(
+                self.arm,
+                self.perception,
+                request.place_params,
+                self._last_pick,
+                straight_in=is_shelf
+                and self.get_parameter("shelf_place_straight").value,
+            )
         if success:
             self.arm.remove_all_collision_objects(attached=True)
         return success

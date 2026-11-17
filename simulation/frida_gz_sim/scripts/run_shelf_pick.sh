@@ -1,20 +1,17 @@
 #!/bin/bash
 # Shelf pick check (keyboard_input -11 flow) in one scene, with vision.
 # Inside the simulation container:
-#   [PLACE_LEVEL=N] bash /workspace/src/simulation/frida_gz_sim/scripts/run_shelf_pick.sh [scene] [level] [label] [noboxes]
-# Results and video: /workspace/sim_logs/shelf/pick_<scene>[_noboxes].{json,mp4,log}
-# "noboxes" keeps the shelf boxes out of the planning scene (A/B against them).
+#   [PLACE_LEVEL=N] bash /workspace/src/simulation/frida_gz_sim/scripts/run_shelf_pick.sh [scene] [level] [label]
+# Results and video: /workspace/sim_logs/shelf/pick_<scene>_l<level>.{json,mp4,log}
 # no `set -u`: the ROS setup scripts read unset variables
 source /opt/ros/jazzy/setup.bash
 source /workspace/install/setup.bash
 SCENE=${1:-competition}
 LEVEL=${2:-2}
 LABEL=${3:-bottle}
-BOXES=${4:-boxes}
 OUT=/workspace/sim_logs/shelf
 mkdir -p "$OUT"
 TAG="pick_${SCENE}_l${LEVEL}"
-[ "$BOXES" = noboxes ] && TAG="${TAG}_noboxes"
 
 kill_sim() {
   pkill -INT -f '[r]os2 launch' ; sleep 3
@@ -55,11 +52,10 @@ sleep 3
 ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=false > "$OUT/${TAG}_manipulation.log" 2>&1 &
 ros2 launch frida_gz_sim sim_vision.launch.py > "$OUT/${TAG}_vision.log" 2>&1 &
 wait_log "$OUT/${TAG}_manipulation.log" "Manipulation core started" 300 || exit 1
-wait_log "$OUT/${TAG}_manipulation.log" "Shelf detector ready" 60 || exit 1
+wait_log "$OUT/${TAG}_manipulation.log" "Grasp generator ready" 60 || exit 1
 wait_log "$OUT/${TAG}_vision.log" "Loaded models" 600 || exit 1
 # Gazebo depth is exact: drop the real ZED's 1.4 % range correction.
-ros2 param set /shelf_detector depth_scale 1.0
-[ "$BOXES" = noboxes ] && ros2 param set /shelf_detector publish_boxes false
+ros2 param set /grasp_generator shelf.depth_scale 1.0
 # The sim octomap filter drops points above the dining table (z 0.76) so the
 # noise-free cloud does not turn the object into a solid block of voxels around the
 # gripper (see octomap_cloud_filter.py). On a shelf, drop only a box around the

@@ -1,19 +1,21 @@
 # Model-free shelf detection
 
-Replaces the per-arena heights in `xarm_utils/config/shelf_levels.json` (now a
-fallback) with a live scan from the eye-in-hand ZED2.
+Measures the shelf in front of the robot with the eye-in-hand ZED2. There are no
+per-arena heights: a shelf pick or place without a scan from where the robot stands
+fails.
 
 ## Pieces
 
 | Piece | Where |
 | --- | --- |
 | Geometry (pure numpy, tested) | `manipulation/packages/perception_3d/perception_3d/shelf_geometry.py` |
-| ROS node, `DetectShelf` service | `manipulation/packages/perception_3d/scripts/shelf_detector.py` |
+| `DetectShelf` service, hosted by `grasp_generator` (same depth image, intrinsics and TF) | `manipulation/packages/perception_3d/perception_3d/shelf_service.py` |
 | Interfaces | `frida_interfaces/manipulation/srv/DetectShelf.srv`, `msg/ShelfLevel.msg` |
 | Constants / survey poses | `manipulation_constants.py` (`DETECT_SHELF_SERVICE`, `SHELF_SURVEY_POSES`), `xarm_configurations.py` (`shelf_survey_high/low`) |
 | Manual test | `keyboard_input.py` options -14 (survey + detect), -15 (capture here), -16 (detect) |
-| Task manager | `ManipulationTasks.detect_shelf_levels()`; `pickandplace_task_manager.py` `_ensure_shelf_heights()` (flag `use_dynamic_shelf_detection`) |
+| Task manager | `ManipulationTasks.detect_shelf_levels()`; `pickandplace_task_manager.py` `_ensure_shelf_heights()`, `gpsr_single_tasks.py` `_measure_shelf()` (once per stop) |
 | Sim check | `simulation/frida_gz_sim`: `shelf_scenes.py`, `scripts/sim_shelf_check.py`, `scripts/run_shelf_checks.sh` |
+| RViz | robot: `arm_pkg/config/frida_moveit.rviz` (MoveIt view + "Shelf" markers, latched); sim: `ros2 launch frida_gz_sim sim_rviz.launch.py config:=shelf.rviz` |
 
 ## How it works
 
@@ -35,10 +37,13 @@ fallback) with a live scan from the eye-in-hand ZED2.
 
 - `manipulation_core` wipes the scene at the start of every pick. For a shelf pick
   (`scan_environment=true`) it then calls `RobotArm.restore_shelf_scene()`, which
-  re-publishes the last scan. The usual wipes after the pick remove it again.
-- The shelf place restores it before reaching and always removes it at the end
-  (`remove_shelf_scene()`). The slab at the JSON `compartment_height` is only used
-  when no scan can be restored.
+  re-publishes the last scan, and refuses the pick when there is none or the base
+  moved since it. The usual wipes after the pick remove the boxes again.
+- The shelf place does the same before reaching and always removes the boxes at the
+  end (`remove_shelf_scene()`).
+- `fix_position_to_plane` puts them back before facing a shelf level
+  (`table_or_shelf=false`): the core removes them after the pick, and in the sim the
+  move to look at the place level, holding the bottle, was planned through the cabinet.
 - `keyboard_input` -11/-12 use the measured heights only. If there is no scan, or the
   base moved since it, they survey the shelf first.
 - A shelf pick clusters the object inside its measured compartment
@@ -48,18 +53,16 @@ fallback) with a live scan from the eye-in-hand ZED2.
   With the old band the object merged with the boards and walls of a closed cabinet:
   6038 points, over the 6000 cluster limit, so "No object to cluster". Cropped: 253
   points, the bottle alone.
-- `publish_boxes:=false` on `shelf_detector` keeps the boxes out of the scene (the
-  place then falls back to the JSON ceiling slab). A field switch, also used for the
-  A/B check below.
 - The task manager scans on every cabinet visit (`dock_at` resets the flag), so the
   restored boxes always match where the base stopped. A failed scan keeps the
-  previous heights; before the first success that is still the arena JSON.
+  previous heights; with none yet, the cabinet place fails.
 
-Tunables are ROS parameters mirroring `ShelfParams` (physical tolerances only),
-plus `min_range`/`max_range` (0.3/2.5 m, the ZED2 limits), `depth_scale` (default
-`ZED_DEPTH_SCALE`; 1.0 for a simulated camera) and `dump_path` (save the captured
-frames as `.npz` for offline tuning). Debug topics: `/manipulation/shelf_scan_cloud`,
-`/manipulation/shelf_geometry`.
+Tunables are `grasp_generator` parameters under `shelf.`: the `ShelfParams` fields
+(physical tolerances only), `min_range`/`max_range` (0.3/2.5 m, the ZED2 limits),
+`depth_scale` (default `ZED_DEPTH_SCALE`; 1.0 for a simulated camera) and `dump_path`
+(save the captured frames as `.npz` for offline tuning). Debug topics:
+`/manipulation/shelf_scan_cloud` and `/manipulation/shelf_geometry` (latched, so RViz
+always shows the last scan).
 
 ## Survey poses
 
@@ -136,8 +139,17 @@ A shelf pick first tries a frontal grasp built from the object's cluster
 - **Approach.** It comes in from the front, tilted 10, 0 and 20 deg down; a shelf with
   nothing above also tries 30 and 45 deg.
 - **Gripper.** The fingers close sideways and the ZED points up.
-- **Exit and fallback.** After closing, the arm lifts 2 cm and backs out 15 cm in a
-  straight line (`_shelf_exit`). GPD remains the fallback.
+- **Exit.** After closing, two straight MoveIt paths from where the gripper is: 2 cm
+  up, then 15 cm back along the way in (`_shelf_exit`, `planner_id="cartesian"`).
+  They are collision checked against the boxes and the held object, timed within the
+  joint limits, and cut where the IK would jump more than 0.5 rad between 5 mm
+  waypoints (a branch flip at a singularity). When a path is cut, the return to
+  `table_stare` is planned around the boxes instead. The old xArm cartesian velocity
+  lift tripped C24 (speed exceeds limit) on the real robot twice, at the wrist
+  singularity (joint5 -13 deg) and with the elbow stretched (joint3 -155 deg), and the
+  stop opened the gripper. At that second pose the MoveIt path is complete, its
+  largest joint step between waypoints is 3.7 deg and it takes 1.3 s. GPD remains the
+  grasp fallback.
 
 The shelf boxes are grown 2 cm into the free space (`ShelfParams.padding`). Only the
 board tops stay where they are. Planning flush against the measured faces left no
@@ -178,19 +190,85 @@ Results on 2026-11-16, high cabinet, both directions PASS. The bottle ended upri
 on the target board, inside the cabinet. Each run was a pick (36-41 s) plus a place
 (34-37 s), 112 s in total with the scan.
 
+## Benchmark (sim, 2026-11-17)
+
+`competition_high` cabinet (boards 0.90 / 1.30 m), YCB mustard bottle, sim COCO YOLO,
+on the Orin. Scan + pick on one shelf + place on the other, as `run_shelf_pick.sh`
+with `PLACE_LEVEL`. Times in seconds; "-" where the step did not run.
+
+| Approach | Passed | Scan | Pick | Place | Exit | Return after the pick |
+| --- | --- | --- | --- | --- | --- | --- |
+| Before the shelf scan: arena heights, no boxes, GPD | 2/4 | - | 46.7-68.1 | 37.5-41.2 | 2.8-4.8 | 14.4-19.1 |
+| Shelf scan + frontal grasp, cartesian velocity exit (2026-11-16) | 2/4 | 13.8-15.7 | 35.7-49.2 | 36.9-46.2 | 2.1-11.1 | 12.7-19.3 |
+| Now | 1/4 | 11.1-11.7 | 22.6-26.7 | 32.1-34.7 | 2.7-3.1 | 6.3-6.4 |
+| Now, `shelf_acceleration` 0.5 + `shelf_place_straight` | 2/3, no aborts | 11.2-11.4 | 24.7-28.2 | 28.4-29.6 | 3.5-7.9 | 3.6-5.8 |
+
+- Before the scan, every shelf-1 pick failed: without the compartment band the object
+  merged with the boards ("Error clustering object", too many points).
+- Now, the failures: twice the sim YOLO did not see the bottle from the level pose;
+  twice a move to look at the 1.30 m level aborted on the controller's goal tolerance
+  (once holding the bottle, which ended on the shelf); once the bottle tipped over on
+  release. One exit was cut at a branch flip and the return planned around the boxes.
+- The first two rows ran with the robot's own containers also on the Orin; "Now" ran
+  with them stopped, so the times compare only roughly.
+
+## Speed
+
+Velocity is the MoveIt scaling factor (0-1); the constants are in
+`manipulation_constants.py`, `pick.py` and `place.py`.
+
+| Step | Before | Now |
+| --- | --- | --- |
+| Survey moves | 0.5 | 0.75 (`SHELF_SURVEY_VELOCITY`) |
+| Wait at each survey pose | 0.7 s | 0.3 s (`SHELF_SURVEY_SETTLE`) |
+| Wait at a level's viewing pose (task managers, keyboard) | 2-3 s | 1.5 s (`SHELF_LEVEL_SETTLE`) |
+| Shelf exit | xArm cartesian velocity, 50 mm/s | one straight MoveIt path, 0.3 (1.3 s) |
+| Return after a shelf pick | `front_stare` at 0.3, then `table_stare` at 0.5 | `table_stare` at 0.75, planned with the boxes |
+| Place: release | 1.0 s | 0.5 s |
+| Place: return | 0.5 | 0.75 |
+| Straight-line paths on Jazzy | retimed 3x slower (a Humble workaround) | timed by MoveIt |
+| Place: halfway release when the final pose fails | released 12 cm short of the board | removed; the next rung (+2 cm) is tried |
+
+Unchanged: pre-grasp 0.5, the cartesian approach into the shelf at 40 mm/s, the
+place moves at 0.5 / acceleration 0.3, and the gripper close settle (profiles).
+`SHELF_LEVEL_SETTLE` and `SHELF_SURVEY_SETTLE` are the first numbers to raise if the
+robot misses detections or scans a blurred cloud.
+
+Two more speed-ups are `manipulation_core` parameters, off by default so a test
+starts from the validated behaviour; switch them at runtime, one at a time:
+
+```bash
+ros2 param set /manipulation_core shelf_acceleration 0.5    # default 0.3 (PICK_ACCELERATION)
+ros2 param set /manipulation_core shelf_place_straight true # default false
+```
+
+- `shelf_acceleration`: MoveIt acceleration scaling for every planned move of a
+  shelf pick or place (pre-grasp, exit, return, pre-place, place).
+- `shelf_place_straight`: the place goes from the pre-place into the compartment as
+  one straight MoveIt path (0.3, collision checked); where the line is cut, the same
+  rung uses the usual free plan. In the sim the line was cut on every rung into the
+  0.90 m board (29-38 %) and went through into the 1.30 m one (3.6-3.8 s, from 6.9 s).
+
 ## Known limits / not done yet
 
-- Not yet run on the real robot (ZED noise, real hand-eye calibration).
+- Real robot, 2026-11-16: the scan found the 0.95 and 1.31 m boards (a 0.78 m one only
+  sometimes); a can was picked from both and placed, and a cereal box picked from
+  1.31 m and placed on 0.95 m and back. Open there: an apple is too short for the
+  frontal grasp (6 cm board clearance), the cluster height on the 1.31 m shelf varied
+  between runs (2-8 cm), and a sprite_can false positive.
 - The lowest reachable shelf (~0.39 m) has no frontal grasp with the base 15-20 cm
   away; the base would need to stand further back or the approach to change.
 - A pre-grasp can still hang in the sim (controller blocked, likely the oversized
   Gazebo gripper collision box), costing 7-20 s per failed candidate.
-- Time: scan ~13 s + pick ~35-45 s, versus the 20-30 s goal. The cheapest cuts are
-  skipping the "face the level" move, one return pose instead of front_stare plus
-  table_stare, and faster accelerations at the shelf.
+- Time: see "Speed" below; the "face the level" move before the pick is still there.
 - The task manager still assigns objects to levels with the old 0.20/0.05 m
   thresholds instead of `level_for_height`, and still sweeps each level to find
   objects (the slow part of the original 60-120 s).
+- The shelf place puts `link_eef` 10 cm above the board whatever the grasp height: a
+  tall, thin object grasped low drops a few centimetres and can tip (sim bottle). The
+  pick height is known and could set it.
+- The move to look at a 1.30 m level sometimes aborts in the sim (goal tolerance), with
+  or without the boxes; the sim load (load average ~20 on the Orin) may be the cause.
 - Thin posts of an open bookshelf are reported as side walls (conservative).
 - A level is numbered from the lowest board seen: if the bottom board is hidden,
   numbering shifts. The low survey pose sees it in every sim scene.

@@ -5,6 +5,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.srv import (
+    DetectShelf,
     GetPlaneBbox,
     GetOptimalPositionForPlane,
     GetOptimalPoseForPlane,
@@ -24,6 +25,7 @@ import math
 from frida_constants.manipulation_constants import (
     ARM_HIGHEST_0_0_HEIGHT,
     ARM_LOWEST_0_0_HEIGHT,
+    DETECT_SHELF_SERVICE,
 )
 
 TABLE_Z_OFFSET = 0.75
@@ -85,6 +87,9 @@ class FixPositionToPlane(Node):
             "/manipulation/move_to_pose_action_server",
             callback_group=self.call_bck_group,
         )
+        self._detect_shelf_client = self.create_client(
+            DetectShelf, DETECT_SHELF_SERVICE, callback_group=self.call_bck_group
+        )
         # Initialize the transform broadcaster
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -95,6 +100,19 @@ class FixPositionToPlane(Node):
             )
         self.get_logger().info("get_plane_bbox service is available")
         self.get_logger().info("FixPositionToPlane node initialized")
+
+    def _restore_shelf_scene(self) -> None:
+        """Put the last shelf scan's boxes in the scene: the arm may hold an object here."""
+        if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().warn(
+                "detect_shelf unavailable; moving without the shelf boxes"
+            )
+            return
+        future = self._detect_shelf_client.call_async(
+            DetectShelf.Request(add_collision_objects=True)
+        )
+        if wait_for_future(future, timeout=5) and future.result() is not None:
+            self.get_logger().info(f"Shelf boxes: {future.result().message}")
 
     def callback_call_service(self, future):
         try:
@@ -242,6 +260,9 @@ class FixPositionToPlane(Node):
         )
 
         # self.get_logger().info(f"Look at pose: {look_at_pose}")
+
+        if not request.table_or_shelf:
+            self._restore_shelf_scene()
 
         # move
         req_move = MoveToPose.Goal()

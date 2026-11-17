@@ -46,6 +46,8 @@ from frida_constants.manipulation_constants import (
     FOLLOW_PERSON_ARM_SERVICE,
     DETECT_SHELF_SERVICE,
     SHELF_SURVEY_POSES,
+    SHELF_SURVEY_SETTLE,
+    SHELF_SURVEY_VELOCITY,
 )
 import time as t
 
@@ -303,9 +305,7 @@ class ManipulationTasks:
             Logger.error(self.node, "Joint goal was rejected")
             return False
 
-        # Get result. A move that never finishes (the arm blocked against something)
-        # leaves the future empty after the timeout: report a failed move instead of
-        # raising, which took down the whole caller.
+        # A move that never finishes leaves the future empty: report a failure, do not raise.
         result_future = goal_handle.get_result_async()
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
         if not result_future.done() or result_future.result() is None:
@@ -375,10 +375,7 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
 
         Logger.info(self.node, f"Pick request for {object_name} sent")
-        # wait for result. A shelf pick tries several grasps, backs out of the
-        # compartment and returns through front_stare: in the Gazebo competition
-        # cabinet a successful one took ~65 s and the 60 s limit cancelled it on the
-        # way back, with the object already in the gripper.
+        # A successful shelf pick took ~65 s in the sim; 60 s cancelled it holding the object.
         pick_timeout = SHELF_PICK_TIMEOUT if scan_environment else 60.0
         result_future = future.result().get_result_async()
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=pick_timeout)
@@ -833,22 +830,21 @@ class ManipulationTasks:
 
     @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, [0.095, 0.39, 0.68, 1.05]))
     def detect_shelf_levels(
-        self, add_collision_objects: bool = False, settle_s: float = 0.7
+        self, add_collision_objects: bool = False, settle_s: float = SHELF_SURVEY_SETTLE
     ) -> tuple[int, list[float]]:
-        """Dynamic shelf scan: visit the survey poses, capture each view, detect.
-
-        Returns (status, heights) with the board surface heights in base_link,
-        ascending (index 0 = lowest board). No per-arena calibration involved.
-        """
+        """Survey the shelf and detect it: (status, board heights in base_link, ascending)."""
         if not self._detect_shelf_client.wait_for_service(timeout_sec=TIMEOUT):
             Logger.error(self.node, "detect_shelf service not available")
             return Status.SERVICE_CHECK, []
         captured = 0
         for pose in SHELF_SURVEY_POSES:
-            if self.move_to_position(pose, velocity=0.5) != Status.EXECUTION_SUCCESS:
+            if (
+                self.move_to_position(pose, velocity=SHELF_SURVEY_VELOCITY)
+                != Status.EXECUTION_SUCCESS
+            ):
                 Logger.warn(self.node, f"Could not reach {pose}; skipping this view")
                 continue
-            t.sleep(settle_s)  # let the depth settle after the motion
+            t.sleep(settle_s)
             result = self._call_detect_shelf(reset=captured == 0, capture=True)
             if result is None or not result.success:
                 Logger.warn(

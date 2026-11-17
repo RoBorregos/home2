@@ -89,9 +89,8 @@ class Perception:
 
         ``add_collision_objects=False`` is used when only the geometry is
         wanted: the place flow would otherwise add the table as an obstacle and
-        make MoveIt reject every near-table path. ``band`` is a base_link
-        (min_z, max_z) to crop to first, e.g. a shelf compartment; 0 on either
-        side keeps the service default there.
+        make MoveIt reject every near-table path. ``band``: base_link (min_z, max_z)
+        to crop to first, 0 keeps the default.
         """
         min_height, max_height = band if band is not None else (0.0, 0.0)
         return get_object_cluster(

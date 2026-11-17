@@ -1,4 +1,3 @@
-import os
 import time
 
 import rclpy.time
@@ -8,6 +7,7 @@ from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transform type)
 
 from frida_constants.hri_constants import GPSR_COMMANDS
+from frida_constants.manipulation_constants import SHELF_LEVEL_SETTLE
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
     DETECTIONS_IMAGE_TOPIC,
@@ -37,7 +37,6 @@ RETRIES = 1
 MIN_REACHABLE_SHELF_Z = 0.20
 # A pick/place location whose name contains one of these is treated as a shelf:
 SHELF_FURNITURE_HINTS = ("shelf", "cabinet", "rack", "pantry", "bookcase")
-SHELF_SETTLE_S = 3.0  # let the octomap build at a level's viewing pose
 
 
 def search_command(command, objects: list[object]):
@@ -61,13 +60,8 @@ class GPSRSingleTask(GenericTask):
         self.tf_listener = TransformListener(self.tf_buffer, node, spin_thread=True)
         self.last_location = ""  # furniture the robot last navigated to
         self._shelf_level_cache: dict[str, float] = {}
-        try:
-            from xarm_utils.shelf_levels import get_shelf_levels
-
-            arena = int(os.environ.get("FRIDA_ARENA", "1"))
-            self.shelf_level_heights = levels_from_sorted_heights(get_shelf_levels(arena))
-        except Exception:
-            self.shelf_level_heights = {1: 0.095, 2: 0.39, 3: 0.68, 4: 1.05}
+        self.shelf_level_heights: dict[int, float] = {}  # measured, 1 = lowest
+        self._shelf_measured = False  # the scan boxes are only valid until the base moves
 
     ## Nav
     def go_to(self, command: GoTo):
@@ -103,6 +97,7 @@ class GPSRSingleTask(GenericTask):
 
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
         self.last_location = target
+        self._shelf_measured = False
         return result, "arrived to:" + command.location_to_go
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
@@ -116,6 +111,7 @@ class GPSRSingleTask(GenericTask):
 
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
         self.last_location = sublocation if sublocation else location
+        self._shelf_measured = False
         return result
 
     ## Manipulation
@@ -179,7 +175,7 @@ class GPSRSingleTask(GenericTask):
         self.subtask_manager.manipulation.get_optimal_position_for_plane(
             height, tolerance=0.1, table_or_shelf=False, approach_plane=True
         )
-        self.timeout(SHELF_SETTLE_S)
+        self.timeout(SHELF_LEVEL_SETTLE)
         s, detections = self.subtask_manager.vision.detect_objects()
         retry = 0
         while s != Status.EXECUTION_SUCCESS and retry < RETRIES:
@@ -212,6 +208,17 @@ class GPSRSingleTask(GenericTask):
         _, dets = self.subtask_manager.vision.detect_objects()
         return picked_ok(before_counts, self._shelf_counts(dets, level), target)
 
+    def _measure_shelf(self) -> None:
+        """Scan the shelf in front of the robot, once per stop."""
+        if self._shelf_measured:
+            return
+        status, heights = self.subtask_manager.manipulation.detect_shelf_levels()
+        if status != Status.EXECUTION_SUCCESS or not heights:
+            return
+        self.shelf_level_heights = levels_from_sorted_heights(heights)
+        self._shelf_level_cache.clear()
+        self._shelf_measured = True
+
     def _pick_from_shelf(self, object_name: str):
         """Find the target by detecting at each reachable shelf level, then pick there.
 
@@ -224,6 +231,7 @@ class GPSRSingleTask(GenericTask):
         found_level = None
         before_counts = None
 
+        self._measure_shelf()
         cached = self._shelf_level_cache.get(object_name.lower())
         if cached is not None:
             found, before_counts = self._visit_shelf_level(cached, object_name)
@@ -402,6 +410,7 @@ class GPSRSingleTask(GenericTask):
         self.subtask_manager.hri.say("I will place the object.", wait=False)
 
         if self._at_shelf_furniture():
+            self._measure_shelf()
             reachable = sorted(
                 h for h in self.shelf_level_heights.values() if h >= MIN_REACHABLE_SHELF_Z
             )
@@ -409,7 +418,7 @@ class GPSRSingleTask(GenericTask):
                 self.subtask_manager.manipulation.get_optimal_position_for_plane(
                     height, tolerance=0.1, table_or_shelf=False, approach_plane=True
                 )
-                self.timeout(SHELF_SETTLE_S)
+                self.timeout(SHELF_LEVEL_SETTLE)
                 self.subtask_manager.manipulation.move_to_position("front_stare")
                 self.subtask_manager.manipulation.get_optimal_position_for_plane(
                     height, tolerance=0.1, table_or_shelf=False, approach_plane=False

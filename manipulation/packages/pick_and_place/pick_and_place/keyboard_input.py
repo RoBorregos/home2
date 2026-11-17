@@ -21,7 +21,11 @@ from frida_constants.manipulation_constants import (
     GRASP_CLASS_RIM,
     GRASP_CLASS_ROUND,
     MANIPULATION_ACTION_SERVER,
+    SHELF_LEVEL_SETTLE,
+    SHELF_SCAN_TOLERANCE,
     SHELF_SURVEY_POSES,
+    SHELF_SURVEY_SETTLE,
+    SHELF_SURVEY_VELOCITY,
 )
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from pick_and_place.pipelines.classification import (
@@ -30,7 +34,6 @@ from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_GPD,
     resolve_pick_strategy,
 )
-from xarm_utils.shelf_levels import SHELF_SCAN_TOLERANCE
 from frida_interfaces.srv import DetectShelf, GenerateGrasps, GetOptimalPositionForPlane
 from std_srvs.srv import Empty
 import json
@@ -165,7 +168,7 @@ class KeyboardInput(Node):
             self.get_logger().warning(f"Level {height:.3f} m: no valid position")
         return ok
 
-    def _clear_octomap(self, settle=2.0):
+    def _clear_octomap(self, settle=SHELF_LEVEL_SETTLE):
         """Clear the accumulated octomap (arm captured as obstacle, stale voxels) so a
         deep/tight shelf grasp is not over-restricted; mirrors the FSM before a pick."""
         if self._clear_octomap_client.wait_for_service(timeout_sec=2.0):
@@ -180,16 +183,11 @@ class KeyboardInput(Node):
         or place. Mirrors the task manager cabinet scan; run before -4 or -11."""
         for height in self.shelf_heights():
             self._position_at_level(height)
-            time.sleep(2.0)
+            time.sleep(SHELF_LEVEL_SETTLE)
         self.get_logger().info("Shelf scan done; now pick (-11) or place (-4).")
 
     def shelf_heights(self):
-        """Measured shelf heights (1 = lowest), never the per-arena JSON.
-
-        Re-publishing the last scan's boxes doubles as a freshness check: the
-        detector refuses it with no scan yet or once the base moved since the scan,
-        and then the shelf is surveyed again.
-        """
+        """Measured heights (1 = lowest); surveys again when the last scan is stale or missing."""
         result = self.detect_shelf(add_collision=True)
         if result is None or not result.success or not result.levels:
             self.get_logger().info("No valid shelf scan here: surveying the shelf")
@@ -257,10 +255,10 @@ class KeyboardInput(Node):
         self.detect_shelf(reset=True)
         captured = 0
         for pose in SHELF_SURVEY_POSES:
-            if not self._move_named(pose):
+            if not self._move_named(pose, velocity=SHELF_SURVEY_VELOCITY):
                 self.get_logger().warning(f"Could not reach {pose}; skipping this view")
                 continue
-            time.sleep(0.7)  # let the depth settle after the motion
+            time.sleep(SHELF_SURVEY_SETTLE)
             res = self.detect_shelf(capture=True)
             captured += int(res is not None and res.success)
         if captured == 0:

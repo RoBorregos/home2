@@ -8,9 +8,10 @@ lets them be unit-tested against a fake arm with no ROS graph.
 import time
 from collections import deque
 from contextlib import contextmanager
-from typing import Dict, Optional
+from typing import Optional
 
 import numpy as np
+import rclpy
 from frida_constants.manipulation_constants import (
     ADD_COLLISION_OBJECT_SERVICE,
     ATTACH_COLLISION_OBJECT_SERVICE,
@@ -64,18 +65,14 @@ from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, SetBool, Trigger
-from tf2_ros import Buffer, TransformListener
+from tf2_ros import Buffer, TransformException, TransformListener
 from xarm_msgs.msg import RobotMsg
 from xarm_msgs.srv import MoveVelocity, SetInt16
-from xarm_utils.shelf_levels import get_compartment_height
 
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
-from pick_and_place.utils.self_collision_utils import (
-    compute_ik,
-    endpoint_self_collides,
-)
+from pick_and_place.utils.self_collision_utils import endpoint_self_collides
 
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
@@ -230,6 +227,7 @@ class RobotArm:
             depth=10,
         )
         self.tf_buffer = Buffer(cache_time=Duration(seconds=2.0))
+        self.acceleration = PICK_ACCELERATION  # MoveIt scaling for the moves below
         self.tf_listener = TransformListener(
             self.tf_buffer, node, qos=qos, spin_thread=True
         )
@@ -283,40 +281,23 @@ class RobotArm:
     def joint_state(self) -> Optional[JointState]:
         return self._latest_joint_state
 
-    def current_joints(self) -> Optional[Dict[str, float]]:
-        """Latest arm joint positions in radians, by name, or None."""
-        state = self._latest_joint_state
-        if state is None:
+    def link_pose(self, link: str, frame: str = "link_base") -> Optional[PoseStamped]:
+        """Where ``link`` is now, in ``frame``; None without TF."""
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                frame, link, rclpy.time.Time()
+            ).transform
+        except TransformException as error:
+            self._log.warn(f"No TF {frame} -> {link}: {error}")
             return None
-        return {
-            name: float(pos)
-            for name, pos in zip(state.name, state.position)
-            if name.startswith("joint")
-        }
-
-    def solve_ik(self, pose, seed: Optional[Dict[str, float]] = None):
-        """Arm joints (radians, by name) that put the grasp frame at ``pose``.
-
-        Seeded with ``seed`` (or the current joints) so the closest branch wins.
-        Collisions are not checked: the held object may rest on a surface.
-        """
-        seed_state = None
-        if seed:
-            seed_state = JointState(name=list(seed), position=list(seed.values()))
-        result = compute_ik(
-            self._compute_ik_client,
-            pose,
-            avoid_collisions=False,
-            seed_joint_state=seed_state or self._latest_joint_state,
-        )
-        if result is None or result.error_code.val != 1:
-            return None
-        js = result.solution.joint_state
-        return {
-            name: float(pos)
-            for name, pos in zip(js.name, js.position)
-            if name.startswith("joint")
-        }
+        pose = PoseStamped()
+        pose.header.frame_id = frame
+        pose.header.stamp = self.now()
+        pose.pose.position.x = transform.translation.x
+        pose.pose.position.y = transform.translation.y
+        pose.pose.position.z = transform.translation.z
+        pose.pose.orientation = transform.rotation
+        return pose
 
     def tcp_xyz(self) -> Optional[np.ndarray]:
         """Current tool-centre-point XYZ in metres, or None if unknown."""
@@ -410,7 +391,7 @@ class RobotArm:
         request.pose = pose
         request.velocity = float(PICK_VELOCITY if velocity is None else velocity)
         request.acceleration = float(
-            PICK_ACCELERATION if acceleration is None else acceleration
+            self.acceleration if acceleration is None else acceleration
         )
         request.planner_id = planner_id
         request.target_link = target_link
@@ -448,6 +429,7 @@ class RobotArm:
             velocity=velocity,
             fallback_move_to_pose=self._move_to_pose_pair if allow_pose_goal else None,
             logger=self._log,
+            acceleration=self.acceleration,
         )
 
     def _move_to_pose_pair(self, pose, velocity=PICK_VELOCITY):
@@ -466,9 +448,18 @@ class RobotArm:
                 move_joints_action_client=self._move_joints_client,
                 named_position=name,
                 velocity=velocity,
-                acceleration=PICK_ACCELERATION,
+                acceleration=self.acceleration,
             )
         )
+
+    @contextmanager
+    def acceleration_scaling(self, acceleration: float):
+        """Use ``acceleration`` for every planned move inside the block."""
+        previous, self.acceleration = self.acceleration, float(acceleration)
+        try:
+            yield
+        finally:
+            self.acceleration = previous
 
     def move_joints(self, joint_positions, velocity: float = 0.2) -> bool:
         return bool(
@@ -624,13 +615,7 @@ class RobotArm:
         self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
 
     def restore_shelf_scene(self) -> bool:
-        """Put the boards and walls of the last shelf scan back in the planning scene.
-
-        The core wipes the scene at the start of every task, and the eye-in-hand
-        octomap never sees the compartment ceiling or walls. The detector refuses
-        when the base moved since the scan (the boxes are in base_link), so a stale
-        shelf never ends up in front of another piece of furniture.
-        """
+        """Put the last shelf scan's boxes back in the scene; refused once the base moved."""
         if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
             self._log.warn("detect_shelf unavailable; no shelf boxes in the scene")
             return False
@@ -651,11 +636,7 @@ class RobotArm:
         return True
 
     def shelf_levels(self) -> list:
-        """(height, thickness) of every board of the last shelf scan, ascending.
-
-        Empty without a scan. Heights are base_link Z and stay valid when the
-        base moves, so unlike the boxes they need no motion check.
-        """
+        """(height, thickness) of the scanned boards, ascending; empty without a scan."""
         if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
             return []
         future = self._detect_shelf_client.call_async(DetectShelf.Request())
@@ -667,11 +648,7 @@ class RobotArm:
         return [(float(lv.height), float(lv.thickness)) for lv in result.levels]
 
     def shelf_extent(self):
-        """(front_x, back_x, y_min, y_max) of the last shelf scan in base_link, or None.
-
-        Unlike the boxes this needs no motion check: callers only use it while
-        docked at the shelf they scanned.
-        """
+        """(front_x, back_x, y_min, y_max) of the last shelf scan in base_link, or None."""
         if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
             return None
         future = self._detect_shelf_client.call_async(DetectShelf.Request())
@@ -692,36 +669,6 @@ class RobotArm:
         for obj in self.get_collision_objects():
             if obj.id.startswith(SHELF_COLLISION_NAMESPACE):
                 self.remove_collision_object(obj.id)
-
-    def add_shelf_ceiling_guard(self, place_pose, table_height: float) -> None:
-        """Block the place return from routing up into the compartment ceiling.
-
-        The eye-in-hand octomap never sees it, so a slab is added explicitly.
-        """
-        compartment_h = get_compartment_height()
-        obj = CollisionObject()
-        obj.id = "shelf_ceiling_guard"
-        obj.type = "box"
-        obj.pose.header.frame_id = place_pose.header.frame_id or "base_link"
-        obj.pose.header.stamp = self._node.get_clock().now().to_msg()
-        obj.pose.pose.position.x = float(place_pose.pose.position.x) + 0.10
-        obj.pose.pose.position.y = float(place_pose.pose.position.y)
-        obj.pose.pose.position.z = float(table_height) + compartment_h + 0.10
-        obj.pose.pose.orientation.w = 1.0
-        obj.dimensions.x = 0.40
-        obj.dimensions.y = 0.80
-        obj.dimensions.z = 0.20
-
-        request = AddCollisionObjects.Request()
-        request.collision_objects.append(obj)
-        if not self._add_objects_client.wait_for_service(timeout_sec=3.0):
-            self._log.warn("add_collision_objects unavailable; no ceiling guard")
-            return
-        self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
-        self._log.info("Added shelf ceiling guard collision")
-
-    def remove_shelf_ceiling_guard(self) -> None:
-        self.remove_collision_object("shelf_ceiling_guard")
 
     def object_pick_height(self, obj, grasp_pose) -> float:
         """Height of the grasp above the bottom of ``obj``, for placing later."""
@@ -762,11 +709,7 @@ class RobotArm:
         in mode 5 takes the trajectory controller offline, so every subsequent
         MoveIt goal would fail.
         """
-        # The mode switches below (and the stop on an xArm error) reset the tool
-        # IO unless this is off, and that opens the gripper: on FRIDA a can
-        # grasped on a shelf dropped on the cartesian exit. Only face following
-        # used to turn it off; set it on every entry, it is one quick call and the
-        # controller forgets it on a restart.
+        # Mode switches and xArm stops reset the tool IO, opening the gripper, unless this is off.
         self.disable_tgpio_reset()
 
         if not self._set_xarm_mode(0):

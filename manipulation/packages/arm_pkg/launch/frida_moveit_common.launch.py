@@ -103,13 +103,15 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # rviz with moveit configuration
-    rviz_config_file = PathJoinSubstitution(
-        [
-            FindPackageShare(moveit_config_package_name),
-            "rviz",
-            "planner.rviz" if no_gui_ctrl.perform(context) == "true" else "moveit.rviz",
-        ]
-    )
+    # Ours adds the shelf scan (boxes and levels) to the xArm MoveIt view.
+    if no_gui_ctrl.perform(context) == "true":
+        rviz_config_file = PathJoinSubstitution(
+            [FindPackageShare(moveit_config_package_name), "rviz", "planner.rviz"]
+        )
+    else:
+        rviz_config_file = PathJoinSubstitution(
+            [FindPackageShare("arm_pkg"), "config", "frida_moveit.rviz"]
+        )
     rviz2_node = Node(
         package="rviz2",
         executable="rviz2",

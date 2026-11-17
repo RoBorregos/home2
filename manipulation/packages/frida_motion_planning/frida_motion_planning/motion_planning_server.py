@@ -9,6 +9,7 @@ from std_msgs.msg import Bool
 from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
+    CARTESIAN_PLANNER,
     GET_COLLISION_OBJECTS_SERVICE,
 )
 from frida_interfaces.srv import (
@@ -43,10 +44,17 @@ from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
 from frida_motion_planning.utils.XArmServices import XArmServices
+from frida_pymoveit2.robots import xarm6
 
+from moveit_msgs.srv import GetCartesianPath
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
 from rclpy.qos import QoSProfile
+
+# Jazzy scales the cartesian path itself; Humble ignores the factor.
+CARTESIAN_PATH_SCALES_VELOCITY = hasattr(
+    GetCartesianPath.Request(), "max_velocity_scaling_factor"
+)
 
 
 class MotionPlanningServer(Node):
@@ -360,16 +368,23 @@ class MotionPlanningServer(Node):
         )
 
         original_planner = self.planner.moveit2.planner_id
+        cartesian = goal_handle.request.planner_id == CARTESIAN_PLANNER
+        if cartesian and target_link not in ("", xarm6.end_effector_name()):
+            # pymoveit2 plans straight lines for the end effector whatever the target.
+            self.get_logger().error(
+                f"Straight-line plans move {xarm6.end_effector_name()}, not {target_link}"
+            )
+            return False
 
         # Try planning with requested planner
         was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
             pose=pose,
             target_link=target_link,
-            cartesian=(goal_handle.request.planner_id == "cartesian"),
+            cartesian=cartesian,
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
         )
-        if was_plan_successful and goal_handle.request.planner_id == "cartesian":
+        if was_plan_successful and cartesian and not CARTESIAN_PATH_SCALES_VELOCITY:
             self._slow_cartesian(trajectory_plan)
 
         # Fallback to RRTConnect if requested planner (e.g. VAMP) fails
@@ -461,8 +476,9 @@ class MotionPlanningServer(Node):
             self.execute_trajectory(trajectory_plan)
             was_execution_successful = self.planner.execute_plan(
                 trajectory_plan,
-                is_estop_active=lambda: self._in_estop
-                or goal_handle.is_cancel_requested,
+                is_estop_active=lambda: (
+                    self._in_estop or goal_handle.is_cancel_requested
+                ),
             )
             if was_execution_successful:
                 self.get_logger().info("Trajectory executed successfully.")
@@ -514,7 +530,7 @@ class MotionPlanningServer(Node):
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
         self.planner.set_planner(
-            "RRTConnect" if planner_id == "cartesian" else planner_id
+            "RRTConnect" if planner_id == CARTESIAN_PLANNER else planner_id
         )
         self.get_logger().info(
             f"Planning settings: velocity={velocity}, acceleration={acceleration}, planner_id={planner_id}, planning_time={planning_time}"

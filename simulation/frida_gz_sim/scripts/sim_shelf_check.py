@@ -1,15 +1,7 @@
 #!/usr/bin/env python3
-"""Check the model-free shelf detection against a Gazebo shelf scene.
+"""Grade ManipulationTasks.detect_shelf_levels() against a Gazebo scene's ground truth.
 
-Runs the same ``ManipulationTasks.detect_shelf_levels()`` the pick-and-place task
-manager calls (survey poses -> capture -> detect), times it and grades the levels
-against the scene's ground truth from ``frida_gz_sim.shelf_scenes``.
-
-    ros2 run frida_gz_sim sim_shelf_check.py --ros-args -p scene:=competition \
-        -p objects:=true -p video:=/workspace/sim_logs/shelf.mp4
-
-Exit code 0 when every surface is found within ``tolerance`` and nothing extra is
-reported. The result also lands as JSON next to the video (or in /tmp).
+Usage in simulation/frida_gz_sim/README.md; exit 0 when every surface is within tolerance.
 """
 
 import json

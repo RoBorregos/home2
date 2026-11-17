@@ -1,13 +1,6 @@
-"""Shelf worlds for checking the model-free shelf detection in Gazebo.
+"""Shelf worlds for the Gazebo shelf checks: different cabinets 15-20 cm in front of the robot.
 
-Each scene is a cabinet in front of the static robot (base_link at the world
-origin, facing +x) at the stand-off navigation leaves it, 15-20 cm between the
-robot front and the shelf. The furniture differs between scenes on purpose (level
-count, spacing, depth, walls, top board) so a detector that secretly relies on one
-shelf fails here. Every scene comes in a with-objects and an empty variant.
-
-``world_sdf(scene, objects)`` returns the SDF text; ``SCENES[name].surfaces`` is the
-ground truth (top of every board, base_link Z) the check compares against.
+``world_sdf(scene, objects)`` gives the SDF; ``SCENES[name].surfaces`` is the ground truth.
 """
 
 import math
@@ -60,10 +53,7 @@ SCENES = {
         yaw_deg=4.0,
         y_offset=0.05,
     ),
-    # Competition cabinet from the robot's photo: closed tall bookcase, four boards at
-    # the shelf_levels.json heights and a closed top ~1.40 m (underside), taller
-    # than the camera can look over. Width from the photo's proportions; the depth is
-    # ASSUMED (not visible in the photo).
+    # Competition bookcase from a robot photo, closed top ~1.40 m; the depth is assumed.
     "competition_tall": ShelfScene(
         "competition_tall",
         boards=(0.095, 0.39, 0.69, 1.05),
@@ -81,10 +71,7 @@ SCENES = {
     ),
 }
 
-# Objects per scene: (shape, level index, x from board front, y, size...). Boxes are
-# (sx, sy, sz); cylinders are (radius, length). Chosen to stress the detector: tall
-# and short objects, a wide flat tray that is a horizontal surface itself, and
-# objects near the front edge that hide the board behind them.
+# (shape, level index, x from board front, y, box (sx, sy, sz) or cylinder (r, length)).
 OBJECTS = {
     "competition": [
         ("box", 0, 0.10, 0.15, (0.07, 0.19, 0.25)),  # cereal box on the floor level
@@ -243,10 +230,7 @@ def _clutter_footprint(item) -> tuple:
 
 
 def pick_dy(scene: ShelfScene, level: int, objects: bool = True) -> float:
-    """Most central lateral spot on ``level`` with PICK_MIN_GAP to its clutter.
-
-    Falls back to the spot with the most clearance when none has enough.
-    """
+    """Most central spot on ``level`` with PICK_MIN_GAP to its clutter, else the clearest."""
     clutter = [
         _clutter_footprint(item)
         for item in OBJECTS.get(scene.name, [])
@@ -301,13 +285,7 @@ def _pick_object(scene: ShelfScene, level: int, objects: bool) -> str:
 def world_sdf(
     scene: ShelfScene, objects: bool, pick: bool = False, pick_level: int = PICK_LEVEL
 ) -> str:
-    """Full SDF world: lights, floor, overview camera, the cabinet and its objects.
-
-    The clutter objects are static: they test perception, and static models keep
-    physics from shuffling them between runs. ``pick`` adds one dynamic graspable
-    object on board ``pick_level`` (index), clear of that level's clutter, and names
-    the world like objects.WORLD_NAME, which grasp assist needs.
-    """
+    """SDF world with the cabinet and its static clutter; ``pick`` adds a graspable bottle."""
     world = "pnp_table" if pick else "pnp_shelf"
     return f"""<?xml version="1.0"?>
 <sdf version="1.9">

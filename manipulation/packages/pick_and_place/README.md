@@ -134,7 +134,7 @@ pick_and_place/
    shape, its one pose and the flip for a flat object, or one batch per GPD config so an
    unreachable config falls back to the next. `_run_strategy` applies the tip offset along the
    gripper's approach axis, then hands each candidate to the strategy until one succeeds.
-4. **Return** — `_return_to_carry_pose`. Shelf picks retract to `front_stare` first; rim picks hold
+4. **Return** — `_return_to_carry_pose`. Shelf picks first back out of the compartment along a straight MoveIt path (`_shelf_exit`); rim picks hold
    position (a basket is carried where it was grasped); everything else returns to a stare pose.
 
 The gripper opens *after* perceiving and *before* grasping — the fingers are in the camera's view

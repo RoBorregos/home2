@@ -11,6 +11,7 @@ from typing import List, Optional
 
 import numpy as np
 from frida_constants.manipulation_constants import (
+    CARTESIAN_PLANNER,
     AIM_STRAIGHT_FRONT_QUAT,
     EEF_LINK_NAME,
     GRASP_LINK_FRAME,
@@ -31,20 +32,14 @@ from transforms3d.quaternions import mat2quat, quat2mat
 from pick_and_place.pipelines.strategies import PickOutcome
 from pick_and_place.robot.geometry import set_quaternion
 
-# Shelf place: how far (m) to pull the place toward the front edge so the arm
-# and eye-in-hand camera do not jam against the short compartment ceiling.
+# Pull the shelf place toward the front so the arm and camera clear the ceiling.
 SHELF_PLACE_DEPTH_BACK = 0.07
-# With a shelf scan, the released object must land on the board: its centre at
-# least this far behind the board front and in from the back and sides. The shelf
-# place targets the EE link, and the held object sits ~SHELF_PLACE_OBJECT_OFFSET in
-# front of it along the (horizontal) approach. Measured in Gazebo: on a 1.30 m shelf
-# the reach clamp plus the pull above put the object on the front edge and it fell.
+# The released object's centre stays this far inside the scanned board (sim: it fell off the edge).
 SHELF_PLACE_FRONT_MARGIN = 0.08
 SHELF_PLACE_BACK_MARGIN = 0.06
 SHELF_PLACE_SIDE_MARGIN = 0.08
-SHELF_PLACE_OBJECT_OFFSET = GRIPPER_REACH - 0.03
-# gripper_grasp_joint (FRIDA URDF): grasp frame = link_eef rotated this much about Z.
-# Pick poses are grasp-frame poses; the shelf place targets link_eef.
+SHELF_PLACE_OBJECT_OFFSET = GRIPPER_REACH - 0.03  # held object ahead of link_eef
+# URDF gripper_grasp_joint: grasp frame = link_eef rotated this much about Z.
 GRASP_FRAME_YAW_FROM_EEF = -np.pi / 4
 
 # Ladder of candidate place heights: fewer, finer steps on a shelf because the
@@ -66,11 +61,17 @@ PLACE_TOLERANCE_ORIENTATION = 0.05
 HEATMAP_TIMEOUT = 60.0
 TRASH_TIMEOUT = 15.0
 
+RELEASE_SETTLE = 0.5  # s for the fingers to open before moving away
+SHELF_PLACE_IN_VELOCITY = 0.3
+RETURN_VELOCITY = 0.75
+
 # Orientation with Z aiming down, used when the pick pose is unusable.
 TOP_DOWN_QUAT = [0.0, 1.0, 0.0, 0.0]
 
 
-def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
+def execute(
+    arm, perception, place_params, pick_outcome: PickOutcome, straight_in: bool = False
+) -> bool:
     """Place the held object. Returns True on success."""
     log = arm.logger
     arm.set_context("place")
@@ -91,30 +92,25 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
     )
     arm.publish_place_pose(place_pose)
 
-    # The eye-in-hand octomap never sees the compartment ceiling or walls: put the
-    # boards and walls of the shelf scan in the scene for the whole place. Choosing
-    # the pose may have wiped the scene, so this comes after it.
-    shelf_boxes = place_params.is_shelf and arm.restore_shelf_scene()
     bounds = None
     shelf_quat = AIM_STRAIGHT_FRONT_QUAT
     if place_params.is_shelf:
+        # The octomap never sees the ceiling or walls; choosing the pose wiped the scene.
+        if not arm.restore_shelf_scene():
+            log.error("Shelf place needs a shelf scan from where the robot stands")
+            return False
         bounds = _shelf_place_bounds(arm, place_pose)
         shelf_quat = _shelf_place_quat(arm, pick_outcome)
 
     reached = _reach_place_pose(
-        arm, place_pose, place_params.is_shelf, bounds, shelf_quat
+        arm, place_pose, place_params.is_shelf, bounds, shelf_quat, straight_in
     )
 
     if reached:
         with arm.phase("release"):
             arm.detach_pick_objects()
-            arm.open_gripper(settle_s=1.0)
+            arm.open_gripper(settle_s=RELEASE_SETTLE)
 
-    # Without a shelf scan, fall back to a slab at the configured compartment
-    # height so the return does not route up into the ceiling.
-    guard = place_params.is_shelf and not shelf_boxes
-    if guard:
-        arm.add_shelf_ceiling_guard(place_pose, place_params.table_height)
     returned = False
     try:
         with arm.phase("return/table_stare"):
@@ -122,17 +118,14 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
                 # Keep the octomap on a shelf: it holds the compartment walls.
                 if attempt > 0 and not place_params.is_shelf:
                     arm.clear_octomap()
-                if arm.move_to_named_position("table_stare", velocity=0.5):
+                if arm.move_to_named_position("table_stare", velocity=RETURN_VELOCITY):
                     log.info("Returned to position successfully")
                     returned = True
                     break
                 log.info("Retry sending return joint goal")
     finally:
-        # Always drop the guard and the shelf boxes: they are in base_link and
-        # would follow the robot to the next piece of furniture.
-        if guard:
-            arm.remove_shelf_ceiling_guard()
-        if shelf_boxes:
+        # The boxes are in base_link and would follow the robot to other furniture.
+        if place_params.is_shelf:
             arm.remove_shelf_scene()
 
     if reached and not returned:
@@ -149,12 +142,7 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
 
 
 def _shelf_place_bounds(arm, place_pose: PoseStamped) -> Optional[tuple]:
-    """(min_x, max_x, min_y, max_y) for the EE link so the object lands on the board.
-
-    From the last shelf scan; None without one (the place then keeps its old
-    behaviour). Prefers a pose the arm may fail to reach over a release on the
-    front edge: a failed place keeps the object in the gripper.
-    """
+    """EE-link (min_x, max_x, min_y, max_y) that releases over the scanned board, or None."""
     extent = arm.shelf_extent()
     if extent is None or place_pose.header.frame_id not in ("", "base_link"):
         return None
@@ -175,18 +163,10 @@ def _rotation_about_z(angle: float) -> np.ndarray:
 
 
 def _shelf_place_quat(arm, pick_outcome: PickOutcome):
-    """EE-link orientation for the shelf place that keeps the object as picked.
+    """EE-link orientation that keeps the object's "up" as held at the pick.
 
-    The shelf place used a fixed EE quaternion (AIM_STRAIGHT_FRONT_QUAT). A frontal
-    shelf grasp holds the object with the camera up, and that fixed orientation
-    turned the bottle upside down in Gazebo. Build the place orientation instead:
-    the same approach direction as AIM_STRAIGHT_FRONT_QUAT, rolled about it so the
-    object's "up" (as held at the pick) points up.
-
-    The pick pose is a gripper_grasp_frame pose; the place targets link_eef, and
-    grasp = eef * Rz(GRASP_FRAME_YAW_FROM_EEF). base_link and link_base share Z, so
-    "up" needs no transform. Falls back to AIM_STRAIGHT_FRONT_QUAT when the pick
-    pose is missing or held the object along the approach (a top-down pick).
+    Same approach as AIM_STRAIGHT_FRONT_QUAT, rolled about it; that quaternion as is
+    turned a frontally picked bottle upside down. Kept as is after a top-down pick.
     """
     pose = pick_outcome.pick_pose if pick_outcome is not None else None
     if pose is None or pose.header.frame_id not in ("base_link", "link_base"):
@@ -223,6 +203,7 @@ def _reach_place_pose(
     is_shelf: bool,
     bounds: Optional[tuple] = None,
     shelf_quat=AIM_STRAIGHT_FRONT_QUAT,
+    straight_in: bool = False,
 ) -> bool:
     """Try a ladder of increasing heights until one is reachable.
 
@@ -233,7 +214,15 @@ def _reach_place_pose(
     count, step = SHELF_LADDER if is_shelf else TABLE_LADDER
     target_link = EEF_LINK_NAME if is_shelf else GRASP_LINK_FRAME
 
-    def reach(pose):
+    def reach(pose, straight=False):
+        # Pre-place to place as a line along the approach; a free plan where it is cut.
+        if straight and arm.move_to_pose(
+            pose,
+            velocity=SHELF_PLACE_IN_VELOCITY,
+            planner_id=CARTESIAN_PLANNER,
+            target_link=target_link,
+        ):
+            return True
         return arm.move_to_pose(
             pose,
             target_link=target_link,
@@ -243,7 +232,7 @@ def _reach_place_pose(
 
     for index in range(count):
         arm.check_abort()
-        final, half, pre = _place_pose_triple(
+        final, pre = _place_pose_pair(
             place_pose, index, step, is_shelf, bounds, shelf_quat
         )
         arm.set_context(f"place rung={index}")
@@ -255,25 +244,15 @@ def _reach_place_pose(
                     continue
 
         with arm.phase("place"):
-            if reach(final):
+            if reach(final, straight=is_shelf and straight_in):
                 log.info(f"Place pose reached at rung {index}")
                 return True
-
-        if is_shelf and index == 0:
-            # Halfway only on the first rung; higher rungs are already elevated
-            # and a halfway pose there risks a ceiling collision.
-            with arm.phase("place_halfway"):
-                if reach(half):
-                    log.info("Place halfway pose reached")
-                    return True
-        elif is_shelf:
-            log.info(f"Skipping halfway fallback at rung {index} (already elevated)")
 
     log.error("Failed to reach any place pose")
     return False
 
 
-def _place_pose_triple(
+def _place_pose_pair(
     place_pose: PoseStamped,
     index: int,
     step: float,
@@ -281,18 +260,12 @@ def _place_pose_triple(
     bounds: Optional[tuple] = None,
     shelf_quat=AIM_STRAIGHT_FRONT_QUAT,
 ):
-    """Build (final, halfway, pre-place) for one rung of the ladder.
-
-    On a table the three are identical; only the shelf needs an approach from
-    further out along the gripper's local Z. ``bounds`` (from the shelf scan)
-    keeps the shelf release over the board; ``shelf_quat`` is the gripper
-    orientation for the shelf place (see _shelf_place_quat).
-    """
+    """(final, pre-place) for one rung; on a shelf the pre-place backs off along local Z."""
     final = copy.deepcopy(place_pose)
     final.pose.position.z += index * step
 
     if not is_shelf:
-        return final, copy.deepcopy(final), copy.deepcopy(final)
+        return final, copy.deepcopy(final)
 
     # The heatmap aims at the compartment center (deep), which jams the arm and
     # camera against the ceiling; pull the place toward the front edge.
@@ -303,9 +276,7 @@ def _place_pose_triple(
         final.pose.position.y = float(np.clip(final.pose.position.y, min_y, max_y))
     set_quaternion(final, shelf_quat)
 
-    pre = _offset_along_local_z(final, SHELF_POSITION_PREPLACE_POSE)
-    half = _offset_along_local_z(final, SHELF_POSITION_PREPLACE_POSE * 0.5)
-    return final, half, pre
+    return final, _offset_along_local_z(final, SHELF_POSITION_PREPLACE_POSE)
 
 
 def _offset_along_local_z(pose: PoseStamped, distance: float) -> PoseStamped:

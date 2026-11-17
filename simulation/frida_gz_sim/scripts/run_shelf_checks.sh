@@ -38,11 +38,11 @@ for scene in "${SCENES[@]}"; do
     ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=false \
       > "$OUT/${tag}_manipulation.log" 2>&1 &
     wait_log "$OUT/${tag}_manipulation.log" "Manipulation core started" 300 || continue
-    wait_log "$OUT/${tag}_manipulation.log" "Shelf detector ready" 60 || continue
+    wait_log "$OUT/${tag}_manipulation.log" "Grasp generator ready" 60 || continue
     # Gazebo depth is exact: drop the real ZED's 1.4 % range correction. Keep the
     # captured frames for offline tuning.
-    ros2 param set /shelf_detector depth_scale 1.0
-    ros2 param set /shelf_detector dump_path "$OUT/$tag.npz"
+    ros2 param set /grasp_generator shelf.depth_scale 1.0
+    ros2 param set /grasp_generator shelf.dump_path "$OUT/$tag.npz"
     sleep 5
     ros2 run frida_gz_sim sim_shelf_check.py --ros-args -p use_sim_time:=true \
       -p scene:="$scene" -p objects:=$([ "$objects" = 1 ] && echo true || echo false) \

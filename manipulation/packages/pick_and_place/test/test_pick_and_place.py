@@ -9,6 +9,7 @@ working robot.
 """
 
 import asyncio
+import copy
 import inspect
 import numpy as np
 import threading
@@ -28,6 +29,8 @@ from fakes import (
     make_pose,
 )
 from frida_constants.manipulation_constants import (
+    CARTESIAN_PLANNER,
+    PICK_ACCELERATION,
     BOWL_NAME,
     PRE_GRASP_DISTANCE,
     RIM_NAMES,
@@ -346,7 +349,7 @@ def test_a_shelf_pick_tries_the_frontal_grasp_and_backs_out(strategies):
         cluster=bottle_cluster(),
         grasps=[([make_pose()], [0.9])],
     )
-    arm = FakeArm(shelf_levels=SHELF)
+    arm = FakeArm(shelf_levels=SHELF, link_pose=_shelf_exit_pose())
     success, outcome = run_pick(
         arm,
         perception,
@@ -358,13 +361,13 @@ def test_a_shelf_pick_tries_the_frontal_grasp_and_backs_out(strategies):
     assert success
     assert "detect_grasps" not in perception.calls  # GPD never needed
     assert outcome.pick_pose.header.frame_id == "link_base"
-    # pre-grasp, in along the (tilted) approach, then off the board and straight
-    # back out horizontally
-    directions = [np.round(d, 3).tolist() for d, _, _ in arm.approaches]
+    # pre-grasp, straight in along the (tilted) approach, then a MoveIt path out
+    ((direction, _, _),) = arm.approaches
     tilt = np.radians(pick_pipeline.SHELF_FRONTAL_PITCHES[0])
-    assert directions[0] == pytest.approx([np.cos(tilt), 0.0, -np.sin(tilt)], abs=1e-3)
-    assert directions[-2:] == [[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0]]
+    assert direction == pytest.approx([np.cos(tilt), 0.0, -np.sin(tilt)], abs=1e-3)
     assert arm.calls.index("move_to_pregrasp") < arm.calls.index("cartesian_approach")
+    assert arm.move_kwargs[-1]["planner_id"] == CARTESIAN_PLANNER
+    assert arm.named_positions == ["table_stare"]  # one planned move leaves the shelf
 
 
 @pytest.mark.parametrize("is_shelf, levels", [(False, SHELF), (True, [])])
@@ -522,29 +525,22 @@ def held(height=0.12):
     return PickOutcome(pick_pose=make_pose(z=0.5), object_pick_height=height)
 
 
-def test_shelf_guard_is_added_and_always_removed():
-    arm = FakeArm()
-    run_place(arm, place_perception(), params(is_shelf=True))
-    assert "add_shelf_ceiling_guard" in arm.calls
-    assert "remove_shelf_ceiling_guard" in arm.calls
-    assert arm.calls.index("add_shelf_ceiling_guard") < arm.calls.index(
-        "remove_shelf_ceiling_guard"
-    )
+def test_shelf_place_needs_a_shelf_scan():
+    arm = FakeArm()  # nothing to restore: no scan, or the base moved since it
+    assert run_place(arm, place_perception(), params(is_shelf=True)) is False
+    assert "move_to_pose" not in arm.calls
+    assert "open_gripper" not in arm.calls
 
 
-def test_shelf_scan_boxes_replace_the_configured_guard():
-    # With a shelf scan the measured boards and walls protect the place; the slab
-    # at the configured compartment height is only a fallback without one.
+def test_shelf_scan_boxes_protect_the_place():
     arm = FakeArm(shelf_scan=True)
     assert run_place(arm, place_perception(), params(is_shelf=True)) is True
-    assert "add_shelf_ceiling_guard" not in arm.calls
     assert arm.calls.index("restore_shelf_scene") < arm.calls.index("move_to_pose")
     assert "remove_shelf_scene" in arm.calls
 
 
 def test_shelf_place_keeps_a_frontally_picked_object_upright():
-    # A frontal shelf grasp holds the object camera-up; the fixed shelf place
-    # quaternion is the opposite roll and turned the bottle upside down in Gazebo.
+    # The fixed shelf place quaternion turned a frontally picked bottle upside down.
     pick = make_pose()
     q = Rotation.from_euler("y", 100, degrees=True).as_quat()
     pick.pose.orientation.x, pick.pose.orientation.y = q[0], q[1]
@@ -581,18 +577,14 @@ def test_shelf_place_keeps_the_fixed_quaternion_after_a_top_down_pick():
     assert got == pytest.approx(list(place_pipeline.AIM_STRAIGHT_FRONT_QUAT))
 
 
-@pytest.mark.parametrize("extent", [(0.50, 0.85, -0.40, 0.40), None])
-def test_shelf_place_releases_over_the_board(extent):
-    # In Gazebo the reach clamp plus the 7 cm pull put the held object on the front
-    # edge of a 1.30 m shelf and it fell. With a scan the release stays on the board.
+def test_shelf_place_releases_over_the_board():
+    # In Gazebo the reach clamp plus the 7 cm pull released on the front edge.
+    extent = (0.50, 0.85, -0.40, 0.40)
     arm = FakeArm(shelf_scan=True, shelf_extent=extent)
     assert run_place(arm, place_perception(), params(is_shelf=True)) is True
     final = arm.poses["move_to_pose"][1]  # pre-place, then the place itself
     object_x = final.pose.position.x + place_pipeline.SHELF_PLACE_OBJECT_OFFSET
-    if extent is None:
-        assert object_x < 0.50 + place_pipeline.SHELF_PLACE_FRONT_MARGIN
-    else:
-        assert object_x >= extent[0] + place_pipeline.SHELF_PLACE_FRONT_MARGIN - 1e-9
+    assert object_x >= extent[0] + place_pipeline.SHELF_PLACE_FRONT_MARGIN - 1e-9
 
 
 def test_shelf_boxes_never_leave_with_the_robot():
@@ -606,13 +598,6 @@ def test_table_place_never_touches_the_shelf_scene():
     arm = FakeArm(shelf_scan=True)
     run_place(arm, place_perception(), params(is_shelf=False))
     assert "restore_shelf_scene" not in arm.calls
-    assert "add_shelf_ceiling_guard" not in arm.calls
-
-
-def test_guard_is_removed_even_when_the_return_fails():
-    arm = FakeArm(named_position_results=[False] * 10)
-    run_place(arm, place_perception(), params(is_shelf=True))
-    assert "remove_shelf_ceiling_guard" in arm.calls
 
 
 def test_place_fails_when_the_return_never_succeeds():
@@ -629,7 +614,7 @@ def test_place_clears_the_octomap_only_before_a_retry():
 
 
 def test_shelf_place_keeps_the_octomap_on_a_failed_return():
-    arm = FakeArm(named_position_results=[False] * 5)
+    arm = FakeArm(shelf_scan=True, named_position_results=[False] * 5)
     assert run_place(arm, place_perception(), params(is_shelf=True)) is False
     assert "clear_octomap" not in arm.calls
 
@@ -644,6 +629,39 @@ def test_place_fails_when_no_rung_is_reachable():
     arm = FakeArm(move_to_pose_results=[False] * 8)
     assert run_place(arm, place_perception(), params(is_shelf=False)) is False
     assert "detach_pick_objects" not in arm.calls
+
+
+def test_a_failed_shelf_place_climbs_a_rung_instead_of_releasing_short():
+    # Sim: the old halfway release dropped the bottle in front of the board.
+    arm = FakeArm(shelf_scan=True, move_to_pose_results=[True, False, True, True])
+    assert run_place(arm, place_perception(), params(is_shelf=True)) is True
+    pre, final_0, pre_1, final_1 = arm.poses["move_to_pose"]
+    assert final_1.pose.position.x == pytest.approx(final_0.pose.position.x)
+    assert final_1.pose.position.z == pytest.approx(
+        final_0.pose.position.z + place_pipeline.SHELF_LADDER[1]
+    )
+
+
+@pytest.mark.parametrize("straight_in", [False, True])
+def test_shelf_place_goes_in_straight_only_when_asked(straight_in):
+    arm = FakeArm(shelf_scan=True)
+    place_pipeline.execute(
+        arm, place_perception(), params(is_shelf=True), held(), straight_in=straight_in
+    )
+    pre, final = arm.move_kwargs[:2]
+    assert "planner_id" not in pre  # reaching the pre-place is a free plan
+    assert (final.get("planner_id") == CARTESIAN_PLANNER) is straight_in
+
+
+def test_a_cut_straight_place_falls_back_to_a_free_plan_on_the_same_rung():
+    # Sim: into a 0.90 m board the straight line was cut at 30 % on every rung.
+    arm = FakeArm(shelf_scan=True, move_to_pose_results=[True, False, True])
+    assert place_pipeline.execute(
+        arm, place_perception(), params(is_shelf=True), held(), straight_in=True
+    )
+    pre, straight, free = arm.poses["move_to_pose"]
+    assert straight.pose.position == free.pose.position
+    assert "planner_id" not in arm.move_kwargs[2]
 
 
 def tilted_pick(height=0.15):
@@ -817,7 +835,12 @@ def core():
     node.strategies = {}
     node._logger = FakeLogger()
     node.get_logger = lambda: node._logger
-    node.get_parameter = lambda name: SimpleNamespace(value="auto")
+    node.parameters = {
+        "pick_method": "auto",
+        "shelf_acceleration": 0.3,
+        "shelf_place_straight": False,
+    }
+    node.get_parameter = lambda name: SimpleNamespace(value=node.parameters[name])
     node._last_pick = PickOutcome()
     node._follow_lock = threading.Lock()
     node._task_lock = threading.Lock()
@@ -971,6 +994,7 @@ def test_shelf_pick_restores_the_shelf_after_the_initial_wipe(core, monkeypatch)
         "pick_and_place.pipelines.pick.execute",
         lambda *a, **k: (False, PickOutcome()),
     )
+    core.arm = FakeArm(shelf_scan=True)
     core._run_pick(_Request(scan_environment=True))
     calls = core.arm.calls
     assert calls.index("remove_all_collision_objects") < calls.index(
@@ -978,6 +1002,40 @@ def test_shelf_pick_restores_the_shelf_after_the_initial_wipe(core, monkeypatch)
     )
     # ...and the wipe after the pick removes it again.
     assert calls[-1] == "remove_all_collision_objects"
+
+
+def test_shelf_pick_needs_a_shelf_scan(core, monkeypatch):
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.pick.execute",
+        lambda *a, **k: pytest.fail("picked without a shelf scan"),
+    )
+    assert core._run_pick(_Request(scan_environment=True)) is False
+
+
+def test_shelf_tasks_use_the_shelf_acceleration(core, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.pick.execute", lambda *a, **k: (False, PickOutcome())
+    )
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.place.execute",
+        lambda *a, **k: seen.setdefault("straight_in", k["straight_in"]),
+    )
+    core.arm = FakeArm(shelf_scan=True)
+    core.parameters |= {"shelf_acceleration": 0.5, "shelf_place_straight": True}
+    core._run_pick(_Request(scan_environment=True))
+    place = _Request(ManipulationTask.PLACE)
+    place.place_params.is_shelf = True
+    core._run_place(place)
+    core._run_pick(_Request(scan_environment=False))
+    assert core.arm.accelerations == [0.5, 0.5, PICK_ACCELERATION]
+    assert seen["straight_in"] is True
+
+
+@pytest.mark.parametrize("value, successful", [(0.5, True), (0.0, False), (1.5, False)])
+def test_shelf_acceleration_must_be_a_scaling_factor(core, value, successful):
+    parameter = SimpleNamespace(name="shelf_acceleration", value=value)
+    assert core._validate_parameters([parameter]).successful is successful
 
 
 def test_table_pick_does_not_restore_the_shelf(core, monkeypatch):
@@ -1168,33 +1226,28 @@ def _shelf_exit_pose():
     return pose
 
 
-SINGULAR = {f"joint{i}": 0.5 for i in range(1, 7)} | {"joint5": -0.23}
-
-
-def test_shelf_exit_moves_by_joints():
-    # FRIDA: the 2 cm cartesian lift tripped xArm C24 near the wrist singularity
-    # (joint5 -13 deg) and again with the elbow stretched (joint3 -155 deg).
-    near = {k: v + 0.02 for k, v in SINGULAR.items()}
-    arm = FakeArm(joints=SINGULAR, ik_solution=near)
-    pick_pipeline._shelf_exit(arm, _shelf_exit_pose())
-    assert arm.calls.count("move_joints") == 2  # lift, then straight back
-    # move_joint_positions takes {"joints": {name: value}, "degrees": bool}
-    assert arm.joint_moves[0] == {"joints": near, "degrees": False}
+def test_shelf_exit_lifts_then_backs_out_in_straight_moveit_paths():
+    # FRIDA: the cartesian velocity lift tripped xArm C24 near singularities.
+    start = _shelf_exit_pose()
+    arm = FakeArm(link_pose=copy.deepcopy(start))
+    assert pick_pipeline._shelf_exit(arm)
     assert "cartesian_approach" not in arm.calls
+    # pymoveit2 plans straight lines for link_eef whatever the target link
+    assert "link_pose:link_eef" in arm.calls
+    assert all(k["planner_id"] == CARTESIAN_PLANNER for k in arm.move_kwargs)
+    assert all(k["target_link"] == "link_eef" for k in arm.move_kwargs)
+    lift, back = (pose.pose.position for pose in arm.poses["move_to_pose"])
+    p0 = start.pose.position
+    assert (lift.x, lift.y) == pytest.approx((p0.x, p0.y))
+    assert lift.z == pytest.approx(p0.z + pick_pipeline.SHELF_EXIT_LIFT)
+    assert back.z == pytest.approx(lift.z)
+    assert np.hypot(back.x - p0.x, back.y - p0.y) == pytest.approx(
+        pick_pipeline.SHELF_EXIT_RETREAT
+    )
+    assert back.y > p0.y  # the approach was along -y
 
 
-def test_shelf_exit_falls_back_to_a_slow_cartesian_move_on_an_ik_flip():
-    flipped = dict(SINGULAR) | {"joint4": SINGULAR["joint4"] + 3.0}
-    arm = FakeArm(joints=SINGULAR, ik_solution=flipped)
-    pick_pipeline._shelf_exit(arm, _shelf_exit_pose())
-    assert "move_joints" not in arm.calls
-    assert [speed for _, _, speed in arm.approaches] == [
-        pick_pipeline.SHELF_EXIT_FALLBACK_SPEED
-    ] * 2
-
-
-def test_shelf_exit_falls_back_without_joint_states():
-    arm = FakeArm(ik_solution=SINGULAR)
-    pick_pipeline._shelf_exit(arm, _shelf_exit_pose())
-    assert "move_joints" not in arm.calls
-    assert len(arm.approaches) == 2
+def test_shelf_exit_reports_a_failed_plan_or_no_pose():
+    arm = FakeArm(link_pose=_shelf_exit_pose(), move_to_pose_results=[False])
+    assert not pick_pipeline._shelf_exit(arm)
+    assert not pick_pipeline._shelf_exit(FakeArm())

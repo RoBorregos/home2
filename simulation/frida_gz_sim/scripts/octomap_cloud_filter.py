@@ -36,11 +36,7 @@ class OctomapCloudFilter(Node):
         ).value
         # Just above the dining table top, so the table stays and the objects go
         self.max_z = self.declare_parameter("max_z", 0.76).value
-        # Optional [x_min, y_min, z_min, x_max, y_max, z_max] in the reference frame:
-        # when set, drop only the points inside this box (one object to grasp, e.g.
-        # on a shelf) and keep everything else; max_z is then ignored. A height cut would
-        # also drop the other objects on that shelf, and the arm would then plan
-        # straight through them.
+        # [x_min, y_min, z_min, x_max, y_max, z_max]: drop only this box (the object to grasp).
         self.drop_box = list(self.declare_parameter("drop_box", [0.0] * 6).value)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
