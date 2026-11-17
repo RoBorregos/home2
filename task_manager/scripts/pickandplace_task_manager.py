@@ -198,7 +198,7 @@ class PickAndPlaceTM(Node):
             "milk": "milk",
         }
 
-        # Measured at every cabinet visit (base_link Z, 1 = lowest); below MIN_REACHABLE_SHELF_Z announce-only.
+        # Measured at every cabinet visit (1 = lowest); below MIN_REACHABLE_SHELF_Z announce-only.
         self.shelf_level_heights: dict[int, float] = {}
         self.default_shelf_height = 0.0
         self._shelf_heights_detected = False
@@ -563,44 +563,25 @@ class PickAndPlaceTM(Node):
 
     def _place_on_shelf_level(self, shelf_height: float) -> int:
         """Face one shelf level and place the grasped object on it."""
-        is_fallback = self._shelf_fallback_idx > 0
+        fallback = " (fallback shelf)" if self._shelf_fallback_idx > 0 else ""
         CLog.manip(
             self,
             "PLACE",
-            f"Placing {self.grasped_object.name} at shelf height {shelf_height}m"
-            + (" (fallback shelf)." if is_fallback else "."),
+            f"Placing {self.grasped_object.name} at shelf height {shelf_height}m{fallback}.",
         )
-        # Face the level once per visit; retries and fallback shelves reuse the octomap.
-        if not self._cabinet_scan_fresh:
-            CLog.manip(
-                self,
-                "PLACE",
-                f"Scanning shelf at {shelf_height}m (first place attempt this visit).",
-            )
+        if not self._cabinet_scan_fresh:  # retries and fallback shelves reuse this octomap
             self._scan_shelf_level(shelf_height)
             self._cabinet_scan_fresh = True
-        else:
-            CLog.manip(
-                self,
-                "PLACE",
-                "Reusing octomap from current visit (skipping shelf scan).",
-            )
         # From a level's viewing pose MoveIt finds no IK for the pre-place; start from front_stare.
-        CLog.manip(self, "PLACE", "Moving arm to front_stare before place planning.")
         self.subtask_manager.manipulation.move_to_position("front_stare")
-        opt_status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
-            shelf_height,
-            tolerance=0.1,
-            table_or_shelf=False,
-            approach_plane=False,
+        self.subtask_manager.manipulation.get_optimal_position_for_plane(
+            shelf_height, tolerance=0.1, table_or_shelf=False, approach_plane=False
         )
-        CLog.manip(self, "PLACE", f"get_optimal_position_for_plane → {opt_status}")
         self.subtask_manager.hri.say(
             f"Placing {self.grasped_object.name} on the shelf.", wait=False
         )
         status = self.subtask_manager.manipulation.place_on_shelf(
-            plane_height=shelf_height,
-            tolerance=0.1,
+            plane_height=shelf_height, tolerance=0.1
         )
         CLog.manip(self, "PLACE", f"place_on_shelf → {status}")
         return status
@@ -1453,7 +1434,6 @@ class PickAndPlaceTM(Node):
                         "The cabinet could not be measured; no shelf to place on.",
                         level="error",
                     )
-                    shelf_height = None
                     status = Status.EXECUTION_ERROR
                 else:
                     shelf_height = self._shelf_fallback_heights[self._shelf_fallback_idx]

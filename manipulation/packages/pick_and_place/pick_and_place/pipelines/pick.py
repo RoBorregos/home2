@@ -40,6 +40,7 @@ from pick_and_place.robot.geometry import (
     approach_axis,
     is_tilted,
     offset_along_approach,
+    set_quaternion,
 )
 from pick_and_place.utils.grasp_orientation import is_frontal_grasp
 
@@ -350,14 +351,7 @@ def _shelf_frontal_set(arm, perceived: Perceived) -> Optional[GraspSet]:
     if perceived.cluster is None or perceived.band is None:
         return None
     cloud = perceived.cluster
-    points = np.array(
-        [
-            list(p)
-            for p in point_cloud2.read_points(
-                cloud, field_names=("x", "y", "z"), skip_nans=True
-            )
-        ]
-    )
+    points = _cloud_points(cloud)
     poses = shelf_frontal_grasps(points, perceived.band, cloud.header.frame_id)
     if not poses:
         size = np.ptp(points, axis=0) if len(points) else np.zeros(3)
@@ -423,26 +417,21 @@ def shelf_frontal_grasps(points, band, frame_id: str) -> List[PoseStamped]:
     poses = []
     for h in heights:
         for pitch in pitches:
-            quat = R.from_euler("y", 90 + pitch, degrees=True).as_quat()
             pose = PoseStamped()
             pose.header.frame_id = frame_id
             pose.pose.position.x = front + half_depth + SHELF_FRONTAL_PAST_CENTER
             pose.pose.position.y = centre_y
             pose.pose.position.z = h
-            (
-                pose.pose.orientation.x,
-                pose.pose.orientation.y,
-                pose.pose.orientation.z,
-                pose.pose.orientation.w,
-            ) = (float(q) for q in quat)
-            poses.append(pose)
+            poses.append(
+                set_quaternion(
+                    pose, R.from_euler("y", 90 + pitch, degrees=True).as_quat()
+                )
+            )
     _lift_camera_clear(poses)
     return poses
 
 
-def compartment_band(
-    z: float, levels, margin: float = SHELF_BAND_MARGIN
-) -> Optional[Tuple[float, float]]:
+def compartment_band(z: float, levels) -> Optional[Tuple[float, float]]:
     """(min_z, max_z) of the compartment at ``z`` from (height, thickness) boards; max_z 0 on top."""
     ordered = sorted(levels)
     below = [lv for lv in ordered if lv[0] - SHELF_BAND_DOWN_TOLERANCE <= z]
@@ -450,8 +439,8 @@ def compartment_band(
         return None
     floor = below[-1]
     above = [lv for lv in ordered if lv[0] > floor[0]]
-    ceiling = (above[0][0] - above[0][1] - margin) if above else 0.0
-    return floor[0] + margin, ceiling
+    ceiling = (above[0][0] - above[0][1] - SHELF_BAND_MARGIN) if above else 0.0
+    return floor[0] + SHELF_BAND_MARGIN, ceiling
 
 
 def _locate(perception, request: PickRequest) -> Optional[PointStamped]:
@@ -484,17 +473,17 @@ def _locate(perception, request: PickRequest) -> Optional[PointStamped]:
     return point
 
 
+def _cloud_points(cloud) -> np.ndarray:
+    """(N, 3) x, y, z of a PointCloud2, NaNs dropped."""
+    points = point_cloud2.read_points(
+        cloud, field_names=("x", "y", "z"), skip_nans=True
+    )
+    return np.array([list(p) for p in points]).reshape(-1, 3)
+
+
 def _cluster_height(cluster) -> Optional[float]:
-    points = [
-        list(p)
-        for p in point_cloud2.read_points(
-            cluster, field_names=("x", "y", "z"), skip_nans=True
-        )
-    ]
-    if not points:
-        return None
-    z = np.array(points)[:, 2]
-    return float(np.max(z) - np.min(z))
+    z = _cloud_points(cluster)[:, 2]
+    return float(np.max(z) - np.min(z)) if len(z) else None
 
 
 # ======================================================================
@@ -756,9 +745,8 @@ def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
     """Where the arm goes once it is holding the object."""
     log = arm.logger
     if strategy_key == PICK_STRATEGY_RIM:
-        log.info(
-            "Rim pick: holding position (a basket is carried where it was grasped)"
-        )
+        # Hold where the strategy left the arm; a basket must be carried in place.
+        log.info("Rim pick: holding position (skipping return to stare)")
         return
 
     named = "look_side_stare" if strategy_key == PICK_STRATEGY_PEAK else "table_stare"

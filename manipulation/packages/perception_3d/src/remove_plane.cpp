@@ -390,10 +390,8 @@ public:
         new pcl::PointCloud<pcl::PointXYZ>);
 
     // radial filter, to eliminate chance of error by planes far from the point.
-    // A caller that knows the surroundings (a shelf compartment from the shelf
-    // scan) passes its own height band: in a closed cabinet the default band holds
-    // the board below, the one above and the walls, and the object merges with
-    // them into one cluster too large to keep.
+    // A shelf pick passes its compartment as the band: the default one merges the
+    // object with the boards and walls of a closed cabinet.
     const float band_min =
         request->min_height > 0.0f ? request->min_height : point.z - 0.3f;
     const float band_max =

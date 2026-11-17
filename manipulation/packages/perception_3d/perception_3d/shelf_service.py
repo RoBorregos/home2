@@ -250,18 +250,9 @@ class ShelfService:
         )
 
     def _fill(self, response, g: ShelfGeometry) -> None:
-        for level in g.levels:
-            msg = ShelfLevel()
-            msg.height = float(level.height)
-            msg.thickness = float(level.thickness)
-            msg.front_x = float(level.front_x)
-            msg.back_x = float(level.back_x)
-            msg.y_min = float(level.y_min)
-            msg.y_max = float(level.y_max)
-            msg.clearance = float(level.clearance)
-            msg.num_points = int(level.num_points)
-            msg.seen_from_below = bool(level.seen_from_below)
-            response.levels.append(msg)
+        response.levels = [
+            ShelfLevel(**asdict(level)) for level in g.levels
+        ]  # same fields
         response.y_min = float(g.y_min)
         response.y_max = float(g.y_max)
         response.front_x = float(g.front_x)
@@ -355,7 +346,7 @@ class ShelfService:
         self._markers_pub.publish(MarkerArray(markers=markers))
 
     def _fail(self, response, message: str):
-        self._node.get_logger().warn(message)
+        self._node.get_logger().warning(message)
         response.success = False
         response.message = message
         response.frames_used = len(self._frames)

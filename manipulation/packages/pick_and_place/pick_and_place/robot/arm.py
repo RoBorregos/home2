@@ -614,20 +614,26 @@ class RobotArm:
             return
         self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
 
-    def restore_shelf_scene(self) -> bool:
-        """Put the last shelf scan's boxes back in the scene; refused once the base moved."""
+    def _last_shelf_scan(self, add_collision_objects: bool = False):
+        """The DetectShelf answer for the last scan, or None without a usable one."""
         if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
-            self._log.warn("detect_shelf unavailable; no shelf boxes in the scene")
-            return False
-        request = DetectShelf.Request()
-        request.add_collision_objects = True
+            self._log.warn("detect_shelf unavailable")
+            return None
+        request = DetectShelf.Request(add_collision_objects=add_collision_objects)
         future = self._detect_shelf_client.call_async(request)
         if not self.wait_for_future(future, timeout=8.0) or future.result() is None:
-            self._log.warn("detect_shelf did not answer; no shelf boxes in the scene")
-            return False
+            self._log.warn("detect_shelf did not answer")
+            return None
         result = future.result()
         if not result.success:
-            self._log.warn(f"No shelf boxes in the scene: {result.message}")
+            self._log.warn(f"No shelf scan to use: {result.message}")
+            return None
+        return result
+
+    def restore_shelf_scene(self) -> bool:
+        """Put the last shelf scan's boxes back in the scene; refused once the base moved."""
+        result = self._last_shelf_scan(add_collision_objects=True)
+        if result is None:
             return False
         self._log.info(
             f"Shelf boxes restored: {len(result.collision_objects)} "
@@ -637,32 +643,15 @@ class RobotArm:
 
     def shelf_levels(self) -> list:
         """(height, thickness) of the scanned boards, ascending; empty without a scan."""
-        if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
-            return []
-        future = self._detect_shelf_client.call_async(DetectShelf.Request())
-        if not self.wait_for_future(future, timeout=5.0) or future.result() is None:
-            return []
-        result = future.result()
-        if not result.success:
-            return []
-        return [(float(lv.height), float(lv.thickness)) for lv in result.levels]
+        result = self._last_shelf_scan()
+        return [(lv.height, lv.thickness) for lv in result.levels] if result else []
 
     def shelf_extent(self):
         """(front_x, back_x, y_min, y_max) of the last shelf scan in base_link, or None."""
-        if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
+        result = self._last_shelf_scan()
+        if result is None or not result.levels:
             return None
-        future = self._detect_shelf_client.call_async(DetectShelf.Request())
-        if not self.wait_for_future(future, timeout=5.0) or future.result() is None:
-            return None
-        result = future.result()
-        if not result.success or not result.levels:
-            return None
-        return (
-            float(result.front_x),
-            float(result.back_x),
-            float(result.y_min),
-            float(result.y_max),
-        )
+        return result.front_x, result.back_x, result.y_min, result.y_max
 
     def remove_shelf_scene(self) -> None:
         """Drop the shelf boxes (they are in base_link and must not leave with the robot)."""

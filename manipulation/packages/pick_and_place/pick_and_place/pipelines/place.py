@@ -27,7 +27,8 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_motion_planning.utils.tf_utils import transform_point, transform_pose
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs_py import point_cloud2
-from transforms3d.quaternions import mat2quat, quat2mat
+from scipy.spatial.transform import Rotation as R
+from transforms3d.quaternions import quat2mat
 
 from pick_and_place.pipelines.strategies import PickOutcome
 from pick_and_place.robot.geometry import set_quaternion
@@ -157,11 +158,6 @@ def _shelf_place_bounds(arm, place_pose: PoseStamped) -> Optional[tuple]:
     return min_x, max_x, min_y, max_y
 
 
-def _rotation_about_z(angle: float) -> np.ndarray:
-    c, s = np.cos(angle), np.sin(angle)
-    return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
-
-
 def _shelf_place_quat(arm, pick_outcome: PickOutcome):
     """EE-link orientation that keeps the object's "up" as held at the pick.
 
@@ -172,29 +168,22 @@ def _shelf_place_quat(arm, pick_outcome: PickOutcome):
     if pose is None or pose.header.frame_id not in ("base_link", "link_base"):
         return AIM_STRAIGHT_FRONT_QUAT
     q = pose.pose.orientation
-    up_in_grasp = quat2mat([q.w, q.x, q.y, q.z]).T @ np.array([0.0, 0.0, 1.0])
-    # The part of "up" across the approach (local z) is what the roll can set.
-    up_across = up_in_grasp - up_in_grasp[2] * np.array([0.0, 0.0, 1.0])
-    if np.linalg.norm(up_across) < 0.3:
+    up = R.from_quat([q.x, q.y, q.z, q.w]).inv().apply([0.0, 0.0, 1.0])
+    up[2] = 0.0  # only "up" across the approach (grasp local z) can be set by the roll
+    if np.linalg.norm(up) < 0.3:
         return AIM_STRAIGHT_FRONT_QUAT
-    up_across /= np.linalg.norm(up_across)
 
-    aim = AIM_STRAIGHT_FRONT_QUAT  # x, y, z, w, for link_eef in base_link
-    aim_eef = quat2mat([aim[3], aim[0], aim[1], aim[2]])
-    approach = aim_eef @ _rotation_about_z(GRASP_FRAME_YAW_FROM_EEF) @ [0.0, 0.0, 1.0]
+    # A roll about local z keeps the approach, so it is the same for link_eef and the grasp frame.
+    approach = R.from_quat(AIM_STRAIGHT_FRONT_QUAT).apply([0.0, 0.0, 1.0])
     world_up = np.array([0.0, 0.0, 1.0]) - approach[2] * approach
-    world_up /= np.linalg.norm(world_up)
-
-    # Grasp-frame rotation: local z -> approach, local up_across -> world up.
-    local = np.column_stack(
-        (up_across, np.cross([0.0, 0.0, 1.0], up_across), [0.0, 0.0, 1.0])
-    )
+    # Grasp frame: local z -> approach, local "up" -> world up.
+    local = np.column_stack((up, np.cross([0.0, 0.0, 1.0], up), [0.0, 0.0, 1.0]))
     world = np.column_stack((world_up, np.cross(approach, world_up), approach))
-    grasp = world @ local.T
-    eef = grasp @ _rotation_about_z(-GRASP_FRAME_YAW_FROM_EEF)
-    w, x, y, z = mat2quat(eef)
+    local /= np.linalg.norm(local, axis=0)
+    world /= np.linalg.norm(world, axis=0)
+    grasp = R.from_matrix(world @ local.T)
     arm.logger.info("Shelf place: orientation keeps the object as picked")
-    return [float(x), float(y), float(z), float(w)]
+    return list((grasp * R.from_euler("z", -GRASP_FRAME_YAW_FROM_EEF)).as_quat())
 
 
 def _reach_place_pose(

@@ -815,23 +815,14 @@ class ManipulationTasks:
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
 
-    def _call_detect_shelf(
-        self, reset=False, capture=False, detect=False, add_collision_objects=False
-    ):
-        """One DetectShelf call; returns the response or None on timeout."""
-        request = DetectShelf.Request()
-        request.reset = reset
-        request.capture = capture
-        request.detect = detect
-        request.add_collision_objects = add_collision_objects
-        future = self._detect_shelf_client.call_async(request)
+    def _call_detect_shelf(self, **fields):
+        """One DetectShelf call (``fields`` of the request); the response, or None on timeout."""
+        future = self._detect_shelf_client.call_async(DetectShelf.Request(**fields))
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
         return future.result()
 
     @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, [0.095, 0.39, 0.68, 1.05]))
-    def detect_shelf_levels(
-        self, add_collision_objects: bool = False, settle_s: float = SHELF_SURVEY_SETTLE
-    ) -> tuple[int, list[float]]:
+    def detect_shelf_levels(self) -> tuple[int, list[float]]:
         """Survey the shelf and detect it: (status, board heights in base_link, ascending)."""
         if not self._detect_shelf_client.wait_for_service(timeout_sec=TIMEOUT):
             Logger.error(self.node, "detect_shelf service not available")
@@ -844,7 +835,7 @@ class ManipulationTasks:
             ):
                 Logger.warn(self.node, f"Could not reach {pose}; skipping this view")
                 continue
-            t.sleep(settle_s)
+            t.sleep(SHELF_SURVEY_SETTLE)
             result = self._call_detect_shelf(reset=captured == 0, capture=True)
             if result is None or not result.success:
                 Logger.warn(
@@ -855,7 +846,7 @@ class ManipulationTasks:
         if captured == 0:
             Logger.error(self.node, "Shelf scan: no view captured")
             return Status.EXECUTION_ERROR, []
-        result = self._call_detect_shelf(detect=True, add_collision_objects=add_collision_objects)
+        result = self._call_detect_shelf(detect=True)
         if result is None or not result.success:
             Logger.error(self.node, f"Shelf detection failed: {result and result.message}")
             return Status.EXECUTION_ERROR, []

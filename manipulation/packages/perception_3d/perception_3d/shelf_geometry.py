@@ -249,16 +249,12 @@ def _walls(
         z_lo, z_hi = _extent(strip[:, 2])
         if z_hi - z_lo < p.wall_min_height:
             continue
-        if abs(y_peak - boards_y[0]) <= p.wall_search and (
-            found["left"] is None
-            or abs(y_peak - boards_y[0]) < abs(found["left"] - boards_y[0])
-        ):
-            found["left"] = y_peak
-        if abs(y_peak - boards_y[1]) <= p.wall_search and (
-            found["right"] is None
-            or abs(y_peak - boards_y[1]) < abs(found["right"] - boards_y[1])
-        ):
-            found["right"] = y_peak
+        for name, edge in (("left", boards_y[0]), ("right", boards_y[1])):
+            gap = abs(y_peak - edge)
+            if gap <= p.wall_search and (
+                found[name] is None or gap < abs(found[name] - edge)
+            ):
+                found[name] = y_peak  # the plane nearest the boards' edge
     # Back wall: a plane behind the boards that is tall or spans most of the width.
     width = boards_y[1] - boards_y[0]
     back = vertical[np.abs(normals[:, 0]) > 0.8]
@@ -387,14 +383,14 @@ def detect_shelf(
         levels[-1].height - levels[-1].thickness if levels[-1].seen_from_below else 0.0
     )
 
-    with_clearance = []
-    for i, level in enumerate(levels):
-        if i + 1 < len(levels):
-            above = levels[i + 1]
-            clearance = above.height - above.thickness - level.height
-        else:
-            clearance = 0.0  # nothing seen above the top board
-        with_clearance.append(replace(level, clearance=float(max(clearance, 0.0))))
+    # Clearance up to the underside of the board above; 0 on the top board.
+    with_clearance = [
+        replace(
+            level,
+            clearance=float(max(above.height - above.thickness - level.height, 0.0)),
+        )
+        for level, above in zip(levels, levels[1:])
+    ] + [levels[-1]]
 
     geometry = ShelfGeometry(
         levels=tuple(with_clearance),
@@ -469,17 +465,6 @@ def collision_boxes(
     return boxes
 
 
-# ======================================================================
-# Using the result
-# ======================================================================
-
-
-def level_for_height(z: float, heights: Sequence[float], down_tolerance: float = 0.05):
-    """Highest surface at most ``down_tolerance`` above ``z``, or None below the lowest."""
-    resting = [h for h in sorted(heights) if h - down_tolerance <= z]
-    return resting[-1] if resting else None
-
-
 __all__ = [
     "Box",
     "Frame",
@@ -489,5 +474,4 @@ __all__ = [
     "ShelfParams",
     "collision_boxes",
     "detect_shelf",
-    "level_for_height",
 ]

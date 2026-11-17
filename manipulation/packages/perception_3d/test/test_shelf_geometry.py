@@ -14,7 +14,6 @@ from perception_3d.shelf_geometry import (
     ShelfNotFound,
     ShelfParams,
     detect_shelf,
-    level_for_height,
 )
 
 BOARDS = [0.095, 0.39, 0.68, 1.05]
@@ -177,13 +176,6 @@ def test_only_objects_raises():
     geometry = detect_shelf([frame], params)
     # A lone surface is the widest one, so it is accepted; the caller must judge it.
     assert len(geometry.levels) == 1 and geometry.y_max - geometry.y_min < 0.15
-
-
-def test_level_for_height():
-    assert level_for_height(0.45, BOARDS) == 0.39
-    assert level_for_height(0.37, BOARDS) == 0.39  # depth noise just under the surface
-    assert level_for_height(1.20, BOARDS) == 1.05
-    assert level_for_height(0.01, BOARDS) is None
 
 
 def test_back_wall_seen_only_as_a_strip():

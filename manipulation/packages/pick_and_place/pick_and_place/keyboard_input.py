@@ -5,6 +5,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from frida_interfaces.action import ManipulationAction, MoveJoints
 from frida_interfaces.msg import ManipulationTask
+import math
 import time
 from geometry_msgs.msg import PointStamped, PoseStamped
 from frida_interfaces.msg import ObjectDetectionArray
@@ -46,11 +47,8 @@ class KeyboardInput(Node):
         self.declare_parameter("min_distance", 0.0)
         self.declare_parameter("max_distance", float("inf"))
 
-        self.declare_parameter("arena", 1)
-
         self.min_distance = self.get_parameter("min_distance").value
         self.max_distance = self.get_parameter("max_distance").value
-        self.arena = self.get_parameter("arena").value
 
         callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -203,8 +201,8 @@ class KeyboardInput(Node):
         config = XARM_CONFIGURATIONS[name]
         goal = MoveJoints.Goal()
         goal.joint_names = list(config["joints"].keys())
-        scale = 3.14159265359 / 180 if config.get("degrees") else 1.0
-        goal.joint_positions = [v * scale for v in config["joints"].values()]
+        to_rad = math.radians if config.get("degrees") else float
+        goal.joint_positions = [to_rad(v) for v in config["joints"].values()]
         goal.velocity = velocity
         if not self._move_joints_client.wait_for_server(timeout_sec=5.0):
             self.get_logger().error("move_joints action server unavailable")
