@@ -321,17 +321,15 @@ class CompositeTasks:
         heights = self.shelf_heights()
         if self._shelves is None:
             self._shelves = self.scan_shelves(heights)
-        # Levels the arm cannot reach are scanned for categories but never offered
-        reachable = {i for i, h in enumerate(heights) if h >= MIN_REACHABLE_SHELF_Z}
-        shelves = {i: names for i, names in self._shelves.items() if i in reachable}
-        status, _, to_add, _ = self.hri.categorize_objects([name], shelves)
+        status, _, to_add, _ = self.hri.categorize_objects([name], self._shelves)
         idx = None
         if status == Status.EXECUTION_SUCCESS:
             idx = next((int(i) for i, names in to_add.items() if name in names), None)
-        order = [heights[i] for i in sorted(reachable)]
-        if idx is not None and idx in reachable:
+        # The right level is still announced; unreachable ones give way to the nearest reachable
+        order = [h for h in heights if h >= MIN_REACHABLE_SHELF_Z]
+        if idx is not None:
             self.hri.say(f"The {name} goes on shelf {idx + 1}.", wait=False)
-            order = [heights[idx]] + [h for h in order if h != heights[idx]]
+            order.sort(key=lambda h: abs(h - heights[idx]))
         status, height = self.place_on_shelf_fallback(order, attempts)
         if status == Status.EXECUTION_SUCCESS:
             self._shelves.setdefault(heights.index(height), []).append(name)
