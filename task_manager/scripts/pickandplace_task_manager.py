@@ -126,7 +126,8 @@ class PickAndPlace:
             return OK
         # Shelves and the trash have no free flat top in front, so a put-down there lands on the floor
         flat = self.state.location not in (None, *self.spec["shelves"], *self.spec["trash"])
-        if not flat and self.sm.composite.gripper_has_object:
+        composite = self.sm.composite
+        if not flat and (composite.gripper_has_object or not composite.grasp_sensor):
             # Keep holding rather than release where it is unknown what is below
             if self.go(self.spec["table"]) != OK:
                 return Status.EXECUTION_ERROR

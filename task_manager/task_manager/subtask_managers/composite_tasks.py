@@ -39,6 +39,8 @@ class CompositeTasks:
         self._rooms: dict[str, str] = {}
         self._shelves: dict[int, list[str]] | None = None
         self.gripper_has_object = False
+        # The grasp bit is trusted only once the gripper sensor has published
+        self.grasp_sensor = False
         node.create_subscription(GripperGraspState, GRIPPER_GRASP_STATE_TOPIC, self._gripper_cb, 10)
         self._clear_octomap_client = node.create_client(Empty, "/clear_octomap")
 
@@ -50,6 +52,7 @@ class CompositeTasks:
 
     def _gripper_cb(self, msg):
         self.gripper_has_object = msg.object_detected
+        self.grasp_sensor = True
 
     def wait(self, seconds: float):
         """Sleep while keeping the node's callbacks alive."""
@@ -64,7 +67,10 @@ class CompositeTasks:
         if not self._rooms:
             _, areas = self.nav.retrieve_areas()
             if isinstance(areas, dict):
-                self._rooms = {sub: room for room, subs in areas.items() for sub in subs}
+                # A sublocation in several rooms (e.g. trashbin) resolves to the first one
+                for room, subs in areas.items():
+                    for sub in subs:
+                        self._rooms.setdefault(sub, room)
         return self._rooms.get(place, "")
 
     def navigate_and_dock(self, place: str, dock: bool = True, say: bool = True) -> Status:
@@ -148,7 +154,7 @@ class CompositeTasks:
         """Place whatever is held at the current spot so a new pick never drops it."""
         if not held_name:
             return Status.EXECUTION_SUCCESS
-        if use_grasp_detector and not self.gripper_has_object:
+        if use_grasp_detector and self.grasp_sensor and not self.gripper_has_object:
             CLog.manip(self.node, "PICK", "Grasp bit reports empty gripper.")
             return Status.EXECUTION_SUCCESS
         CLog.manip(self.node, "PICK", f"Still holding {held_name}; placing it here.", level="warn")
@@ -161,7 +167,7 @@ class CompositeTasks:
         return Status.EXECUTION_ERROR
 
     def _grasp_holds(self, use_grasp_detector: bool) -> bool:
-        if not use_grasp_detector:
+        if not (use_grasp_detector and self.grasp_sensor):
             return True
         rclpy.spin_once(self.node, timeout_sec=0.5)
         if not self.gripper_has_object:
