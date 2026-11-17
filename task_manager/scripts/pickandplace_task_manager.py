@@ -7,6 +7,7 @@ Debug: -p start_at:=cleanup|breakfast -p state_file:=<snapshot.json>
 """
 
 import json
+import math
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -110,9 +111,15 @@ class PickAndPlace:
     def perceive_table(self) -> Status:
         self.go(self.spec["table"])
         status, dets = self.sm.composite.detect_on_surface()
-        self.state.objects = [Item(d.classname) for d in dets or []]
+        # Objects on furniture behind the table are in view too; only the table's count
+        near = [d for d in dets or [] if self.on_table(d)]
+        self.state.objects = [Item(d.classname) for d in near]
         self.sm.composite.announce_objects([o.name for o in self.state.objects])
         return status
+
+    def on_table(self, detection) -> bool:
+        point = self.sm.composite.detection_point(detection)
+        return point is not None and math.hypot(point[0], point[1]) <= self.spec["table_range_m"]
 
     def free_gripper(self) -> Status:
         if not self.state.holding:
