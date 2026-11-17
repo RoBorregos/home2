@@ -52,13 +52,11 @@ class ForceGuardProfile:
     jump_trip: float  # N
     jump_sustain: int  # consecutive samples
     hard_ceiling: float  # N
-    # mm/s, used until fast_until; 0 disables the fast phase and descends at
-    # descent_speed throughout.
+    # mm/s, used until fast_until; 0 disables the fast phase.
     fast_descent_speed: float = 0.0
     # m; depth at which descent_speed is fully reached. 0 => min_contact_descent.
     fast_until: float = 0.0
-    # m; distance before fast_until over which speed ramps down smoothly
-    # instead of switching in one step. 0 => instant switch.
+    # m; distance before fast_until over which speed ramps down smoothly.
     ramp_distance: float = 0.0
 
     def validate(self, profile_name: str) -> None:

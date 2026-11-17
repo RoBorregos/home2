@@ -18,6 +18,7 @@ from frida_constants.manipulation_constants import (
     SAFETY_HEIGHT_GEOMETRIC,
     TOP_GRASP_DEPTH,
 )
+from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from geometry_msgs.msg import PointStamped
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
@@ -215,9 +216,31 @@ def _fall_back_or_fail(
 # ======================================================================
 
 
+POSE_TOLERANCE_DEG = 5.0
+
+
+def _already_at(arm, named: str) -> bool:
+    """True if every joint is already within tolerance of the named pose."""
+    target = XARM_CONFIGURATIONS.get(named)
+    if target is None:
+        return False
+    current = arm.get_joints(degrees=True)
+    current_joints = current.get("joints", {})
+    return all(
+        abs(current_joints.get(joint, 1e9) - deg) <= POSE_TOLERANCE_DEG
+        for joint, deg in target["joints"].items()
+    )
+
+
 def _move_to_stare_pose(arm, strategy_key: str) -> None:
-    """Point the camera where this kind of object lives."""
+    """Point the camera where this kind of object lives.
+
+    Skipped if the arm is already there (e.g. back-to-back flat picks): never
+    skipped otherwise, so perception never runs from an uncontrolled pose.
+    """
     named = STARE_POSES.get(strategy_key, DEFAULT_STARE_POSE)
+    if _already_at(arm, named):
+        return
     with arm.phase(f"stare/{named}"):
         arm.move_to_named_position(named, velocity=0.75)
 

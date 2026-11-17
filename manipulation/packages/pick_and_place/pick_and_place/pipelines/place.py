@@ -96,7 +96,7 @@ def execute(arm, perception, place_params, pick_outcome: PickOutcome) -> bool:
                 # Keep the octomap on a shelf: it holds the compartment walls.
                 if attempt > 0 and not place_params.is_shelf:
                     arm.clear_octomap()
-                if arm.move_to_named_position("table_stare", velocity=0.5):
+                if arm.move_to_named_position("table_stare", velocity=0.75):
                     log.info("Returned to position successfully")
                     returned = True
                     break
@@ -132,6 +132,7 @@ def _reach_place_pose(arm, place_pose: PoseStamped, is_shelf: bool) -> bool:
     def reach(pose):
         return arm.move_to_pose(
             pose,
+            velocity=0.65,
             target_link=target_link,
             tolerance_position=PLACE_TOLERANCE_POSITION,
             tolerance_orientation=PLACE_TOLERANCE_ORIENTATION,
