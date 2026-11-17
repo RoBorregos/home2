@@ -12,6 +12,10 @@ from frida_constants.navigation_constants import AREAS_SERVICE
 
 p = PostgresAdapter()
 
+DATAFRAME_PATH = "/workspace/src/hri/packages/embeddings/embeddings/dataframes"
+DOCKER_PATH = "/workspace/src/docker/hri/sql_dumps"
+NAV_AREAS_PATH = "/workspace/src/navigation/packages/map_context/maps/areas"
+
 
 def get_jsons(path: str) -> dict[str, dict[str, dict]]:
     jsons = []
@@ -157,17 +161,87 @@ def write_to_file(filename: str, content: str):
         f.write(content)
 
 
-def main():
-    DATAFRAME_PATH = "/workspace/src/hri/packages/embeddings/embeddings/dataframes"
-    FRIDA_CONSTANTS_PATH = "/workspace/src/frida_constants"
-    DOCKER_PATH = "/workspace/src/docker/hri/sql_dumps"
+def fetch_areas_from_service() -> dict | None:
+    """Areas of the map navigation currently has loaded, or None if unavailable."""
+    print("Fetching areas from AREAS_SERVICE...")
+    rclpy.init()
+    try:
+        node = rclpy.create_node("create_sql_dump")
+    except Exception as e:  # noqa: BLE001 - e.g. DDS domain cannot be created
+        print(f"WARNING: could not create a ROS node, skipping AREAS_SERVICE: {e}")
+        rclpy.shutdown()
+        return None
+    areas = None
+    try:
+        client = node.create_client(MapAreas, AREAS_SERVICE)
+        if not client.wait_for_service(timeout_sec=5.0):
+            node.get_logger().warn(
+                "AREAS_SERVICE not available (is navigation running?)"
+            )
+        else:
+            future = client.call_async(MapAreas.Request())
+            rclpy.spin_until_future_complete(node, future, timeout_sec=10.0)
+            result = future.result()
+            if result is not None and result.areas != "":
+                areas = json.loads(result.areas)
+            else:
+                node.get_logger().warn("AREAS_SERVICE returned empty data")
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+    return areas
 
+
+def load_areas_from_map_file(map_name: str) -> dict | None:
+    """Areas of `map_name` read from navigation's per-map file.
+
+    MAP_NAME follows navigation's convention (e.g. "robocup2026_1.db"); nav_central
+    strips ".db" to pick areas_<name>.json, so the same is done here.
+    """
+    areas_name = map_name.removesuffix(".db")
+    file_path = os.path.join(NAV_AREAS_PATH, f"areas_{areas_name}.json")
+    if not os.path.isfile(file_path):
+        available = (
+            sorted(
+                f.removeprefix("areas_").removesuffix(".json")
+                for f in os.listdir(NAV_AREAS_PATH)
+                if f.startswith("areas_") and f.endswith(".json")
+            )
+            if os.path.isdir(NAV_AREAS_PATH)
+            else []
+        )
+        print(
+            f"ERROR: no areas file for MAP_NAME='{map_name}' ({file_path} not found)."
+        )
+        print(f"       Available maps: {', '.join(available) or 'none'}")
+        return None
+    print(f"Loading areas from {file_path}")
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_areas() -> dict | None:
+    """Areas for the locations table: live from navigation, else the active map's
+    file (MAP_NAME), else None. Never falls back to an unrelated default map,
+    since that would fill the DB with places navigation does not know."""
+    areas = fetch_areas_from_service()
+    if areas is not None:
+        print("Using areas from AREAS_SERVICE (map loaded by navigation).")
+        return areas
+
+    map_name = os.environ.get("MAP_NAME", "").strip()
+    if not map_name:
+        print("ERROR: navigation is not running and MAP_NAME is not set.")
+        return None
+    return load_areas_from_map_file(map_name)
+
+
+def main():
     # Create sql_dumps directory if it doesn't exist
     os.makedirs(DOCKER_PATH, exist_ok=True)
 
     print("Loading JSON files...")
     jsons = get_jsons(DATAFRAME_PATH)
-    frida_constants_jsons = get_jsons(FRIDA_CONSTANTS_PATH)
 
     print(f"Found {len(jsons)} JSON files.")
 
@@ -203,38 +277,18 @@ def main():
         ),
     )
 
-    print("Fetching areas from AREAS_SERVICE...")
-    areas_json = None
-    rclpy.init()
-    node = rclpy.create_node("create_sql_dump")
-    client = node.create_client(MapAreas, AREAS_SERVICE)
-    if not client.wait_for_service(timeout_sec=5.0):
-        node.get_logger().warn(
-            "AREAS_SERVICE not available, falling back to areas.json"
-        )
-    else:
-        future = client.call_async(MapAreas.Request())
-        rclpy.spin_until_future_complete(node, future, timeout_sec=10.0)
-        result = future.result()
-        if result is not None and result.areas != "":
-            areas_json = json.loads(result.areas)
-        else:
-            node.get_logger().warn(
-                "AREAS_SERVICE returned empty data, falling back to areas.json"
-            )
-    node.destroy_node()
-    rclpy.shutdown()
-
+    areas_json = load_areas()
     if areas_json is None:
-        areas_json = frida_constants_jsons["areas.json"]
+        print(
+            "WARNING: locations NOT regenerated. Start navigation, or set MAP_NAME "
+            "(./run.sh --update-map <map>.db), and run --regenerate-db again."
+        )
+        return
 
     print("Writing locations")
     write_to_file(
         os.path.join(DOCKER_PATH, "04-locations.sql"),
-        json_to_locations_dumps(
-            areas_json,
-            frida_constants_jsons["context_areas.json"],
-        ),
+        json_to_locations_dumps(areas_json, jsons["context_areas.json"]),
     )
 
 
