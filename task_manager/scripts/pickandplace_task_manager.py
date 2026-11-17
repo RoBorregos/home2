@@ -115,7 +115,13 @@ class PickAndPlace:
         return status
 
     def free_gripper(self) -> Status:
-        status = self.sm.composite.ensure_gripper_empty(self.state.holding)
+        if not self.state.holding:
+            return OK
+        # Shelves and the trash have no free flat top in front, so a put-down there lands on the floor
+        flat = self.state.location not in (None, *self.spec["shelves"], *self.spec["trash"])
+        if not flat and self.sm.composite.gripper_has_object:
+            self.go(self.spec["table"])
+        status = self.sm.composite.ensure_gripper_empty(self.state.holding, use_grasp_detector=True)
         if status == OK:
             self.state.holding = None
         return status
