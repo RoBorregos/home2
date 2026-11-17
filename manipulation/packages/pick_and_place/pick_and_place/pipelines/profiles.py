@@ -99,6 +99,7 @@ class PickProfile:
     post_contact_retract: float = 0.0
     force_guard: Optional[ForceGuardProfile] = None
     fallback_to_gpd: bool = False
+    validate_approach: bool = False
 
     @property
     def effective_descent_distance(self) -> float:

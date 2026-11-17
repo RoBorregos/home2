@@ -36,6 +36,7 @@ _OPTIONAL_MODULES = [
 _STUB_ATTRIBUTES = {
     "frida_pymoveit2.robots.xarm6": {
         "JOINT_POSITION_LIMITS": {f"joint{i}": (-6.28, 6.28) for i in range(1, 7)},
+        "MOVE_GROUP_ARM": "xarm6",
     },
     # The TF helpers return (success, transformed); a MagicMock cannot unpack.
     # Identity is the right stub: these tests are not about frame conversion.

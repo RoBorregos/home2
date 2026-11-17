@@ -79,6 +79,7 @@ class FakeArm:
         descent_results: Optional[List[bool]] = None,
         contact_results: Optional[List[ContactResult]] = None,
         self_collides: Optional[List[bool]] = None,
+        approach_collides: Optional[List[bool]] = None,
         attach_result: Optional[AttachResult] = None,
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
@@ -96,6 +97,7 @@ class FakeArm:
         }
         self.descents: List[tuple] = []
         self.approaches: List[tuple] = []
+        self.approach_checks: List[tuple] = []
         self.move_kwargs: List[dict] = []
         self.close_settles: List[float] = []
         self.guards: List[Any] = []
@@ -117,6 +119,7 @@ class FakeArm:
         self._descent_results = list(descent_results or [])
         self._contact_results = list(contact_results or [])
         self._self_collides = list(self_collides or [])
+        self._approach_collides = list(approach_collides or [])
         self._named_position_results = list(named_position_results or [])
         self._attach_result = attach_result or AttachResult(
             attached=True, lowest_object=FakeObject(), highest_object=FakeObject()
@@ -207,6 +210,11 @@ class FakeArm:
         self.calls.append("endpoint_self_collides")
         self.poses["endpoint_self_collides"].append(pose)
         return self._next(self._self_collides, False)
+
+    def approach_collides(self, pose, direction, distance, self_collisions=True):
+        self.calls.append("approach_collides")
+        self.approach_checks.append((pose, direction, distance, self_collisions))
+        return self._next(self._approach_collides, False)
 
     # --- gripper and scene --------------------------------------------------
 

@@ -69,7 +69,10 @@ from xarm_utils.shelf_levels import get_compartment_height
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
-from pick_and_place.utils.self_collision_utils import endpoint_self_collides
+from pick_and_place.utils.self_collision_utils import (
+    approach_collides,
+    endpoint_self_collides,
+)
 
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
@@ -462,6 +465,21 @@ class RobotArm:
             pose,
             latest_joint_state=self._latest_joint_state,
             logger=self._log,
+        )
+
+    def approach_collides(
+        self, pose, direction, distance: float, self_collisions: bool = True
+    ) -> bool:
+        """True if the straight drive from ``pose`` hits the camera-vs-world or (optionally) arm-vs-arm."""
+        return approach_collides(
+            self._compute_ik_client,
+            self._state_validity_client,
+            pose,
+            direction,
+            distance,
+            latest_joint_state=self._latest_joint_state,
+            logger=self._log,
+            self_collisions=self_collisions,
         )
 
     # ==================================================================

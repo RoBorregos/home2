@@ -142,15 +142,36 @@ class CartesianApproachPick(PickStrategy):
                 if arm.endpoint_self_collides(candidate.pose):
                     raise PickAttemptFailed("grasp pose self-collides with robot")
 
+        # The velocity-mode drive is never planned by MoveIt; check the camera against the scene now, before the octomap is cleared.
+        pre_grasp = offset_along_approach(candidate.pose, -profile.pre_grasp_height)
+        drive = (
+            pre_grasp,
+            approach_axis(candidate.pose),
+            profile.effective_descent_distance,
+        )
+        if profile.validate_approach:
+            with arm.phase("validate_approach"):
+                if arm.approach_collides(*drive, self_collisions=False):
+                    raise PickAttemptFailed(
+                        "camera would hit the scene on the approach"
+                    )
+
         # No settle: the gripper finishes opening during the pre-grasp move.
         with arm.phase("open_gripper"):
             arm.open_gripper(settle_s=0.0)
 
-        pre_grasp = offset_along_approach(candidate.pose, -profile.pre_grasp_height)
         with arm.phase("approach_pre_grasp"):
             arm.clear_octomap()
             if not arm.move_to_pregrasp(pre_grasp, profile.pre_grasp_velocity):
                 raise PickAttemptFailed("pre-grasp unreachable")
+
+        # Self-collision depends on the joint configuration the pre-grasp ended in, so check it from here.
+        if profile.validate_approach:
+            with arm.phase("validate_approach"):
+                if arm.approach_collides(*drive):
+                    raise PickAttemptFailed(
+                        "arm or camera would collide on the approach"
+                    )
 
         with arm.phase("cartesian_approach"):
             arm.check_abort()
