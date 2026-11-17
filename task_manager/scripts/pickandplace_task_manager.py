@@ -124,9 +124,9 @@ class PickAndPlace:
         self.say(f"I will pick the {item.name}.")
         if source in self.spec["shelves"]:
             heights = self.sm.composite.shelf_heights()
-            status = self.sm.composite.pick_from_shelf(item.name, heights)
+            status = self.sm.composite.pick_from_shelf(item.name, heights, use_grasp_detector=True)
         else:
-            status = self.sm.composite.pick_confirmed(item.name)
+            status = self.sm.composite.pick_confirmed(item.name, use_grasp_detector=True)
         if status == OK:
             item.status = "picked"
             self.state.holding = item.name
