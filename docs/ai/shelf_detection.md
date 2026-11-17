@@ -102,10 +102,13 @@ cloud. Two more speed-ups are `manipulation_core` parameters, off by default:
 ```bash
 ros2 param set /manipulation_core shelf_acceleration 0.5    # default 0.3, every planned shelf move
 ros2 param set /manipulation_core shelf_place_straight true # straight into the compartment
+ros2 param set /manipulation_core shelf_exit_to_edge true   # back out past the board front
 ```
 
 `shelf_place_straight` falls back to the free plan on the same rung when the line is
-cut.
+cut. `shelf_exit_to_edge` replaces the fixed 15 cm retreat with what puts the fingertips
+5 cm outside the scanned board front (5-35 cm): an object deep in the compartment
+otherwise leaves the gripper inside it.
 
 ## Known limits
 

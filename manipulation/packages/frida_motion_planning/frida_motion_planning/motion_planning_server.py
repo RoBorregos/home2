@@ -46,15 +46,9 @@ from frida_motion_planning.utils.MoveItServo import MoveItServo
 from frida_motion_planning.utils.XArmServices import XArmServices
 from frida_pymoveit2.robots import xarm6
 
-from moveit_msgs.srv import GetCartesianPath
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
 from rclpy.qos import QoSProfile
-
-# Jazzy scales the cartesian path itself; Humble ignores the factor.
-CARTESIAN_PATH_SCALES_VELOCITY = hasattr(
-    GetCartesianPath.Request(), "max_velocity_scaling_factor"
-)
 
 
 class MotionPlanningServer(Node):
@@ -337,20 +331,6 @@ class MotionPlanningServer(Node):
 
         return result
 
-    def _slow_cartesian(self, traj, factor=3.0):
-        """Humble GetCartesianPath ignores velocity scaling, so retime the
-        cartesian trajectory: scale timing up, velocities/accels down."""
-        if traj is None or not getattr(traj, "points", None):
-            return
-        for pt in traj.points:
-            t = (pt.time_from_start.sec + pt.time_from_start.nanosec * 1e-9) * factor
-            pt.time_from_start.sec = int(t)
-            pt.time_from_start.nanosec = int(round((t - int(t)) * 1e9))
-            if pt.velocities:
-                pt.velocities = [v / factor for v in pt.velocities]
-            if pt.accelerations:
-                pt.accelerations = [a / (factor * factor) for a in pt.accelerations]
-
     def move_to_pose(self, goal_handle, feedback):
         """Perform the pick operation."""
         self._call_ensure_arm_ready()
@@ -384,8 +364,6 @@ class MotionPlanningServer(Node):
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
         )
-        if was_plan_successful and cartesian and not CARTESIAN_PATH_SCALES_VELOCITY:
-            self._slow_cartesian(trajectory_plan)
 
         # Fallback to RRTConnect if requested planner (e.g. VAMP) fails
         if not was_plan_successful and original_planner == "vamp":

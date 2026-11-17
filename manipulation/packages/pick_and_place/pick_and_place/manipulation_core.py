@@ -84,6 +84,7 @@ class ManipulationCore(Node):
         # Shelf speed-ups to try on the robot one at a time (defaults: as validated).
         self.declare_parameter("shelf_acceleration", PICK_ACCELERATION)
         self.declare_parameter("shelf_place_straight", False)
+        self.declare_parameter("shelf_exit_to_edge", False)
         self.add_on_set_parameters_callback(self._validate_parameters)
 
         self.arm = RobotArm(self)
@@ -243,6 +244,7 @@ class ManipulationCore(Node):
             use_gpd=method == "gpd",
             gpd_fallback=method != "geometric",
             in_configuration=params.in_configuration,
+            exit_to_edge=self.get_parameter("shelf_exit_to_edge").value,
         )
 
         self.arm.remove_all_collision_objects(attached=True)

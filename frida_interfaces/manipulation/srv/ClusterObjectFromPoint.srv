@@ -1,5 +1,5 @@
 geometry_msgs/PointStamped point
-bool is_get_all_other_surrounding_objects
+bool is_get_all_other_surrounding_objects 
 # Optional height band (base_link Z) to crop the cloud to before clustering, e.g. a
 # shelf compartment from the shelf scan. 0 keeps the default: point.z -/+ 0.3 m.
 float32 min_height

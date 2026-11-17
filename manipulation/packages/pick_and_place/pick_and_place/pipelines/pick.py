@@ -95,6 +95,10 @@ SHELF_FRONTAL_OPEN_TOP_PITCHES = (30.0, 45.0)
 # Leaving the compartment: a straight MoveIt path this far up and back out.
 SHELF_EXIT_LIFT = 0.02
 SHELF_EXIT_RETREAT = 0.15
+SHELF_EXIT_EDGE_MARGIN = (
+    0.05  # with exit_to_edge: fingertips this far outside the board front
+)
+SHELF_EXIT_RETREAT_LIMITS = (0.05, 0.35)
 SHELF_EXIT_VELOCITY = 0.3
 SHELF_RETURN_VELOCITY = 0.75
 
@@ -127,6 +131,8 @@ class PickRequest:
     # False leaves the arm where the grasp ended, for callers that move on from
     # there themselves (the pour lifts straight up from the grasp).
     return_to_carry: bool = True
+    # Back out until the fingertips clear the scanned board front instead of a fixed 15 cm.
+    exit_to_edge: bool = False
 
 
 @dataclass
@@ -225,7 +231,7 @@ def _pick(
             outcome.place_top_down = True
             outcome.object_pick_height = _top_down_pick_height(outcome.object_height)
     if request.is_shelf:
-        _shelf_exit(arm)
+        _shelf_exit(arm, request.exit_to_edge)
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
@@ -432,7 +438,7 @@ def shelf_frontal_grasps(points, band, frame_id: str) -> List[PoseStamped]:
 
 
 def compartment_band(z: float, levels) -> Optional[Tuple[float, float]]:
-    """(min_z, max_z) of the compartment at ``z`` from (height, thickness) boards; max_z 0 on top."""
+    """(min_z, max_z) of the compartment at ``z`` from (height, thickness) boards; 0 on top."""
     ordered = sorted(levels)
     below = [lv for lv in ordered if lv[0] - SHELF_BAND_DOWN_TOLERANCE <= z]
     if not below:
@@ -711,7 +717,7 @@ def _top_down_pick_height(object_height: float) -> float:
 # ======================================================================
 
 
-def _shelf_exit(arm) -> bool:
+def _shelf_exit(arm, to_edge: bool = False) -> bool:
     """Lift off the board, then back out along the way in, as straight MoveIt paths."""
     target = arm.link_pose(EEF_LINK_NAME)  # straight-line plans always move link_eef
     if target is None:
@@ -721,7 +727,8 @@ def _shelf_exit(arm) -> bool:
     norm = float(np.linalg.norm(back))
     steps = [np.array([0.0, 0.0, SHELF_EXIT_LIFT])]
     if norm >= 0.5:  # a steep grasp has no meaningful "straight back"
-        steps.append(back / norm * SHELF_EXIT_RETREAT)
+        retreat = (_retreat_to_edge(arm) if to_edge else None) or SHELF_EXIT_RETREAT
+        steps.append(back / norm * retreat)
     with arm.phase("shelf_exit"):
         for step in steps:
             target = copy.deepcopy(target)
@@ -739,6 +746,27 @@ def _shelf_exit(arm) -> bool:
                 )
                 return False
     return True
+
+
+def _retreat_to_edge(arm) -> Optional[float]:
+    """Retreat that puts the fingertips SHELF_EXIT_EDGE_MARGIN outside the board front.
+
+    In base_link, where the scan is; None without a scan or a backward approach.
+    """
+    extent = arm.shelf_extent()
+    eef = arm.link_pose(EEF_LINK_NAME, "base_link")
+    if extent is None or eef is None:
+        return None
+    approach = approach_axis(eef)
+    back = -approach[:2] / max(float(np.linalg.norm(approach[:2])), 1e-6)
+    if back[0] > -0.5:  # not backing out toward the robot
+        return None
+    p = eef.pose.position
+    tip_x = p.x + approach[0] * GRIPPER_REACH
+    retreat = (tip_x - extent[0] + SHELF_EXIT_EDGE_MARGIN) / -back[0]
+    retreat = float(np.clip(retreat, *SHELF_EXIT_RETREAT_LIMITS))
+    arm.logger.info(f"Shelf exit: {retreat * 100:.0f} cm back to clear the board front")
+    return retreat
 
 
 def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:

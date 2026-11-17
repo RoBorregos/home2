@@ -237,8 +237,9 @@ class KeyboardInput(Node):
         )
         for i, lvl in enumerate(res.levels, start=1):
             print(
-                f"  L{i}: z={lvl.height:.3f} thick={lvl.thickness:.3f} clear={lvl.clearance:.2f} "
-                f"x[{lvl.front_x:.2f},{lvl.back_x:.2f}] y[{lvl.y_min:.2f},{lvl.y_max:.2f}] n={lvl.num_points}"
+                f"  L{i}: z={lvl.height:.3f} thick={lvl.thickness:.3f} "
+                f"clear={lvl.clearance:.2f} x[{lvl.front_x:.2f},{lvl.back_x:.2f}] "
+                f"y[{lvl.y_min:.2f},{lvl.y_max:.2f}] n={lvl.num_points}"
             )
         if res.levels:
             print(

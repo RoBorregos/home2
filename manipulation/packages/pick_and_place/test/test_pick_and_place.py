@@ -839,6 +839,7 @@ def core():
         "pick_method": "auto",
         "shelf_acceleration": 0.3,
         "shelf_place_straight": False,
+        "shelf_exit_to_edge": False,
     }
     node.get_parameter = lambda name: SimpleNamespace(value=node.parameters[name])
     node._last_pick = PickOutcome()
@@ -1245,6 +1246,34 @@ def test_shelf_exit_lifts_then_backs_out_in_straight_moveit_paths():
         pick_pipeline.SHELF_EXIT_RETREAT
     )
     assert back.y > p0.y  # the approach was along -y
+
+
+def _frontal_eef(x):
+    """link_eef at ``x`` approaching along +x (horizontal), as in base_link."""
+    pose = make_pose(x=x, y=0.0, z=1.0)
+    q = Rotation.from_euler("y", 90, degrees=True).as_quat()
+    pose.pose.orientation.x, pose.pose.orientation.y = q[0], q[1]
+    pose.pose.orientation.z, pose.pose.orientation.w = q[2], q[3]
+    return pose
+
+
+@pytest.mark.parametrize(
+    "eef_x, extent, expected",
+    [
+        (0.40, (0.50, 0.85, -0.4, 0.4), 0.12),  # tip 7 cm inside the front: 12 cm out
+        (0.60, (0.50, 0.85, -0.4, 0.4), 0.32),  # deep in the compartment: 32 cm out
+        (0.80, (0.50, 0.85, -0.4, 0.4), 0.35),  # capped
+        (0.40, None, pick_pipeline.SHELF_EXIT_RETREAT),  # no scan: the fixed retreat
+    ],
+)
+def test_shelf_exit_to_edge_backs_out_until_the_tips_clear_the_board(
+    eef_x, extent, expected
+):
+    start = _frontal_eef(eef_x)
+    arm = FakeArm(link_pose=copy.deepcopy(start), shelf_extent=extent)
+    assert pick_pipeline._shelf_exit(arm, to_edge=True)
+    back = arm.poses["move_to_pose"][-1].pose.position
+    assert start.pose.position.x - back.x == pytest.approx(expected, abs=1e-6)
 
 
 def test_shelf_exit_reports_a_failed_plan_or_no_pose():
