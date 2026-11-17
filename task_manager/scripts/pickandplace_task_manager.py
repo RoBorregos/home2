@@ -28,7 +28,7 @@ OK = Status.EXECUTION_SUCCESS
 @dataclass
 class Item:
     name: str
-    status: str = "pending"  # pending | picked | placed | skipped
+    status: str = "pending"  # pending | picked | placed | skipped | failed
 
 
 @dataclass
@@ -60,7 +60,7 @@ def load_spec(path: str = "") -> dict:
 class PickAndPlace:
     """Task tree; knows nothing about the venue beyond the spec."""
 
-    PHASES = ("start", "cleanup", "breakfast")
+    PHASES = ("start", "cleanup", "breakfast", "retry")
 
     def __init__(self, sm, spec: dict, state: PPCState, node, clock=time.time):
         self.sm = sm
@@ -173,10 +173,26 @@ class PickAndPlace:
     def next_breakfast(self):
         return next((b for b in self.state.breakfast if b.status == "pending"), None)
 
+    def next_retry(self):
+        return next(
+            (i for i in self.state.objects + self.state.breakfast if i.status == "skipped"), None
+        )
+
     @staticmethod
     def done(item: Item, ok: bool):
         if item.status == "pending":
             item.status = "skipped"
+
+    @staticmethod
+    def done_retry(item: Item, ok: bool):
+        if item.status == "skipped":
+            item.status = "failed"
+
+    def retry(self, item: Item):
+        # Spare time goes to a second try; a failed dock or a bad view often clears up
+        if any(item is b for b in self.state.breakfast):
+            return self.serve(item)
+        return self.clean(item)
 
     def clean(self, obj: Item):
         table, dest = self.spec["table"], self.destination(obj.name)
@@ -215,6 +231,7 @@ class PickAndPlace:
                 ForEach("cleanup_loop", self.next_object, self.clean, self.done),
             ],
             "breakfast": [ForEach("breakfast", self.next_breakfast, self.serve, self.done)],
+            "retry": [ForEach("retry", self.next_retry, self.retry, self.done_retry)],
         }
         if start_at not in phases:
             raise ValueError(f"start_at must be one of {self.PHASES}")
