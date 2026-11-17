@@ -103,15 +103,16 @@ SHELF_FRONTAL_OPEN_TOP_PITCHES = (30.0, 45.0)
 # Leaving the compartment with the object: off the board, then straight back out.
 SHELF_EXIT_LIFT = 0.02
 SHELF_EXIT_RETREAT = 0.15
-SHELF_EXIT_SPEED = 50.0  # mm/s
-# Near a wrist singularity (joint5 near 0) a slow cartesian velocity move needs fast
-# joint4/joint6 turns: on FRIDA the xArm stopped with C24 (speed exceeds limit) on the
-# 2 cm lift after a shelf grasp at joint5 -13 deg, and the error reset opened the
-# gripper. There the exit runs as planned joint moves instead.
-SHELF_EXIT_SINGULAR_J5 = np.radians(25.0)
+# A cartesian velocity move near a singularity needs fast joint turns: on FRIDA the
+# xArm stopped with C24 (speed exceeds limit) on the 2 cm lift after shelf grasps,
+# once at the wrist singularity (joint5 -13 deg) and once with the elbow nearly
+# stretched (joint3 -155 deg, a box high on the left), and the stop could open the
+# gripper. The exit runs as planned joint moves (time-parameterised within the
+# joint limits) to the IK of each exit pose; the cartesian move is only a slow
+# fallback when that is not possible.
 SHELF_EXIT_MAX_JOINT_STEP = np.radians(40.0)  # more means an IK branch flip
 SHELF_EXIT_JOINT_VELOCITY = 0.15
-SHELF_EXIT_SINGULAR_SPEED = 15.0  # mm/s, cartesian fallback near the singularity
+SHELF_EXIT_FALLBACK_SPEED = 15.0  # mm/s, cartesian fallback without a joint move
 
 # The ZED hangs below the gripper and grazes the shelf surface on a low frontal
 # grasp; the offset is used to decide whether flipping lifts the camera clear.
@@ -781,29 +782,17 @@ def _shelf_exit(arm, pick_pose: Optional[PoseStamped]) -> None:
                 target.pose.position.x += float(direction[0]) * distance
                 target.pose.position.y += float(direction[1]) * distance
                 target.pose.position.z += float(direction[2]) * distance
-            singular = _near_wrist_singularity(arm)
-            if singular and target is not None and _exit_step_by_joints(arm, target):
+            if target is not None and _exit_step_by_joints(arm, target):
                 continue
-            speed = SHELF_EXIT_SINGULAR_SPEED if singular else SHELF_EXIT_SPEED
-            arm.cartesian_approach(direction, distance, speed)
-
-
-def _near_wrist_singularity(arm) -> bool:
-    joints = arm.current_joints()
-    if not joints or "joint5" not in joints:
-        return False
-    near = abs(joints["joint5"]) < SHELF_EXIT_SINGULAR_J5
-    if near:
-        arm.logger.info(
-            f"Shelf exit: joint5 {np.degrees(joints['joint5']):.0f} deg is near the "
-            "wrist singularity; moving by joints"
-        )
-    return near
+            arm.logger.warn("Shelf exit: slow cartesian fallback")
+            arm.cartesian_approach(direction, distance, SHELF_EXIT_FALLBACK_SPEED)
 
 
 def _exit_step_by_joints(arm, target: PoseStamped) -> bool:
     """One shelf exit step as a planned joint move to the IK of ``target``."""
     current = arm.current_joints()
+    if not current:
+        return False
     solution = arm.solve_ik(target, seed=current)
     if solution is None:
         arm.logger.warn("Shelf exit: no IK for the exit step")

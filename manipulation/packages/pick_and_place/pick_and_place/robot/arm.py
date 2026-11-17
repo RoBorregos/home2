@@ -206,6 +206,7 @@ class RobotArm:
         self._tgpio_reset_client = node.create_client(
             SetInt16, "/xarm/config_tgpio_reset_when_stop", callback_group=group
         )
+        self._tgpio_reset_disabled_logged = False
 
         # --- subscriptions ---------------------------------------------------------------
         node.create_subscription(
@@ -761,6 +762,13 @@ class RobotArm:
         in mode 5 takes the trajectory controller offline, so every subsequent
         MoveIt goal would fail.
         """
+        # The mode switches below (and the stop on an xArm error) reset the tool
+        # IO unless this is off, and that opens the gripper: on FRIDA a can
+        # grasped on a shelf dropped on the cartesian exit. Only face following
+        # used to turn it off; set it on every entry, it is one quick call and the
+        # controller forgets it on a restart.
+        self.disable_tgpio_reset()
+
         if not self._set_xarm_mode(0):
             raise PickHardwareError(f"[{label}] could not enter mode 0")
 
@@ -1018,10 +1026,14 @@ class RobotArm:
             req = SetInt16.Request()
             req.data = 0
             future = self._tgpio_reset_client.call_async(req)
-            self.wait_for_future(future)
-            self._log.info(
-                "TGPIO reset on stop disabled (gripper preserved across mode switches)"
-            )
+            if not self.wait_for_future(future, timeout=5) or future.result() is None:
+                self._log.warn("config_tgpio_reset_when_stop(0) got no answer")
+                return
+            if not self._tgpio_reset_disabled_logged:
+                self._log.info(
+                    "TGPIO reset on stop disabled (gripper preserved across mode switches)"
+                )
+                self._tgpio_reset_disabled_logged = True
         else:
             self._log.warn(
                 "config_tgpio_reset_when_stop service not available -- gripper may open during mode switches",

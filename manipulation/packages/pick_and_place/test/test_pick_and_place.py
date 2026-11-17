@@ -1171,8 +1171,9 @@ def _shelf_exit_pose():
 SINGULAR = {f"joint{i}": 0.5 for i in range(1, 7)} | {"joint5": -0.23}
 
 
-def test_shelf_exit_moves_by_joints_near_the_wrist_singularity():
-    # FRIDA: the 2 cm cartesian lift at joint5 -13 deg tripped xArm C24.
+def test_shelf_exit_moves_by_joints():
+    # FRIDA: the 2 cm cartesian lift tripped xArm C24 near the wrist singularity
+    # (joint5 -13 deg) and again with the elbow stretched (joint3 -155 deg).
     near = {k: v + 0.02 for k, v in SINGULAR.items()}
     arm = FakeArm(joints=SINGULAR, ik_solution=near)
     pick_pipeline._shelf_exit(arm, _shelf_exit_pose())
@@ -1188,15 +1189,12 @@ def test_shelf_exit_falls_back_to_a_slow_cartesian_move_on_an_ik_flip():
     pick_pipeline._shelf_exit(arm, _shelf_exit_pose())
     assert "move_joints" not in arm.calls
     assert [speed for _, _, speed in arm.approaches] == [
-        pick_pipeline.SHELF_EXIT_SINGULAR_SPEED
+        pick_pipeline.SHELF_EXIT_FALLBACK_SPEED
     ] * 2
 
 
-def test_shelf_exit_stays_cartesian_away_from_the_singularity():
-    clear = dict(SINGULAR) | {"joint5": 1.0}
-    arm = FakeArm(joints=clear, ik_solution=clear)
+def test_shelf_exit_falls_back_without_joint_states():
+    arm = FakeArm(ik_solution=SINGULAR)
     pick_pipeline._shelf_exit(arm, _shelf_exit_pose())
     assert "move_joints" not in arm.calls
-    assert [speed for _, _, speed in arm.approaches] == [
-        pick_pipeline.SHELF_EXIT_SPEED
-    ] * 2
+    assert len(arm.approaches) == 2
