@@ -115,6 +115,10 @@ def launch_setup(context, *args, **kwargs):
         for index, config in enumerate(bridge_configs)
     ]
 
+    clock_relay = Node(
+        package="frida_gz_sim", executable="clock_relay.py", output="screen"
+    )
+
     cmd_vel_relay = Node(
         package="frida_gz_sim",
         executable="cmd_vel_relay.py",
@@ -177,7 +181,7 @@ def launch_setup(context, *args, **kwargs):
             spawn,
         ]
         + bridges
-        + [controllers, cloud_fix, xarm_bridge]
+        + [clock_relay, controllers, cloud_fix, xarm_bridge]
         + ([grasp_attach] if grasp_assist else [])
         + ([cmd_vel_relay] if mobile_base else [])
     )
