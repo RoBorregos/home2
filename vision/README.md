@@ -38,7 +38,7 @@ home2/
 │   │   │   ├── object_detector_node.launch.py       # image_orienter + ObjectDetect2D
 │   │   │   ├── zero_shot_object_detector_node.launch.py
 │   │   │   └── object_detector_combined.launch.py   # both detectors at once
-│   │   ├── models/                        # Custom weights (robocup2026_v1.pt, tmr2025.pt)
+│   │   ├── models/                        # Custom weights (robocup2026_v1.pt)
 │   │   └── scripts/
 │   │       ├── base_detector_node.py      # Shared base: params, TF, 3D projection, markers
 │   │       ├── object_detector_node.py    # Runs N YOLO models, IoU-dedupes across them
