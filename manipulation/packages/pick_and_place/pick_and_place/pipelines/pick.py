@@ -133,6 +133,8 @@ class PickRequest:
     return_to_carry: bool = True
     # Back out until the fingertips clear the scanned board front instead of a fixed 15 cm.
     exit_to_edge: bool = False
+    # A shelf pick's scan (pipelines/shelf.ShelfScan): the boards and the shelf extent.
+    shelf: Optional[object] = None
 
 
 @dataclass
@@ -231,7 +233,7 @@ def _pick(
             outcome.place_top_down = True
             outcome.object_pick_height = _top_down_pick_height(outcome.object_height)
     if request.is_shelf:
-        _shelf_exit(arm, request.exit_to_edge)
+        _shelf_exit(arm, request.shelf if request.exit_to_edge else None)
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
@@ -314,7 +316,7 @@ def _perceive_cluster(arm, perception, request: PickRequest) -> Optional[Perceiv
     if point is None:
         return None
 
-    band = _shelf_band(arm, point) if request.is_shelf else None
+    band = _shelf_band(arm, point, request.shelf) if request.is_shelf else None
     cluster = None
     for _ in range(3):
         cluster = perception.cluster_at(point, band=band)
@@ -332,9 +334,9 @@ def _perceive_cluster(arm, perception, request: PickRequest) -> Optional[Perceiv
     return Perceived(cluster=cluster, height=height, band=band)
 
 
-def _shelf_band(arm, point: PointStamped) -> Optional[Tuple[float, float]]:
+def _shelf_band(arm, point: PointStamped, shelf) -> Optional[Tuple[float, float]]:
     """Z band of the object's compartment; the default -/+0.3 m band merges it with the boards."""
-    levels = arm.shelf_levels()
+    levels = shelf.board_levels if shelf is not None else []
     if not levels:
         arm.logger.warn("No shelf scan: clustering with the default height band")
         return None
@@ -717,8 +719,11 @@ def _top_down_pick_height(object_height: float) -> float:
 # ======================================================================
 
 
-def _shelf_exit(arm, to_edge: bool = False) -> bool:
-    """Lift off the board, then back out along the way in, as straight MoveIt paths."""
+def _shelf_exit(arm, edge_of=None) -> bool:
+    """Lift off the board, then back out along the way in, as straight MoveIt paths.
+
+    With ``edge_of`` (a ShelfScan) back out past its board front instead of a fixed 15 cm.
+    """
     target = arm.link_pose(EEF_LINK_NAME)  # straight-line plans always move link_eef
     if target is None:
         return False
@@ -727,8 +732,8 @@ def _shelf_exit(arm, to_edge: bool = False) -> bool:
     norm = float(np.linalg.norm(back))
     steps = [np.array([0.0, 0.0, SHELF_EXIT_LIFT])]
     if norm >= 0.5:  # a steep grasp has no meaningful "straight back"
-        retreat = (_retreat_to_edge(arm) if to_edge else None) or SHELF_EXIT_RETREAT
-        steps.append(back / norm * retreat)
+        retreat = _retreat_to_edge(arm, edge_of) if edge_of else None
+        steps.append(back / norm * (retreat or SHELF_EXIT_RETREAT))
     with arm.phase("shelf_exit"):
         for step in steps:
             target = copy.deepcopy(target)
@@ -748,12 +753,12 @@ def _shelf_exit(arm, to_edge: bool = False) -> bool:
     return True
 
 
-def _retreat_to_edge(arm) -> Optional[float]:
+def _retreat_to_edge(arm, shelf) -> Optional[float]:
     """Retreat that puts the fingertips SHELF_EXIT_EDGE_MARGIN outside the board front.
 
     In base_link, where the scan is; None without a scan or a backward approach.
     """
-    extent = arm.shelf_extent()
+    extent = shelf.extent
     eef = arm.link_pose(EEF_LINK_NAME, "base_link")
     if extent is None or eef is None:
         return None

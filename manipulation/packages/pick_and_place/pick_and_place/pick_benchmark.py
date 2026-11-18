@@ -18,12 +18,7 @@ from rclpy.signals import SignalHandlerOptions
 
 from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
-from frida_interfaces.srv import DetectShelf, GetOptimalPositionForPlane
-from frida_constants.manipulation_constants import (
-    DETECT_SHELF_SERVICE,
-    MANIPULATION_ACTION_SERVER,
-    SHELF_SCAN_TOLERANCE,
-)
+from frida_constants.manipulation_constants import MANIPULATION_ACTION_SERVER
 
 CSV_HEADER = [
     "timestamp",
@@ -56,14 +51,8 @@ class PickBenchmark(Node):
         self._action_client = ActionClient(
             self, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
-        self._optimal_client = self.create_client(
-            GetOptimalPositionForPlane, "/manipulation/get_optimal_position_for_plane"
-        )
         self._params_client = self.create_client(
             SetParameters, "/manipulation_core/set_parameters"
-        )
-        self._detect_shelf_client = self.create_client(
-            DetectShelf, DETECT_SHELF_SERVICE
         )
 
     def set_method(self, method):
@@ -79,36 +68,12 @@ class PickBenchmark(Node):
         if result is None or not result.results[0].successful:
             raise RuntimeError("could not set pick_method")
 
-    def shelf_heights(self):
-        """Heights of the last shelf scan here (keyboard_input -14), or []."""
-        if not self._detect_shelf_client.wait_for_service(timeout_sec=5.0):
-            return []
-        request = DetectShelf.Request(add_collision_objects=True)
-        future = self._detect_shelf_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
-        result = future.result()
-        if result is None or not result.success:
-            return []
-        return [level.height for level in result.levels]
-
-    def scan_shelf_levels(self):
-        """Face each measured shelf level to build the octomap before shelf picks."""
-        if not self._optimal_client.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error("get_optimal_position_for_plane not available!")
-            return
-        heights = self.shelf_heights()
-        if not heights:
-            self.get_logger().error("No shelf scan here: run keyboard_input -14 first")
-        for height in heights:
-            req = GetOptimalPositionForPlane.Request()
-            req.plane_est_min_height = height - SHELF_SCAN_TOLERANCE
-            req.plane_est_max_height = height + SHELF_SCAN_TOLERANCE
-            req.table_or_shelf = False
-            req.approach_plane = True
-            self.get_logger().info(f"Scanning shelf level at {height:.3f} m")
-            future = self._optimal_client.call_async(req)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=30.0)
-            time.sleep(2.0)
+    def scan_shelf(self):
+        """SCAN_SHELF: the core surveys the shelf in front before the shelf picks."""
+        goal = ManipulationAction.Goal()
+        goal.task_type = ManipulationTask.SCAN_SHELF
+        if not self.send_goal(goal)[0]:
+            self.get_logger().error("Shelf scan failed")
 
     def send_goal(self, goal):
         """Send one goal; return (action_success, duration_s)."""
@@ -127,11 +92,11 @@ class PickBenchmark(Node):
         result = wrapper.result if wrapper else None
         return bool(result and result.success), time.time() - t0
 
-    def pick(self, object_name, scan_environment):
+    def pick(self, object_name, from_shelf):
         goal = ManipulationAction.Goal()
         goal.task_type = ManipulationTask.PICK
         goal.pick_params.object_name = object_name
-        goal.scan_environment = scan_environment
+        goal.pick_params.from_shelf = from_shelf
         return self.send_goal(goal)
 
     def place(self, request, reference):
@@ -271,7 +236,7 @@ def main(args=None):
                 if parsed.mode == "shelf":
                     objects = parsed.objects or ["blue_cereal_box"]
                     input("Place the shelf objects, ENTER to scan (estop ready)...")
-                    node.scan_shelf_levels()
+                    node.scan_shelf()
                 else:
                     objects = parsed.objects or (
                         ["spoon", "fork", "knife"] if parsed.mode == "flat" else ["cup"]

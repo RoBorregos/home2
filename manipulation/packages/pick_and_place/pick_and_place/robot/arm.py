@@ -15,7 +15,6 @@ import rclpy
 from frida_constants.manipulation_constants import (
     ADD_COLLISION_OBJECT_SERVICE,
     ATTACH_COLLISION_OBJECT_SERVICE,
-    DETECT_SHELF_SERVICE,
     EEF_CONTACT_LINKS,
     EEF_LINK_NAME,
     ESTOP_TOPIC,
@@ -45,7 +44,6 @@ from frida_interfaces.msg import CollisionObject
 from frida_interfaces.srv import (
     AddCollisionObjects,
     AttachCollisionObject,
-    DetectShelf,
     GetCollisionObjects,
     GetJoints,
     RemoveCollisionObject,
@@ -171,9 +169,6 @@ class RobotArm:
         )
         self._clear_octomap_client = node.create_client(
             Empty, "/clear_octomap", callback_group=group
-        )
-        self._detect_shelf_client = node.create_client(
-            DetectShelf, DETECT_SHELF_SERVICE, callback_group=group
         )
 
         # --- MoveIt validation -------------------------------------------------------
@@ -614,44 +609,19 @@ class RobotArm:
             return
         self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
 
-    def _last_shelf_scan(self, add_collision_objects: bool = False):
-        """The DetectShelf answer for the last scan, or None without a usable one."""
-        if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
-            self._log.warn("detect_shelf unavailable")
-            return None
-        request = DetectShelf.Request(add_collision_objects=add_collision_objects)
-        future = self._detect_shelf_client.call_async(request)
-        if not self.wait_for_future(future, timeout=8.0) or future.result() is None:
-            self._log.warn("detect_shelf did not answer")
-            return None
-        result = future.result()
-        if not result.success:
-            self._log.warn(f"No shelf scan to use: {result.message}")
-            return None
-        return result
-
-    def restore_shelf_scene(self) -> bool:
-        """Put the last shelf scan's boxes back in the scene; refused once the base moved."""
-        result = self._last_shelf_scan(add_collision_objects=True)
-        if result is None:
+    def set_shelf_boxes(self, boxes) -> bool:
+        """Put a shelf scan's boxes in the scene (ids are stable, so this replaces them)."""
+        request = AddCollisionObjects.Request()
+        request.collision_objects = list(boxes)
+        if not self._add_objects_client.wait_for_service(timeout_sec=3.0):
+            self._log.warn("add_collision_objects unavailable; shelf not in the scene")
             return False
-        self._log.info(
-            f"Shelf boxes restored: {len(result.collision_objects)} "
-            f"(levels {[round(lv.height, 3) for lv in result.levels]})"
-        )
+        future = self._add_objects_client.call_async(request)
+        if not self.wait_for_future(future, timeout=5.0):
+            self._log.warn("add_collision_objects did not answer")
+            return False
+        self._log.info(f"Shelf boxes in the scene: {len(request.collision_objects)}")
         return True
-
-    def shelf_levels(self) -> list:
-        """(height, thickness) of the scanned boards, ascending; empty without a scan."""
-        result = self._last_shelf_scan()
-        return [(lv.height, lv.thickness) for lv in result.levels] if result else []
-
-    def shelf_extent(self):
-        """(front_x, back_x, y_min, y_max) of the last shelf scan in base_link, or None."""
-        result = self._last_shelf_scan()
-        if result is None or not result.levels:
-            return None
-        return result.front_x, result.back_x, result.y_min, result.y_max
 
     def remove_shelf_scene(self) -> None:
         """Drop the shelf boxes (they are in base_link and must not leave with the robot)."""

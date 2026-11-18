@@ -3,9 +3,8 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from frida_interfaces.action import ManipulationAction, MoveJoints
+from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
-import math
 import time
 from geometry_msgs.msg import PointStamped, PoseStamped
 from frida_interfaces.msg import ObjectDetectionArray
@@ -15,28 +14,20 @@ from frida_constants.vision_constants import (
     ZERO_SHOT_DETECTIONS_TOPIC,
 )
 from frida_constants.manipulation_constants import (
-    DETECT_SHELF_SERVICE,
     GENERATE_GRASPS_SERVICE,
     GRASP_CLASS_BOX,
     GRASP_CLASS_CYLINDRICAL,
     GRASP_CLASS_RIM,
     GRASP_CLASS_ROUND,
     MANIPULATION_ACTION_SERVER,
-    SHELF_LEVEL_SETTLE,
-    SHELF_SCAN_TOLERANCE,
-    SHELF_SURVEY_POSES,
-    SHELF_SURVEY_SETTLE,
-    SHELF_SURVEY_VELOCITY,
 )
-from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
     resolve_pick_strategy,
 )
-from frida_interfaces.srv import DetectShelf, GenerateGrasps, GetOptimalPositionForPlane
-from std_srvs.srv import Empty
+from frida_interfaces.srv import GenerateGrasps
 import json
 
 
@@ -58,25 +49,8 @@ class KeyboardInput(Node):
             MANIPULATION_ACTION_SERVER,
             callback_group=callback_group,
         )
-        self._optimal_position_client = self.create_client(
-            GetOptimalPositionForPlane,
-            "/manipulation/get_optimal_position_for_plane",
-            callback_group=callback_group,
-        )
-        self._clear_octomap_client = self.create_client(
-            Empty, "/clear_octomap", callback_group=callback_group
-        )
         self._generate_grasps_client = self.create_client(
             GenerateGrasps, GENERATE_GRASPS_SERVICE, callback_group=callback_group
-        )
-        self._detect_shelf_client = self.create_client(
-            DetectShelf, DETECT_SHELF_SERVICE, callback_group=callback_group
-        )
-        self._move_joints_client = ActionClient(
-            self,
-            MoveJoints,
-            "/manipulation/move_joints_action_server",
-            callback_group=callback_group,
         )
         self.objects = []  # Example list of objects
 
@@ -125,7 +99,12 @@ class KeyboardInput(Node):
                 self.objects.append(detection.label_text)
 
     def send_pick_request(
-        self, object_name, scan_environment=False, in_configuration=False
+        self,
+        object_name,
+        scan_environment=False,
+        in_configuration=False,
+        from_shelf=False,
+        shelf_level=0,
     ):
         self.get_logger().warning(f"Sending pick request for: {object_name}")
 
@@ -140,6 +119,8 @@ class KeyboardInput(Node):
         goal_msg.pick_params.max_distance = self.max_distance
         goal_msg.scan_environment = scan_environment
         goal_msg.pick_params.in_configuration = in_configuration
+        goal_msg.pick_params.from_shelf = from_shelf
+        goal_msg.pick_params.shelf_level = shelf_level
         self.get_logger().info(f"Sending pick request for: {object_name}")
         future = self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
@@ -147,123 +128,36 @@ class KeyboardInput(Node):
         future.add_done_callback(lambda f: self.goal_response_callback(f, object_name))
         self.get_logger().info(f"Pick request for {object_name} sent")
 
-    def _position_at_level(self, height):
-        """Face one shelf level (build octomap/spheres at that Z). Returns True if valid."""
-        if not self._optimal_position_client.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error("get_optimal_position_for_plane not available!")
-            return False
-        req = GetOptimalPositionForPlane.Request()
-        req.plane_est_min_height = height - SHELF_SCAN_TOLERANCE
-        req.plane_est_max_height = height + SHELF_SCAN_TOLERANCE
-        req.table_or_shelf = False
-        req.approach_plane = True
-        self.get_logger().info(f"Positioning at shelf level {height:.3f} m")
-        future = self._optimal_position_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=30.0)
-        result = future.result()
-        ok = result is not None and result.is_valid
-        if not ok:
-            self.get_logger().warning(f"Level {height:.3f} m: no valid position")
-        return ok
+    def scan_shelf(self):
+        """SCAN_SHELF: the core surveys the shelf; prints each level and what is on it."""
+        result = self._run_task(ManipulationTask.SCAN_SHELF)
+        if result is None or not result.success:
+            print("Shelf scan failed")
+            return
+        for i, level in enumerate(result.shelf_levels, start=1):
+            print(
+                f"  L{i}: z={level.height:.3f} clear={level.clearance:.2f} "
+                f"x[{level.front_x:.2f},{level.back_x:.2f}] objects={list(level.objects)}"
+            )
 
-    def _clear_octomap(self, settle=SHELF_LEVEL_SETTLE):
-        """Clear the accumulated octomap (arm captured as obstacle, stale voxels) so a
-        deep/tight shelf grasp is not over-restricted; mirrors the FSM before a pick."""
-        if self._clear_octomap_client.wait_for_service(timeout_sec=2.0):
-            self._clear_octomap_client.call_async(Empty.Request())
-            self.get_logger().info("Cleared octomap; settling before pick")
-            time.sleep(settle)
-        else:
-            self.get_logger().warning("clear_octomap unavailable")
-
-    def scan_shelf_levels(self):
-        """Face each measured shelf level so the octomap builds before a shelf pick
-        or place. Mirrors the task manager cabinet scan; run before -4 or -11."""
-        for height in self.shelf_heights():
-            self._position_at_level(height)
-            time.sleep(SHELF_LEVEL_SETTLE)
-        self.get_logger().info("Shelf scan done; now pick (-11) or place (-4).")
-
-    def shelf_heights(self):
-        """Measured heights (1 = lowest); surveys again when the last scan is stale or missing."""
-        result = self.detect_shelf(add_collision=True)
-        if result is None or not result.success or not result.levels:
-            self.get_logger().info("No valid shelf scan here: surveying the shelf")
-            self.survey_shelf()
-            result = self.detect_shelf()
-        if result is None or not result.success or not result.levels:
-            self.get_logger().error("Shelf detection failed: no shelf levels")
-            return []
-        return [level.height for level in result.levels]
-
-    def _move_named(self, name, velocity=0.5):
-        """Blocking move to a named joint configuration (degrees in the table)."""
-        config = XARM_CONFIGURATIONS[name]
-        goal = MoveJoints.Goal()
-        goal.joint_names = list(config["joints"].keys())
-        to_rad = math.radians if config.get("degrees") else float
-        goal.joint_positions = [to_rad(v) for v in config["joints"].values()]
-        goal.velocity = velocity
-        if not self._move_joints_client.wait_for_server(timeout_sec=5.0):
-            self.get_logger().error("move_joints action server unavailable")
-            return False
-        future = self._move_joints_client.send_goal_async(goal)
+    def _run_task(self, task_type, timeout=120.0):
+        """Send a ManipulationAction goal and wait for its result; None on failure."""
+        if not self._action_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error("Manipulation action server not available!")
+            return None
+        goal = ManipulationAction.Goal()
+        goal.task_type = task_type
+        future = self._action_client.send_goal_async(
+            goal, feedback_callback=self.feedback_callback
+        )
         rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
         handle = future.result()
         if handle is None or not handle.accepted:
-            return False
+            self.get_logger().error("Goal rejected")
+            return None
         result = handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result, timeout_sec=60.0)
-        return result.done() and bool(result.result().result.success)
-
-    def detect_shelf(
-        self, reset=False, capture=False, detect=False, add_collision=False
-    ):
-        """Call the model-free shelf detector; prints the levels when detecting."""
-        if not self._detect_shelf_client.wait_for_service(timeout_sec=3.0):
-            self.get_logger().error("detect_shelf service unavailable")
-            return None
-        req = DetectShelf.Request()
-        req.reset, req.capture, req.detect = reset, capture, detect
-        req.add_collision_objects = add_collision
-        future = self._detect_shelf_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=30.0)
-        res = future.result()
-        if res is None:
-            self.get_logger().error("detect_shelf timed out")
-            return None
-        print(
-            f"detect_shelf: success={res.success} frames={res.frames_used} {res.message}"
-        )
-        for i, lvl in enumerate(res.levels, start=1):
-            print(
-                f"  L{i}: z={lvl.height:.3f} thick={lvl.thickness:.3f} "
-                f"clear={lvl.clearance:.2f} x[{lvl.front_x:.2f},{lvl.back_x:.2f}] "
-                f"y[{lvl.y_min:.2f},{lvl.y_max:.2f}] n={lvl.num_points}"
-            )
-        if res.levels:
-            print(
-                f"  shelf y[{res.y_min:.2f},{res.y_max:.2f}] x[{res.front_x:.2f},{res.back_x:.2f}] "
-                f"top_z={res.top_z:.2f} boxes={len(res.collision_objects)}"
-            )
-        return res
-
-    def survey_shelf(self):
-        """Dynamic scan: visit the survey poses, capture each view, then detect."""
-        # Drop earlier captures first: a skipped first pose used to leave them in.
-        self.detect_shelf(reset=True)
-        captured = 0
-        for pose in SHELF_SURVEY_POSES:
-            if not self._move_named(pose, velocity=SHELF_SURVEY_VELOCITY):
-                self.get_logger().warning(f"Could not reach {pose}; skipping this view")
-                continue
-            time.sleep(SHELF_SURVEY_SETTLE)
-            res = self.detect_shelf(capture=True)
-            captured += int(res is not None and res.success)
-        if captured == 0:
-            self.get_logger().error("No survey view captured; not detecting")
-            return None
-        return self.detect_shelf(detect=True, add_collision=True)
+        rclpy.spin_until_future_complete(self, result, timeout_sec=timeout)
+        return result.result().result if result.done() else None
 
     def preview_grasps(self, object_name):
         if not self._generate_grasps_client.wait_for_service(timeout_sec=2.0):
@@ -316,6 +210,7 @@ class KeyboardInput(Node):
     def send_place_request(
         self,
         is_shelf=False,
+        shelf_level=0,
         table_height=None,
         table_height_tolerance=None,
         close_to="",
@@ -331,6 +226,7 @@ class KeyboardInput(Node):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
         goal_msg.place_params.is_shelf = is_shelf
+        goal_msg.place_params.shelf_level = shelf_level
         goal_msg.place_params.close_to = close_to
         goal_msg.scan_environment = is_shelf
         if table_height is not None and table_height_tolerance is not None:
@@ -430,21 +326,16 @@ def main(args=None):
                 print(f"{i}. {obj}")
             print("-2. Refresh objects list")
             print("-3. Place")
-            print("-4. Place on shelf")
+            print("-4. Place on shelf (level of the -14 scan)")
             print("-5. Place on shelf (with plane height)")
             print("-6. Pour")
             print("-7. Place on clicked point")
             print("-8. Place closeto")
             print("-9. Special Request Place")
             print("-10. Pour (object already grasped)")
-            print("-11. Pick from shelf (measures the shelf first if needed)")
-            print("-12. Face each measured shelf level (octomap, before -4/-11)")
+            print("-11. Pick from shelf (after -14)")
             print("-13. Preview grasp candidates (no motion)")
-            print(
-                "-14. Dynamic shelf scan: survey poses + detect levels (MOVES THE ARM)"
-            )
-            print("-15. Shelf: capture one view from the current pose (no motion)")
-            print("-16. Shelf: detect from captured views + add collision boxes")
+            print("-14. Scan the shelf in front (MOVES THE ARM)")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -458,7 +349,11 @@ def main(args=None):
             elif choice == "-3":
                 node.send_place_request()
             elif choice == "-4":
-                node.send_place_request(is_shelf=True)
+                lvl = input("Shelf level (1 = lowest): ").strip()
+                if lvl.isdigit() and int(lvl) > 0:
+                    node.send_place_request(is_shelf=True, shelf_level=int(lvl))
+                else:
+                    print("Invalid level.")
             elif choice == "-5":
                 # receive two floats, height and height tolerance
                 height = input("Enter height (in m -> e.g. 0.3): ")
@@ -541,43 +436,15 @@ def main(args=None):
 
             elif choice == "-11":
                 object_name = input("Enter object name on shelf: ")
-                levels = node.shelf_heights()
-                if not levels:
-                    print("No shelf detected; not picking.")
-                    continue
-                lvl = input(
-                    f"Shelf level 1-{len(levels)} (Enter = keep current pose): "
-                ).strip()
-                if lvl:
-                    try:
-                        idx = int(lvl) - 1
-                        if 0 <= idx < len(levels):
-                            node._position_at_level(levels[idx])
-                        else:
-                            print("Level out of range; keeping current pose.")
-                    except ValueError:
-                        print("Invalid level; keeping current pose.")
-                # Clear the accumulated octomap (FSM does this) so the deep grasp's IK
-                # config is not over-restricted by stale/arm voxels.
-                node._clear_octomap()
-                # in_configuration keeps the frontal level pose; re-staring to
-                # table_stare would give GPD the wrong view.
+                lvl = input("Shelf level (Enter = find it): ").strip()
                 node.send_pick_request(
-                    object_name, scan_environment=True, in_configuration=True
+                    object_name,
+                    from_shelf=True,
+                    shelf_level=int(lvl) if lvl.isdigit() else 0,
                 )
 
-            elif choice == "-12":
-                node.scan_shelf_levels()
-
             elif choice == "-14":
-                node.survey_shelf()
-
-            elif choice == "-15":
-                first = input("Reset previous captures? [y/N]: ").strip().lower() == "y"
-                node.detect_shelf(reset=first, capture=True)
-
-            elif choice == "-16":
-                node.detect_shelf(detect=True, add_collision=True)
+                node.scan_shelf()
 
             elif choice == "-13":
                 number = input("Object number: ")

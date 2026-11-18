@@ -45,6 +45,7 @@ The contract with the rest of the robot is exactly one action:
 | `PICK_CLOSEST` | 1 | **Not implemented** — fails loudly |
 | `PLACE` | 2 | Put down what is held |
 | `POUR` | 3 | Pour a held/grasped container into another |
+| `SCAN_SHELF` | 4 | Survey the shelf in front: its levels and what is on each. Then `PICK` with `pick_params.from_shelf` and `PLACE` with `place_params.shelf_level` use it ([shelf](../docs/ai/shelf_detection.md)) |
 
 A `place` is only meaningful after a `pick` or `pour` **in the same process**: the node remembers the
 last pick outcome and uses its measured object height to decide the drop height.
@@ -242,7 +243,7 @@ plus two lines. Only a genuinely new motion needs a new class.
 | `/manipulation/pick_perception_service` | `test_only_orchestrator` | Object cluster |
 | `/manipulation/place_perception_service` | `test_only_orchestrator` | Place surface cloud |
 | `/manipulation/generate_grasps` | `grasp_generator` | Ranked grasp poses, plus the fitted shape of a solid |
-| `/manipulation/detect_shelf` | `grasp_generator` | Shelf levels and walls from the eye-in-hand camera, and their planning scene boxes |
+| `/manipulation/detect_shelf` | `grasp_generator` | Internal to `SCAN_SHELF`: shelf levels, walls and their collision boxes, which only `manipulation_core` puts in the scene |
 | `/manipulation/detect_grasps` | `gpd_service` | GPD grasp candidates |
 | `/manipulation/heatmap_place_service` | `heatmapPlace_Server` | Best free spot on a surface |
 | `/manipulation/estop` | *(topic)* | Aborts any motion in progress |

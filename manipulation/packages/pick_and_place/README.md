@@ -11,7 +11,7 @@ nothing else here is public.
 
 | Interface | Type | Used by |
 |---|---|---|
-| `/manipulation/manipulation_action_server` | `ManipulationAction` | `task_manager` (pick / place / pour / place_on_shelf / place_in_point), `keyboard_input.py`, `pick_benchmark.py`, `manipulation_client.py` |
+| `/manipulation/manipulation_action_server` | `ManipulationAction` | `task_manager` (pick / place / pour / scan_shelf / place_on_shelf / place_in_point), `keyboard_input.py`, `pick_benchmark.py`, `manipulation_client.py` |
 | `/manipulation/go_to_hand_action_server` | `GoToHand` | `task_manager` (handover) |
 | `/manipulation/fixed_distance_move` | `FixedDistanceMove` | `task_manager` (`move_arm_vertical`) |
 | `/follow_face`, `/follow_person` | `FollowFace` | `task_manager` (`follow_face`, `follow_person`) |
@@ -59,6 +59,7 @@ flowchart TD
         pick["pick.py"]
         place["place.py"]
         pour["pour.py"]
+        shelf["shelf.py<br/><i>survey, scan cache, face a level</i>"]
         strat["strategies.py<br/><i>how the gripper closes</i>"]
         cls["classification.py<br/><i>object -> strategy</i>"]
         prof["profiles.py<br/><i>YAML tuning</i>"]
@@ -66,14 +67,14 @@ flowchart TD
 
     subgraph robot[Robot -- knows the hardware]
         arm["arm.py<br/><i>RobotArm: move, grip, scene, xArm modes</i>"]
-        perc["perception.py<br/><i>Perception: detect, cluster, grasps</i>"]
+        perc["perception.py<br/><i>Perception: detect, cluster, grasps, shelf</i>"]
     end
 
-    core --> pick & place & pour
+    core --> pick & place & pour & shelf
     pick --> strat --> prof
     pick --> cls
-    pick & place & pour --> arm
-    pick & place & pour --> perc
+    pick & place & pour & shelf --> arm
+    pick & place & pour & shelf --> perc
 ```
 
 | Layer | May know | Must not |
@@ -96,6 +97,7 @@ pick_and_place/
 │   │   ├── pick.py              stare -> perceive -> strategy -> return
 │   │   ├── place.py             choose a pose -> reach it -> release -> return
 │   │   ├── pour.py              find container -> grasp source -> tilt -> return
+│   │   ├── shelf.py             SCAN_SHELF survey, the scan the core keeps, face a level
 │   │   ├── strategies.py        the 4 grasp motions + the STRATEGIES table
 │   │   ├── follow.py            face / person tracking velocity commands
 │   │   ├── classification.py    object_name -> strategy key

@@ -2,12 +2,14 @@
 tested without a robot or a ROS graph."""
 
 from contextlib import contextmanager
+from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
 from frida_interfaces.msg import CollisionObject
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 from pick_and_place.pipelines.errors import PickAborted
+from pick_and_place.pipelines.shelf import ShelfScan
 from pick_and_place.robot.arm import AttachResult, ContactResult
 
 
@@ -83,18 +85,12 @@ class FakeArm:
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
         estop: bool = False,
-        shelf_scan: bool = False,
-        shelf_levels: Optional[List[tuple]] = None,
-        shelf_extent: Optional[tuple] = None,
+        shelf_boxes_ok: bool = True,
         link_pose: Optional[PoseStamped] = None,
     ):
         self._estop = estop
-        # Whether a shelf scan can be restored (none yet, or the base moved since).
-        self._shelf_scan = shelf_scan
-        # (height, thickness) of the scanned boards; empty = no scan.
-        self._shelf_levels = list(shelf_levels or [])
-        # (front_x, back_x, y_min, y_max) of the scanned shelf; None = no scan.
-        self._shelf_extent = shelf_extent
+        # Whether the planning scene takes the shelf boxes.
+        self._shelf_boxes_ok = shelf_boxes_ok
         self.calls: List[str] = []
         self.phases: List[str] = []
         self.contexts: List[str] = []
@@ -268,17 +264,9 @@ class FakeArm:
     def add_collision_object(self, obj):
         self.calls.append("add_collision_object")
 
-    def restore_shelf_scene(self):
-        self.calls.append("restore_shelf_scene")
-        return self._shelf_scan
-
-    def shelf_levels(self):
-        self.calls.append("shelf_levels")
-        return list(self._shelf_levels)
-
-    def shelf_extent(self):
-        self.calls.append("shelf_extent")
-        return self._shelf_extent
+    def set_shelf_boxes(self, boxes):
+        self.calls.append("set_shelf_boxes")
+        return self._shelf_boxes_ok
 
     def remove_shelf_scene(self):
         self.calls.append("remove_shelf_scene")
@@ -384,8 +372,13 @@ class FakePerception:
         generated_grasps: Optional[Any] = None,
         heatmap_point: Optional[PointStamped] = None,
         surface_cloud: Optional[Any] = None,
+        shelf_result: Optional[Any] = None,
+        detections: Optional[List[Any]] = None,
     ):
         self.calls: List[str] = []
+        self._shelf_result = shelf_result  # the DetectShelf answer to detect=True
+        self._detections = list(detections or [])
+        self.shelf_requests: List[tuple] = []
         self._logger = FakeLogger()
         self._located_point = located_point
         self._cluster = cluster
@@ -425,6 +418,17 @@ class FakePerception:
         self.cluster_timeouts.append(timeout)
         self.cluster_bands.append(band)
         return self._cluster
+
+    def detect_shelf(self, reset=False, capture=False, detect=False, timeout=30.0):
+        self.calls.append("detect_shelf")
+        self.shelf_requests.append((reset, capture, detect))
+        if detect:
+            return self._shelf_result
+        return SimpleNamespace(success=True, levels=[])
+
+    def detections(self, timeout=2.0):
+        self.calls.append("detections")
+        return list(self._detections)
 
     def detect_grasps(self, cluster, cfg_path):
         self.calls.append("detect_grasps")
@@ -488,3 +492,33 @@ def make_cluster(z_low=0.30, z_high=0.40, frame="base_link"):
         (0.51, 0.0, (z_low + z_high) / 2),
     ]
     return point_cloud2.create_cloud_xyz32(header, points)
+
+
+def make_board(height, thickness=0.02, front=0.5, back=0.85, y=(-0.4, 0.4), objects=()):
+    """A ShelfLevel as the scan returns it, in base_link."""
+    return SimpleNamespace(
+        height=height,
+        thickness=thickness,
+        front_x=front,
+        back_x=back,
+        y_min=y[0],
+        y_max=y[1],
+        clearance=0.3,
+        objects=list(objects),
+    )
+
+
+def make_shelf(
+    levels=((0.39, 0.02), (0.68, 0.02)), extent=(-10, 10, -10, 10), base=None
+):
+    """A ShelfScan with boards at ``levels`` [(height, thickness)]; a wide extent by default."""
+    front, back, y_min, y_max = extent
+    return ShelfScan(
+        levels=[make_board(h, t, front, back, (y_min, y_max)) for h, t in levels],
+        boxes=[CollisionObject(id="frida_shelf_board_0")],
+        front_x=front,
+        back_x=back,
+        y_min=y_min,
+        y_max=y_max,
+        base=base,
+    )

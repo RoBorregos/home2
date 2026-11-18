@@ -5,7 +5,6 @@ import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.srv import (
-    DetectShelf,
     GetPlaneBbox,
     GetOptimalPositionForPlane,
     GetOptimalPoseForPlane,
@@ -25,7 +24,6 @@ import math
 from frida_constants.manipulation_constants import (
     ARM_HIGHEST_0_0_HEIGHT,
     ARM_LOWEST_0_0_HEIGHT,
-    DETECT_SHELF_SERVICE,
 )
 
 TABLE_Z_OFFSET = 0.75
@@ -87,9 +85,6 @@ class FixPositionToPlane(Node):
             "/manipulation/move_to_pose_action_server",
             callback_group=self.call_bck_group,
         )
-        self._detect_shelf_client = self.create_client(
-            DetectShelf, DETECT_SHELF_SERVICE, callback_group=self.call_bck_group
-        )
         # Initialize the transform broadcaster
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -100,45 +95,6 @@ class FixPositionToPlane(Node):
             )
         self.get_logger().info("get_plane_bbox service is available")
         self.get_logger().info("FixPositionToPlane node initialized")
-
-    def _restore_shelf_scene(self):
-        """Put the last shelf scan's boxes in the scene (the arm may hold an object here) and return the scan."""
-        if not self._detect_shelf_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warn(
-                "detect_shelf unavailable; moving without the shelf boxes"
-            )
-            return None
-        future = self._detect_shelf_client.call_async(
-            DetectShelf.Request(add_collision_objects=True)
-        )
-        if not wait_for_future(future, timeout=5) or future.result() is None:
-            return None
-        self.get_logger().info(f"Shelf boxes: {future.result().message}")
-        return future.result() if future.result().success else None
-
-    @staticmethod
-    def _scan_board(scan, min_h: float, max_h: float):
-        """The scanned board inside [min_h, max_h] nearest the band's middle, or None."""
-        boards = [
-            b for b in (scan.levels if scan else []) if min_h <= b.height <= max_h
-        ]
-        mid = (min_h + max_h) / 2
-        return min(boards, key=lambda b: abs(b.height - mid), default=None)
-
-    @staticmethod
-    def _edge_view_point(center: MyPoint, corners: list) -> MyPoint:
-        """DISTANCE past the plane edge nearest the robot, on the line from the centre (as get_line_from_points)."""
-        best = None
-        for a, b in zip(corners, corners[1:] + corners[:1]):
-            dx, dy = (a.x + b.x) / 2 - center.x, (a.y + b.y) / 2 - center.y
-            norm = math.hypot(dx, dy)
-            reach = norm + DISTANCE
-            p = MyPoint(
-                center.x + dx / norm * reach, center.y + dy / norm * reach, center.z
-            )
-            if best is None or math.hypot(p.x, p.y) < math.hypot(best.x, best.y):
-                best = p
-        return best
 
     def callback_call_service(self, future):
         try:
@@ -287,25 +243,6 @@ class FixPositionToPlane(Node):
 
         # self.get_logger().info(f"Look at pose: {look_at_pose}")
 
-        board = None
-        if not request.table_or_shelf:
-            board = self._scan_board(self._restore_shelf_scene(), min_h, max_h)
-        if board is not None and request.approach_plane:
-            # The scan already measured this board: no look-at, cloud wait or bbox.
-            self.get_logger().info(f"Shelf board at {board.height:.3f} m from the scan")
-            z = board.height
-            center = MyPoint(
-                (board.front_x + board.back_x) / 2, (board.y_min + board.y_max) / 2, z
-            )
-            corners = [
-                MyPoint(board.front_x, board.y_min, z),
-                MyPoint(board.back_x, board.y_min, z),
-                MyPoint(board.back_x, board.y_max, z),
-                MyPoint(board.front_x, board.y_max, z),
-            ]
-            view = self._edge_view_point(center, corners)
-            return self._move_to_view(view, center, SHELF_Z_OFFSET, response)
-
         # move
         req_move = MoveToPose.Goal()
         req_move.pose.header.frame_id = "base_link"
@@ -388,90 +325,86 @@ class FixPositionToPlane(Node):
             closest_point = min(points, key=lambda p: (p.x**2 + p.y**2 + p.z**2) ** 0.5)
             # self.get_logger().info(f"Closest point: {closest_point}")
 
-            return self._move_to_view(closest_point, center, ivan, response)
+            center_point = PointStamped()
+            center_point.header.frame_id = "base_link"
+            center_point.header.stamp = self.get_clock().now().to_msg()
+            center_point.point.x = center.x
+            center_point.point.y = center.y
+            center_point.point.z = center.z
+
+            pt1 = PoseStamped()
+            pt1.header.frame_id = "base_link"
+            pt1.header.stamp = self.get_clock().now().to_msg()
+            pt1.pose.position.x = closest_point.x
+            pt1.pose.position.y = closest_point.y
+            pt1.pose.position.z = closest_point.z + ivan
+            if ((pt1.pose.position.x**2 + pt1.pose.position.y**2) ** 0.5) > 0.5:
+                self.get_logger().warn("Point is too far, geting the closest point")
+                # response.is_valid = Fals
+                temp_pt1 = MyPoint().from_point(
+                    self.get_line_from_points2(center, pt1, 0.5)
+                )
+                pt1.pose.position.x = temp_pt1.x
+                pt1.pose.position.y = temp_pt1.y
+                pt1.pose.position.z = temp_pt1.z + ivan
+                self.get_logger().info(f"New point: {pt1}")
+
+            pt1.pose.position.z = min(
+                pt1.pose.position.z,
+                ARM_HIGHEST_0_0_HEIGHT,
+            )
+            pt1.pose.position.z = max(
+                pt1.pose.position.z,
+                ARM_LOWEST_0_0_HEIGHT,
+            )
+
+            # Broadcast the transform
+            self.broadcast_transform(pt1, "base_link", "optimal_position")
+
+            t = look_at(
+                source_pose=pt1,
+                target_pose=center_point,
+            )
+
+            req_move = MoveToPose.Goal()
+            req_move.pose.header.frame_id = "base_link"
+            req_move.pose.header.stamp = self.get_clock().now().to_msg()
+            req_move.pose = t
+
+            req_move.velocity = 0.75
+            req_move.target_link = xarm6.camera_frame_name()
+
+            # self.get_logger().info(f"Request: {req_move}")
+            # self.get_logger().info(f"Request: {req_move}")
+            fut = self._action_client.send_goal_async(req_move)
+            self.get_logger().warn("Waiting to finish look at optimal position")
+            future = wait_for_future(fut, timeout=20)
+            action_result = future.result().get_result()
+            self.get_logger().info(f"Move to optimal position result: {action_result}")
+
+            response.pt1 = PointStamped()
+            response.pt1.header.frame_id = "base_link"
+            response.pt1.header.stamp = self.get_clock().now().to_msg()
+            response.pt1.point.x = closest_point.x
+            response.pt1.point.y = closest_point.y
+            response.pt1.point.z = closest_point.z + ivan
+
+            response.q1.header.frame_id = "base_link"
+            response.q1.header.stamp = self.get_clock().now().to_msg()
+
+            # # Set the quaternion to identity
+            response.q1.quaternion.x = 0.0
+            response.q1.quaternion.y = 0.0
+            response.q1.quaternion.z = 0.0
+            response.q1.quaternion.w = 1.0
+            response.is_valid = True
+
+            return response
         except Exception as e:
             self.get_logger().error(f"Error while processing the request: {e}")
             response.is_valid = False
             return response
-
-    def _move_to_view(self, closest_point, center, ivan, response):
-        """Move the camera to closest_point (raised by ivan, at most 0.5 m out) looking at center."""
-        center_point = PointStamped()
-        center_point.header.frame_id = "base_link"
-        center_point.header.stamp = self.get_clock().now().to_msg()
-        center_point.point.x = center.x
-        center_point.point.y = center.y
-        center_point.point.z = center.z
-
-        pt1 = PoseStamped()
-        pt1.header.frame_id = "base_link"
-        pt1.header.stamp = self.get_clock().now().to_msg()
-        pt1.pose.position.x = closest_point.x
-        pt1.pose.position.y = closest_point.y
-        pt1.pose.position.z = closest_point.z + ivan
-        if ((pt1.pose.position.x**2 + pt1.pose.position.y**2) ** 0.5) > 0.5:
-            self.get_logger().warn("Point is too far, geting the closest point")
-            # response.is_valid = Fals
-            temp_pt1 = MyPoint().from_point(
-                self.get_line_from_points2(
-                    center, MyPoint().from_point(pt1.pose.position), 0.5
-                )
-            )
-            pt1.pose.position.x = temp_pt1.x
-            pt1.pose.position.y = temp_pt1.y
-            pt1.pose.position.z = temp_pt1.z + ivan
-            self.get_logger().info(f"New point: {pt1}")
-
-        pt1.pose.position.z = min(
-            pt1.pose.position.z,
-            ARM_HIGHEST_0_0_HEIGHT,
-        )
-        pt1.pose.position.z = max(
-            pt1.pose.position.z,
-            ARM_LOWEST_0_0_HEIGHT,
-        )
-
-        # Broadcast the transform
-        self.broadcast_transform(pt1, "base_link", "optimal_position")
-
-        t = look_at(
-            source_pose=pt1,
-            target_pose=center_point,
-        )
-
-        req_move = MoveToPose.Goal()
-        req_move.pose.header.frame_id = "base_link"
-        req_move.pose.header.stamp = self.get_clock().now().to_msg()
-        req_move.pose = t
-
-        req_move.velocity = 0.75
-        req_move.target_link = xarm6.camera_frame_name()
-
-        # self.get_logger().info(f"Request: {req_move}")
-        # self.get_logger().info(f"Request: {req_move}")
-        fut = self._action_client.send_goal_async(req_move)
-        self.get_logger().warn("Waiting to finish look at optimal position")
-        future = wait_for_future(fut, timeout=20)
-        action_result = future.result().get_result()
-        self.get_logger().info(f"Move to optimal position result: {action_result}")
-
-        response.pt1 = PointStamped()
-        response.pt1.header.frame_id = "base_link"
-        response.pt1.header.stamp = self.get_clock().now().to_msg()
-        response.pt1.point.x = closest_point.x
-        response.pt1.point.y = closest_point.y
-        response.pt1.point.z = closest_point.z + ivan
-
-        response.q1.header.frame_id = "base_link"
-        response.q1.header.stamp = self.get_clock().now().to_msg()
-
-        # # Set the quaternion to identity
-        response.q1.quaternion.x = 0.0
-        response.q1.quaternion.y = 0.0
-        response.q1.quaternion.z = 0.0
-        response.q1.quaternion.w = 1.0
-        response.is_valid = True
-
+        self.get_logger().info("Response:a aaa")
         return response
 
     def get_optimal_pose_for_plane_callback(

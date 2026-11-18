@@ -4,8 +4,6 @@
 bool reset                  # drop the frames captured so far before doing anything else
 bool capture                # capture one fresh depth frame from the current camera pose
 bool detect                 # run the detection on every captured frame
-bool add_collision_objects  # publish the boards and walls to the MoveIt planning scene
-                            # (with capture=false and detect=false: re-publish the last result)
 ---
 bool success
 string message

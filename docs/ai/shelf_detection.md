@@ -4,31 +4,43 @@ Measures the shelf in front of the robot with the eye-in-hand ZED2. There are no
 per-arena heights: a shelf pick or place without a scan from where the robot stands
 fails.
 
+## Public surface
+
+The task manager only sends `ManipulationAction` goals; manipulation decides how.
+
+| Goal | What manipulation_core does | Result |
+| --- | --- | --- |
+| `SCAN_SHELF` | Visits the survey poses, calls `DetectShelf`, labels what it sees on each level, puts the boxes in the scene and keeps the scan while the base does not move | `shelf_levels`, each with `objects` |
+| `PICK`, `pick_params.from_shelf` (optional `shelf_level` hint) | Finds the object's level (the hint, then where the scan saw it, then every level), faces it, grasps and backs out | `shelf_level` it picked from |
+| `PLACE`, `place_params.shelf_level = N` | Faces level N and places within the scanned board | |
+
 ## Pieces
 
 | Piece | Where |
 | --- | --- |
 | Geometry (pure numpy, tested) | `manipulation/packages/perception_3d/perception_3d/shelf_geometry.py` |
 | `DetectShelf` service, hosted by `grasp_generator` (same depth image, intrinsics and TF) | `manipulation/packages/perception_3d/perception_3d/shelf_service.py` |
-| Interfaces | `frida_interfaces/manipulation/srv/DetectShelf.srv`, `msg/ShelfLevel.msg` |
+| Survey, scan cache, facing a level | `manipulation/packages/pick_and_place/pick_and_place/pipelines/shelf.py`, run by `manipulation_core.py` |
+| Interfaces | `ManipulationTask.SCAN_SHELF`, `PickParams.from_shelf/shelf_level`, `PlaceParams.shelf_level`, `ManipulationAction` result `shelf_levels/shelf_level`; internal `srv/DetectShelf.srv`, `msg/ShelfLevel.msg` |
 | Constants / survey poses | `manipulation_constants.py` (`DETECT_SHELF_SERVICE`, `SHELF_SURVEY_POSES`), `xarm_configurations.py` (`shelf_survey_high/low`) |
-| Manual test | `keyboard_input.py` options -14 (survey + detect), -15 (capture here), -16 (detect) |
-| Task manager | `ManipulationTasks.detect_shelf_levels()`; `pickandplace_task_manager.py` `_ensure_shelf_heights()`, `gpsr_single_tasks.py` `_measure_shelf()` (once per stop) |
+| Manual test | `keyboard_input.py` -14 (`SCAN_SHELF`), -11 (pick from the shelf), -4 (place on a level) |
+| Task manager | `ManipulationTasks.scan_shelf()`, `pick_object(from_shelf=True)`, `place_on_shelf(level=N)`; once per stop in `pickandplace_task_manager.py` `_ensure_shelf_heights()` and `gpsr_single_tasks.py` `_measure_shelf()` |
 
 ## How it works
 
-1. The caller moves the camera (two survey poses) and calls the service with
-   `capture=true` at each; frames accumulate in `base_link`.
+1. `SCAN_SHELF` moves the camera to the two survey poses and calls `DetectShelf` with
+   `capture=true` at each; frames accumulate in `base_link`. It also asks the detector
+   what it sees there and files each label under the level whose compartment holds it.
 2. `detect=true`: crop to the shelf footprint, 1 cm voxels, PCA normals oriented by
    camera height. Up-facing horizontal points -> Z histogram -> one peak per board
    surface. Peaks narrower than 60 % of the shelf width or with gaps are objects, not
    boards. Down-facing peaks give the board thickness and the ceiling (`top_z`).
    Vertical planes at the lateral/far extremes are the side and back walls. A wide
    down-facing plane with nothing right above it is a board above the camera.
-3. `add_collision_objects=true` publishes boards and walls as boxes (`frida_shelf_*`),
-   grown 2 cm into the free space except the board tops. With `capture=false,
-   detect=false` it only re-publishes the last result. It refuses when odom ->
-   base_link moved more than 3 cm / 3 deg since the scan.
+3. The answer carries the boards and walls as boxes (`frida_shelf_*`), grown 2 cm into
+   the free space except the board tops. `DetectShelf` never writes the planning
+   scene: `manipulation_core` adds the boxes and drops the scan, boxes included, once
+   odom -> base_link moved more than 3 cm / 3 deg.
 
 Tunables are `grasp_generator` parameters under `shelf.`: the `ShelfParams` fields,
 `min_range`/`max_range` (0.3/2.5 m), `depth_scale` (1.0 for a simulated camera) and
@@ -49,12 +61,14 @@ shelf 15-20 cm away.
 
 ## Shelf boxes in pick and place
 
-- `manipulation_core` wipes the scene at the start of every pick; a shelf pick
-  (`scan_environment=true`) then restores the last scan (`restore_shelf_scene()`) and
-  is refused without one. The wipes after the pick remove the boxes again.
-- The shelf place restores them before reaching and always removes them at the end.
-- `fix_position_to_plane` restores them before facing a shelf level
-  (`table_or_shelf=false`), since the arm may be holding the object.
+- Only `manipulation_core` writes them (`RobotArm.set_shelf_boxes`). `SCAN_SHELF` adds
+  them; every pick wipes the scene first and a shelf pick puts them back before facing
+  the level. The wipes after the pick remove them again.
+- The shelf place puts them back after choosing its pose (that wipes the scene) and
+  always removes them at the end.
+- Facing a level comes from the scan, not `fix_position_to_plane`: for a pick the camera
+  goes 0.5 m past the board front and 0.4 m above the board, looking at its centre;
+  for a place it starts from `front_stare` and looks from 0.2 m above the board.
 - A shelf pick clusters the object inside its compartment (`pick._shelf_band()`),
   passed as `min_height`/`max_height` of `PickPerceptionService`; the default band
   merged the object with the boards of a closed cabinet.
@@ -117,6 +131,7 @@ otherwise leaves the gripper inside it.
 - The shelf place puts `link_eef` 10 cm above the board whatever the grasp height, so a
   tall, thin object grasped low can tip on release.
 - The lowest shelf (~0.39 m) has no frontal grasp with the base 15-20 cm away.
-- The task manager still assigns objects to levels with fixed 0.20/0.05 m thresholds.
+- The objects of each level are what the survey poses see; a level the camera frames
+  badly from there lists fewer, and a pick then searches the other levels.
 - Levels are numbered from the lowest board seen; a board seen only from below gets
   the default thickness (1.8 cm). Thin posts of an open bookshelf count as walls.

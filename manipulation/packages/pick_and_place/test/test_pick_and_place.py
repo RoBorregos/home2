@@ -24,9 +24,11 @@ from fakes import (
     FakeGenerateGraspsResponse,
     FakeLogger,
     FakePerception,
+    make_board,
     make_cluster,
     make_point,
     make_pose,
+    make_shelf,
 )
 from frida_constants.manipulation_constants import (
     CARTESIAN_PLANNER,
@@ -41,7 +43,9 @@ from geometry_msgs.msg import PointStamped
 from pathlib import Path
 from rclpy.action import GoalResponse
 from perception_3d.geometric_grasps import approaches
+from frida_pymoveit2.robots import xarm6
 from pick_and_place.manipulation_core import ManipulationCore
+from pick_and_place.pipelines import shelf as shelf_pipeline
 from pick_and_place.pipelines import (
     follow as follow_pipeline,
     pick as pick_pipeline,
@@ -263,8 +267,15 @@ def test_a_shelf_pick_clusters_inside_the_measured_compartment(strategies):
         cluster=make_cluster(),
         grasps=[([make_pose()], [0.9])],
     )
-    arm = FakeArm(shelf_levels=SHELF)
-    run_pick(arm, perception, strategies, object_name="bottle", is_shelf=True)
+    arm = FakeArm()
+    run_pick(
+        arm,
+        perception,
+        strategies,
+        object_name="bottle",
+        is_shelf=True,
+        shelf=make_shelf(SHELF),
+    )
     assert perception.cluster_bands[0] == pytest.approx((0.401, 0.651))
 
 
@@ -349,13 +360,14 @@ def test_a_shelf_pick_tries_the_frontal_grasp_and_backs_out(strategies):
         cluster=bottle_cluster(),
         grasps=[([make_pose()], [0.9])],
     )
-    arm = FakeArm(shelf_levels=SHELF, link_pose=_shelf_exit_pose())
+    arm = FakeArm(link_pose=_shelf_exit_pose())
     success, outcome = run_pick(
         arm,
         perception,
         strategies,
         object_name="bottle",
         is_shelf=True,
+        shelf=make_shelf(SHELF),
         in_configuration=True,
     )
     assert success
@@ -377,9 +389,14 @@ def test_default_band_off_the_shelf_or_without_a_scan(strategies, is_shelf, leve
         cluster=make_cluster(),
         grasps=[([make_pose()], [0.9])],
     )
-    arm = FakeArm(shelf_levels=levels)
     run_pick(
-        arm, perception, strategies, object_name="coke", is_shelf=is_shelf, use_gpd=True
+        FakeArm(),
+        perception,
+        strategies,
+        object_name="coke",
+        is_shelf=is_shelf,
+        use_gpd=True,
+        shelf=make_shelf(levels) if levels else None,
     )
     assert perception.cluster_bands[0] is None
 
@@ -516,8 +533,15 @@ def place_perception(**overrides):
     return FakePerception(**overrides)
 
 
-def run_place(arm, perc, place_params, outcome=None):
-    return place_pipeline.execute(arm, perc, place_params, outcome or held())
+SHELF_SCAN = object()  # run_place default: a scan for a shelf place, none otherwise
+
+
+def run_place(arm, perc, place_params, outcome=None, shelf=SHELF_SCAN):
+    if shelf is SHELF_SCAN:
+        shelf = make_shelf() if place_params.is_shelf else None
+    return place_pipeline.execute(
+        arm, perc, place_params, outcome or held(), shelf=shelf
+    )
 
 
 def held(height=0.12):
@@ -526,16 +550,18 @@ def held(height=0.12):
 
 
 def test_shelf_place_needs_a_shelf_scan():
-    arm = FakeArm()  # nothing to restore: no scan, or the base moved since it
-    assert run_place(arm, place_perception(), params(is_shelf=True)) is False
+    arm = FakeArm()  # no scan, or the base moved since it
+    assert (
+        run_place(arm, place_perception(), params(is_shelf=True), shelf=None) is False
+    )
     assert "move_to_pose" not in arm.calls
     assert "open_gripper" not in arm.calls
 
 
 def test_shelf_scan_boxes_protect_the_place():
-    arm = FakeArm(shelf_scan=True)
+    arm = FakeArm()
     assert run_place(arm, place_perception(), params(is_shelf=True)) is True
-    assert arm.calls.index("restore_shelf_scene") < arm.calls.index("move_to_pose")
+    assert arm.calls.index("set_shelf_boxes") < arm.calls.index("move_to_pose")
     assert "remove_shelf_scene" in arm.calls
 
 
@@ -546,7 +572,7 @@ def test_shelf_place_keeps_a_frontally_picked_object_upright():
     pick.pose.orientation.x, pick.pose.orientation.y = q[0], q[1]
     pick.pose.orientation.z, pick.pose.orientation.w = q[2], q[3]
     outcome = PickOutcome(pick_pose=pick, object_pick_height=0.1)
-    arm = FakeArm(shelf_scan=True)
+    arm = FakeArm()
     run_place(arm, place_perception(), params(is_shelf=True), outcome)
     final = arm.poses["move_to_pose"][1].pose.orientation
     eef = Rotation.from_quat([final.x, final.y, final.z, final.w])
@@ -565,7 +591,7 @@ def test_shelf_place_keeps_the_fixed_quaternion_after_a_top_down_pick():
     q = Rotation.from_euler("y", 180, degrees=True).as_quat()
     pick.pose.orientation.x, pick.pose.orientation.y = q[0], q[1]
     pick.pose.orientation.z, pick.pose.orientation.w = q[2], q[3]
-    arm = FakeArm(shelf_scan=True)
+    arm = FakeArm()
     run_place(
         arm,
         place_perception(),
@@ -580,8 +606,9 @@ def test_shelf_place_keeps_the_fixed_quaternion_after_a_top_down_pick():
 def test_shelf_place_releases_over_the_board():
     # In Gazebo the reach clamp plus the 7 cm pull released on the front edge.
     extent = (0.50, 0.85, -0.40, 0.40)
-    arm = FakeArm(shelf_scan=True, shelf_extent=extent)
-    assert run_place(arm, place_perception(), params(is_shelf=True)) is True
+    arm = FakeArm()
+    shelf = make_shelf(extent=extent)
+    assert run_place(arm, place_perception(), params(is_shelf=True), shelf=shelf)
     final = arm.poses["move_to_pose"][1]  # pre-place, then the place itself
     object_x = final.pose.position.x + place_pipeline.SHELF_PLACE_OBJECT_OFFSET
     assert object_x >= extent[0] + place_pipeline.SHELF_PLACE_FRONT_MARGIN - 1e-9
@@ -589,15 +616,15 @@ def test_shelf_place_releases_over_the_board():
 
 def test_shelf_boxes_never_leave_with_the_robot():
     # The boxes are in base_link: a failed return must still remove them.
-    arm = FakeArm(shelf_scan=True, named_position_results=[False] * 10)
+    arm = FakeArm(named_position_results=[False] * 10)
     assert run_place(arm, place_perception(), params(is_shelf=True)) is False
     assert "remove_shelf_scene" in arm.calls
 
 
 def test_table_place_never_touches_the_shelf_scene():
-    arm = FakeArm(shelf_scan=True)
+    arm = FakeArm()
     run_place(arm, place_perception(), params(is_shelf=False))
-    assert "restore_shelf_scene" not in arm.calls
+    assert "set_shelf_boxes" not in arm.calls
 
 
 def test_place_fails_when_the_return_never_succeeds():
@@ -614,7 +641,7 @@ def test_place_clears_the_octomap_only_before_a_retry():
 
 
 def test_shelf_place_keeps_the_octomap_on_a_failed_return():
-    arm = FakeArm(shelf_scan=True, named_position_results=[False] * 5)
+    arm = FakeArm(named_position_results=[False] * 5)
     assert run_place(arm, place_perception(), params(is_shelf=True)) is False
     assert "clear_octomap" not in arm.calls
 
@@ -633,7 +660,7 @@ def test_place_fails_when_no_rung_is_reachable():
 
 def test_a_failed_shelf_place_climbs_a_rung_instead_of_releasing_short():
     # Sim: the old halfway release dropped the bottle in front of the board.
-    arm = FakeArm(shelf_scan=True, move_to_pose_results=[True, False, True, True])
+    arm = FakeArm(move_to_pose_results=[True, False, True, True])
     assert run_place(arm, place_perception(), params(is_shelf=True)) is True
     _, final_0, _, final_1 = arm.poses["move_to_pose"]
     assert final_1.pose.position.x == pytest.approx(final_0.pose.position.x)
@@ -644,9 +671,14 @@ def test_a_failed_shelf_place_climbs_a_rung_instead_of_releasing_short():
 
 @pytest.mark.parametrize("straight_in", [False, True])
 def test_shelf_place_goes_in_straight_only_when_asked(straight_in):
-    arm = FakeArm(shelf_scan=True)
+    arm = FakeArm()
     place_pipeline.execute(
-        arm, place_perception(), params(is_shelf=True), held(), straight_in=straight_in
+        arm,
+        place_perception(),
+        params(is_shelf=True),
+        held(),
+        straight_in=straight_in,
+        shelf=make_shelf(),
     )
     pre, final = arm.move_kwargs[:2]
     assert "planner_id" not in pre  # reaching the pre-place is a free plan
@@ -655,9 +687,14 @@ def test_shelf_place_goes_in_straight_only_when_asked(straight_in):
 
 def test_a_cut_straight_place_falls_back_to_a_free_plan_on_the_same_rung():
     # Sim: into a 0.90 m board the straight line was cut at 30 % on every rung.
-    arm = FakeArm(shelf_scan=True, move_to_pose_results=[True, False, True])
+    arm = FakeArm(move_to_pose_results=[True, False, True])
     assert place_pipeline.execute(
-        arm, place_perception(), params(is_shelf=True), held(), straight_in=True
+        arm,
+        place_perception(),
+        params(is_shelf=True),
+        held(),
+        straight_in=True,
+        shelf=make_shelf(),
     )
     pre, straight, free = arm.poses["move_to_pose"]
     assert straight.pose.position == free.pose.position
@@ -843,6 +880,8 @@ def core():
     }
     node.get_parameter = lambda name: SimpleNamespace(value=node.parameters[name])
     node._last_pick = PickOutcome()
+    node._shelf = None
+    node._picked_level = 0
     node._follow_lock = threading.Lock()
     node._task_lock = threading.Lock()
     node._face = follow_pipeline.FaceState()
@@ -852,6 +891,7 @@ def core():
         ManipulationTask.PICK_CLOSEST: node._run_pick_closest,
         ManipulationTask.PLACE: node._run_place,
         ManipulationTask.POUR: node._run_pour,
+        ManipulationTask.SCAN_SHELF: node._run_scan_shelf,
     }
     return node
 
@@ -871,9 +911,13 @@ class _Request:
                 "min_distance": 0.0,
                 "max_distance": 1.0,
                 "in_configuration": False,
+                "from_shelf": params.pop("from_shelf", False),
+                "shelf_level": params.pop("shelf_level", 0),
             },
         )()
-        self.place_params = type("P", (), {"is_shelf": False})()
+        self.place_params = SimpleNamespace(
+            is_shelf=False, shelf_level=0, table_height=0.0, table_height_tolerance=0.0
+        )
         self.pour_params = type(
             "P",
             (),
@@ -990,19 +1034,41 @@ def test_a_failed_pick_clears_the_remembered_outcome(core, monkeypatch):
     assert core._last_pick.pick_pose is None
 
 
-def test_shelf_pick_restores_the_shelf_after_the_initial_wipe(core, monkeypatch):
+def _face_without_moving(monkeypatch, level=2):
+    monkeypatch.setattr(shelf_pipeline, "find_object", lambda *a, **k: level)
+    monkeypatch.setattr(shelf_pipeline, "face_level", lambda *a, **k: True)
+
+
+def test_a_shelf_pick_faces_the_object_level_after_the_initial_wipe(core, monkeypatch):
     monkeypatch.setattr(
         "pick_and_place.pipelines.pick.execute",
         lambda *a, **k: (False, PickOutcome()),
     )
-    core.arm = FakeArm(shelf_scan=True)
-    core._run_pick(_Request(scan_environment=True))
+    _face_without_moving(monkeypatch, level=2)
+    core._shelf = make_shelf()
+    core._run_pick(_Request(from_shelf=True))
     calls = core.arm.calls
-    assert calls.index("remove_all_collision_objects") < calls.index(
-        "restore_shelf_scene"
-    )
-    # ...and the wipe after the pick removes it again.
+    assert calls.index("remove_all_collision_objects") < calls.index("set_shelf_boxes")
+    # ...and the wipe after the pick removes them again.
     assert calls[-1] == "remove_all_collision_objects"
+    assert core._picked_level == 2
+
+
+def test_a_shelf_pick_hands_the_scan_to_the_pipeline(core, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.pick.execute",
+        lambda arm, perception, request, strategies: (
+            seen.setdefault("request", request),
+            (False, PickOutcome()),
+        )[1],
+    )
+    _face_without_moving(monkeypatch)
+    core._shelf = make_shelf()
+    core._run_pick(_Request(from_shelf=True))
+    request = seen["request"]
+    assert request.is_shelf and request.shelf is core._shelf
+    assert request.in_configuration  # perceive from the level it faced
 
 
 def test_shelf_pick_needs_a_shelf_scan(core, monkeypatch):
@@ -1010,7 +1076,78 @@ def test_shelf_pick_needs_a_shelf_scan(core, monkeypatch):
         "pick_and_place.pipelines.pick.execute",
         lambda *a, **k: pytest.fail("picked without a shelf scan"),
     )
-    assert core._run_pick(_Request(scan_environment=True)) is False
+    assert core._run_pick(_Request(from_shelf=True)) is False
+
+
+def test_a_shelf_pick_fails_when_no_level_holds_the_object(core, monkeypatch):
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.pick.execute",
+        lambda *a, **k: pytest.fail("picked an object it never saw"),
+    )
+    _face_without_moving(monkeypatch, level=0)
+    core._shelf = make_shelf()
+    assert core._run_pick(_Request(from_shelf=True)) is False
+
+
+def test_a_scan_is_dropped_once_the_base_moves(core, monkeypatch):
+    core._shelf = make_shelf(base=np.array([0.0, 0.0, 0.0]))
+    monkeypatch.setattr(shelf_pipeline, "base_pose", lambda arm: np.array([0.1, 0, 0]))
+    assert core._run_pick(_Request(from_shelf=True)) is False
+    assert core._shelf is None
+    assert "remove_shelf_scene" in core.arm.calls
+
+
+def test_scan_shelf_keeps_the_scan_and_puts_its_boxes_in_the_scene(core, monkeypatch):
+    shelf = make_shelf()
+    monkeypatch.setattr(shelf_pipeline, "scan", lambda arm, perception: shelf)
+    assert core._run_scan_shelf(_Request(ManipulationTask.SCAN_SHELF)) is True
+    assert core._shelf is shelf
+    calls = core.arm.calls
+    assert calls.index("remove_shelf_scene") < calls.index("set_shelf_boxes")
+
+
+def test_a_failed_scan_forgets_the_previous_one(core, monkeypatch):
+    core._shelf = make_shelf()
+    monkeypatch.setattr(shelf_pipeline, "scan", lambda arm, perception: None)
+    assert core._run_scan_shelf(_Request(ManipulationTask.SCAN_SHELF)) is False
+    assert core._shelf is None
+
+
+def test_a_place_on_a_shelf_level_faces_it_and_places_on_its_board(core, monkeypatch):
+    seen = {}
+    faced = []
+    monkeypatch.setattr(
+        shelf_pipeline,
+        "face_level",
+        lambda arm, shelf, level, for_place: faced.append(level),
+    )
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.place.execute",
+        lambda arm, perception, params, outcome, straight_in, shelf: seen.update(
+            params=params, shelf=shelf
+        )
+        or True,
+    )
+    core._shelf = make_shelf(levels=((0.39, 0.02), (0.68, 0.02)))
+    place = _Request(ManipulationTask.PLACE)
+    place.place_params.shelf_level = 2
+    assert core._run_place(place)
+    assert faced == [2]
+    assert seen["params"].is_shelf
+    assert seen["params"].table_height == pytest.approx(0.68)
+    assert seen["shelf"] is core._shelf
+    assert place.place_params.table_height == 0.0  # the goal itself is untouched
+
+
+def test_a_place_on_a_level_the_scan_does_not_have_fails(core, monkeypatch):
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.place.execute",
+        lambda *a, **k: pytest.fail("placed on a level that does not exist"),
+    )
+    core._shelf = make_shelf()
+    place = _Request(ManipulationTask.PLACE)
+    place.place_params.shelf_level = 5
+    assert core._run_place(place) is False
 
 
 def test_shelf_tasks_use_the_shelf_acceleration(core, monkeypatch):
@@ -1022,14 +1159,15 @@ def test_shelf_tasks_use_the_shelf_acceleration(core, monkeypatch):
         "pick_and_place.pipelines.place.execute",
         lambda *a, **k: seen.setdefault("straight_in", k["straight_in"]),
     )
-    core.arm = FakeArm(shelf_scan=True)
+    _face_without_moving(monkeypatch)
+    core._shelf = make_shelf()
     core.parameters |= {"shelf_acceleration": 0.7, "shelf_place_straight": True}
-    core._run_pick(_Request(scan_environment=True))
+    core._run_pick(_Request(from_shelf=True))
     place = _Request(ManipulationTask.PLACE)
     place.place_params.is_shelf = True
     core._run_place(place)
-    core._run_pick(_Request(scan_environment=False))
-    assert core.arm.accelerations == [0.7, 0.7, PICK_ACCELERATION]
+    core._run_pick(_Request())
+    assert core.arm.accelerations == [0.7, 0.7, 0.7, PICK_ACCELERATION]
     assert seen["straight_in"] is True
 
 
@@ -1045,7 +1183,7 @@ def test_table_pick_does_not_restore_the_shelf(core, monkeypatch):
         lambda *a, **k: (False, PickOutcome()),
     )
     core._run_pick(_Request(scan_environment=False))
-    assert "restore_shelf_scene" not in core.arm.calls
+    assert "set_shelf_boxes" not in core.arm.calls
 
 
 def test_a_raising_pour_does_not_leave_a_stale_outcome_behind(core, monkeypatch):
@@ -1270,8 +1408,8 @@ def test_shelf_exit_to_edge_backs_out_until_the_tips_clear_the_board(
     eef_x, extent, expected
 ):
     start = _frontal_eef(eef_x)
-    arm = FakeArm(link_pose=copy.deepcopy(start), shelf_extent=extent)
-    assert pick_pipeline._shelf_exit(arm, to_edge=True)
+    arm = FakeArm(link_pose=copy.deepcopy(start))
+    assert pick_pipeline._shelf_exit(arm, make_shelf(extent=extent) if extent else None)
     back = arm.poses["move_to_pose"][-1].pose.position
     assert start.pose.position.x - back.x == pytest.approx(expected, abs=1e-6)
 
@@ -1280,3 +1418,104 @@ def test_shelf_exit_reports_a_failed_plan_or_no_pose():
     arm = FakeArm(link_pose=_shelf_exit_pose(), move_to_pose_results=[False])
     assert not pick_pipeline._shelf_exit(arm)
     assert not pick_pipeline._shelf_exit(FakeArm())
+
+
+# ============================================================================
+# shelf_pipeline
+# ============================================================================
+
+
+def _seen(label, z):
+    return SimpleNamespace(label_text=label, point3d=make_point(x=0.6, z=z))
+
+
+def _detect_result(boards):
+    return SimpleNamespace(
+        levels=boards,
+        collision_objects=["box"],
+        front_x=0.5,
+        back_x=0.85,
+        y_min=-0.4,
+        y_max=0.4,
+    )
+
+
+def test_scan_surveys_then_puts_each_seen_object_on_its_level(monkeypatch):
+    monkeypatch.setattr(shelf_pipeline.time, "sleep", lambda s: None)
+    perception = FakePerception(
+        shelf_result=_detect_result([make_board(0.39), make_board(0.68)]),
+        detections=[_seen("cereal", 0.75), _seen("apple", 0.45), _seen("cereal", 0.76)],
+    )
+    arm = FakeArm()
+    shelf = shelf_pipeline.scan(arm, perception)
+    assert arm.named_positions == list(shelf_pipeline.SHELF_SURVEY_POSES)
+    assert perception.shelf_requests[0] == (True, False, False)  # drop old captures
+    assert perception.shelf_requests[-1] == (False, False, True)
+    assert [lv.objects for lv in shelf.levels] == [["apple"], ["cereal"]]
+    assert shelf.boxes == ["box"] and shelf.extent == (0.5, 0.85, -0.4, 0.4)
+
+
+def test_scan_fails_without_a_captured_view_or_a_shelf(monkeypatch):
+    monkeypatch.setattr(shelf_pipeline.time, "sleep", lambda s: None)
+    no_views = FakeArm(named_position_results=[False, False])
+    assert shelf_pipeline.scan(no_views, FakePerception()) is None
+    assert shelf_pipeline.scan(FakeArm(), FakePerception(shelf_result=None)) is None
+
+
+@pytest.mark.parametrize(
+    "z, level", [(0.30, 0), (0.36, 1), (0.50, 1), (0.64, 2), (0.70, 2), (1.5, 2)]
+)
+def test_a_height_belongs_to_the_compartment_above_its_board(z, level):
+    assert make_shelf(levels=((0.39, 0.02), (0.68, 0.02))).level_of(z) == level
+
+
+def test_a_scan_goes_stale_once_the_base_moves():
+    shelf = make_shelf(base=np.array([1.0, 2.0, 0.1]))
+    assert shelf.stale(np.array([1.01, 2.0, 0.11])) == ""
+    assert "base moved" in shelf.stale(np.array([1.1, 2.0, 0.1]))
+    assert "base moved" in shelf.stale(np.array([1.0, 2.0, 0.2]))
+    assert "odometry" in shelf.stale(None)
+    assert make_shelf(base=None).stale(None) == ""  # no odometry: a static base
+
+
+def test_facing_a_level_puts_the_camera_past_the_board_front():
+    arm = FakeArm()
+    shelf = make_shelf(levels=((0.68, 0.02),), extent=(0.5, 0.85, -0.4, 0.4))
+    shelf.levels = [make_board(0.68)]
+    assert shelf_pipeline.face_level(arm, shelf, 1)
+    pose = arm.poses["move_to_pose"][0]
+    assert pose.pose.position.x == pytest.approx(0.5 - shelf_pipeline.VIEW_DISTANCE)
+    assert pose.pose.position.z == pytest.approx(0.68 + shelf_pipeline.VIEW_HEIGHT)
+    assert arm.move_kwargs[0]["target_link"] == xarm6.camera_frame_name()
+
+
+def test_facing_a_level_for_a_place_starts_from_front_stare():
+    arm = FakeArm()
+    shelf = make_shelf()
+    shelf.levels = [make_board(1.2)]
+    shelf_pipeline.face_level(arm, shelf, 1, for_place=True)
+    assert arm.named_positions == ["front_stare"]
+    pose = arm.poses["move_to_pose"][0]
+    assert pose.pose.position.z == pytest.approx(1.2 + shelf_pipeline.PLACE_VIEW_HEIGHT)
+
+
+def test_find_object_tries_the_hint_then_where_the_scan_saw_it(monkeypatch):
+    monkeypatch.setattr(shelf_pipeline.time, "sleep", lambda s: None)
+    shelf = make_shelf(levels=((0.39, 0.02), (0.68, 0.02), (1.0, 0.02)))
+    shelf.levels[2].objects = ["cereal"]
+    seen_on_3 = FakePerception(located_point=make_point(z=1.05))
+    assert shelf_pipeline.find_object(FakeArm(), seen_on_3, shelf, "cereal") == 3
+    # the hint comes first even when the scan saw it elsewhere
+    arm = FakeArm()
+    seen_on_1 = FakePerception(located_point=make_point(z=0.45))
+    assert shelf_pipeline.find_object(arm, seen_on_1, shelf, "cereal", hint=1) == 1
+    assert seen_on_1.calls.count("locate_object") == 1
+
+
+def test_find_object_skips_a_level_that_only_frames_it_from_another(monkeypatch):
+    monkeypatch.setattr(shelf_pipeline.time, "sleep", lambda s: None)
+    shelf = make_shelf(levels=((0.39, 0.02), (0.68, 0.02)))
+    on_level_2 = FakePerception(located_point=make_point(z=0.75))
+    assert shelf_pipeline.find_object(FakeArm(), on_level_2, shelf, "cup", hint=1) == 2
+    nowhere = FakePerception(located_point=PointStamped())
+    assert shelf_pipeline.find_object(FakeArm(), nowhere, shelf, "cup") == 0

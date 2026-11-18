@@ -103,7 +103,7 @@ class PPCTestCabinetPlace(PickAndPlaceTM):
         self.shelf_level_heights: dict[int, float] = {}
         self.default_shelf_height = 0.0
         self._shelf_heights_detected = False
-        self._shelf_level_cache: dict[str, float] = {}
+        self._shelf_objects: dict[int, list[str]] = {}
 
         try:
             from ament_index_python.packages import get_package_share_directory
@@ -139,11 +139,8 @@ class PPCTestCabinetPlace(PickAndPlaceTM):
         self.shelves = {}
         self.object_to_placing_shelf = defaultdict(list)
         self.shelf_scanned = False
-        self._cabinet_scan_fresh = False
         self._shelf_fallback_heights: list[float] = []
         self._shelf_fallback_idx: int = 0
-        self.shelf_level_threshold = 0.20
-        self.shelf_level_down_threshold = 0.05
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)

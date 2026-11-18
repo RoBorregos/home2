@@ -7,6 +7,7 @@ facade from becoming a god object, and keeps the pipelines free of ROS clients.
 from typing import List, Optional, Tuple
 
 from frida_constants.manipulation_constants import (
+    DETECT_SHELF_SERVICE,
     GENERATE_GRASPS_SERVICE,
     GRASP_DETECTION_SERVICE,
     HEATMAP_PLACE_SERVICE,
@@ -16,6 +17,7 @@ from frida_constants.manipulation_constants import (
 from frida_constants.vision_constants import DETECTION_HANDLER_TOPIC_SRV
 from frida_interfaces.srv import (
     DetectionHandler,
+    DetectShelf,
     GenerateGrasps,
     GraspDetection,
     HeatmapPlace,
@@ -35,6 +37,7 @@ from pick_and_place.utils.perception_utils import (
 GENERATE_GRASPS_TIMEOUT = 5.0
 DETECT_TIMEOUT = 2.0
 CLUSTER_TIMEOUT = 60.0
+DETECT_SHELF_TIMEOUT = 30.0
 
 
 class Perception:
@@ -63,6 +66,9 @@ class Perception:
         self.generate_grasps_client = node.create_client(
             GenerateGrasps, GENERATE_GRASPS_SERVICE, callback_group=group
         )
+        self.detect_shelf_client = node.create_client(
+            DetectShelf, DETECT_SHELF_SERVICE, callback_group=group
+        )
 
     @property
     def logger(self):
@@ -73,6 +79,44 @@ class Perception:
     ) -> PointStamped:
         """Find an object by label. An empty frame_id means "not found"."""
         return get_object_point(object_name, self.detection_handler_client, timeout)
+
+    def detections(self, timeout: float = DETECT_TIMEOUT) -> list:
+        """Every object the detector sees now (``label_text``, ``point3d``)."""
+        from frida_motion_planning.utils.ros_utils import wait_for_future
+
+        if not self.detection_handler_client.wait_for_service(timeout_sec=timeout):
+            self._log.warn("detection_handler unavailable")
+            return []
+        request = DetectionHandler.Request(label="all")
+        future = wait_for_future(
+            self.detection_handler_client.call_async(request), timeout=timeout
+        )
+        response = future.result() if future else None
+        return list(response.detection_array.detections) if response else []
+
+    def detect_shelf(
+        self,
+        reset: bool = False,
+        capture: bool = False,
+        detect: bool = False,
+        timeout: float = DETECT_SHELF_TIMEOUT,
+    ):
+        """One DetectShelf call: the response, or None when it failed (logged)."""
+        from frida_motion_planning.utils.ros_utils import wait_for_future
+
+        if not self.detect_shelf_client.wait_for_service(timeout_sec=3.0):
+            self._log.error("detect_shelf service unavailable")
+            return None
+        request = DetectShelf.Request(reset=reset, capture=capture, detect=detect)
+        future = wait_for_future(
+            self.detect_shelf_client.call_async(request), timeout=timeout
+        )
+        response = future.result() if future else None
+        if response is None or not response.success:
+            reason = response.message if response is not None else "no answer"
+            self._log.warn(f"detect_shelf: {reason}")
+            return None
+        return response
 
     @staticmethod
     def point_in_range(point, min_distance: float, max_distance: float) -> bool:

@@ -71,9 +71,14 @@ TOP_DOWN_QUAT = [0.0, 1.0, 0.0, 0.0]
 
 
 def execute(
-    arm, perception, place_params, pick_outcome: PickOutcome, straight_in: bool = False
+    arm,
+    perception,
+    place_params,
+    pick_outcome: PickOutcome,
+    straight_in: bool = False,
+    shelf=None,
 ) -> bool:
-    """Place the held object. Returns True on success."""
+    """Place the held object; a shelf place needs ``shelf``, the ShelfScan. True on success."""
     log = arm.logger
     arm.set_context("place")
     log.info("Executing place task")
@@ -97,10 +102,10 @@ def execute(
     shelf_quat = AIM_STRAIGHT_FRONT_QUAT
     if place_params.is_shelf:
         # The octomap never sees the ceiling or walls; choosing the pose wiped the scene.
-        if not arm.restore_shelf_scene():
+        if shelf is None or not arm.set_shelf_boxes(shelf.boxes):
             log.error("Shelf place needs a shelf scan from where the robot stands")
             return False
-        bounds = _shelf_place_bounds(arm, place_pose)
+        bounds = _shelf_place_bounds(arm, place_pose, shelf)
         shelf_quat = _shelf_place_quat(arm, pick_outcome)
 
     reached = _reach_place_pose(
@@ -142,12 +147,11 @@ def execute(
 # ======================================================================
 
 
-def _shelf_place_bounds(arm, place_pose: PoseStamped) -> Optional[tuple]:
+def _shelf_place_bounds(arm, place_pose: PoseStamped, shelf) -> Optional[tuple]:
     """EE-link (min_x, max_x, min_y, max_y) that releases over the scanned board, or None."""
-    extent = arm.shelf_extent()
-    if extent is None or place_pose.header.frame_id not in ("", "base_link"):
+    if place_pose.header.frame_id not in ("", "base_link"):
         return None
-    front, back, y_min, y_max = extent
+    front, back, y_min, y_max = shelf.extent
     min_x = front + SHELF_PLACE_FRONT_MARGIN - SHELF_PLACE_OBJECT_OFFSET
     max_x = max(min_x, back - SHELF_PLACE_BACK_MARGIN - SHELF_PLACE_OBJECT_OFFSET)
     min_y = y_min + SHELF_PLACE_SIDE_MARGIN
