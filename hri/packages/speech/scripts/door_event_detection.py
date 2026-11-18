@@ -54,7 +54,7 @@ class DoorEventDetectionNode(Node):
         # Detection.
         self.declare_parameter("window_s", 5.0)
         self.declare_parameter("hop_s", 0.5)
-        self.declare_parameter("threshold", 0.15)
+        self.declare_parameter("threshold", 0.10)
         self.declare_parameter("strong_threshold", 0.5)
         self.declare_parameter("min_consecutive", 2)
         self.declare_parameter("cooldown_s", 2.0)

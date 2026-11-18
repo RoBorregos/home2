@@ -78,7 +78,7 @@ class DoorEventTaggerConfig:
     # it starts; it just occupies part of the window.
     window_s: float = 5.0
     hop_s: float = 0.5  # time between inferences
-    threshold: float = 0.15  # per-window hit on the summed keyword score
+    threshold: float = 0.10  # per-window hit on the summed keyword score
     strong_threshold: float = 0.5  # a single window this sure confirms at once
     min_consecutive: int = 2  # hits in a row needed below strong_threshold
     cooldown_s: float = 2.0  # suppress re-confirmations for this long

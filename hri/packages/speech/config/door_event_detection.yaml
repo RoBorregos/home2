@@ -19,7 +19,7 @@ door_event_detection:
     # >= ~3.2 s: the model's output is garbage on shorter input. ---
     window_s: 5.0
     hop_s: 0.5
-    threshold: 0.15
+    threshold: 0.10
     strong_threshold: 0.5
     min_consecutive: 2
     cooldown_s: 2.0
