@@ -24,6 +24,7 @@ from frida_constants.manipulation_constants import (
     GRIPPER_REACH,
     MANIPULATION_ACTION_SERVER,
     PICK_ACCELERATION,
+    SHELF_ACCELERATION,
     RIM_DESCENT_SPEED,
 )
 from frida_constants.vision_constants import CENTROID_TOPIC, FOLLOW_TOPIC
@@ -82,7 +83,7 @@ class ManipulationCore(Node):
         # Benchmark switch: auto, gpd, or geometric (no GPD fallback).
         self.declare_parameter("pick_method", "auto")
         # Shelf speed-ups to try on the robot one at a time (defaults: as validated).
-        self.declare_parameter("shelf_acceleration", PICK_ACCELERATION)
+        self.declare_parameter("shelf_acceleration", SHELF_ACCELERATION)
         self.declare_parameter("shelf_place_straight", False)
         self.declare_parameter("shelf_exit_to_edge", False)
         self.add_on_set_parameters_callback(self._validate_parameters)

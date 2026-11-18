@@ -177,5 +177,6 @@ SHELF_MARKERS_TOPIC = "/manipulation/shelf_geometry"
 SHELF_SURVEY_POSES = ("shelf_survey_high", "shelf_survey_low")
 SHELF_SCAN_TOLERANCE = 0.1  # m around a level height when facing it
 SHELF_SURVEY_VELOCITY = 0.75
+SHELF_ACCELERATION = 0.5  # planned shelf moves (PICK_ACCELERATION is 0.3), robot-tested
 SHELF_SURVEY_SETTLE = 0.3  # s after reaching a survey pose, before the capture
 SHELF_LEVEL_SETTLE = 1.5  # s for the octomap and detections at a level's pose

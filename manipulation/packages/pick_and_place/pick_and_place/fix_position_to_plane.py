@@ -393,8 +393,6 @@ class FixPositionToPlane(Node):
             self.get_logger().error(f"Error while processing the request: {e}")
             response.is_valid = False
             return response
-        self.get_logger().info("Response:a aaa")
-        return response
 
     def _move_to_view(self, closest_point, center, ivan, response):
         """Move the camera to closest_point (raised by ivan, at most 0.5 m out) looking at center."""

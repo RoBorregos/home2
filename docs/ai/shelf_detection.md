@@ -14,7 +14,6 @@ fails.
 | Constants / survey poses | `manipulation_constants.py` (`DETECT_SHELF_SERVICE`, `SHELF_SURVEY_POSES`), `xarm_configurations.py` (`shelf_survey_high/low`) |
 | Manual test | `keyboard_input.py` options -14 (survey + detect), -15 (capture here), -16 (detect) |
 | Task manager | `ManipulationTasks.detect_shelf_levels()`; `pickandplace_task_manager.py` `_ensure_shelf_heights()`, `gpsr_single_tasks.py` `_measure_shelf()` (once per stop) |
-| RViz | `arm_pkg/config/frida_moveit.rviz`: the MoveIt view plus "Shelf", the last scan's boards (latched) |
 
 ## How it works
 
@@ -95,14 +94,15 @@ A shelf pick first tries a frontal grasp from the object's cluster
 | Shelf exit | straight MoveIt paths at 0.3 |
 | Return after the pick and the place | `table_stare` at 0.75 |
 | Release | 0.5 s |
+| Planned shelf moves (pick and place) | acceleration 0.5 (`SHELF_ACCELERATION`) |
 
 Raise the two settle times first if the robot misses detections or scans a blurred
-cloud. Two more speed-ups are `manipulation_core` parameters, off by default:
+cloud. `manipulation_core` parameters (the defaults are what the robot benchmark ran):
 
 ```bash
-ros2 param set /manipulation_core shelf_acceleration 0.5    # default 0.3, every planned shelf move
-ros2 param set /manipulation_core shelf_place_straight true # straight into the compartment
-ros2 param set /manipulation_core shelf_exit_to_edge true   # back out past the board front
+ros2 param set /manipulation_core shelf_acceleration 0.3    # default 0.5; 0.3 is the table speed
+ros2 param set /manipulation_core shelf_place_straight true # default false: straight into the compartment
+ros2 param set /manipulation_core shelf_exit_to_edge true   # default false: back out past the board front
 ```
 
 `shelf_place_straight` falls back to the free plan on the same rung when the line is

@@ -635,7 +635,7 @@ def test_a_failed_shelf_place_climbs_a_rung_instead_of_releasing_short():
     # Sim: the old halfway release dropped the bottle in front of the board.
     arm = FakeArm(shelf_scan=True, move_to_pose_results=[True, False, True, True])
     assert run_place(arm, place_perception(), params(is_shelf=True)) is True
-    pre, final_0, pre_1, final_1 = arm.poses["move_to_pose"]
+    _, final_0, _, final_1 = arm.poses["move_to_pose"]
     assert final_1.pose.position.x == pytest.approx(final_0.pose.position.x)
     assert final_1.pose.position.z == pytest.approx(
         final_0.pose.position.z + place_pipeline.SHELF_LADDER[1]
@@ -837,7 +837,7 @@ def core():
     node.get_logger = lambda: node._logger
     node.parameters = {
         "pick_method": "auto",
-        "shelf_acceleration": 0.3,
+        "shelf_acceleration": 0.5,
         "shelf_place_straight": False,
         "shelf_exit_to_edge": False,
     }
@@ -1023,13 +1023,13 @@ def test_shelf_tasks_use_the_shelf_acceleration(core, monkeypatch):
         lambda *a, **k: seen.setdefault("straight_in", k["straight_in"]),
     )
     core.arm = FakeArm(shelf_scan=True)
-    core.parameters |= {"shelf_acceleration": 0.5, "shelf_place_straight": True}
+    core.parameters |= {"shelf_acceleration": 0.7, "shelf_place_straight": True}
     core._run_pick(_Request(scan_environment=True))
     place = _Request(ManipulationTask.PLACE)
     place.place_params.is_shelf = True
     core._run_place(place)
     core._run_pick(_Request(scan_environment=False))
-    assert core.arm.accelerations == [0.5, 0.5, PICK_ACCELERATION]
+    assert core.arm.accelerations == [0.7, 0.7, PICK_ACCELERATION]
     assert seen["straight_in"] is True
 
 
