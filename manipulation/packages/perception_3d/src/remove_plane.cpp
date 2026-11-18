@@ -406,10 +406,10 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
         new pcl::PointCloud<pcl::PointXYZ>);
 
-    // With a compartment band the board is already cropped out: a plane found
-    // higher up is a slice through the walls and the object, not a board.
+    // With a compartment band the board is already cropped out: any plane found
+    // is a slice through the walls and the object (a short one loses its base).
     const float max_plane_z = request->min_height > 0.0f
-                                  ? band_min + 0.03f
+                                  ? -std::numeric_limits<float>::infinity()
                                   : std::numeric_limits<float>::infinity();
     response->status =
         this->get_cloud_without_plane(cloud_radius_out, cloud_out, max_plane_z);
