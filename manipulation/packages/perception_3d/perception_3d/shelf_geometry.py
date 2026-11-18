@@ -1,7 +1,7 @@
 """Model-free shelf detection from z-up depth points (no ROS, tested with synthetic clouds).
 
 Board faces are peaks in the Z histogram of horizontal points; walls are the vertical
-planes at the extremes. See manipulation/SHELF.md.
+planes at the extremes. See manipulation/packages/pick_and_place/SHELF.md.
 """
 
 from collections.abc import Sequence

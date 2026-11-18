@@ -34,7 +34,7 @@ flowchart TB
 | `PICK`, `pick_params.from_shelf` (optional `shelf_level` hint) | Finds the object's level (the hint, then where the scan saw it, then every level), faces it, grasps, backs out | `shelf_level` it picked from |
 | `PLACE`, `place_params.shelf_level = N` | Faces level N and places inside the scanned board | |
 
-Manual test: `keyboard_input.py` -14 (scan), -11 (pick), -4 (place on a level).
+Manual test: `keyboard_input.py` -12 (scan), -11 (pick), -4 (place on a level).
 
 ## Detection (`perception_3d`)
 

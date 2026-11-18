@@ -188,7 +188,7 @@ send it to `gpd` instead.
 | `bowl` | bowl | `FixedDistanceDescentPick` | Same motion, much shorter descent. |
 | `peak` | clothes | `FixedDistanceDescentPick` | Descends onto the highest content in a cavity. |
 | `geometric` | any other name: cans, boxes, fruit | `CartesianApproachPick` | Backs off along the generator's approach axis, drives straight in under cartesian velocity, closes, then attaches the fitted shape and reports object heights to `place`. Falls back to `gpd` when it fails. |
-| `shelf` | any shelf pick | `CartesianApproachPick` | Frontal grasps from the cluster inside the compartment (`geometric_grasps.shelf_frontal_grasps`), straight in, then two straight MoveIt paths out. Falls back to `gpd`. See [`SHELF.md`](../../SHELF.md). |
+| `shelf` | any shelf pick | `CartesianApproachPick` | Frontal grasps from the cluster inside the compartment (`geometric_grasps.shelf_frontal_grasps`), straight in, then two straight MoveIt paths out. Falls back to `gpd`. See [`SHELF.md`](SHELF.md). |
 | `gpd` | no name, pour picks, the geometric and shelf fallback | `DirectGraspPick` | Plans straight to a GPD grasp. Attaches the object in the planning scene and reports object heights to `place`. |
 
 Rim, bowl and peak are one algorithm with three parameter sets. The descent distance is always

@@ -45,7 +45,7 @@ The contract with the rest of the robot is exactly one action:
 | `PICK_CLOSEST` | 1 | **Not implemented** — fails loudly |
 | `PLACE` | 2 | Put down what is held |
 | `POUR` | 3 | Pour a held/grasped container into another |
-| `SCAN_SHELF` | 4 | Survey the shelf in front: its levels and what is on each. Then `PICK` with `pick_params.from_shelf` and `PLACE` with `place_params.shelf_level` use it ([shelf](SHELF.md)) |
+| `SCAN_SHELF` | 4 | Survey the shelf in front: its levels and what is on each. Then `PICK` with `pick_params.from_shelf` and `PLACE` with `place_params.shelf_level` use it ([shelf](packages/pick_and_place/SHELF.md)) |
 
 A `place` is only meaningful after a `pick` or `pour` **in the same process**: the node remembers the
 last pick outcome and uses its measured object height to decide the drop height.
@@ -228,7 +228,7 @@ Chosen by object name in `pipelines/classification.py`; tuned in `config/pick_pr
 | `bowl` | bowls | Same, shorter descent |
 | `peak` | clothes piles | Same, onto the highest point |
 | `geometric` | **any other name** (cans, boxes, fruit) | Back off along the generator's approach axis, drive straight in, close; falls back to `gpd` |
-| `shelf` | **any shelf pick** | Frontal grasp into the compartment, straight in (mode 5), straight MoveIt exit; falls back to `gpd` ([shelf](SHELF.md)) |
+| `shelf` | **any shelf pick** | Frontal grasp into the compartment, straight in (mode 5), straight MoveIt exit; falls back to `gpd` ([shelf](packages/pick_and_place/SHELF.md)) |
 | `gpd` | no name, pour picks, the geometric and shelf fallback | Plan straight to a GPD grasp, no descent |
 
 Retuning any number is a YAML edit. Adding a behaviour that reuses an existing motion is a YAML entry
@@ -276,7 +276,7 @@ Face following also needs `face_recognition` enabled (it starts paused). If the 
 | Change where a place lands | `place/scripts/heatmapPlace_Server.py` |
 | Change object/surface segmentation | `perception_3d/` |
 | Change how flat objects and solids are grasped (geometry) | `perception_3d/perception_3d/geometric_grasps.py` |
-| Change how shelves are measured | `perception_3d/perception_3d/shelf_geometry.py` (see [`SHELF.md`](SHELF.md)) |
+| Change how shelves are measured | `perception_3d/perception_3d/shelf_geometry.py` (see [`SHELF.md`](packages/pick_and_place/SHELF.md)) |
 | Change the gripper dimensions | `frida_constants/manipulation_constants.py` |
 | Add a named arm pose | `frida_constants/xarm_configurations.py` |
 | Tune face / person following | `pick_and_place/pipelines/follow.py` (person gains: `follow_person.*` parameters); face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |

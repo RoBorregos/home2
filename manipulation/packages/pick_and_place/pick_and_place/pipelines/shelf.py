@@ -2,7 +2,7 @@
 
 SCAN_SHELF runs ``scan``. The core keeps the ShelfScan while the base stays put, owns
 its planning scene boxes, and hands it to the pick and place pipelines, which read the
-boards and the extent from it. See manipulation/SHELF.md.
+boards and the extent from it. See the package SHELF.md.
 """
 
 import math

@@ -1130,7 +1130,7 @@ def test_a_place_on_a_shelf_level_faces_it_and_places_on_its_board(core, monkeyp
     monkeypatch.setattr(
         shelf_pipeline,
         "face_level",
-        lambda arm, shelf, level, for_place: faced.append(level),
+        lambda arm, shelf, level, for_place: faced.append(level) or True,
     )
     monkeypatch.setattr(
         "pick_and_place.pipelines.place.execute",
@@ -1158,6 +1158,18 @@ def test_a_place_on_a_level_the_scan_does_not_have_fails(core, monkeypatch):
     core._shelf = make_shelf()
     place = _Request(ManipulationTask.PLACE)
     place.place_params.shelf_level = 5
+    assert core._run_place(place) is False
+
+
+def test_a_place_does_not_run_when_facing_the_level_fails(core, monkeypatch):
+    monkeypatch.setattr(shelf_pipeline, "face_level", lambda *a, **k: False)
+    monkeypatch.setattr(
+        "pick_and_place.pipelines.place.execute",
+        lambda *a, **k: pytest.fail("placed without facing the level"),
+    )
+    core._shelf = make_shelf()
+    place = _Request(ManipulationTask.PLACE)
+    place.place_params.shelf_level = 1
     assert core._run_place(place) is False
 
 
@@ -1509,3 +1521,45 @@ def test_find_object_skips_a_level_that_only_frames_it_from_another(monkeypatch)
     assert shelf_pipeline.find_object(FakeArm(), on_level_2, shelf, "cup", hint=1) == 2
     nowhere = FakePerception(located_point=PointStamped())
     assert shelf_pipeline.find_object(FakeArm(), nowhere, shelf, "cup") == 0
+
+
+class _FakeFuture:
+    def __init__(self, result):
+        self._result = result
+
+    def done(self):
+        return True
+
+    def result(self):
+        return self._result
+
+
+class _FakeClient:
+    srv_name = "/fake"
+
+    def __init__(self, available=True, response="answer"):
+        self.available, self.response, self.calls = available, response, 0
+
+    def wait_for_service(self, timeout_sec):
+        return self.available
+
+    def call_async(self, request):
+        self.calls += 1
+        return _FakeFuture(self.response)
+
+
+def _bare_perception():
+    perception = Perception.__new__(Perception)
+    perception._log = SimpleNamespace(error=lambda *a: None, warn=lambda *a: None)
+    return perception
+
+
+def test_a_service_call_returns_its_answer():
+    client = _FakeClient()
+    assert _bare_perception()._call(client, object(), 1.0) == "answer"
+
+
+def test_a_missing_service_is_never_called():
+    client = _FakeClient(available=False)
+    assert _bare_perception()._call(client, object(), 1.0) is None
+    assert client.calls == 0

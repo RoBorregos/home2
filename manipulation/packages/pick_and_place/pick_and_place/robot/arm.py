@@ -227,7 +227,7 @@ class RobotArm:
             depth=10,
         )
         self.tf_buffer = Buffer(cache_time=Duration(seconds=2.0))
-        self.acceleration = PICK_ACCELERATION  # MoveIt scaling for the moves below
+        self._acceleration = PICK_ACCELERATION  # MoveIt scaling for the moves below
         self.tf_listener = TransformListener(
             self.tf_buffer, node, qos=qos, spin_thread=True
         )
@@ -404,7 +404,7 @@ class RobotArm:
         request.pose = pose
         request.velocity = float(PICK_VELOCITY if velocity is None else velocity)
         request.acceleration = float(
-            self.acceleration if acceleration is None else acceleration
+            self._acceleration if acceleration is None else acceleration
         )
         request.planner_id = planner_id
         request.target_link = target_link
@@ -442,7 +442,7 @@ class RobotArm:
             velocity=velocity,
             fallback_move_to_pose=self._move_to_pose_pair if allow_pose_goal else None,
             logger=self._log,
-            acceleration=self.acceleration,
+            acceleration=self._acceleration,
         )
 
     def _move_to_pose_pair(self, pose, velocity=PICK_VELOCITY):
@@ -461,18 +461,18 @@ class RobotArm:
                 move_joints_action_client=self._move_joints_client,
                 named_position=name,
                 velocity=velocity,
-                acceleration=self.acceleration,
+                acceleration=self._acceleration,
             )
         )
 
     @contextmanager
     def acceleration_scaling(self, acceleration: float):
         """Use ``acceleration`` for every planned move inside the block."""
-        previous, self.acceleration = self.acceleration, float(acceleration)
+        previous, self._acceleration = self._acceleration, float(acceleration)
         try:
             yield
         finally:
-            self.acceleration = previous
+            self._acceleration = previous
 
     def move_joints(self, joint_positions, velocity: float = 0.2) -> bool:
         return bool(

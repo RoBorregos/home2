@@ -154,9 +154,26 @@ class GPSRSingleTask(GenericTask):
             ),
             0,
         )
-        return self.subtask_manager.manipulation.pick_object(
+        s = self.subtask_manager.manipulation.pick_object(
             object_name, from_shelf=True, shelf_level=hint
         )
+        level = self.subtask_manager.manipulation.last_shelf_level
+        if s == Status.EXECUTION_SUCCESS and not self._confirm_pick_shelf(target, level):
+            return Status.EXECUTION_ERROR
+        return s
+
+    def _confirm_pick_shelf(self, target: str, level: int) -> bool:
+        """Rescan; fail only if ``target`` is still on the level it was picked from.
+
+        The pick can report success while holding air. The held object is closer to the
+        camera than the ZED's minimum depth, so the scan does not file it on a level.
+        Two of the same object on one level read as a miss.
+        """
+        self._shelf_measured = False
+        self._measure_shelf()
+        if not self._shelf_measured or not level:
+            return True  # nothing to compare against: trust the pick
+        return target not in (o.lower() for o in self._shelf_objects.get(level, []))
 
     def pick_object(self, command: PickObject):
         """
@@ -196,6 +213,7 @@ class GPSRSingleTask(GenericTask):
                         f"I have picked the {command.object_to_pick}.", wait=True
                     )
                     return s, f"picked {command.object_to_pick}"
+                self._shelf_measured = False  # rescan: the base may have moved (docking)
                 self.subtask_manager.hri.say("My picking plan failed. I will try again", wait=True)
                 current_try += 1
             return self.deus_pick(command)
@@ -313,11 +331,13 @@ class GPSRSingleTask(GenericTask):
             )
             levels = {h: lvl for lvl, h in self.shelf_level_heights.items()}
             for height in reachable[:RETRIES]:
+                self._measure_shelf()  # again after a failure: the base may have moved
                 # Manipulation faces the level and places within the scanned board.
                 s = self.subtask_manager.manipulation.place_on_shelf(level=levels[height])
                 if s == Status.EXECUTION_SUCCESS:
                     self.subtask_manager.hri.say("I have placed the object.")
                     return Status.EXECUTION_SUCCESS, "placed"
+                self._shelf_measured = False
             # All levels failed: fall through to the human-help fallback below.
         else:
             while place_retries < RETRIES:

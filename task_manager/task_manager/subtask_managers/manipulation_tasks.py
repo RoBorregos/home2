@@ -587,11 +587,9 @@ class ManipulationTasks:
             Logger.error(self.node, "Failed to send place request")
             return Status.EXECUTION_ERROR
         Logger.info(self.node, "Place in shelf request sent")
-        # wait for result — place on shelf can take 60-120s because of multiple
-        # pre-place + full + halfway attempts with OMPL planning. A 60s timeout
-        # here was causing the client to give up while the server was still
-        # executing the place, leaving the FSM in a bad state (object already
-        # dropped in shelf but task_manager thought it failed and retried).
+        # Facing the level and the place rungs (each 2 cm higher) can take over 60 s.
+        # Giving up earlier left the object on the shelf while the task manager
+        # thought the place failed and retried.
         SHELF_PLACE_TIMEOUT = 180.0
         result_future = future.result().get_result_async()
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=SHELF_PLACE_TIMEOUT)

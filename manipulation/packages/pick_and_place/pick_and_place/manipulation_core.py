@@ -32,7 +32,6 @@ from frida_constants.vision_constants import CENTROID_TOPIC, FOLLOW_TOPIC
 from frida_interfaces.action import GoToHand, ManipulationAction
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import FixedDistanceMove, FollowFace
-from frida_motion_planning.utils.tf_utils import transform_point
 from geometry_msgs.msg import Point, PoseStamped, Twist
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -353,7 +352,12 @@ class ManipulationCore(Node):
             params.table_height_tolerance = SHELF_SCAN_TOLERANCE
             self.arm.set_shelf_boxes(shelf.boxes)
             with self._shelf_motion(True):
-                shelf_pipeline.face_level(self.arm, shelf, level, for_place=True)
+                faced = shelf_pipeline.face_level(
+                    self.arm, shelf, level, for_place=True
+                )
+            if not faced:
+                self.get_logger().error(f"Could not face shelf level {level}")
+                return False
         with self._shelf_motion(is_shelf):
             success = place_pipeline.execute(
                 self.arm,
@@ -411,8 +415,8 @@ class ManipulationCore(Node):
         )
 
         if point.header.frame_id != "base_link":
-            success, point = transform_point(point, "base_link", self.arm.tf_buffer)
-            if not success:
+            point = self.arm.to_frame(point, "base_link")
+            if point is None:
                 self.get_logger().error(
                     f"Failed to transform hand point from "
                     f"'{goal_handle.request.point.header.frame_id}' to 'base_link'. "

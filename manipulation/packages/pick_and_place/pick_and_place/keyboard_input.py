@@ -326,16 +326,16 @@ def main(args=None):
                 print(f"{i}. {obj}")
             print("-2. Refresh objects list")
             print("-3. Place")
-            print("-4. Place on shelf (level of the -14 scan)")
+            print("-4. Place on shelf (level of the -12 scan)")
             print("-5. Place on shelf (with plane height)")
             print("-6. Pour")
             print("-7. Place on clicked point")
             print("-8. Place closeto")
             print("-9. Special Request Place")
             print("-10. Pour (object already grasped)")
-            print("-11. Pick from shelf (after -14)")
+            print("-11. Pick from shelf (after -12)")
+            print("-12. Scan the shelf in front (MOVES THE ARM)")
             print("-13. Preview grasp candidates (no motion)")
-            print("-14. Scan the shelf in front (MOVES THE ARM)")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -443,7 +443,7 @@ def main(args=None):
                     shelf_level=int(lvl) if lvl.isdigit() else 0,
                 )
 
-            elif choice == "-14":
+            elif choice == "-12":
                 node.scan_shelf()
 
             elif choice == "-13":

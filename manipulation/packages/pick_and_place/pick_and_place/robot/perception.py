@@ -15,6 +15,7 @@ from frida_constants.manipulation_constants import (
     PLACE_PERCEPTION_SERVICE,
 )
 from frida_constants.vision_constants import DETECTION_HANDLER_TOPIC_SRV
+from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import (
     DetectionHandler,
     DetectShelf,
@@ -38,6 +39,7 @@ GENERATE_GRASPS_TIMEOUT = 5.0
 DETECT_TIMEOUT = 2.0
 CLUSTER_TIMEOUT = 60.0
 DETECT_SHELF_TIMEOUT = 30.0
+SERVICE_WAIT = 5.0  # longest wait for a service to appear
 
 
 class Perception:
@@ -82,16 +84,8 @@ class Perception:
 
     def detections(self, timeout: float = DETECT_TIMEOUT) -> list:
         """Every object the detector sees now (``label_text``, ``point3d``)."""
-        from frida_motion_planning.utils.ros_utils import wait_for_future
-
-        if not self.detection_handler_client.wait_for_service(timeout_sec=timeout):
-            self._log.warn("detection_handler unavailable")
-            return []
         request = DetectionHandler.Request(label="all")
-        future = wait_for_future(
-            self.detection_handler_client.call_async(request), timeout=timeout
-        )
-        response = future.result() if future else None
+        response = self._call(self.detection_handler_client, request, timeout)
         return list(response.detection_array.detections) if response else []
 
     def detect_shelf(
@@ -102,16 +96,8 @@ class Perception:
         timeout: float = DETECT_SHELF_TIMEOUT,
     ):
         """One DetectShelf call: the response, or None when it failed (logged)."""
-        from frida_motion_planning.utils.ros_utils import wait_for_future
-
-        if not self.detect_shelf_client.wait_for_service(timeout_sec=3.0):
-            self._log.error("detect_shelf service unavailable")
-            return None
         request = DetectShelf.Request(reset=reset, capture=capture, detect=detect)
-        future = wait_for_future(
-            self.detect_shelf_client.call_async(request), timeout=timeout
-        )
-        response = future.result() if future else None
+        response = self._call(self.detect_shelf_client, request, timeout)
         if response is None or not response.success:
             reason = response.message if response is not None else "no answer"
             self._log.warn(f"detect_shelf: {reason}")
@@ -158,21 +144,20 @@ class Perception:
         Returns the service response, or None when unavailable or unsuccessful;
         the caller logs the reason.
         """
-        from frida_motion_planning.utils.ros_utils import wait_for_future
-
-        if not self.generate_grasps_client.wait_for_service(timeout_sec=5.0):
-            self._log.error("generate_grasps service unavailable")
-            return None
-
         request = GenerateGrasps.Request()
         request.object_name = object_name
         request.num_samples = 0  # let the generator use its default
-        future = self.generate_grasps_client.call_async(request)
-        future = wait_for_future(future, timeout=timeout)
-        response = future.result() if future else None
-
+        response = self._call(self.generate_grasps_client, request, timeout)
         if response is None or not response.success:
             reason = response.message if response is not None else "no response"
             self._log.error(f"Grasp generation failed for {object_name}: {reason}")
             return None
         return response
+
+    def _call(self, client, request, timeout: float):
+        """Wait for the service, call it and wait for the answer: the response or None."""
+        if not client.wait_for_service(timeout_sec=min(timeout, SERVICE_WAIT)):
+            self._log.error(f"{client.srv_name} unavailable")
+            return None
+        future = wait_for_future(client.call_async(request), timeout=timeout)
+        return future.result() if future else None
