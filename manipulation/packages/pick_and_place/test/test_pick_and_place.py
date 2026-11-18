@@ -88,6 +88,10 @@ def strategies():
     return build_strategies(load_profiles(PROFILES_PATH))
 
 
+# The geometric profile's shelf tuning: the frontal grasp and the way out.
+SHELF_TUNING = load_profiles(PROFILES_PATH)[PICK_STRATEGY_GEOMETRIC].shelf
+
+
 def candidate(z=0.3, score=0.9):
     return GraspCandidate(
         pose=make_pose(z=z), score=score, pose_index=0, alternative_index=0
@@ -300,9 +304,9 @@ def bottle_cluster(frame="link_base", **kwargs):
 
 def test_shelf_frontal_grasp_goes_into_the_compartment_from_the_front():
     poses = pick_pipeline.shelf_frontal_grasps(
-        bottle_points(), (0.401, 0.651), "base_link"
+        bottle_points(), (0.401, 0.651), "base_link", SHELF_TUNING
     )
-    pitches = pick_pipeline.SHELF_FRONTAL_PITCHES
+    pitches = SHELF_TUNING.pitches
     assert poses and len(poses) % len(pitches) == 0
     for index, pose in enumerate(poses):
         p, q = pose.pose.position, pose.pose.orientation
@@ -323,12 +327,12 @@ def test_shelf_frontal_grasp_goes_into_the_compartment_from_the_front():
 
 def test_open_top_shelf_also_tries_steeper_approaches():
     open_top = pick_pipeline.shelf_frontal_grasps(
-        bottle_points(z=(1.30, 1.49), front=0.60), (1.311, 0.0), "base_link"
+        bottle_points(z=(1.30, 1.49), front=0.60),
+        (1.311, 0.0),
+        "base_link",
+        SHELF_TUNING,
     )
-    pitches = (
-        pick_pipeline.SHELF_FRONTAL_PITCHES
-        + pick_pipeline.SHELF_FRONTAL_OPEN_TOP_PITCHES
-    )
+    pitches = SHELF_TUNING.pitches + SHELF_TUNING.open_top_pitches
     assert open_top and len(open_top) % len(pitches) == 0
     seen = set()
     for pose in open_top:
@@ -337,8 +341,10 @@ def test_open_top_shelf_also_tries_steeper_approaches():
         seen.add(round(float(np.degrees(np.arcsin(-approach[2]))), 3))
     assert seen == set(pitches)
     # under a ceiling the steep ones would hit it: never offered there
-    closed = pick_pipeline.shelf_frontal_grasps(bottle_points(), (0.401, 0.651), "x")
-    assert len(closed) % len(pick_pipeline.SHELF_FRONTAL_PITCHES) == 0
+    closed = pick_pipeline.shelf_frontal_grasps(
+        bottle_points(), (0.401, 0.651), "x", SHELF_TUNING
+    )
+    assert len(closed) % len(SHELF_TUNING.pitches) == 0
     assert len(closed) < len(open_top)
 
 
@@ -351,7 +357,12 @@ def test_open_top_shelf_also_tries_steeper_approaches():
     ],
 )
 def test_no_shelf_frontal_grasp_when_it_cannot_fit(kwargs, band):
-    assert pick_pipeline.shelf_frontal_grasps(bottle_points(**kwargs), band, "x") == []
+    assert (
+        pick_pipeline.shelf_frontal_grasps(
+            bottle_points(**kwargs), band, "x", SHELF_TUNING
+        )
+        == []
+    )
 
 
 def test_a_shelf_pick_tries_the_frontal_grasp_and_backs_out(strategies):
@@ -375,7 +386,7 @@ def test_a_shelf_pick_tries_the_frontal_grasp_and_backs_out(strategies):
     assert outcome.pick_pose.header.frame_id == "link_base"
     # pre-grasp, straight in along the (tilted) approach, then a MoveIt path out
     ((direction, _, _),) = arm.approaches
-    tilt = np.radians(pick_pipeline.SHELF_FRONTAL_PITCHES[0])
+    tilt = np.radians(SHELF_TUNING.pitches[0])
     assert direction == pytest.approx([np.cos(tilt), 0.0, -np.sin(tilt)], abs=1e-3)
     assert arm.calls.index("move_to_pregrasp") < arm.calls.index("cartesian_approach")
     assert arm.move_kwargs[-1]["planner_id"] == CARTESIAN_PLANNER
@@ -876,7 +887,6 @@ def core():
         "pick_method": "auto",
         "shelf_acceleration": 0.5,
         "shelf_place_straight": False,
-        "shelf_exit_to_edge": False,
     }
     node.get_parameter = lambda name: SimpleNamespace(value=node.parameters[name])
     node._last_pick = PickOutcome()
@@ -1246,6 +1256,7 @@ def test_every_strategy_key_has_a_profile(profiles):
         ("gpd", "num_alternatives", 0, "num_alternatives"),
         ("rim", "pre_grasp_height", "abc", "must be a float"),
         ("rim", "descent_speed", 0.0, "descent_speed"),
+        ("geometric", "shelf.exit_retreat", 0.0, "exit_retreat"),
     ],
 )
 def test_invalid_values_are_rejected_at_load_time(
@@ -1369,7 +1380,7 @@ def test_shelf_exit_lifts_then_backs_out_in_straight_moveit_paths():
     # FRIDA: the cartesian velocity lift tripped xArm C24 near singularities.
     start = _shelf_exit_pose()
     arm = FakeArm(link_pose=copy.deepcopy(start))
-    assert pick_pipeline._shelf_exit(arm)
+    assert pick_pipeline._shelf_exit(arm, SHELF_TUNING)
     assert "cartesian_approach" not in arm.calls
     # pymoveit2 plans straight lines for link_eef whatever the target link
     assert "link_pose:link_eef" in arm.calls
@@ -1378,46 +1389,18 @@ def test_shelf_exit_lifts_then_backs_out_in_straight_moveit_paths():
     lift, back = (pose.pose.position for pose in arm.poses["move_to_pose"])
     p0 = start.pose.position
     assert (lift.x, lift.y) == pytest.approx((p0.x, p0.y))
-    assert lift.z == pytest.approx(p0.z + pick_pipeline.SHELF_EXIT_LIFT)
+    assert lift.z == pytest.approx(p0.z + SHELF_TUNING.exit_lift)
     assert back.z == pytest.approx(lift.z)
     assert np.hypot(back.x - p0.x, back.y - p0.y) == pytest.approx(
-        pick_pipeline.SHELF_EXIT_RETREAT
+        SHELF_TUNING.exit_retreat
     )
     assert back.y > p0.y  # the approach was along -y
 
 
-def _frontal_eef(x):
-    """link_eef at ``x`` approaching along +x (horizontal), as in base_link."""
-    pose = make_pose(x=x, y=0.0, z=1.0)
-    q = Rotation.from_euler("y", 90, degrees=True).as_quat()
-    pose.pose.orientation.x, pose.pose.orientation.y = q[0], q[1]
-    pose.pose.orientation.z, pose.pose.orientation.w = q[2], q[3]
-    return pose
-
-
-@pytest.mark.parametrize(
-    "eef_x, extent, expected",
-    [
-        (0.40, (0.50, 0.85, -0.4, 0.4), 0.12),  # tip 7 cm inside the front: 12 cm out
-        (0.60, (0.50, 0.85, -0.4, 0.4), 0.32),  # deep in the compartment: 32 cm out
-        (0.80, (0.50, 0.85, -0.4, 0.4), 0.35),  # capped
-        (0.40, None, pick_pipeline.SHELF_EXIT_RETREAT),  # no scan: the fixed retreat
-    ],
-)
-def test_shelf_exit_to_edge_backs_out_until_the_tips_clear_the_board(
-    eef_x, extent, expected
-):
-    start = _frontal_eef(eef_x)
-    arm = FakeArm(link_pose=copy.deepcopy(start))
-    assert pick_pipeline._shelf_exit(arm, make_shelf(extent=extent) if extent else None)
-    back = arm.poses["move_to_pose"][-1].pose.position
-    assert start.pose.position.x - back.x == pytest.approx(expected, abs=1e-6)
-
-
 def test_shelf_exit_reports_a_failed_plan_or_no_pose():
     arm = FakeArm(link_pose=_shelf_exit_pose(), move_to_pose_results=[False])
-    assert not pick_pipeline._shelf_exit(arm)
-    assert not pick_pipeline._shelf_exit(FakeArm())
+    assert not pick_pipeline._shelf_exit(arm, SHELF_TUNING)
+    assert not pick_pipeline._shelf_exit(FakeArm(), SHELF_TUNING)
 
 
 # ============================================================================

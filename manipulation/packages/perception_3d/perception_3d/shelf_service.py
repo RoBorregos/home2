@@ -10,23 +10,12 @@ from dataclasses import asdict
 
 import numpy as np
 import rclpy
-from frida_constants.manipulation_constants import (
-    DETECT_SHELF_SERVICE,
-    SHELF_FRAME,
-    SHELF_MARKERS_TOPIC,
-    SHELF_SCAN_CLOUD_TOPIC,
-    ZED_DEPTH_SCALE,
-)
+from frida_constants.manipulation_constants import DETECT_SHELF_SERVICE, ZED_DEPTH_SCALE
 from frida_interfaces.msg import CollisionObject, ShelfLevel
 from frida_interfaces.srv import DetectShelf
 from rclpy.duration import Duration
-from rclpy.qos import DurabilityPolicy, QoSProfile
 from scipy.spatial.transform import Rotation
-from sensor_msgs.msg import PointCloud2
-from sensor_msgs_py import point_cloud2
-from std_msgs.msg import ColorRGBA, Header
 from tf2_ros import TransformException
-from visualization_msgs.msg import Marker, MarkerArray
 
 from perception_3d.shelf_geometry import (
     Frame,
@@ -39,8 +28,18 @@ from perception_3d.shelf_geometry import (
 PARAM_PREFIX = "shelf."
 FRESH_FRAME_TIMEOUT = 2.0  # s to wait for a depth frame newer than the request
 TF_TIMEOUT = 1.0
-MAX_DEBUG_POINTS = 200_000
-# Not ShelfParams: how the frames are captured and published.
+# ShelfParams fields tuned on site; the rest keep their dataclass defaults.
+TUNED_SHELF_PARAMS = (
+    "x_min",
+    "x_max",
+    "y_half",
+    "z_min",
+    "z_max",
+    "min_width_fraction",
+    "min_level_spacing",
+    "min_level_points",
+)
+# Not ShelfParams: how the frames are captured.
 NODE_PARAMS = {
     "depth_stride": 2,  # 1 cm voxels need far fewer pixels than the image has
     "min_range": 0.3,  # the ZED2 returns nothing closer
@@ -62,14 +61,10 @@ class ShelfService:
         self._geometry: ShelfGeometry | None = None
         self._busy = threading.Lock()
 
-        for name, value in {**NODE_PARAMS, **asdict(ShelfParams())}.items():
+        defaults = asdict(ShelfParams())
+        tuned = {name: defaults[name] for name in TUNED_SHELF_PARAMS}
+        for name, value in {**NODE_PARAMS, **tuned}.items():
             node.declare_parameter(PARAM_PREFIX + name, value)
-
-        latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        self._cloud_pub = node.create_publisher(PointCloud2, SHELF_SCAN_CLOUD_TOPIC, 1)
-        self._markers_pub = node.create_publisher(
-            MarkerArray, SHELF_MARKERS_TOPIC, latched
-        )
         node.create_service(
             DetectShelf,
             DETECT_SHELF_SERVICE,
@@ -113,9 +108,7 @@ class ShelfService:
             try:
                 self._geometry = detect_shelf(self._frames, params)
             except ShelfNotFound as why:
-                self._publish_debug(None)
                 return self._fail(response, f"no shelf: {why}")
-            self._publish_debug(self._geometry)
             g = self._geometry
             log.info(
                 f"Shelf: {len(g.levels)} levels at {[round(h, 3) for h in g.heights]} m, "
@@ -145,9 +138,9 @@ class ShelfService:
             return None, "no fresh depth frame"
         image, frame_id = depth
         try:
-            cam_to_base = self._lookup(SHELF_FRAME, frame_id, TF_TIMEOUT)
+            cam_to_base = self._lookup("base_link", frame_id, TF_TIMEOUT)
         except TransformException as error:
-            return None, f"no TF {frame_id} -> {SHELF_FRAME}: {error}"
+            return None, f"no TF {frame_id} -> base_link: {error}"
 
         stride = max(1, int(self._param("depth_stride")))
         sub = image[::stride, ::stride]
@@ -190,7 +183,10 @@ class ShelfService:
     def _shelf_params(self) -> ShelfParams:
         defaults = asdict(ShelfParams())
         return ShelfParams(
-            **{name: type(value)(self._param(name)) for name, value in defaults.items()}
+            **{
+                name: type(defaults[name])(self._param(name))
+                for name in TUNED_SHELF_PARAMS
+            }
         )
 
     def _fill(self, response, g: ShelfGeometry) -> None:
@@ -210,7 +206,7 @@ class ShelfService:
             obj = CollisionObject()
             obj.id = box.id
             obj.type = "box"
-            obj.pose.header.frame_id = SHELF_FRAME
+            obj.pose.header.frame_id = "base_link"
             obj.pose.header.stamp = self._node.get_clock().now().to_msg()
             position = obj.pose.pose.position
             position.x, position.y, position.z = map(float, box.center)
@@ -219,42 +215,6 @@ class ShelfService:
             size.x, size.y, size.z = map(float, box.size)
             objects.append(obj)
         return objects
-
-    def _publish_debug(self, g: ShelfGeometry | None) -> None:
-        header = Header()
-        header.frame_id = SHELF_FRAME
-        header.stamp = self._node.get_clock().now().to_msg()
-        points = np.vstack([frame.points for frame in self._frames])
-        if len(points) > MAX_DEBUG_POINTS:
-            points = points[:: len(points) // MAX_DEBUG_POINTS + 1]
-        self._cloud_pub.publish(
-            point_cloud2.create_cloud_xyz32(header, points.astype(np.float32))
-        )
-
-        markers = [Marker(action=Marker.DELETEALL)]
-        for i, box in enumerate(g.boxes if g else ()):
-            marker = Marker(ns="shelf", id=i, type=Marker.CUBE, action=Marker.ADD)
-            marker.header = header
-            position = marker.pose.position
-            position.x, position.y, position.z = map(float, box.center)
-            marker.pose.orientation.w = 1.0
-            marker.scale.x, marker.scale.y, marker.scale.z = map(float, box.size)
-            marker.color = ColorRGBA(r=0.2, g=0.6, b=1.0, a=0.5)
-            markers.append(marker)
-        for i, level in enumerate(g.levels if g else ()):
-            marker = Marker(
-                ns="shelf_level", id=i, type=Marker.TEXT_VIEW_FACING, action=Marker.ADD
-            )
-            marker.header = header
-            marker.pose.position.x = float(level.front_x)
-            marker.pose.position.y = float(g.y_min)
-            marker.pose.position.z = float(level.height + 0.03)
-            marker.pose.orientation.w = 1.0
-            marker.scale.z = 0.05
-            marker.color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0)
-            marker.text = f"L{i + 1} z={level.height:.3f} clr={level.clearance:.2f}"
-            markers.append(marker)
-        self._markers_pub.publish(MarkerArray(markers=markers))
 
     def _fail(self, response, message: str):
         self._node.get_logger().warning(message)

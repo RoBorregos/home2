@@ -95,6 +95,19 @@ geometric:
   lift_after_grasp: false
   attach_collision_object: true
   fallback_to_gpd: true
+  # Shelf picks: the frontal grasp into the compartment and the straight way out.
+  shelf:
+    board_clearance: 0.06 # m, fingertips above the board
+    ceiling_clearance: 0.06 # m, ...and under the ceiling
+    top_margin: 0.02 # m, never above the object's top minus this
+    z_steps: [0.0, 0.025, -0.025] # m around the object's middle
+    width_margin: 0.01 # m, the object must fit the open gripper
+    max_half_depth: 0.05 # m
+    past_center: 0.03 # m, the finger pads sit behind the fingertip point
+    pitches: [10.0, 0.0, 20.0] # deg down; level alone cannot reach a 0.39 m board (sim)
+    open_top_pitches: [30.0, 45.0] # deg, nothing above: a 1.30 m top shelf needs them
+    exit_lift: 0.02 # m straight up off the board...
+    exit_retreat: 0.15 # m ...then straight back out
 
 # Default: plan straight to a GPD-generated grasp, no descent phase.
 gpd:

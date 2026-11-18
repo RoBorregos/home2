@@ -42,10 +42,14 @@ The task manager only sends `ManipulationAction` goals; manipulation decides how
    scene: `manipulation_core` adds the boxes and drops the scan, boxes included, once
    odom -> base_link moved more than 3 cm / 3 deg.
 
-Tunables are `grasp_generator` parameters under `shelf.`: the `ShelfParams` fields,
-`min_range`/`max_range` (0.3/2.5 m), `depth_scale` (1.0 for a simulated camera) and
-`dump_path` (save the frames as `.npz`). Debug topics: `/manipulation/shelf_scan_cloud`,
-`/manipulation/shelf_geometry`.
+On-site tunables are `grasp_generator` parameters under `shelf.`: the search box
+(`x_min`, `x_max`, `y_half`, `z_min`, `z_max`), `min_width_fraction`,
+`min_level_spacing` and `min_level_points`; the other `ShelfParams` keep their
+defaults. Capture: `min_range`/`max_range` (0.3/2.5 m), `depth_scale` (1.0 for a
+simulated camera) and `dump_path` (save the frames as `.npz`).
+
+The frontal grasp and the exit are tuned in `config/pick_profiles.yaml`
+(`geometric.shelf`).
 
 ## Survey poses
 
@@ -103,10 +107,9 @@ A shelf pick first tries a frontal grasp from the object's cluster
 
 | Step | Value |
 | --- | --- |
-| Survey moves, wait at each pose | 0.75, 0.3 s (`SHELF_SURVEY_VELOCITY`, `SHELF_SURVEY_SETTLE`) |
-| Wait at a level's viewing pose | 1.5 s (`SHELF_LEVEL_SETTLE`) |
-| Shelf exit | straight MoveIt paths at 0.3 |
-| Return after the pick and the place | `table_stare` at 0.75 |
+| Survey moves, facing a level, returns | `FAST_VELOCITY` 0.75 |
+| Straight paths in and out of a compartment | `SLOW_VELOCITY` 0.3 |
+| Wait at each survey pose, at a level | 0.3 s, 1.5 s (`SHELF_SURVEY_SETTLE`, `SHELF_LEVEL_SETTLE`) |
 | Release | 0.5 s |
 | Planned shelf moves (pick and place) | acceleration 0.5 (`SHELF_ACCELERATION`) |
 
@@ -116,13 +119,10 @@ cloud. `manipulation_core` parameters (the defaults are what the robot benchmark
 ```bash
 ros2 param set /manipulation_core shelf_acceleration 0.3    # default 0.5; 0.3 is the table speed
 ros2 param set /manipulation_core shelf_place_straight true # default false: straight into the compartment
-ros2 param set /manipulation_core shelf_exit_to_edge true   # default false: back out past the board front
 ```
 
 `shelf_place_straight` falls back to the free plan on the same rung when the line is
-cut. `shelf_exit_to_edge` replaces the fixed 15 cm retreat with what puts the fingertips
-5 cm outside the scanned board front (5-35 cm): an object deep in the compartment
-otherwise leaves the gripper inside it.
+cut.
 
 ## Known limits
 

@@ -78,6 +78,37 @@ class ForceGuardProfile:
 
 
 @dataclass(frozen=True)
+class ShelfPickProfile:
+    """The frontal grasp into a shelf compartment and the straight way out, in m and deg.
+
+    Fingertip heights are in the base frame: GPD's tilted grasps do not fit a compartment.
+    """
+
+    board_clearance: float  # fingertips this far above the board
+    ceiling_clearance: float  # ...and this far under the ceiling
+    top_margin: float  # never above the object's top minus this
+    z_steps: Tuple[float, ...]  # heights tried around the object's middle
+    width_margin: float  # the object must fit the open gripper with this to spare
+    max_half_depth: float
+    past_center: float  # the finger pads sit behind the fingertip point
+    pitches: Tuple[float, ...]  # tilt down from horizontal, in order
+    open_top_pitches: Tuple[float, ...]  # also tried with nothing above
+    exit_lift: float  # straight MoveIt path up off the board...
+    exit_retreat: float  # ...then back out along the way in
+
+    def validate(self, profile_name: str) -> None:
+        for key in (
+            "board_clearance",
+            "ceiling_clearance",
+            "exit_lift",
+            "exit_retreat",
+        ):
+            _require_positive(getattr(self, key), f"{profile_name}.shelf.{key}")
+        if not self.pitches:
+            raise ProfileError(f"{profile_name}.shelf.pitches must not be empty")
+
+
+@dataclass(frozen=True)
 class PickProfile:
     """Everything that varies between pick behaviors."""
 
@@ -99,6 +130,7 @@ class PickProfile:
     post_contact_retract: float = 0.0
     force_guard: Optional[ForceGuardProfile] = None
     fallback_to_gpd: bool = False
+    shelf: Optional[ShelfPickProfile] = None
 
     @property
     def effective_descent_distance(self) -> float:
@@ -148,6 +180,9 @@ class PickProfile:
                     "it must be positive"
                 )
             _require_positive(self.descent_speed, f"{self.name}.descent_speed")
+
+        if self.shelf is not None:
+            self.shelf.validate(self.name)
 
         if self.strategy == STRATEGY_FORCE_GUARDED:
             if self.force_guard is None:

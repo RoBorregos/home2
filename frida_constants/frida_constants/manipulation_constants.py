@@ -48,6 +48,8 @@ MIN_CONFIGURATION_DISTANCE_TRESHOLD = 0.01
 PICK_VELOCITY = 0.5
 PICK_ACCELERATION = 0.3
 PICK_PLANNER = "RRTConnect"
+FAST_VELOCITY = 0.75  # free moves: the shelf survey, facing a level, the returns
+SLOW_VELOCITY = 0.3  # straight paths into and out of a shelf compartment
 CARTESIAN_PLANNER = "cartesian"  # MoveToPose planner_id: a straight-line MoveIt path
 
 # Scan
@@ -169,14 +171,10 @@ SHELF_REACH_SLOPE = 0.25
 
 # Shelf detection from the eye-in-hand depth camera (perception_3d shelf_service).
 DETECT_SHELF_SERVICE = "/manipulation/detect_shelf"
-SHELF_FRAME = "base_link"  # every shelf height/extent is expressed here (z up)
 SHELF_COLLISION_NAMESPACE = "frida_shelf_"  # ids of the boards/walls in the scene
-SHELF_SCAN_CLOUD_TOPIC = "/manipulation/shelf_scan_cloud"
-SHELF_MARKERS_TOPIC = "/manipulation/shelf_geometry"
 # Named arm poses (xarm_configurations) visited in order to see the whole cabinet.
 SHELF_SURVEY_POSES = ("shelf_survey_high", "shelf_survey_low")
 SHELF_SCAN_TOLERANCE = 0.1  # m around a level height when facing it
-SHELF_SURVEY_VELOCITY = 0.75
 SHELF_ACCELERATION = 0.5  # planned shelf moves (PICK_ACCELERATION is 0.3), robot-tested
 SHELF_SURVEY_SETTLE = 0.3  # s after reaching a survey pose, before the capture
 SHELF_LEVEL_SETTLE = 1.5  # s for the octomap and detections at a level's pose

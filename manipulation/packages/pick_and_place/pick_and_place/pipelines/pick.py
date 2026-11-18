@@ -15,10 +15,12 @@ import numpy as np
 from frida_constants.manipulation_constants import (
     CARTESIAN_PLANNER,
     EEF_LINK_NAME,
+    FAST_VELOCITY,
     GRIPPER_MAX_APERTURE,
     GRIPPER_REACH,
     PICK_MAX_DISTANCE,
     SAFETY_HEIGHT_GEOMETRIC,
+    SLOW_VELOCITY,
     TOP_GRASP_DEPTH,
 )
 from frida_motion_planning.utils.tf_utils import transform_point, transform_pose
@@ -80,27 +82,6 @@ MIN_REVERSIBLE_HEIGHT = 0.06
 SHELF_BAND_MARGIN = 0.01
 SHELF_BAND_DOWN_TOLERANCE = 0.05  # a detection point may sit this far under its board
 
-# Shelf frontal grasp (fingertip heights, base frame): GPD's tilted grasps do not fit a compartment.
-SHELF_FRONTAL_BOARD_CLEARANCE = 0.06  # fingertips this far above the board
-SHELF_FRONTAL_CEILING_CLEARANCE = 0.06  # ...and this far under the ceiling
-SHELF_FRONTAL_TOP_MARGIN = 0.02  # never above the object's top minus this
-SHELF_FRONTAL_Z_STEPS = (0.0, 0.025, -0.025)
-SHELF_FRONTAL_WIDTH_MARGIN = 0.01  # the object must fit the open gripper
-SHELF_FRONTAL_MAX_HALF_DEPTH = 0.05
-SHELF_FRONTAL_PAST_CENTER = 0.03  # the finger pads sit behind the fingertip point
-# Tilt down from horizontal, in order; level alone cannot reach a 0.39 m board (sim IK).
-SHELF_FRONTAL_PITCHES = (10.0, 0.0, 20.0)
-# Steeper tilts for a level with nothing above it: a 1.30 m top shelf is only reachable so (sim).
-SHELF_FRONTAL_OPEN_TOP_PITCHES = (30.0, 45.0)
-# Leaving the compartment: a straight MoveIt path this far up and back out.
-SHELF_EXIT_LIFT = 0.02
-SHELF_EXIT_RETREAT = 0.15
-SHELF_EXIT_EDGE_MARGIN = (
-    0.05  # with exit_to_edge: fingertips this far outside the board front
-)
-SHELF_EXIT_RETREAT_LIMITS = (0.05, 0.35)
-SHELF_EXIT_VELOCITY = 0.3
-SHELF_RETURN_VELOCITY = 0.75
 
 # The ZED hangs below the gripper and grazes the shelf surface on a low frontal
 # grasp; the offset is used to decide whether flipping lifts the camera clear.
@@ -131,8 +112,6 @@ class PickRequest:
     # False leaves the arm where the grasp ended, for callers that move on from
     # there themselves (the pour lifts straight up from the grasp).
     return_to_carry: bool = True
-    # Back out until the fingertips clear the scanned board front instead of a fixed 15 cm.
-    exit_to_edge: bool = False
     # A shelf pick's scan (pipelines/shelf.ShelfScan): the boards and the shelf extent.
     shelf: Optional[object] = None
 
@@ -203,7 +182,11 @@ def _pick(
     arm.snapshot_scene()
 
     outcome = None
-    frontal = _shelf_frontal_set(arm, perceived) if request.is_shelf else None
+    # The frontal grasp and the way out are tuned in the geometric profile.
+    shelf = (
+        strategies[PICK_STRATEGY_GEOMETRIC].profile.shelf if request.is_shelf else None
+    )
+    frontal = _shelf_frontal_set(arm, perceived, shelf) if shelf else None
     if frontal is not None:
         # Pre-grasp, straight in, close: the geometric picks' cartesian strategy.
         outcome = _run_strategy(arm, strategies[PICK_STRATEGY_GEOMETRIC], frontal)
@@ -232,8 +215,8 @@ def _pick(
         if fitted.type == "cylinder" and is_tilted(outcome.pick_pose):
             outcome.place_top_down = True
             outcome.object_pick_height = _top_down_pick_height(outcome.object_height)
-    if request.is_shelf:
-        _shelf_exit(arm, request.shelf if request.exit_to_edge else None)
+    if shelf:
+        _shelf_exit(arm, shelf)
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
@@ -354,13 +337,13 @@ def _shelf_band(arm, point: PointStamped, shelf) -> Optional[Tuple[float, float]
     return band
 
 
-def _shelf_frontal_set(arm, perceived: Perceived) -> Optional[GraspSet]:
+def _shelf_frontal_set(arm, perceived: Perceived, shelf) -> Optional[GraspSet]:
     """Frontal grasps for an object isolated in its shelf compartment, or None."""
     if perceived.cluster is None or perceived.band is None:
         return None
     cloud = perceived.cluster
     points = _cloud_points(cloud)
-    poses = shelf_frontal_grasps(points, perceived.band, cloud.header.frame_id)
+    poses = shelf_frontal_grasps(points, perceived.band, cloud.header.frame_id, shelf)
     if not poses:
         size = np.ptp(points, axis=0) if len(points) else np.zeros(3)
         arm.logger.info(
@@ -385,8 +368,10 @@ def _shelf_frontal_set(arm, perceived: Perceived) -> Optional[GraspSet]:
     )
 
 
-def shelf_frontal_grasps(points, band, frame_id: str) -> List[PoseStamped]:
+def shelf_frontal_grasps(points, band, frame_id: str, shelf) -> List[PoseStamped]:
     """Frontal grasps from a z-up cluster in compartment ``band`` (max_z 0: nothing above).
+
+    ``shelf`` is the geometric profile's ShelfPickProfile.
 
     Tip just past the object's middle at mid height, approach +x tilted down, closing
     across y, camera up; ordered by height then pitch, empty when the object does not fit.
@@ -395,39 +380,37 @@ def shelf_frontal_grasps(points, band, frame_id: str) -> List[PoseStamped]:
         return []
     x, y, z = points[:, 0], points[:, 1], points[:, 2]
     width = float(np.percentile(y, 95) - np.percentile(y, 5))
-    if width > GRIPPER_MAX_APERTURE - SHELF_FRONTAL_WIDTH_MARGIN:
+    if width > GRIPPER_MAX_APERTURE - shelf.width_margin:
         return []
     front = float(np.percentile(x, 5))
     half_depth = float(
-        np.clip((np.percentile(x, 95) - front) / 2, 0.015, SHELF_FRONTAL_MAX_HALF_DEPTH)
+        np.clip((np.percentile(x, 95) - front) / 2, 0.015, shelf.max_half_depth)
     )
     centre_y = float(np.median(y))
     board = band[0] - SHELF_BAND_MARGIN
     top = float(np.percentile(z, 95))
-    lowest = board + SHELF_FRONTAL_BOARD_CLEARANCE
-    highest = top - SHELF_FRONTAL_TOP_MARGIN
+    lowest = board + shelf.board_clearance
+    highest = top - shelf.top_margin
     if band[1]:
-        highest = min(
-            highest, band[1] + SHELF_BAND_MARGIN - SHELF_FRONTAL_CEILING_CLEARANCE
-        )
+        highest = min(highest, band[1] + SHELF_BAND_MARGIN - shelf.ceiling_clearance)
     if highest < lowest:
         return []
     middle = (board + top) / 2
     heights = []
-    for step in SHELF_FRONTAL_Z_STEPS:
+    for step in shelf.z_steps:
         h = float(np.clip(middle + step, lowest, highest))
         if all(abs(h - other) > 0.01 for other in heights):
             heights.append(h)
 
-    pitches = SHELF_FRONTAL_PITCHES
+    pitches = shelf.pitches
     if not band[1]:  # nothing above: steeper approaches cannot hit a ceiling
-        pitches = pitches + SHELF_FRONTAL_OPEN_TOP_PITCHES
+        pitches = pitches + shelf.open_top_pitches
     poses = []
     for h in heights:
         for pitch in pitches:
             pose = PoseStamped()
             pose.header.frame_id = frame_id
-            pose.pose.position.x = front + half_depth + SHELF_FRONTAL_PAST_CENTER
+            pose.pose.position.x = front + half_depth + shelf.past_center
             pose.pose.position.y = centre_y
             pose.pose.position.z = h
             poses.append(
@@ -719,21 +702,17 @@ def _top_down_pick_height(object_height: float) -> float:
 # ======================================================================
 
 
-def _shelf_exit(arm, edge_of=None) -> bool:
-    """Lift off the board, then back out along the way in, as straight MoveIt paths.
-
-    With ``edge_of`` (a ShelfScan) back out past its board front instead of a fixed 15 cm.
-    """
+def _shelf_exit(arm, shelf) -> bool:
+    """Lift off the board, then back out along the way in, as straight MoveIt paths."""
     target = arm.link_pose(EEF_LINK_NAME)  # straight-line plans always move link_eef
     if target is None:
         return False
     back = -approach_axis(target)
     back[2] = 0.0
     norm = float(np.linalg.norm(back))
-    steps = [np.array([0.0, 0.0, SHELF_EXIT_LIFT])]
+    steps = [np.array([0.0, 0.0, shelf.exit_lift])]
     if norm >= 0.5:  # a steep grasp has no meaningful "straight back"
-        retreat = _retreat_to_edge(arm, edge_of) if edge_of else None
-        steps.append(back / norm * (retreat or SHELF_EXIT_RETREAT))
+        steps.append(back / norm * shelf.exit_retreat)
     with arm.phase("shelf_exit"):
         for step in steps:
             target = copy.deepcopy(target)
@@ -742,7 +721,7 @@ def _shelf_exit(arm, edge_of=None) -> bool:
             target.pose.position.z += float(step[2])
             if not arm.move_to_pose(
                 target,
-                velocity=SHELF_EXIT_VELOCITY,
+                velocity=SLOW_VELOCITY,
                 planner_id=CARTESIAN_PLANNER,
                 target_link=EEF_LINK_NAME,
             ):
@@ -751,27 +730,6 @@ def _shelf_exit(arm, edge_of=None) -> bool:
                 )
                 return False
     return True
-
-
-def _retreat_to_edge(arm, shelf) -> Optional[float]:
-    """Retreat that puts the fingertips SHELF_EXIT_EDGE_MARGIN outside the board front.
-
-    In base_link, where the scan is; None without a scan or a backward approach.
-    """
-    extent = shelf.extent
-    eef = arm.link_pose(EEF_LINK_NAME, "base_link")
-    if extent is None or eef is None:
-        return None
-    approach = approach_axis(eef)
-    back = -approach[:2] / max(float(np.linalg.norm(approach[:2])), 1e-6)
-    if back[0] > -0.5:  # not backing out toward the robot
-        return None
-    p = eef.pose.position
-    tip_x = p.x + approach[0] * GRIPPER_REACH
-    retreat = (tip_x - extent[0] + SHELF_EXIT_EDGE_MARGIN) / -back[0]
-    retreat = float(np.clip(retreat, *SHELF_EXIT_RETREAT_LIMITS))
-    arm.logger.info(f"Shelf exit: {retreat * 100:.0f} cm back to clear the board front")
-    return retreat
 
 
 def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
@@ -784,7 +742,7 @@ def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
 
     named = "look_side_stare" if strategy_key == PICK_STRATEGY_PEAK else "table_stare"
     # The shelf boxes are still in the scene, so one planned move leaves the shelf.
-    velocity = SHELF_RETURN_VELOCITY if is_shelf else 0.5
+    velocity = FAST_VELOCITY if is_shelf else 0.5
     log.info(f"Returning to {named}")
     with arm.phase(f"return/{named}"):
         for _ in range(5):

@@ -14,12 +14,14 @@ from frida_constants.manipulation_constants import (
     CARTESIAN_PLANNER,
     AIM_STRAIGHT_FRONT_QUAT,
     EEF_LINK_NAME,
+    FAST_VELOCITY,
     GRASP_LINK_FRAME,
     GRIPPER_REACH,
     SHELF_MIN_REACH,
     SHELF_POSITION_PREPLACE_POSE,
     SHELF_REACH_BASE,
     SHELF_REACH_SLOPE,
+    SLOW_VELOCITY,
     TRASH_BIN_NAME,
 )
 from frida_interfaces.srv import HeatmapPlace, PlacePerceptionService
@@ -63,8 +65,6 @@ HEATMAP_TIMEOUT = 60.0
 TRASH_TIMEOUT = 15.0
 
 RELEASE_SETTLE = 0.5  # s for the fingers to open before moving away
-SHELF_PLACE_IN_VELOCITY = 0.3
-RETURN_VELOCITY = 0.75
 
 # Orientation with Z aiming down, used when the pick pose is unusable.
 TOP_DOWN_QUAT = [0.0, 1.0, 0.0, 0.0]
@@ -124,7 +124,7 @@ def execute(
                 # Keep the octomap on a shelf: it holds the compartment walls.
                 if attempt > 0 and not place_params.is_shelf:
                     arm.clear_octomap()
-                if arm.move_to_named_position("table_stare", velocity=RETURN_VELOCITY):
+                if arm.move_to_named_position("table_stare", velocity=FAST_VELOCITY):
                     log.info("Returned to position successfully")
                     returned = True
                     break
@@ -211,7 +211,7 @@ def _reach_place_pose(
         # Pre-place to place as a line along the approach; a free plan where it is cut.
         if straight and arm.move_to_pose(
             pose,
-            velocity=SHELF_PLACE_IN_VELOCITY,
+            velocity=SLOW_VELOCITY,
             planner_id=CARTESIAN_PLANNER,
             target_link=target_link,
         ):

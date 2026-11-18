@@ -14,20 +14,18 @@ import numpy as np
 from frida_constants.manipulation_constants import (
     ARM_HIGHEST_0_0_HEIGHT,
     ARM_LOWEST_0_0_HEIGHT,
+    FAST_VELOCITY,
     SHELF_LEVEL_SETTLE,
     SHELF_SURVEY_POSES,
     SHELF_SURVEY_SETTLE,
-    SHELF_SURVEY_VELOCITY,
 )
 from frida_motion_planning.utils.tf_utils import look_at, transform_point
 from frida_pymoveit2.robots import xarm6
 from geometry_msgs.msg import PointStamped
 
-SHELF_FRAME = "base_link"
 MAX_BASE_SHIFT = 0.03  # m the base may move before the scan is stale
 MAX_BASE_TURN = math.radians(3.0)
 LEVEL_BELOW = 0.05  # m an object's detected point may sit below its board
-FACE_VELOCITY = 0.75
 # Facing a level for a pick: camera this far past the board front and above the board,
 # looking at its centre; VIEW_MAX_REACH from the centre when that is farther from the base.
 VIEW_DISTANCE = 0.5
@@ -110,7 +108,7 @@ def scan(arm, perception) -> Optional[ShelfScan]:
     captured, seen = 0, []
     with arm.phase("survey"):
         for pose in SHELF_SURVEY_POSES:
-            if not arm.move_to_named_position(pose, velocity=SHELF_SURVEY_VELOCITY):
+            if not arm.move_to_named_position(pose, velocity=FAST_VELOCITY):
                 log.warn(f"Could not reach {pose}; skipping this view")
                 continue
             time.sleep(SHELF_SURVEY_SETTLE)
@@ -157,9 +155,9 @@ def _in_base(arm, point: PointStamped) -> Optional[PointStamped]:
     """``point`` in base_link, or None when it is empty or has no TF."""
     if not point.header.frame_id:
         return None
-    if point.header.frame_id == SHELF_FRAME:
+    if point.header.frame_id == "base_link":
         return point
-    ok, in_base = transform_point(point, SHELF_FRAME, arm.tf_buffer)
+    ok, in_base = transform_point(point, "base_link", arm.tf_buffer)
     return in_base if ok else None
 
 
@@ -202,7 +200,7 @@ def face_level(arm, shelf: ShelfScan, level: int, for_place: bool = False) -> bo
     with arm.phase(f"face_level_{level}"):
         if for_place:
             # From a pick's viewing pose MoveIt finds no IK for the pre-place.
-            arm.move_to_named_position("front_stare", velocity=FACE_VELOCITY)
+            arm.move_to_named_position("front_stare", velocity=FAST_VELOCITY)
             camera = _point(0.1, 0.0, _camera_z(board.height + PLACE_VIEW_HEIGHT))
             target = _point(1.0, 0.0, board.height)
         else:
@@ -216,7 +214,7 @@ def face_level(arm, shelf: ShelfScan, level: int, for_place: bool = False) -> bo
         arm.logger.info(f"Facing shelf level {level} at {board.height:.3f} m")
         return arm.move_to_pose(
             look_at(camera, target),
-            velocity=FACE_VELOCITY,
+            velocity=FAST_VELOCITY,
             target_link=xarm6.camera_frame_name(),
         )
 
@@ -249,7 +247,7 @@ def _camera_z(z: float) -> float:
 
 def _point(x: float, y: float, z: float) -> PointStamped:
     point = PointStamped()
-    point.header.frame_id = SHELF_FRAME
+    point.header.frame_id = "base_link"
     point.point.x, point.point.y, point.point.z = float(x), float(y), float(z)
     return point
 
