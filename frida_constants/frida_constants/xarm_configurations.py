@@ -207,7 +207,7 @@ LOOK_SIDE_LOW_STARE = {
 }
 
 # Shelf survey (sim, shelf 15-20 cm away): HIGH sees the upper boards and the underside of
-# one above the camera; LOW sees the low compartments. See docs/ai/shelf_detection.md.
+# one above the camera; LOW sees the low compartments. See manipulation/SHELF.md.
 SHELF_SURVEY_HIGH = {
     "joints": {
         "joint1": -90.0,

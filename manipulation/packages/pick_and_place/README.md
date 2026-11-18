@@ -148,7 +148,7 @@ The pipeline never asks *which* strategy is running to decide these things; the 
 |---|---|
 | Add the fitted shape to the planning scene, and report its heights to `place` | the generator's response carries a fitted object |
 | Retry with GPD when perception or every candidate fails | `fallback_to_gpd` in the strategy's profile |
-| Shelf and pour picks use GPD instead of the geometric generator | `resolve_pick_strategy(name, force_gpd=...)` |
+| Shelf picks use the `shelf` strategy, pour picks GPD | `resolve_pick_strategy(name, force_gpd=..., shelf=...)` |
 
 ### Where the flow goes
 
@@ -176,10 +176,10 @@ flowchart TD
 
 ## Pick strategies
 
-Which strategy runs is decided by `classification.resolve_pick_strategy(object_name, force_gpd)`.
-Order matters there: `bowl` is a member of `RIM_NAMES`, so it is tested first. A name that is not
-listed is a solid and goes to `geometric`; shelf and pour picks (`force_gpd`) send it to `gpd`
-instead.
+Which strategy runs is decided by `classification.resolve_pick_strategy(object_name, force_gpd, shelf)`.
+Every shelf pick is `shelf`. Order matters for the rest: `bowl` is a member of `RIM_NAMES`, so it is
+tested first. A name that is not listed is a solid and goes to `geometric`; pour picks (`force_gpd`)
+send it to `gpd` instead.
 
 | Profile | Objects | Class | How it grasps |
 |---|---|---|---|
@@ -188,7 +188,8 @@ instead.
 | `bowl` | bowl | `FixedDistanceDescentPick` | Same motion, much shorter descent. |
 | `peak` | clothes | `FixedDistanceDescentPick` | Descends onto the highest content in a cavity. |
 | `geometric` | any other name: cans, boxes, fruit | `CartesianApproachPick` | Backs off along the generator's approach axis, drives straight in under cartesian velocity, closes, then attaches the fitted shape and reports object heights to `place`. Falls back to `gpd` when it fails. |
-| `gpd` | no name, shelf and pour picks, the geometric fallback | `DirectGraspPick` | Plans straight to a GPD grasp. Attaches the object in the planning scene and reports object heights to `place`. |
+| `shelf` | any shelf pick | `CartesianApproachPick` | Frontal grasps from the cluster inside the compartment (`geometric_grasps.shelf_frontal_grasps`), straight in, then two straight MoveIt paths out. Falls back to `gpd`. See [`SHELF.md`](../../SHELF.md). |
+| `gpd` | no name, pour picks, the geometric and shelf fallback | `DirectGraspPick` | Plans straight to a GPD grasp. Attaches the object in the planning scene and reports object heights to `place`. |
 
 Rim, bowl and peak are one algorithm with three parameter sets. The descent distance is always
 `pre_grasp_height - grasp_z_tweak`:

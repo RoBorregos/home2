@@ -16,22 +16,21 @@ from frida_constants.manipulation_constants import (
     CARTESIAN_PLANNER,
     EEF_LINK_NAME,
     FAST_VELOCITY,
-    GRIPPER_MAX_APERTURE,
     GRIPPER_REACH,
     PICK_MAX_DISTANCE,
     SAFETY_HEIGHT_GEOMETRIC,
     SLOW_VELOCITY,
     TOP_GRASP_DEPTH,
 )
-from frida_motion_planning.utils.tf_utils import transform_point, transform_pose
 from geometry_msgs.msg import PointStamped, PoseStamped
+from perception_3d.geometric_grasps import compartment_band, shelf_frontal_grasps
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
 
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_FLAT,
-    PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
+    PICK_STRATEGY_SHELF,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_RIM,
     resolve_pick_strategy,
@@ -77,10 +76,6 @@ FLAT_GRASP_Z_TWEAK = 0.076
 
 # Objects shorter than this cannot be grasped from a reversed approach.
 MIN_REVERSIBLE_HEIGHT = 0.06
-
-# Shelf clustering crops to the object's compartment, this far inside its boards.
-SHELF_BAND_MARGIN = 0.01
-SHELF_BAND_DOWN_TOLERANCE = 0.05  # a detection point may sit this far under its board
 
 
 # The ZED hangs below the gripper and grazes the shelf surface on a low frontal
@@ -147,7 +142,7 @@ def execute(
 ) -> Tuple[bool, PickOutcome]:
     """Pick an object. Returns (success, outcome)."""
     strategy_key = resolve_pick_strategy(
-        request.object_name, force_gpd=request.is_shelf or request.use_gpd
+        request.object_name, force_gpd=request.use_gpd, shelf=request.is_shelf
     )
     return _pick(arm, perception, request, strategies, strategy_key)
 
@@ -182,20 +177,11 @@ def _pick(
     arm.snapshot_scene()
 
     outcome = None
-    # The frontal grasp and the way out are tuned in the geometric profile.
-    shelf = (
-        strategies[PICK_STRATEGY_GEOMETRIC].profile.shelf if request.is_shelf else None
-    )
-    frontal = _shelf_frontal_set(arm, perceived, shelf) if shelf else None
-    if frontal is not None:
-        # Pre-grasp, straight in, close: the geometric picks' cartesian strategy.
-        outcome = _run_strategy(arm, strategies[PICK_STRATEGY_GEOMETRIC], frontal)
-    if outcome is None:
-        for grasp_set in _grasp_sets(perception, perceived, request):
-            outcome = _run_strategy(arm, strategy, grasp_set)
-            if outcome is not None:
-                break
-            time.sleep(0.2)
+    for grasp_set in _grasp_sets(arm, perception, perceived, request, strategy):
+        outcome = _run_strategy(arm, strategy, grasp_set)
+        if outcome is not None:
+            break
+        time.sleep(0.2)
 
     if outcome is None:
         log.error(f"[{strategy_key}] pick failed: no candidate succeeded")
@@ -215,8 +201,8 @@ def _pick(
         if fitted.type == "cylinder" and is_tilted(outcome.pick_pose):
             outcome.place_top_down = True
             outcome.object_pick_height = _top_down_pick_height(outcome.object_height)
-    if shelf:
-        _shelf_exit(arm, shelf)
+    if request.is_shelf:
+        _shelf_exit(arm, strategies[PICK_STRATEGY_SHELF].profile.shelf)
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
@@ -233,10 +219,13 @@ def _fall_back_or_fail(
     )
     if fitted is not None:
         arm.remove_collision_object(fitted.id)
+    # A shelf pick stays at the level it faced.
     return _pick(
         arm,
         perception,
-        replace(request, in_configuration=False),
+        replace(
+            request, in_configuration=request.is_shelf and request.in_configuration
+        ),
         strategies,
         PICK_STRATEGY_GPD,
     )
@@ -263,7 +252,7 @@ def _perceive(
     arm, perception, request: PickRequest, strategy_key: str
 ) -> Optional[Perceived]:
     """Locate the object. Returns None when it cannot be found."""
-    if strategy_key != PICK_STRATEGY_GPD:
+    if strategy_key not in (PICK_STRATEGY_GPD, PICK_STRATEGY_SHELF):
         return _perceive_grasps(perception, request, strategy_key)
     return _perceive_cluster(arm, perception, request)
 
@@ -323,14 +312,10 @@ def _shelf_band(arm, point: PointStamped, shelf) -> Optional[Tuple[float, float]
     if not levels:
         arm.logger.warn("No shelf scan: clustering with the default height band")
         return None
-    if point.header.frame_id == "base_link":
-        z = point.point.z
-    else:
-        ok, in_base = transform_point(point, "base_link", arm.tf_buffer)
-        if not ok:
-            return None
-        z = in_base.point.z
-    band = compartment_band(z, levels)
+    in_base = arm.to_frame(point, "base_link")
+    if in_base is None:
+        return None
+    band = compartment_band(in_base.point.z, levels)
     if band is not None:
         top = f"{band[1]:.3f} m" if band[1] else "the default band"
         arm.logger.info(f"Shelf compartment for clustering: z {band[0]:.3f} m to {top}")
@@ -343,7 +328,7 @@ def _shelf_frontal_set(arm, perceived: Perceived, shelf) -> Optional[GraspSet]:
         return None
     cloud = perceived.cluster
     points = _cloud_points(cloud)
-    poses = shelf_frontal_grasps(points, perceived.band, cloud.header.frame_id, shelf)
+    poses = shelf_frontal_poses(points, perceived.band, cloud.header.frame_id, shelf)
     if not poses:
         size = np.ptp(points, axis=0) if len(points) else np.zeros(3)
         arm.logger.info(
@@ -352,12 +337,10 @@ def _shelf_frontal_set(arm, perceived: Perceived, shelf) -> Optional[GraspSet]:
         )
         return None
     # The cartesian approach drives the xArm TCP, whose frame is link_base.
-    if cloud.header.frame_id != "link_base":
-        moved = [transform_pose(pose, "link_base", arm.tf_buffer) for pose in poses]
-        if not all(ok for ok, _ in moved):
-            arm.logger.warn("Shelf frontal grasp: no TF to link_base; using GPD")
-            return None
-        poses = [pose for _, pose in moved]
+    poses = [arm.to_frame(pose, "link_base") for pose in poses]
+    if None in poses:
+        arm.logger.warn("Shelf frontal grasp: no TF to link_base; using GPD")
+        return None
     first = poses[0].pose.position
     arm.logger.info(
         f"Shelf frontal grasp: {len(poses)} height(s), first tip at "
@@ -368,70 +351,17 @@ def _shelf_frontal_set(arm, perceived: Perceived, shelf) -> Optional[GraspSet]:
     )
 
 
-def shelf_frontal_grasps(points, band, frame_id: str, shelf) -> List[PoseStamped]:
-    """Frontal grasps from a z-up cluster in compartment ``band`` (max_z 0: nothing above).
-
-    ``shelf`` is the geometric profile's ShelfPickProfile.
-
-    Tip just past the object's middle at mid height, approach +x tilted down, closing
-    across y, camera up; ordered by height then pitch, empty when the object does not fit.
-    """
-    if points is None or len(points) < 10 or band is None:
-        return []
-    x, y, z = points[:, 0], points[:, 1], points[:, 2]
-    width = float(np.percentile(y, 95) - np.percentile(y, 5))
-    if width > GRIPPER_MAX_APERTURE - shelf.width_margin:
-        return []
-    front = float(np.percentile(x, 5))
-    half_depth = float(
-        np.clip((np.percentile(x, 95) - front) / 2, 0.015, shelf.max_half_depth)
-    )
-    centre_y = float(np.median(y))
-    board = band[0] - SHELF_BAND_MARGIN
-    top = float(np.percentile(z, 95))
-    lowest = board + shelf.board_clearance
-    highest = top - shelf.top_margin
-    if band[1]:
-        highest = min(highest, band[1] + SHELF_BAND_MARGIN - shelf.ceiling_clearance)
-    if highest < lowest:
-        return []
-    middle = (board + top) / 2
-    heights = []
-    for step in shelf.z_steps:
-        h = float(np.clip(middle + step, lowest, highest))
-        if all(abs(h - other) > 0.01 for other in heights):
-            heights.append(h)
-
-    pitches = shelf.pitches
-    if not band[1]:  # nothing above: steeper approaches cannot hit a ceiling
-        pitches = pitches + shelf.open_top_pitches
+def shelf_frontal_poses(points, band, frame_id: str, shelf) -> List[PoseStamped]:
+    """The frontal shelf grasps (perception_3d) as poses in ``frame_id``, camera up."""
     poses = []
-    for h in heights:
-        for pitch in pitches:
-            pose = PoseStamped()
-            pose.header.frame_id = frame_id
-            pose.pose.position.x = front + half_depth + shelf.past_center
-            pose.pose.position.y = centre_y
-            pose.pose.position.z = h
-            poses.append(
-                set_quaternion(
-                    pose, R.from_euler("y", 90 + pitch, degrees=True).as_quat()
-                )
-            )
+    for tip, quat in shelf_frontal_grasps(points, band, shelf):
+        pose = PoseStamped()
+        pose.header.frame_id = frame_id
+        position = pose.pose.position
+        position.x, position.y, position.z = map(float, tip)
+        poses.append(set_quaternion(pose, quat))
     _lift_camera_clear(poses)
     return poses
-
-
-def compartment_band(z: float, levels) -> Optional[Tuple[float, float]]:
-    """(min_z, max_z) of the compartment at ``z`` from (height, thickness) boards; 0 on top."""
-    ordered = sorted(levels)
-    below = [lv for lv in ordered if lv[0] - SHELF_BAND_DOWN_TOLERANCE <= z]
-    if not below:
-        return None
-    floor = below[-1]
-    above = [lv for lv in ordered if lv[0] > floor[0]]
-    ceiling = (above[0][0] - above[0][1] - SHELF_BAND_MARGIN) if above else 0.0
-    return floor[0] + SHELF_BAND_MARGIN, ceiling
 
 
 def _locate(perception, request: PickRequest) -> Optional[PointStamped]:
@@ -483,14 +413,19 @@ def _cluster_height(cluster) -> Optional[float]:
 
 
 def _grasp_sets(
-    perception, perceived: Perceived, request: PickRequest
+    arm, perception, perceived: Perceived, request: PickRequest, strategy
 ) -> Iterator[GraspSet]:
     """Yield batches of candidates, best source first.
 
     Shapes yield the generator's best candidates. Flat objects yield the generator's
-    one pose and its flip. GPD yields one set per config, so a config whose grasps
-    are all unreachable falls back to the next.
+    one pose and its flip. A shelf yields its frontal grasps. GPD yields one set per
+    config, so a config whose grasps are all unreachable falls back to the next.
     """
+    if strategy.profile.shelf is not None:
+        frontal = _shelf_frontal_set(arm, perceived, strategy.profile.shelf)
+        if frontal is not None:
+            yield frontal
+        return
     response = perceived.grasps
     if response is not None:
         if perceived.fitted is not None:

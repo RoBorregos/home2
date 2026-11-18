@@ -49,6 +49,11 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
 )
 from frida_motion_planning.utils.ros_utils import wait_for_future
+from frida_motion_planning.utils.tf_utils import (
+    look_at,
+    transform_point,
+    transform_pose,
+)
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
     get_joint_positions,
@@ -293,6 +298,19 @@ class RobotArm:
         pose.pose.position.z = transform.translation.z
         pose.pose.orientation = transform.rotation
         return pose
+
+    def to_frame(self, msg, frame: str):
+        """``msg`` (a PointStamped or PoseStamped) in ``frame``; None without TF."""
+        if msg.header.frame_id == frame:
+            return msg
+        convert = transform_pose if isinstance(msg, PoseStamped) else transform_point
+        ok, moved = convert(msg, frame, self.tf_buffer)
+        return moved if ok else None
+
+    @staticmethod
+    def look_at(source, target) -> PoseStamped:
+        """The pose at ``source`` whose x axis points at ``target``."""
+        return look_at(source, target)
 
     def tcp_xyz(self) -> Optional[np.ndarray]:
         """Current tool-centre-point XYZ in metres, or None if unknown."""

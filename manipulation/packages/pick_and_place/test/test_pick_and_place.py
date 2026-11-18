@@ -42,7 +42,7 @@ from frida_interfaces.msg import ManipulationTask, PlaceParams
 from geometry_msgs.msg import PointStamped
 from pathlib import Path
 from rclpy.action import GoalResponse
-from perception_3d.geometric_grasps import approaches
+from perception_3d.geometric_grasps import approaches, compartment_band
 from frida_pymoveit2.robots import xarm6
 from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import shelf as shelf_pipeline
@@ -57,6 +57,7 @@ from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_GEOMETRIC,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_RIM,
+    PICK_STRATEGY_SHELF,
     resolve_pick_strategy,
 )
 from pick_and_place.pipelines.errors import (
@@ -89,7 +90,7 @@ def strategies():
 
 
 # The geometric profile's shelf tuning: the frontal grasp and the way out.
-SHELF_TUNING = load_profiles(PROFILES_PATH)[PICK_STRATEGY_GEOMETRIC].shelf
+SHELF_TUNING = load_profiles(PROFILES_PATH)[PICK_STRATEGY_SHELF].shelf
 
 
 def candidate(z=0.3, score=0.9):
@@ -257,7 +258,7 @@ SHELF = [(0.096, 0.02), (0.391, 0.02), (0.681, 0.02), (1.051, 0.02)]
     ],
 )
 def test_compartment_band_is_the_board_below_to_the_board_above(z, band):
-    result = pick_pipeline.compartment_band(z, SHELF)
+    result = compartment_band(z, SHELF)
     if band is None:
         assert result is None
     else:
@@ -303,7 +304,7 @@ def bottle_cluster(frame="link_base", **kwargs):
 
 
 def test_shelf_frontal_grasp_goes_into_the_compartment_from_the_front():
-    poses = pick_pipeline.shelf_frontal_grasps(
+    poses = pick_pipeline.shelf_frontal_poses(
         bottle_points(), (0.401, 0.651), "base_link", SHELF_TUNING
     )
     pitches = SHELF_TUNING.pitches
@@ -326,7 +327,7 @@ def test_shelf_frontal_grasp_goes_into_the_compartment_from_the_front():
 
 
 def test_open_top_shelf_also_tries_steeper_approaches():
-    open_top = pick_pipeline.shelf_frontal_grasps(
+    open_top = pick_pipeline.shelf_frontal_poses(
         bottle_points(z=(1.30, 1.49), front=0.60),
         (1.311, 0.0),
         "base_link",
@@ -341,7 +342,7 @@ def test_open_top_shelf_also_tries_steeper_approaches():
         seen.add(round(float(np.degrees(np.arcsin(-approach[2]))), 3))
     assert seen == set(pitches)
     # under a ceiling the steep ones would hit it: never offered there
-    closed = pick_pipeline.shelf_frontal_grasps(
+    closed = pick_pipeline.shelf_frontal_poses(
         bottle_points(), (0.401, 0.651), "x", SHELF_TUNING
     )
     assert len(closed) % len(SHELF_TUNING.pitches) == 0
@@ -358,7 +359,7 @@ def test_open_top_shelf_also_tries_steeper_approaches():
 )
 def test_no_shelf_frontal_grasp_when_it_cannot_fit(kwargs, band):
     assert (
-        pick_pipeline.shelf_frontal_grasps(
+        pick_pipeline.shelf_frontal_poses(
             bottle_points(**kwargs), band, "x", SHELF_TUNING
         )
         == []
@@ -622,7 +623,7 @@ def test_shelf_place_releases_over_the_board():
     assert run_place(arm, place_perception(), params(is_shelf=True), shelf=shelf)
     final = arm.poses["move_to_pose"][1]  # pre-place, then the place itself
     object_x = final.pose.position.x + place_pipeline.SHELF_PLACE_OBJECT_OFFSET
-    assert object_x >= extent[0] + place_pipeline.SHELF_PLACE_FRONT_MARGIN - 1e-9
+    assert object_x >= extent[0] + SHELF_TUNING.place_front_margin - 1e-9
 
 
 def test_shelf_boxes_never_leave_with_the_robot():
@@ -880,7 +881,7 @@ def core():
     node = ManipulationCore.__new__(ManipulationCore)
     node.arm = FakeArm()
     node.perception = FakePerception()
-    node.strategies = {}
+    node.strategies = build_strategies(load_profiles(PROFILES_PATH))
     node._logger = FakeLogger()
     node.get_logger = lambda: node._logger
     node.parameters = {
@@ -1109,7 +1110,7 @@ def test_a_scan_is_dropped_once_the_base_moves(core, monkeypatch):
 
 def test_scan_shelf_keeps_the_scan_and_puts_its_boxes_in_the_scene(core, monkeypatch):
     shelf = make_shelf()
-    monkeypatch.setattr(shelf_pipeline, "scan", lambda arm, perception: shelf)
+    monkeypatch.setattr(shelf_pipeline, "scan", lambda arm, perception, tuning: shelf)
     assert core._run_scan_shelf(_Request(ManipulationTask.SCAN_SHELF)) is True
     assert core._shelf is shelf
     calls = core.arm.calls
@@ -1118,7 +1119,7 @@ def test_scan_shelf_keeps_the_scan_and_puts_its_boxes_in_the_scene(core, monkeyp
 
 def test_a_failed_scan_forgets_the_previous_one(core, monkeypatch):
     core._shelf = make_shelf()
-    monkeypatch.setattr(shelf_pipeline, "scan", lambda arm, perception: None)
+    monkeypatch.setattr(shelf_pipeline, "scan", lambda arm, perception, tuning: None)
     assert core._run_scan_shelf(_Request(ManipulationTask.SCAN_SHELF)) is False
     assert core._shelf is None
 
@@ -1256,7 +1257,7 @@ def test_every_strategy_key_has_a_profile(profiles):
         ("gpd", "num_alternatives", 0, "num_alternatives"),
         ("rim", "pre_grasp_height", "abc", "must be a float"),
         ("rim", "descent_speed", 0.0, "descent_speed"),
-        ("geometric", "shelf.exit_retreat", 0.0, "exit_retreat"),
+        ("shelf", "shelf.exit_retreat", 0.0, "exit_retreat"),
     ],
 )
 def test_invalid_values_are_rejected_at_load_time(
@@ -1323,6 +1324,11 @@ def test_a_request_without_a_name_goes_to_gpd(name):
 )
 def test_force_gpd_only_overrides_the_geometric_default(name, force_gpd, expected):
     assert resolve_pick_strategy(name, force_gpd) == expected
+
+
+@pytest.mark.parametrize("name", ["coke", "basket", ""])
+def test_any_shelf_pick_uses_the_shelf_strategy(name):
+    assert resolve_pick_strategy(name, shelf=True) == PICK_STRATEGY_SHELF
 
 
 # ============================================================================
@@ -1430,7 +1436,7 @@ def test_scan_surveys_then_puts_each_seen_object_on_its_level(monkeypatch):
         detections=[_seen("cereal", 0.75), _seen("apple", 0.45), _seen("cereal", 0.76)],
     )
     arm = FakeArm()
-    shelf = shelf_pipeline.scan(arm, perception)
+    shelf = shelf_pipeline.scan(arm, perception, SHELF_TUNING)
     assert arm.named_positions == list(shelf_pipeline.SHELF_SURVEY_POSES)
     assert perception.shelf_requests[0] == (True, False, False)  # drop old captures
     assert perception.shelf_requests[-1] == (False, False, True)
@@ -1441,8 +1447,9 @@ def test_scan_surveys_then_puts_each_seen_object_on_its_level(monkeypatch):
 def test_scan_fails_without_a_captured_view_or_a_shelf(monkeypatch):
     monkeypatch.setattr(shelf_pipeline.time, "sleep", lambda s: None)
     no_views = FakeArm(named_position_results=[False, False])
-    assert shelf_pipeline.scan(no_views, FakePerception()) is None
-    assert shelf_pipeline.scan(FakeArm(), FakePerception(shelf_result=None)) is None
+    assert shelf_pipeline.scan(no_views, FakePerception(), SHELF_TUNING) is None
+    no_shelf = FakePerception(shelf_result=None)
+    assert shelf_pipeline.scan(FakeArm(), no_shelf, SHELF_TUNING) is None
 
 
 @pytest.mark.parametrize(
@@ -1467,8 +1474,8 @@ def test_facing_a_level_puts_the_camera_past_the_board_front():
     shelf.levels = [make_board(0.68)]
     assert shelf_pipeline.face_level(arm, shelf, 1)
     pose = arm.poses["move_to_pose"][0]
-    assert pose.pose.position.x == pytest.approx(0.5 - shelf_pipeline.VIEW_DISTANCE)
-    assert pose.pose.position.z == pytest.approx(0.68 + shelf_pipeline.VIEW_HEIGHT)
+    assert pose.pose.position.x == pytest.approx(0.5 - SHELF_TUNING.view_distance)
+    assert pose.pose.position.z == pytest.approx(0.68 + SHELF_TUNING.view_height)
     assert arm.move_kwargs[0]["target_link"] == xarm6.camera_frame_name()
 
 
@@ -1479,7 +1486,7 @@ def test_facing_a_level_for_a_place_starts_from_front_stare():
     shelf_pipeline.face_level(arm, shelf, 1, for_place=True)
     assert arm.named_positions == ["front_stare"]
     pose = arm.poses["move_to_pose"][0]
-    assert pose.pose.position.z == pytest.approx(1.2 + shelf_pipeline.PLACE_VIEW_HEIGHT)
+    assert pose.pose.position.z == pytest.approx(1.2 + SHELF_TUNING.place_view_height)
 
 
 def test_find_object_tries_the_hint_then_where_the_scan_saw_it(monkeypatch):

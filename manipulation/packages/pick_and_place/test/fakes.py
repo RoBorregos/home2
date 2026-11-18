@@ -1,7 +1,9 @@
 """A recording stand-in for RobotArm and Perception, so the pipelines can be
 tested without a robot or a ROS graph."""
 
+import copy
 from contextlib import contextmanager
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
@@ -9,6 +11,7 @@ from frida_interfaces.msg import CollisionObject
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 from pick_and_place.pipelines.errors import PickAborted
+from pick_and_place.pipelines.profiles import load_profiles
 from pick_and_place.pipelines.shelf import ShelfScan
 from pick_and_place.robot.arm import AttachResult, ContactResult
 
@@ -87,7 +90,9 @@ class FakeArm:
         estop: bool = False,
         shelf_boxes_ok: bool = True,
         link_pose: Optional[PoseStamped] = None,
+        tf_fails: bool = False,
     ):
+        self._tf_fails = tf_fails
         self._estop = estop
         # Whether the planning scene takes the shelf boxes.
         self._shelf_boxes_ok = shelf_boxes_ok
@@ -162,6 +167,21 @@ class FakeArm:
     def acceleration_scaling(self, acceleration):
         self.accelerations.append(acceleration)
         yield
+
+    def to_frame(self, msg, frame):
+        """An identity transform: the fixtures already sit in the frame asked for."""
+        self.calls.append(f"to_frame:{frame}")
+        if self._tf_fails and msg.header.frame_id != frame:
+            return None
+        moved = copy.deepcopy(msg)
+        moved.header.frame_id = frame
+        return moved
+
+    @staticmethod
+    def look_at(source, target):
+        from frida_motion_planning.utils.tf_utils import look_at
+
+        return look_at(source, target)
 
     def link_pose(self, link, frame="link_base"):
         self.calls.append(f"link_pose:{link}")
@@ -508,6 +528,12 @@ def make_board(height, thickness=0.02, front=0.5, back=0.85, y=(-0.4, 0.4), obje
     )
 
 
+# The shelf profile's numbers, as the core hands them to the scan.
+SHELF_TUNING = load_profiles(
+    Path(__file__).resolve().parents[1] / "config" / "pick_profiles.yaml"
+)["shelf"].shelf
+
+
 def make_shelf(
     levels=((0.39, 0.02), (0.68, 0.02)), extent=(-10, 10, -10, 10), base=None
 ):
@@ -520,5 +546,6 @@ def make_shelf(
         back_x=back,
         y_min=y_min,
         y_max=y_max,
+        tuning=SHELF_TUNING,
         base=base,
     )

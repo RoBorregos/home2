@@ -46,6 +46,7 @@ from pick_and_place.pipelines import pick as pick_pipeline
 from pick_and_place.pipelines import place as place_pipeline
 from pick_and_place.pipelines import pour as pour_pipeline
 from pick_and_place.pipelines import shelf as shelf_pipeline
+from pick_and_place.pipelines.classification import PICK_STRATEGY_SHELF
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import default_profiles_path, load_profiles
 from pick_and_place.pipelines.strategies import PickOutcome, build_strategies
@@ -248,7 +249,8 @@ class ManipulationCore(Node):
         self._shelf = None
         self.arm.remove_shelf_scene()
         with self._shelf_motion(True):
-            shelf = shelf_pipeline.scan(self.arm, self.perception)
+            tuning = self.strategies[PICK_STRATEGY_SHELF].profile.shelf
+            shelf = shelf_pipeline.scan(self.arm, self.perception, tuning)
         if shelf is None:
             return False
         self._shelf = shelf

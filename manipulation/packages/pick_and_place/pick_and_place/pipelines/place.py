@@ -26,21 +26,15 @@ from frida_constants.manipulation_constants import (
 )
 from frida_interfaces.srv import HeatmapPlace, PlacePerceptionService
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_motion_planning.utils.tf_utils import transform_point, transform_pose
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs_py import point_cloud2
-from scipy.spatial.transform import Rotation as R
 from transforms3d.quaternions import quat2mat
 
 from pick_and_place.pipelines.strategies import PickOutcome
-from pick_and_place.robot.geometry import set_quaternion
+from pick_and_place.robot.geometry import inset_extent, keep_up_quat, set_quaternion
 
 # Pull the shelf place toward the front so the arm and camera clear the ceiling.
 SHELF_PLACE_DEPTH_BACK = 0.07
-# The released object's centre stays this far inside the scanned board (sim: it fell off the edge).
-SHELF_PLACE_FRONT_MARGIN = 0.08
-SHELF_PLACE_BACK_MARGIN = 0.06
-SHELF_PLACE_SIDE_MARGIN = 0.08
 SHELF_PLACE_OBJECT_OFFSET = GRIPPER_REACH - 0.03  # held object ahead of link_eef
 # URDF gripper_grasp_joint: grasp frame = link_eef rotated this much about Z.
 GRASP_FRAME_YAW_FROM_EEF = -np.pi / 4
@@ -151,11 +145,13 @@ def _shelf_place_bounds(arm, place_pose: PoseStamped, shelf) -> Optional[tuple]:
     """EE-link (min_x, max_x, min_y, max_y) that releases over the scanned board, or None."""
     if place_pose.header.frame_id not in ("", "base_link"):
         return None
-    front, back, y_min, y_max = shelf.extent
-    min_x = front + SHELF_PLACE_FRONT_MARGIN - SHELF_PLACE_OBJECT_OFFSET
-    max_x = max(min_x, back - SHELF_PLACE_BACK_MARGIN - SHELF_PLACE_OBJECT_OFFSET)
-    min_y = y_min + SHELF_PLACE_SIDE_MARGIN
-    max_y = max(min_y, y_max - SHELF_PLACE_SIDE_MARGIN)
+    min_x, max_x, min_y, max_y = inset_extent(
+        shelf.extent,
+        shelf.tuning.place_front_margin,
+        shelf.tuning.place_back_margin,
+        shelf.tuning.place_side_margin,
+        SHELF_PLACE_OBJECT_OFFSET,
+    )
     arm.logger.info(
         f"Shelf place bounds (EE): x {min_x:.3f}-{max_x:.3f}, y {min_y:.3f}-{max_y:.3f}"
     )
@@ -172,22 +168,13 @@ def _shelf_place_quat(arm, pick_outcome: PickOutcome):
     if pose is None or pose.header.frame_id not in ("base_link", "link_base"):
         return AIM_STRAIGHT_FRONT_QUAT
     q = pose.pose.orientation
-    up = R.from_quat([q.x, q.y, q.z, q.w]).inv().apply([0.0, 0.0, 1.0])
-    up[2] = 0.0  # only "up" across the approach (grasp local z) can be set by the roll
-    if np.linalg.norm(up) < 0.3:
+    quat = keep_up_quat(
+        [q.x, q.y, q.z, q.w], AIM_STRAIGHT_FRONT_QUAT, GRASP_FRAME_YAW_FROM_EEF
+    )
+    if quat is None:
         return AIM_STRAIGHT_FRONT_QUAT
-
-    # A roll about local z keeps the approach, so it is the same for link_eef and the grasp frame.
-    approach = R.from_quat(AIM_STRAIGHT_FRONT_QUAT).apply([0.0, 0.0, 1.0])
-    world_up = np.array([0.0, 0.0, 1.0]) - approach[2] * approach
-    # Grasp frame: local z -> approach, local "up" -> world up.
-    local = np.column_stack((up, np.cross([0.0, 0.0, 1.0], up), [0.0, 0.0, 1.0]))
-    world = np.column_stack((world_up, np.cross(approach, world_up), approach))
-    local /= np.linalg.norm(local, axis=0)
-    world /= np.linalg.norm(world, axis=0)
-    grasp = R.from_matrix(world @ local.T)
     arm.logger.info("Shelf place: orientation keeps the object as picked")
-    return list((grasp * R.from_euler("z", -GRASP_FRAME_YAW_FROM_EEF)).as_quat())
+    return quat
 
 
 def _reach_place_pose(
@@ -326,8 +313,8 @@ def _forced_pose(arm, place_params, pick_outcome: PickOutcome) -> Optional[PoseS
         frame = pick_outcome.pick_pose.header.frame_id
 
     arm.logger.info(f"Transforming forced place pose to {frame}")
-    success, pose = transform_pose(place_params.forced_pose, frame, arm.tf_buffer)
-    if not success:
+    pose = arm.to_frame(place_params.forced_pose, frame)
+    if pose is None:
         arm.logger.error("Failed to transform forced place pose")
         return None
     return pose
@@ -461,8 +448,8 @@ def _to_base_link(arm, point, object_name: str):
     if point is None:
         arm.logger.error(f"Could not locate {object_name}")
         return None
-    success, point = transform_point(point, "base_link", arm.tf_buffer)
-    if not success:
+    point = arm.to_frame(point, "base_link")
+    if point is None:
         arm.logger.error("Failed to transform point to base_link")
         return None
     arm.logger.info(f"Located {object_name} at {point.point}")

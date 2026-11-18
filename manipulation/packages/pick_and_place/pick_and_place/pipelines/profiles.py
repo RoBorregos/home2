@@ -78,8 +78,9 @@ class ForceGuardProfile:
 
 
 @dataclass(frozen=True)
-class ShelfPickProfile:
-    """The frontal grasp into a shelf compartment and the straight way out, in m and deg.
+class ShelfProfile:
+    """Shelf numbers, in m and deg: the frontal grasp into a compartment and the way
+    out, facing a level, the place inside the board and how far the base may move.
 
     Fingertip heights are in the base frame: GPD's tilted grasps do not fit a compartment.
     """
@@ -95,6 +96,15 @@ class ShelfPickProfile:
     open_top_pitches: Tuple[float, ...]  # also tried with nothing above
     exit_lift: float  # straight MoveIt path up off the board...
     exit_retreat: float  # ...then back out along the way in
+    view_distance: float  # facing a level for a pick: camera past the board front...
+    view_height: float  # ...this high above the board, looking at its centre...
+    view_max_reach: float  # ...this far from the centre when farther from the base
+    place_view_height: float  # facing a level for a place: camera above the board
+    place_front_margin: float  # the released object's centre this far inside the board
+    place_back_margin: float
+    place_side_margin: float
+    max_base_shift: float  # the base may move this far before the scan is stale...
+    max_base_turn: float  # ...or turn this much (deg)
 
     def validate(self, profile_name: str) -> None:
         for key in (
@@ -102,6 +112,9 @@ class ShelfPickProfile:
             "ceiling_clearance",
             "exit_lift",
             "exit_retreat",
+            "view_distance",
+            "max_base_shift",
+            "max_base_turn",
         ):
             _require_positive(getattr(self, key), f"{profile_name}.shelf.{key}")
         if not self.pitches:
@@ -130,7 +143,7 @@ class PickProfile:
     post_contact_retract: float = 0.0
     force_guard: Optional[ForceGuardProfile] = None
     fallback_to_gpd: bool = False
-    shelf: Optional[ShelfPickProfile] = None
+    shelf: Optional[ShelfProfile] = None
 
     @property
     def effective_descent_distance(self) -> float:

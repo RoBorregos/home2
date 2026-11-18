@@ -45,7 +45,7 @@ The contract with the rest of the robot is exactly one action:
 | `PICK_CLOSEST` | 1 | **Not implemented** — fails loudly |
 | `PLACE` | 2 | Put down what is held |
 | `POUR` | 3 | Pour a held/grasped container into another |
-| `SCAN_SHELF` | 4 | Survey the shelf in front: its levels and what is on each. Then `PICK` with `pick_params.from_shelf` and `PLACE` with `place_params.shelf_level` use it ([shelf](../docs/ai/shelf_detection.md)) |
+| `SCAN_SHELF` | 4 | Survey the shelf in front: its levels and what is on each. Then `PICK` with `pick_params.from_shelf` and `PLACE` with `place_params.shelf_level` use it ([shelf](SHELF.md)) |
 
 A `place` is only meaningful after a `pick` or `pour` **in the same process**: the node remembers the
 last pick outcome and uses its measured object height to decide the drop height.
@@ -143,7 +143,7 @@ different paths**, and knowing which one is active explains most failures:
 | | Path A — MoveIt | Path B — cartesian velocity |
 |---|---|---|
 | xArm mode | **1** | **5** |
-| Used by | every `move_to_pose` / `move_joints`, and straight-line paths (`planner_id="cartesian"`, e.g. the shelf exit) | force-guarded and fixed-distance descents, the geometric approach |
+| Used by | every `move_to_pose` / `move_joints`, and straight-line paths (`planner_id="cartesian"`, e.g. the shelf exit) | force-guarded and fixed-distance descents, the geometric approach, **the frontal approach into a shelf** (not checked against the shelf boxes; only the exit uses MoveIt) |
 | Collision checking | yes, full planning scene | **none** |
 | Stops on e-stop | via the controller | only because the pipeline polls it |
 
@@ -197,7 +197,10 @@ sequenceDiagram
     alt Flat, rim, peak or any solid (fork, basket, coke)
         C->>N: generate_grasps
         N-->>C: ranked grasp poses (+ fitted shape for a solid)
-    else GPD (no name, shelf, pour, or the geometric fallback)
+    else Shelf (frontal grasps from the cluster, then GPD)
+        C->>P: pick_perception_service (inside the compartment)
+        P-->>C: object cluster
+    else GPD (no name, pour, or the geometric and shelf fallback)
         C->>P: pick_perception_service
         P-->>C: object cluster
         C->>G: detect_grasps(cluster)
@@ -214,7 +217,7 @@ sequenceDiagram
     C-->>TM: success
 ```
 
-### The six pick strategies
+### The seven pick strategies
 
 Chosen by object name in `pipelines/classification.py`; tuned in `config/pick_profiles.yaml`.
 
@@ -225,7 +228,8 @@ Chosen by object name in `pipelines/classification.py`; tuned in `config/pick_pr
 | `bowl` | bowls | Same, shorter descent |
 | `peak` | clothes piles | Same, onto the highest point |
 | `geometric` | **any other name** (cans, boxes, fruit) | Back off along the generator's approach axis, drive straight in, close; falls back to `gpd` |
-| `gpd` | no name, shelf and pour picks, the fallback | Plan straight to a GPD grasp, no descent |
+| `shelf` | **any shelf pick** | Frontal grasp into the compartment, straight in (mode 5), straight MoveIt exit; falls back to `gpd` ([shelf](SHELF.md)) |
+| `gpd` | no name, pour picks, the geometric and shelf fallback | Plan straight to a GPD grasp, no descent |
 
 Retuning any number is a YAML edit. Adding a behaviour that reuses an existing motion is a YAML entry
 plus two lines. Only a genuinely new motion needs a new class.
@@ -272,7 +276,7 @@ Face following also needs `face_recognition` enabled (it starts paused). If the 
 | Change where a place lands | `place/scripts/heatmapPlace_Server.py` |
 | Change object/surface segmentation | `perception_3d/` |
 | Change how flat objects and solids are grasped (geometry) | `perception_3d/perception_3d/geometric_grasps.py` |
-| Change how shelves are measured | `perception_3d/perception_3d/shelf_geometry.py` (see `docs/ai/shelf_detection.md`) |
+| Change how shelves are measured | `perception_3d/perception_3d/shelf_geometry.py` (see [`SHELF.md`](SHELF.md)) |
 | Change the gripper dimensions | `frida_constants/manipulation_constants.py` |
 | Add a named arm pose | `frida_constants/xarm_configurations.py` |
 | Tune face / person following | `pick_and_place/pipelines/follow.py` (person gains: `follow_person.*` parameters); face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |

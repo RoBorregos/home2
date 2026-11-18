@@ -95,7 +95,19 @@ geometric:
   lift_after_grasp: false
   attach_collision_object: true
   fallback_to_gpd: true
-  # Shelf picks: the frontal grasp into the compartment and the straight way out.
+
+# Shelf picks: a frontal grasp into the compartment, then GPD, then straight back out.
+# Its shelf block also tunes facing a level and the shelf place.
+shelf:
+  <<: *defaults
+  strategy: cartesian
+  tip_offset_param: geometric_tip_offset
+  pre_grasp_height: 0.06
+  pre_grasp_velocity: 0.5
+  descent_speed: 40.0 # mm/s
+  validate_endpoint: true
+  attach_collision_object: true
+  fallback_to_gpd: true
   shelf:
     board_clearance: 0.06 # m, fingertips above the board
     ceiling_clearance: 0.06 # m, ...and under the ceiling
@@ -108,6 +120,15 @@ geometric:
     open_top_pitches: [30.0, 45.0] # deg, nothing above: a 1.30 m top shelf needs them
     exit_lift: 0.02 # m straight up off the board...
     exit_retreat: 0.15 # m ...then straight back out
+    view_distance: 0.5 # m past the board front, facing a level for a pick...
+    view_height: 0.4 # m ...above the board, looking at its centre...
+    view_max_reach: 0.5 # m ...from the centre when that is farther from the base
+    place_view_height: 0.2 # m above the board, facing a level for a place
+    place_front_margin: 0.08 # m the released object's centre inside the board (sim: it fell off)
+    place_back_margin: 0.06 # m
+    place_side_margin: 0.08 # m
+    max_base_shift: 0.03 # m the base may move before the scan is stale...
+    max_base_turn: 3.0 # deg ...or turn
 
 # Default: plan straight to a GPD-generated grasp, no descent phase.
 gpd:

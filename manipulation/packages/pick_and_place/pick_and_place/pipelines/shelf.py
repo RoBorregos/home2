@@ -2,7 +2,7 @@
 
 SCAN_SHELF runs ``scan``. The core keeps the ShelfScan while the base stays put, owns
 its planning scene boxes, and hands it to the pick and place pipelines, which read the
-boards and the extent from it. See docs/ai/shelf_detection.md.
+boards and the extent from it. See manipulation/SHELF.md.
 """
 
 import math
@@ -19,20 +19,9 @@ from frida_constants.manipulation_constants import (
     SHELF_SURVEY_POSES,
     SHELF_SURVEY_SETTLE,
 )
-from frida_motion_planning.utils.tf_utils import look_at, transform_point
 from frida_pymoveit2.robots import xarm6
+from perception_3d.geometric_grasps import SHELF_BAND_DOWN_TOLERANCE
 from geometry_msgs.msg import PointStamped
-
-MAX_BASE_SHIFT = 0.03  # m the base may move before the scan is stale
-MAX_BASE_TURN = math.radians(3.0)
-LEVEL_BELOW = 0.05  # m an object's detected point may sit below its board
-# Facing a level for a pick: camera this far past the board front and above the board,
-# looking at its centre; VIEW_MAX_REACH from the centre when that is farther from the base.
-VIEW_DISTANCE = 0.5
-VIEW_HEIGHT = 0.4
-VIEW_MAX_REACH = 0.5
-# Facing a level for a place: camera near the base, this high above the board.
-PLACE_VIEW_HEIGHT = 0.2
 
 
 @dataclass
@@ -45,6 +34,7 @@ class ShelfScan:
     back_x: float
     y_min: float
     y_max: float
+    tuning: object  # pick_profiles.yaml's shelf block (profiles.ShelfProfile)
     base: Optional[np.ndarray] = None  # (x, y, yaw) of base_link in odom at the scan
 
     @property
@@ -60,8 +50,9 @@ class ShelfScan:
         """The level (1 = lowest) whose compartment holds height ``z``, 0 for none."""
         heights = [lv.height for lv in self.levels]
         for i, height in enumerate(heights):
-            top = heights[i + 1] - LEVEL_BELOW if i + 1 < len(heights) else math.inf
-            if height - LEVEL_BELOW <= z < top:
+            below = SHELF_BAND_DOWN_TOLERANCE
+            top = heights[i + 1] - below if i + 1 < len(heights) else math.inf
+            if height - below <= z < top:
                 return i + 1
         return 0
 
@@ -80,7 +71,8 @@ class ShelfScan:
             return "odometry lost since the shelf scan"
         shift = float(np.linalg.norm(base[:2] - self.base[:2]))
         turn = abs(math.remainder(float(base[2] - self.base[2]), math.tau))
-        if shift > MAX_BASE_SHIFT or turn > MAX_BASE_TURN:
+        tuning = self.tuning
+        if shift > tuning.max_base_shift or turn > math.radians(tuning.max_base_turn):
             return f"base moved {shift * 100:.1f} cm / {math.degrees(turn):.1f} deg"
         return ""
 
@@ -100,7 +92,7 @@ def base_pose(arm) -> Optional[np.ndarray]:
 # ======================================================================
 
 
-def scan(arm, perception) -> Optional[ShelfScan]:
+def scan(arm, perception, tuning) -> Optional[ShelfScan]:
     """Visit the survey poses, capture each view, detect the shelf. None on failure."""
     log = arm.logger
     arm.set_context("scan_shelf")
@@ -130,6 +122,7 @@ def scan(arm, perception) -> Optional[ShelfScan]:
         back_x=result.back_x,
         y_min=result.y_min,
         y_max=result.y_max,
+        tuning=tuning,
         base=base_pose(arm),
     )
     for label, z in seen:
@@ -155,10 +148,7 @@ def _in_base(arm, point: PointStamped) -> Optional[PointStamped]:
     """``point`` in base_link, or None when it is empty or has no TF."""
     if not point.header.frame_id:
         return None
-    if point.header.frame_id == "base_link":
-        return point
-    ok, in_base = transform_point(point, "base_link", arm.tf_buffer)
-    return in_base if ok else None
+    return arm.to_frame(point, "base_link")
 
 
 # ======================================================================
@@ -201,7 +191,9 @@ def face_level(arm, shelf: ShelfScan, level: int, for_place: bool = False) -> bo
         if for_place:
             # From a pick's viewing pose MoveIt finds no IK for the pre-place.
             arm.move_to_named_position("front_stare", velocity=FAST_VELOCITY)
-            camera = _point(0.1, 0.0, _camera_z(board.height + PLACE_VIEW_HEIGHT))
+            camera = _point(
+                0.1, 0.0, _camera_z(board.height + shelf.tuning.place_view_height)
+            )
             target = _point(1.0, 0.0, board.height)
         else:
             centre = _point(
@@ -209,18 +201,18 @@ def face_level(arm, shelf: ShelfScan, level: int, for_place: bool = False) -> bo
                 (board.y_min + board.y_max) / 2,
                 board.height,
             )
-            camera = _edge_view(board, centre.point)
+            camera = _edge_view(board, centre.point, shelf.tuning)
             target = centre
         arm.logger.info(f"Facing shelf level {level} at {board.height:.3f} m")
         return arm.move_to_pose(
-            look_at(camera, target),
+            arm.look_at(camera, target),
             velocity=FAST_VELOCITY,
             target_link=xarm6.camera_frame_name(),
         )
 
 
-def _edge_view(board, centre) -> PointStamped:
-    """VIEW_DISTANCE past the board edge nearest the robot, on the line from the centre."""
+def _edge_view(board, centre, tuning) -> PointStamped:
+    """``view_distance`` past the board edge nearest the robot, on the line from the centre."""
     corners = [
         (board.front_x, board.y_min),
         (board.back_x, board.y_min),
@@ -233,12 +225,14 @@ def _edge_view(board, centre) -> PointStamped:
         norm = float(np.linalg.norm(out))
         if norm < 1e-6:
             continue
-        view = np.array([centre.x, centre.y]) + out / norm * (norm + VIEW_DISTANCE)
-        if float(np.linalg.norm(view)) > VIEW_MAX_REACH:
-            view = np.array([centre.x, centre.y]) + out / norm * VIEW_MAX_REACH
+        view = np.array([centre.x, centre.y]) + out / norm * (
+            norm + tuning.view_distance
+        )
+        if float(np.linalg.norm(view)) > tuning.view_max_reach:
+            view = np.array([centre.x, centre.y]) + out / norm * tuning.view_max_reach
         if best is None or np.linalg.norm(view) < np.linalg.norm(best):
             best = view
-    return _point(best[0], best[1], _camera_z(centre.z + VIEW_HEIGHT))
+    return _point(best[0], best[1], _camera_z(centre.z + tuning.view_height))
 
 
 def _camera_z(z: float) -> float:
