@@ -112,8 +112,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9e4b0a269d4dd7027347dc53f7595a6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fe037adf8b6c0211aeb06ee613cc3c9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTestsNode.html#a1fe037adf8b6c0211aeb06ee613cc3c9">point_callback</a> (const geometry_msgs::msg::PointStamped::SharedPtr msg)</td></tr>
 <tr class="separator:a1fe037adf8b6c0211aeb06ee613cc3c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92018ad269d75777df3771ac23bd46b4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTestsNode.html#a92018ad269d75777df3771ac23bd46b4">service_from_point</a> (geometry_msgs::msg::PointStamped point, sensor_msgs::msg::PointCloud2::SharedPtr cloud)</td></tr>
-<tr class="separator:a92018ad269d75777df3771ac23bd46b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7c1b20bc4da213e066019fc5f168d26"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTestsNode.html#ab7c1b20bc4da213e066019fc5f168d26">service_from_point</a> (geometry_msgs::msg::PointStamped point, sensor_msgs::msg::PointCloud2::SharedPtr cloud, float min_height=0.0f, float max_height=0.0f)</td></tr>
+<tr class="separator:ab7c1b20bc4da213e066019fc5f168d26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc760b8c952159e5d0d4fe630f6fd640"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTestsNode.html#abc760b8c952159e5d0d4fe630f6fd640">place_service</a> (const std::shared_ptr&lt; frida_interfaces::srv::PlacePerceptionService::Request &gt; request, sensor_msgs::msg::PointCloud2::SharedPtr cloud)</td></tr>
 <tr class="separator:abc760b8c952159e5d0d4fe630f6fd640"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca4b79a54aea2c759509b7899b0aad61"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTestsNode.html#aca4b79a54aea2c759509b7899b0aad61">run</a> ()</td></tr>
@@ -380,8 +380,8 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a92018ad269d75777df3771ac23bd46b4" name="a92018ad269d75777df3771ac23bd46b4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92018ad269d75777df3771ac23bd46b4">&#9670;&#160;</a></span>service_from_point()</h2>
+<a id="ab7c1b20bc4da213e066019fc5f168d26" name="ab7c1b20bc4da213e066019fc5f168d26"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7c1b20bc4da213e066019fc5f168d26">&#9670;&#160;</a></span>service_from_point()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -399,7 +399,19 @@ Public Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">sensor_msgs::msg::PointCloud2::SharedPtr&#160;</td>
-          <td class="paramname"><em>cloud</em>&#160;</td>
+          <td class="paramname"><em>cloud</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>min_height</em> = <code>0.0f</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>max_height</em> = <code>0.0f</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

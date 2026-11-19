@@ -33,5 +33,8 @@ var searchData=
   ['profiles_30',['profiles',['../namespacepick__and__place_1_1pipelines_1_1profiles.html',1,'pick_and_place::pipelines']]],
   ['robot_31',['robot',['../namespacepick__and__place_1_1robot.html',1,'pick_and_place']]],
   ['scene_5foverlay_32',['scene_overlay',['../namespacepick__and__place_1_1scene__overlay.html',1,'pick_and_place']]],
-  ['strategies_33',['strategies',['../namespacepick__and__place_1_1pipelines_1_1strategies.html',1,'pick_and_place::pipelines']]]
+  ['shelf_33',['shelf',['../namespacepick__and__place_1_1pipelines_1_1shelf.html',1,'pick_and_place::pipelines']]],
+  ['shelf_5fgeometry_34',['shelf_geometry',['../namespaceperception__3d_1_1shelf__geometry.html',1,'perception_3d']]],
+  ['shelf_5fservice_35',['shelf_service',['../namespaceperception__3d_1_1shelf__service.html',1,'perception_3d']]],
+  ['strategies_36',['strategies',['../namespacepick__and__place_1_1pipelines_1_1strategies.html',1,'pick_and_place::pipelines']]]
 ];

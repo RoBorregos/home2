@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('md_manipulation_README.html',''); init
 <div class="contents">
 <div class="textblock"><p>Everything the robot does with its arm: <b>pick</b>, <b>place</b>, <b>pour</b>, and the perception and motion services those three need. One ROS 2 action is the whole public surface; everything below it is an implementation detail of this area.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md113"></a>
+<h1><a class="anchor" id="autotoc_md120"></a>
 1. System context</h1>
 <p>Who talks to manipulation, and what manipulation talks to.</p>
 <div class="fragment"><div class="line">flowchart TB</div>
@@ -130,14 +130,16 @@ $(document).ready(function(){initNavTree('md_manipulation_README.html',''); init
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>PLACE</code>   </td><td class="markdownTableBodyNone">2   </td><td class="markdownTableBodyNone">Put down what is held    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>POUR</code>   </td><td class="markdownTableBodyNone">3   </td><td class="markdownTableBodyNone">Pour a held/grasped container into another   </td></tr>
+<td class="markdownTableBodyNone"><code>POUR</code>   </td><td class="markdownTableBodyNone">3   </td><td class="markdownTableBodyNone">Pour a held/grasped container into another    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>SCAN_SHELF</code>   </td><td class="markdownTableBodyNone">4   </td><td class="markdownTableBodyNone">Survey the shelf in front: its levels and what is on each. Then <code>PICK</code> with <code>pick_params.from_shelf</code> and <code>PLACE</code> with <code>place_params.shelf_level</code> use it (<a class="el" href="md_manipulation_packages_pick_and_place_SHELF.html">shelf</a>)   </td></tr>
 </table>
 <p>A <code>place</code> is only meaningful after a <code>pick</code> or <code>pour</code> <b>in the same process</b>: the node remembers the last pick outcome and uses its measured object height to decide the drop height.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md115"></a>
+<h1><a class="anchor" id="autotoc_md122"></a>
 2. The packages</h1>
 <p>Only what the pick-and-place path uses.</p>
-<h2><a class="anchor" id="autotoc_md116"></a>
+<h2><a class="anchor" id="autotoc_md123"></a>
 Ours (&lt;tt&gt;manipulation/packages/&lt;/tt&gt;)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -147,7 +149,7 @@ Ours (&lt;tt&gt;manipulation/packages/&lt;/tt&gt;)</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">**<code><a class="el" href="namespacefrida__motion__planning.html">frida_motion_planning</a></code>**   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacemotion__planning__server.html">motion_planning_server</a></code>   </td><td class="markdownTableBodyNone">The only node that commands the arm. Decides <em>how</em> to move    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">**<code><a class="el" href="namespaceperception__3d.html">perception_3d</a></code>**   </td><td class="markdownTableBodyNone"><code>test_only_orchestrator</code>, <code>pick_primitives</code>, <code>plane_service</code>, <code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code>, <code><a class="el" href="namespacedownsample__pc.html">downsample_pc</a></code>   </td><td class="markdownTableBodyNone">Segments objects and surfaces from the point cloud; <code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code> fits flat objects and solids and ranks their grasps    </td></tr>
+<td class="markdownTableBodyNone">**<code><a class="el" href="namespaceperception__3d.html">perception_3d</a></code>**   </td><td class="markdownTableBodyNone"><code>test_only_orchestrator</code>, <code>pick_primitives</code>, <code>plane_service</code>, <code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code>, <code><a class="el" href="namespacedownsample__pc.html">downsample_pc</a></code>   </td><td class="markdownTableBodyNone">Segments objects and surfaces from the point cloud; <code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code> fits flat objects and solids, ranks their grasps and measures shelves (<code>detect_shelf</code>)    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">**<code>place</code>**   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespaceheatmapPlace__Server.html">heatmapPlace_Server</a></code>   </td><td class="markdownTableBodyNone">Scores a surface and returns the best free spot    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -157,17 +159,17 @@ Ours (&lt;tt&gt;manipulation/packages/&lt;/tt&gt;)</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">**<code>frida_pymoveit2</code>**   </td><td class="markdownTableBodyNone">*(library)*   </td><td class="markdownTableBodyNone">xArm6 joint names and <code>JOINT_POSITION_LIMITS</code>    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">**<code><a class="el" href="namespacexarm__utils.html">xarm_utils</a></code>**   </td><td class="markdownTableBodyNone">*(library)*   </td><td class="markdownTableBodyNone">Shelf level geometry    </td></tr>
+<td class="markdownTableBodyNone">**<code><a class="el" href="namespacexarm__utils.html">xarm_utils</a></code>**   </td><td class="markdownTableBodyNone"><code>grasp_detector</code>   </td><td class="markdownTableBodyNone">Publishes whether the gripper holds something    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">**<code><a class="el" href="namespacevamp__moveit__plugin.html">vamp_moveit_plugin</a></code>**   </td><td class="markdownTableBodyNone">*(MoveIt plugin)*   </td><td class="markdownTableBodyNone">VAMP planner, with OMPL fallback    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">**<code><a class="el" href="namespacexarm6__ikfast__plugin.html">xarm6_ikfast_plugin</a></code>**   </td><td class="markdownTableBodyNone">*(MoveIt plugin)*   </td><td class="markdownTableBodyNone">Analytical IK for the xArm6   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md117"></a>
+<h2><a class="anchor" id="autotoc_md124"></a>
 Submodules — pull before building</h2>
 <p><code>gpd</code> · <code>pymoveit2</code> · <code>vamp</code> · <code>xarm_ros2</code></p>
 <div class="fragment"><div class="line">git submodule update --init --recursive manipulation/packages/</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md118"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md125"></a>
 Shared, outside &lt;tt&gt;manipulation/&lt;/tt&gt;</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -180,7 +182,7 @@ Shared, outside &lt;tt&gt;manipulation/&lt;/tt&gt;</h2>
 <td class="markdownTableBodyNone"><code>robot_description/frida_description/</code>   </td><td class="markdownTableBodyNone">URDF and the MoveIt scene   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md120"></a>
+<h1><a class="anchor" id="autotoc_md127"></a>
 3. Architecture</h1>
 <p>Four layers. An arrow crosses a layer boundary only downward.</p>
 <div class="fragment"><div class="line">flowchart TB</div>
@@ -219,7 +221,7 @@ Shared, outside &lt;tt&gt;manipulation/&lt;/tt&gt;</h2>
 <div class="line">    class mps l3</div>
 <div class="line">    class mg,ctl l4</div>
 </div><!-- fragment --><p><b>The rule that keeps this readable:</b> the pipelines never create a ROS client. They call <code>RobotArm</code> and <code>Perception</code> (in <code>pick_and_place/robot/</code>), and those two own every service and action client in the area. A unit test enforces it.</p>
-<h2><a class="anchor" id="autotoc_md121"></a>
+<h2><a class="anchor" id="autotoc_md128"></a>
 Two ways to reach the arm</h2>
 <p><code><a class="el" href="namespacemotion__planning__server.html">motion_planning_server</a></code> is the only node that commands hardware, but it does so through <b>two very different paths</b>, and knowing which one is active explains most failures:</p>
 <table class="markdownTable">
@@ -228,7 +230,7 @@ Two ways to reach the arm</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">xArm mode   </td><td class="markdownTableBodyNone"><b>1</b>   </td><td class="markdownTableBodyNone"><b>5</b>    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">Used by   </td><td class="markdownTableBodyNone">every <code>move_to_pose</code> / <code>move_joints</code>   </td><td class="markdownTableBodyNone">force-guarded and fixed-distance descents, the geometric approach    </td></tr>
+<td class="markdownTableBodyNone">Used by   </td><td class="markdownTableBodyNone">every <code>move_to_pose</code> / <code>move_joints</code>, and straight-line paths (<code>planner_id="cartesian"</code>, e.g. the shelf exit)   </td><td class="markdownTableBodyNone">force-guarded and fixed-distance descents, the geometric approach, <b>the frontal approach into a shelf</b> (not checked against the shelf boxes; only the exit uses MoveIt)    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Collision checking   </td><td class="markdownTableBodyNone">yes, full planning scene   </td><td class="markdownTableBodyNone"><b>none</b>    </td></tr>
 <tr class="markdownTableRowEven">
@@ -236,7 +238,7 @@ Two ways to reach the arm</h2>
 </table>
 <p>Mode 5 takes the trajectory controller offline. The code always restores mode 1 on the way out; if a descent crashes without restoring it, every later plan fails until the arm is reset.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md123"></a>
+<h1><a class="anchor" id="autotoc_md130"></a>
 4. What actually runs</h1>
 <div class="fragment"><div class="line">ros2 launch manipulation_general ppc.launch.py</div>
 <div class="line">│</div>
@@ -257,9 +259,9 @@ Two ways to reach the arm</h2>
 </div><!-- fragment --><blockquote class="doxtable">
 <p>&zwj;<b>Naming trap:</b> <code>test_only_orchestrator</code> is <b>not</b> test-only. It serves <code>pick_perception_service</code> and <code>place_perception_service</code> — segmenting the object cluster and the place surface. Without it, every pick and place fails at perception. </p>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md124"></a>
+<h1><a class="anchor" id="autotoc_md131"></a>
 &lt;/blockquote&gt;</h1>
-<h1><a class="anchor" id="autotoc_md125"></a>
+<h1><a class="anchor" id="autotoc_md132"></a>
 5. A pick, end to end</h1>
 <div class="fragment"><div class="line">sequenceDiagram</div>
 <div class="line">    participant TM as task_manager</div>
@@ -276,7 +278,10 @@ Two ways to reach the arm</h2>
 <div class="line">    alt Flat, rim, peak or any solid (fork, basket, coke)</div>
 <div class="line">        C-&gt;&gt;N: generate_grasps</div>
 <div class="line">        N--&gt;&gt;C: ranked grasp poses (+ fitted shape for a solid)</div>
-<div class="line">    else GPD (no name, shelf, pour, or the geometric fallback)</div>
+<div class="line">    else Shelf (frontal grasps from the cluster, then GPD)</div>
+<div class="line">        C-&gt;&gt;P: pick_perception_service (inside the compartment)</div>
+<div class="line">        P--&gt;&gt;C: object cluster</div>
+<div class="line">    else GPD (no name, pour, or the geometric and shelf fallback)</div>
 <div class="line">        C-&gt;&gt;P: pick_perception_service</div>
 <div class="line">        P--&gt;&gt;C: object cluster</div>
 <div class="line">        C-&gt;&gt;G: detect_grasps(cluster)</div>
@@ -291,8 +296,8 @@ Two ways to reach the arm</h2>
 <div class="line"> </div>
 <div class="line">    C-&gt;&gt;M: move_joints(carry pose)</div>
 <div class="line">    C--&gt;&gt;TM: success</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md126"></a>
-The six pick strategies</h2>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md133"></a>
+The seven pick strategies</h2>
 <p>Chosen by object name in <code><a class="el" href="classification_8py.html">pipelines/classification.py</a></code>; tuned in <code>config/pick_profiles.yaml</code>.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -308,11 +313,13 @@ The six pick strategies</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>geometric</code>   </td><td class="markdownTableBodyNone"><b>any other name</b> (cans, boxes, fruit)   </td><td class="markdownTableBodyNone">Back off along the generator's approach axis, drive straight in, close; falls back to <code>gpd</code>    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>gpd</code>   </td><td class="markdownTableBodyNone">no name, shelf and pour picks, the fallback   </td><td class="markdownTableBodyNone">Plan straight to a GPD grasp, no descent   </td></tr>
+<td class="markdownTableBodyNone"><code>shelf</code>   </td><td class="markdownTableBodyNone"><b>any shelf pick</b>   </td><td class="markdownTableBodyNone">Frontal grasp into the compartment, straight in (mode 5), straight MoveIt exit; falls back to <code>gpd</code> (<a class="el" href="md_manipulation_packages_pick_and_place_SHELF.html">shelf</a>)    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>gpd</code>   </td><td class="markdownTableBodyNone">no name, pour picks, the geometric and shelf fallback   </td><td class="markdownTableBodyNone">Plan straight to a GPD grasp, no descent   </td></tr>
 </table>
 <p>Retuning any number is a YAML edit. Adding a behaviour that reuses an existing motion is a YAML entry plus two lines. Only a genuinely new motion needs a new class.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md128"></a>
+<h1><a class="anchor" id="autotoc_md135"></a>
 6. Key interfaces</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -332,19 +339,21 @@ The six pick strategies</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>/manipulation/generate_grasps</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code>   </td><td class="markdownTableBodyNone">Ranked grasp poses, plus the fitted shape of a solid    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>/manipulation/detect_grasps</code>   </td><td class="markdownTableBodyNone"><code>gpd_service</code>   </td><td class="markdownTableBodyNone">GPD grasp candidates    </td></tr>
+<td class="markdownTableBodyNone"><code>/manipulation/detect_shelf</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacegrasp__generator.html">grasp_generator</a></code>   </td><td class="markdownTableBodyNone">Internal to <code>SCAN_SHELF</code>: shelf levels, walls and their collision boxes, which only <code>manipulation_core</code> puts in the scene    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>/manipulation/heatmap_place_service</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespaceheatmapPlace__Server.html">heatmapPlace_Server</a></code>   </td><td class="markdownTableBodyNone">Best free spot on a surface    </td></tr>
+<td class="markdownTableBodyNone"><code>/manipulation/detect_grasps</code>   </td><td class="markdownTableBodyNone"><code>gpd_service</code>   </td><td class="markdownTableBodyNone">GPD grasp candidates    </td></tr>
 <tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/manipulation/heatmap_place_service</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespaceheatmapPlace__Server.html">heatmapPlace_Server</a></code>   </td><td class="markdownTableBodyNone">Best free spot on a surface    </td></tr>
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>/manipulation/estop</code>   </td><td class="markdownTableBodyNone">*(topic)*   </td><td class="markdownTableBodyNone">Aborts any motion in progress   </td></tr>
 </table>
 <p>Names are constants in <code><a class="el" href="namespacefrida__constants.html">frida_constants</a></code> (<code><a class="el" href="manipulation__constants_8py.html">manipulation_constants.py</a></code> / <code>..._cpp.hpp</code>) — never hardcode them.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md130"></a>
+<h1><a class="anchor" id="autotoc_md137"></a>
 7. Face / person following</h1>
 <p><code>manipulation_core</code> serves <code>/follow_face</code> and <code>/follow_person</code> (logic in <code><a class="el" href="follow_8py.html">pick_and_place/pipelines/follow.py</a></code>), so it must be running. While either one is active, the xArm is in velocity mode (4); any manipulation goal turns it off first and it is not resumed. Face following also needs <code>face_recognition</code> enabled (it starts paused). If the arm doesn't move, check <code>ros2 topic hz /vision/follow_face</code>.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md132"></a>
+<h1><a class="anchor" id="autotoc_md139"></a>
 8. Where to change what</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -364,36 +373,38 @@ The six pick strategies</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Change how flat objects and solids are grasped (geometry)   </td><td class="markdownTableBodyNone"><code><a class="el" href="geometric__grasps_8py.html">perception_3d/perception_3d/geometric_grasps.py</a></code>    </td></tr>
 <tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Change how shelves are measured   </td><td class="markdownTableBodyNone"><code><a class="el" href="shelf__geometry_8py.html">perception_3d/perception_3d/shelf_geometry.py</a></code> (see <a class="el" href="md_manipulation_packages_pick_and_place_SHELF.html">`SHELF.md`</a>)    </td></tr>
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Change the gripper dimensions   </td><td class="markdownTableBodyNone"><code><a class="el" href="manipulation__constants_8py.html">frida_constants/manipulation_constants.py</a></code>    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">Add a named arm pose   </td><td class="markdownTableBodyNone"><code><a class="el" href="xarm__configurations_8py.html">frida_constants/xarm_configurations.py</a></code>    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">Tune face / person following   </td><td class="markdownTableBodyNone"><code><a class="el" href="follow_8py.html">pick_and_place/pipelines/follow.py</a></code> (person gains: <code>follow_person.*</code> parameters); face speed and tolerance are <code>FOLLOW_FACE_*</code> in <code><a class="el" href="manipulation__constants_8py.html">manipulation_constants.py</a></code>    </td></tr>
+<td class="markdownTableBodyNone">Add a named arm pose   </td><td class="markdownTableBodyNone"><code><a class="el" href="xarm__configurations_8py.html">frida_constants/xarm_configurations.py</a></code>    </td></tr>
 <tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Tune face / person following   </td><td class="markdownTableBodyNone"><code><a class="el" href="follow_8py.html">pick_and_place/pipelines/follow.py</a></code> (person gains: <code>follow_person.*</code> parameters); face speed and tolerance are <code>FOLLOW_FACE_*</code> in <code><a class="el" href="manipulation__constants_8py.html">manipulation_constants.py</a></code>    </td></tr>
+<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">Add a message, service or action   </td><td class="markdownTableBodyNone"><code>frida_interfaces/manipulation/</code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md134"></a>
+<h1><a class="anchor" id="autotoc_md141"></a>
 9. Running it</h1>
-<h2><a class="anchor" id="autotoc_md135"></a>
+<h2><a class="anchor" id="autotoc_md142"></a>
 Build</h2>
 <div class="fragment"><div class="line">./run.sh manipulation --build     # builds inside the container</div>
 </div><!-- fragment --><p>Submodules must be initialised first (§2). Inside the container the workspace is <code>/workspace</code>, with the repository mounted at <code>/workspace/src</code>.</p>
-<h2><a class="anchor" id="autotoc_md136"></a>
+<h2><a class="anchor" id="autotoc_md143"></a>
 Launch</h2>
 <div class="fragment"><div class="line">ros2 launch manipulation_general ppc.launch.py     # pick, place, carry</div>
 </div><!-- fragment --><p>Other entry points in <code>manipulation_general/launch/</code>: <code>gpsr</code>, <code>restaurant</code>, <code>receptionist</code>, <code>carry</code>, <code>hric</code>.</p>
-<h2><a class="anchor" id="autotoc_md137"></a>
+<h2><a class="anchor" id="autotoc_md144"></a>
 Drive it by hand</h2>
 <div class="fragment"><div class="line">ros2 run pick_and_place keyboard_input.py</div>
 </div><!-- fragment --><p>A menu for pick / place / pour and the shelf helpers — the fastest way to test one behaviour without the task manager.</p>
-<h2><a class="anchor" id="autotoc_md138"></a>
+<h2><a class="anchor" id="autotoc_md145"></a>
 Tests</h2>
 <div class="fragment"><div class="line">cd /workspace/src/manipulation/packages/pick_and_place</div>
 <div class="line">python3 -m pytest test/ -q</div>
 </div><!-- fragment --><p>Fakes only, no ROS graph and no hardware. They pin decisions, not geometry: a green run says the logic still makes the same choices, <b>not</b> that the robot works.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md140"></a>
+<h1><a class="anchor" id="autotoc_md147"></a>
 10. Docker setup</h1>
 <p><b>Requirements:</b> Docker Engine, and the NVIDIA Container Toolkit for CUDA/L4T images.</p>
 <div class="fragment"><div class="line">git clone https://github.com/RoBorregos/home2</div>

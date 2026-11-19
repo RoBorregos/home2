@@ -8,6 +8,6 @@ var classTestsNode =
     [ "place_service_callback", "classTestsNode.html#a4d34e764d9c5dd4fd8601787dbc36cf7", null ],
     [ "point_callback", "classTestsNode.html#a1fe037adf8b6c0211aeb06ee613cc3c9", null ],
     [ "run", "classTestsNode.html#aca4b79a54aea2c759509b7899b0aad61", null ],
-    [ "service_from_point", "classTestsNode.html#a92018ad269d75777df3771ac23bd46b4", null ],
+    [ "service_from_point", "classTestsNode.html#ab7c1b20bc4da213e066019fc5f168d26", null ],
     [ "testing", "classTestsNode.html#abc132b1d1638ebc07949db6fcc795f64", null ]
 ];

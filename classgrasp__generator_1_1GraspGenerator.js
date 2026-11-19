@@ -17,18 +17,22 @@ var classgrasp__generator_1_1GraspGenerator =
     [ "_scene", "classgrasp__generator_1_1GraspGenerator.html#a2de3bee0701269a2c5f0d4a0f1a00e65", null ],
     [ "_start", "classgrasp__generator_1_1GraspGenerator.html#a727a1889a77a33b64cd72eac15239992", null ],
     [ "_to_base", "classgrasp__generator_1_1GraspGenerator.html#a7812d5b98f09db505272819aa9b3a28f", null ],
+    [ "fresh_depth", "classgrasp__generator_1_1GraspGenerator.html#a305544bb08d1544981d953ca7386eee2", null ],
     [ "_bridge", "classgrasp__generator_1_1GraspGenerator.html#a19d0176f44cec8331a4edb11b7aff774", null ],
     [ "_busy", "classgrasp__generator_1_1GraspGenerator.html#a1df275b0a7e79b98c3aefc1242bbb945", null ],
     [ "_collecting", "classgrasp__generator_1_1GraspGenerator.html#af738336440e6fd52a39fbc012f3c479b", null ],
     [ "_debug_pub", "classgrasp__generator_1_1GraspGenerator.html#a120f72dad44a65b88ac86dcd9c333848", null ],
     [ "_depth", "classgrasp__generator_1_1GraspGenerator.html#aa8e56132175c91cf0135a6ee909dc023", null ],
     [ "_depth_frame", "classgrasp__generator_1_1GraspGenerator.html#a7bb7377a5e7b26d02414f1920d9a87ef", null ],
+    [ "_fresh", "classgrasp__generator_1_1GraspGenerator.html#ab90a2f9d3db05b3af6ef215adaad57fa", null ],
     [ "_intrinsics", "classgrasp__generator_1_1GraspGenerator.html#a0d9c7bf1991d250496e0cfeb6eecaebd", null ],
     [ "_known", "classgrasp__generator_1_1GraspGenerator.html#ad6b68d8c8ed8e3049357a9e8525bb955", null ],
     [ "_markers_pub", "classgrasp__generator_1_1GraspGenerator.html#ad1518d50d7ce12b2a56cb2b55536a407", null ],
     [ "_rejections", "classgrasp__generator_1_1GraspGenerator.html#adff621163375bf60e94f25a1dbd95283", null ],
     [ "_samples", "classgrasp__generator_1_1GraspGenerator.html#a20f3a5f0c83fe2cef3030d4566683ab9", null ],
+    [ "_shelf", "classgrasp__generator_1_1GraspGenerator.html#a5d277b3eadf55d6eb4f249daf1ff9c78", null ],
     [ "_target", "classgrasp__generator_1_1GraspGenerator.html#a4cb0b14ed6810935805b5f47ac07eb4f", null ],
     [ "_tf_buffer", "classgrasp__generator_1_1GraspGenerator.html#a177537df7ff544918720c1ea0e013237", null ],
-    [ "_tf_listener", "classgrasp__generator_1_1GraspGenerator.html#a8bbe582c32f4b24701a89bd47b7dbbc1", null ]
+    [ "_tf_listener", "classgrasp__generator_1_1GraspGenerator.html#a8bbe582c32f4b24701a89bd47b7dbbc1", null ],
+    [ "_want_fresh", "classgrasp__generator_1_1GraspGenerator.html#ae4082d5dc2c0ffcb2a0cb21d46167d3b", null ]
 ];

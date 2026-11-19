@@ -92,6 +92,7 @@ $(document).ready(function(){initNavTree('classfakes_1_1FakeArm.html',''); initR
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
@@ -102,8 +103,8 @@ $(document).ready(function(){initNavTree('classfakes_1_1FakeArm.html',''); initR
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ab9b0bc9ead075c552d6a1cc4cf875f12"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#ab9b0bc9ead075c552d6a1cc4cf875f12">__init__</a> (self, Optional[Dict[str, float]] tip_offsets=None, Optional[List[bool]] move_to_pose_results=None, Optional[List[bool]] pregrasp_results=None, Optional[List[bool]] descent_results=None, Optional[List[<a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1ContactResult.html">ContactResult</a>]] contact_results=None, Optional[List[bool]] self_collides=None, Optional[<a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1AttachResult.html">AttachResult</a>] attach_result=None, Optional[List[bool]] named_position_results=None, Optional[int] abort_after=None, bool estop=False)</td></tr>
-<tr class="separator:ab9b0bc9ead075c552d6a1cc4cf875f12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe77db0c1ed38fec0d91be6cad4fb0bd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#abe77db0c1ed38fec0d91be6cad4fb0bd">__init__</a> (self, Optional[Dict[str, float]] tip_offsets=None, Optional[List[bool]] move_to_pose_results=None, Optional[List[bool]] pregrasp_results=None, Optional[List[bool]] descent_results=None, Optional[List[<a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1ContactResult.html">ContactResult</a>]] contact_results=None, Optional[List[bool]] self_collides=None, Optional[<a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1AttachResult.html">AttachResult</a>] attach_result=None, Optional[List[bool]] named_position_results=None, Optional[int] abort_after=None, bool estop=False, bool shelf_boxes_ok=True, Optional[PoseStamped] <a class="el" href="classfakes_1_1FakeArm.html#a908877967882218b4c99eb392ddfdd71">link_pose</a>=None, bool tf_fails=False)</td></tr>
+<tr class="separator:abe77db0c1ed38fec0d91be6cad4fb0bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a557e6d251ac8ec4d08d45426e6972a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a2a557e6d251ac8ec4d08d45426e6972a">move_to_pose</a> (self, pose, **kwargs)</td></tr>
 <tr class="separator:a2a557e6d251ac8ec4d08d45426e6972a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5aae400a655da0a031f5f1fc20c96620"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a5aae400a655da0a031f5f1fc20c96620">move_to_pregrasp</a> (self, pose, velocity=None, allow_pose_goal=True)</td></tr>
@@ -112,6 +113,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad191003c7376dafe3c4e76629a2d928b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a450a2ad9a6d2851c644d191d0d3fa9b4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a450a2ad9a6d2851c644d191d0d3fa9b4">move_joints</a> (self, joint_positions, velocity=None)</td></tr>
 <tr class="separator:a450a2ad9a6d2851c644d191d0d3fa9b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3dece604631c7cb0307d4756d10dc952"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a3dece604631c7cb0307d4756d10dc952">acceleration_scaling</a> (self, acceleration)</td></tr>
+<tr class="separator:a3dece604631c7cb0307d4756d10dc952"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a820927735eeb959d34d4fd3cbe4bd9a9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a820927735eeb959d34d4fd3cbe4bd9a9">to_frame</a> (self, msg, frame)</td></tr>
+<tr class="separator:a820927735eeb959d34d4fd3cbe4bd9a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a908877967882218b4c99eb392ddfdd71"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a908877967882218b4c99eb392ddfdd71">link_pose</a> (self, link, frame=&quot;link_base&quot;)</td></tr>
+<tr class="separator:a908877967882218b4c99eb392ddfdd71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfd976e413bbaaee76ca27f6c4b2a07a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#abfd976e413bbaaee76ca27f6c4b2a07a">get_joints</a> (self, degrees=True)</td></tr>
 <tr class="separator:abfd976e413bbaaee76ca27f6c4b2a07a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78f858e55cc8e14f979b41fddc902b32"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a78f858e55cc8e14f979b41fddc902b32">scan_environment</a> (self)</td></tr>
@@ -156,10 +163,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:afbc362a9b1e369ac1bf0898ebd0c3b6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dd972ed0a26e7fa447ef0149f3a4cb6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a2dd972ed0a26e7fa447ef0149f3a4cb6">add_collision_object</a> (self, obj)</td></tr>
 <tr class="separator:a2dd972ed0a26e7fa447ef0149f3a4cb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7f26c05e511cb8cfad2ccc88d759d95"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#ab7f26c05e511cb8cfad2ccc88d759d95">add_shelf_ceiling_guard</a> (self, place_pose, table_height)</td></tr>
-<tr class="separator:ab7f26c05e511cb8cfad2ccc88d759d95"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e26ccfa051367a242cb75b7657f9b2e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a6e26ccfa051367a242cb75b7657f9b2e">remove_shelf_ceiling_guard</a> (self)</td></tr>
-<tr class="separator:a6e26ccfa051367a242cb75b7657f9b2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a423a1e10e90c194f834486609319b1bc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a423a1e10e90c194f834486609319b1bc">set_shelf_boxes</a> (self, boxes)</td></tr>
+<tr class="separator:a423a1e10e90c194f834486609319b1bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e809d106e1958c00adef1186a4c3047"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a9e809d106e1958c00adef1186a4c3047">remove_shelf_scene</a> (self)</td></tr>
+<tr class="separator:a9e809d106e1958c00adef1186a4c3047"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ff54dee32abde6ef0b1a5b16a8192f5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a2ff54dee32abde6ef0b1a5b16a8192f5">object_pick_height</a> (self, obj, grasp_pose)</td></tr>
 <tr class="separator:a2ff54dee32abde6ef0b1a5b16a8192f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a8b50ac3c8381be5e4c9e025fbb7a76"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a1a8b50ac3c8381be5e4c9e025fbb7a76">object_height</a> (self, lowest, highest)</td></tr>
@@ -193,6 +200,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9df588c5823d4979d2820ddf4c7a292a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a9df588c5823d4979d2820ddf4c7a292a">logger</a> (self)</td></tr>
 <tr class="separator:a9df588c5823d4979d2820ddf4c7a292a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:ad6bdf6945a88948e9511830a4ba32978"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#ad6bdf6945a88948e9511830a4ba32978">look_at</a> (source, target)</td></tr>
+<tr class="separator:ad6bdf6945a88948e9511830a4ba32978"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:ab688a5702cc7df44672e98d7fe17f6a7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#ab688a5702cc7df44672e98d7fe17f6a7">joint_velocity_busy</a></td></tr>
@@ -207,8 +219,14 @@ Static Protected Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
+<tr class="memitem:aef3cbb1b33379fc8ccd90d7af0a5a0b0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#aef3cbb1b33379fc8ccd90d7af0a5a0b0">_tf_fails</a></td></tr>
+<tr class="separator:aef3cbb1b33379fc8ccd90d7af0a5a0b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46585dbbcdffe3460537df5547c38a7b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a46585dbbcdffe3460537df5547c38a7b">_estop</a></td></tr>
 <tr class="separator:a46585dbbcdffe3460537df5547c38a7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec32d9e4795547dd5512e80e1aaa2bce"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#aec32d9e4795547dd5512e80e1aaa2bce">_shelf_boxes_ok</a></td></tr>
+<tr class="separator:aec32d9e4795547dd5512e80e1aaa2bce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a209c1ca13339683305b28151c1d00571"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a209c1ca13339683305b28151c1d00571">_link_pose</a></td></tr>
+<tr class="separator:a209c1ca13339683305b28151c1d00571"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0dfe2807615294a0a2be1f1a3246e122"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a0dfe2807615294a0a2be1f1a3246e122">_logger</a></td></tr>
 <tr class="separator:a0dfe2807615294a0a2be1f1a3246e122"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50db7bfe6eb8d5a276c91df88eae41ce"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakeArm.html#a50db7bfe6eb8d5a276c91df88eae41ce">_tip_offsets</a></td></tr>
@@ -242,8 +260,8 @@ the robot.
 Duck-types :class:`RobotArm` rather than inheriting an ABC; the suite fails
 if the two drift apart.
 </pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ab9b0bc9ead075c552d6a1cc4cf875f12" name="ab9b0bc9ead075c552d6a1cc4cf875f12"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab9b0bc9ead075c552d6a1cc4cf875f12">&#9670;&#160;</a></span>__init__()</h2>
+<a id="abe77db0c1ed38fec0d91be6cad4fb0bd" name="abe77db0c1ed38fec0d91be6cad4fb0bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe77db0c1ed38fec0d91be6cad4fb0bd">&#9670;&#160;</a></span>__init__()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -312,7 +330,25 @@ if the two drift apart.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>estop</em> = <code>False</code>&#160;</td>
+          <td class="paramname"><em>estop</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>shelf_boxes_ok</em> = <code>True</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Optional[PoseStamped] &#160;</td>
+          <td class="paramname"><em>link_pose</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>tf_fails</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -361,6 +397,34 @@ if the two drift apart.
 
 </div>
 </div>
+<a id="a3dece604631c7cb0307d4756d10dc952" name="a3dece604631c7cb0307d4756d10dc952"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3dece604631c7cb0307d4756d10dc952">&#9670;&#160;</a></span>acceleration_scaling()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def fakes.FakeArm.acceleration_scaling </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>acceleration</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a2dd972ed0a26e7fa447ef0149f3a4cb6" name="a2dd972ed0a26e7fa447ef0149f3a4cb6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2dd972ed0a26e7fa447ef0149f3a4cb6">&#9670;&#160;</a></span>add_collision_object()</h2>
 
@@ -378,40 +442,6 @@ if the two drift apart.
           <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>obj</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab7f26c05e511cb8cfad2ccc88d759d95" name="ab7f26c05e511cb8cfad2ccc88d759d95"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab7f26c05e511cb8cfad2ccc88d759d95">&#9670;&#160;</a></span>add_shelf_ceiling_guard()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def fakes.FakeArm.add_shelf_ceiling_guard </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>place_pose</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>table_height</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -879,6 +909,40 @@ if the two drift apart.
 
 </div>
 </div>
+<a id="a908877967882218b4c99eb392ddfdd71" name="a908877967882218b4c99eb392ddfdd71"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a908877967882218b4c99eb392ddfdd71">&#9670;&#160;</a></span>link_pose()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def fakes.FakeArm.link_pose </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>link</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>frame</em> = <code>&quot;link_base&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a9df588c5823d4979d2820ddf4c7a292a" name="a9df588c5823d4979d2820ddf4c7a292a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9df588c5823d4979d2820ddf4c7a292a">&#9670;&#160;</a></span>logger()</h2>
 
@@ -893,6 +957,42 @@ if the two drift apart.
           <td></td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad6bdf6945a88948e9511830a4ba32978" name="ad6bdf6945a88948e9511830a4ba32978"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6bdf6945a88948e9511830a4ba32978">&#9670;&#160;</a></span>look_at()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def fakes.FakeArm.look_at </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>source</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>target</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -1311,14 +1411,14 @@ if the two drift apart.
 
 </div>
 </div>
-<a id="a6e26ccfa051367a242cb75b7657f9b2e" name="a6e26ccfa051367a242cb75b7657f9b2e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e26ccfa051367a242cb75b7657f9b2e">&#9670;&#160;</a></span>remove_shelf_ceiling_guard()</h2>
+<a id="a9e809d106e1958c00adef1186a4c3047" name="a9e809d106e1958c00adef1186a4c3047"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e809d106e1958c00adef1186a4c3047">&#9670;&#160;</a></span>remove_shelf_scene()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">def fakes.FakeArm.remove_shelf_ceiling_guard </td>
+          <td class="memname">def fakes.FakeArm.remove_shelf_scene </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em></td><td>)</td>
@@ -1403,6 +1503,34 @@ if the two drift apart.
 
 </div>
 </div>
+<a id="a423a1e10e90c194f834486609319b1bc" name="a423a1e10e90c194f834486609319b1bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a423a1e10e90c194f834486609319b1bc">&#9670;&#160;</a></span>set_shelf_boxes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def fakes.FakeArm.set_shelf_boxes </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>boxes</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a9c2ec4e2dabc300654fbc09e16098e2f" name="a9c2ec4e2dabc300654fbc09e16098e2f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9c2ec4e2dabc300654fbc09e16098e2f">&#9670;&#160;</a></span>snapshot_scene()</h2>
 
@@ -1465,6 +1593,40 @@ if the two drift apart.
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a820927735eeb959d34d4fd3cbe4bd9a9" name="a820927735eeb959d34d4fd3cbe4bd9a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a820927735eeb959d34d4fd3cbe4bd9a9">&#9670;&#160;</a></span>to_frame()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def fakes.FakeArm.to_frame </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>msg</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>frame</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">An identity transform: the fixtures already sit in the frame asked for.</pre> 
 </div>
 </div>
 <a id="ae4d8faf7146487c7cf955969be1c571c" name="ae4d8faf7146487c7cf955969be1c571c"></a>
@@ -1652,6 +1814,28 @@ if the two drift apart.
 
 </div>
 </div>
+<a id="a209c1ca13339683305b28151c1d00571" name="a209c1ca13339683305b28151c1d00571"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a209c1ca13339683305b28151c1d00571">&#9670;&#160;</a></span>_link_pose</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">fakes.FakeArm._link_pose</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a0dfe2807615294a0a2be1f1a3246e122" name="a0dfe2807615294a0a2be1f1a3246e122"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0dfe2807615294a0a2be1f1a3246e122">&#9670;&#160;</a></span>_logger</h2>
 
@@ -1751,6 +1935,50 @@ if the two drift apart.
       <table class="memname">
         <tr>
           <td class="memname">fakes.FakeArm._self_collides</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aec32d9e4795547dd5512e80e1aaa2bce" name="aec32d9e4795547dd5512e80e1aaa2bce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec32d9e4795547dd5512e80e1aaa2bce">&#9670;&#160;</a></span>_shelf_boxes_ok</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">fakes.FakeArm._shelf_boxes_ok</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aef3cbb1b33379fc8ccd90d7af0a5a0b0" name="aef3cbb1b33379fc8ccd90d7af0a5a0b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef3cbb1b33379fc8ccd90d7af0a5a0b0">&#9670;&#160;</a></span>_tf_fails</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">fakes.FakeArm._tf_fails</td>
         </tr>
       </table>
   </td>

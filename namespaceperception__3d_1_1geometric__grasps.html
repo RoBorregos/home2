@@ -167,6 +167,10 @@ Functions</h2></td></tr>
 <tr class="separator:a53c605beffe63a9aa43c8f7219b31dc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af46f9c0d52fb2f27891cf5821fda26df"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#af46f9c0d52fb2f27891cf5821fda26df">grasp_for</a> (<a class="el" href="classperception__3d_1_1geometric__grasps_1_1Scene.html">Scene</a> scene, str grasp_class)</td></tr>
 <tr class="separator:af46f9c0d52fb2f27891cf5821fda26df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6dfe3e33f7d57ba5bbf853116ceed87"><td class="memItemLeft" align="right" valign="top">tuple|None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#af6dfe3e33f7d57ba5bbf853116ceed87">compartment_band</a> (float z, levels)</td></tr>
+<tr class="separator:af6dfe3e33f7d57ba5bbf853116ceed87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e7a6789a48e866643a02bd9c24bfd90"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a1e7a6789a48e866643a02bd9c24bfd90">shelf_frontal_grasps</a> (np.ndarray points, band, tuning)</td></tr>
+<tr class="separator:a1e7a6789a48e866643a02bd9c24bfd90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -278,6 +282,10 @@ Variables</h2></td></tr>
 <tr class="separator:aeccc82bfb1722464ee2b251a84c53cbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7edb313b09878f23c68ec26097b1fe84"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a7edb313b09878f23c68ec26097b1fe84">RECIPES</a></td></tr>
 <tr class="separator:a7edb313b09878f23c68ec26097b1fe84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad11f4d26cfab42c72008fb6888abc91f"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#ad11f4d26cfab42c72008fb6888abc91f">SHELF_BAND_MARGIN</a> = 0.01</td></tr>
+<tr class="separator:ad11f4d26cfab42c72008fb6888abc91f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ea3b1e7fa42d9bcf2037d7b4ff1fc0f"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__3d_1_1geometric__grasps.html#a2ea3b1e7fa42d9bcf2037d7b4ff1fc0f">SHELF_BAND_DOWN_TOLERANCE</a> = 0.05</td></tr>
+<tr class="separator:a2ea3b1e7fa42d9bcf2037d7b4ff1fc0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a5e4122502f9da52d8c05ddeefa3c0617" name="a5e4122502f9da52d8c05ddeefa3c0617"></a>
@@ -429,6 +437,34 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="af6dfe3e33f7d57ba5bbf853116ceed87" name="af6dfe3e33f7d57ba5bbf853116ceed87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6dfe3e33f7d57ba5bbf853116ceed87">&#9670;&#160;</a></span>compartment_band()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple | None perception_3d.geometric_grasps.compartment_band </td>
+          <td>(</td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>z</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>levels</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">(min_z, max_z) of the compartment at ``z`` from (height, thickness) boards; 0 on top.</pre> 
 </div>
 </div>
 <a id="ac0870c4090e42266b27657afdc0688ca" name="ac0870c4090e42266b27657afdc0688ca"></a>
@@ -923,6 +959,45 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Share of points explained by the best sphere, cylinder and box.</pre> 
+</div>
+</div>
+<a id="a1e7a6789a48e866643a02bd9c24bfd90" name="a1e7a6789a48e866643a02bd9c24bfd90"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e7a6789a48e866643a02bd9c24bfd90">&#9670;&#160;</a></span>shelf_frontal_grasps()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> list perception_3d.geometric_grasps.shelf_frontal_grasps </td>
+          <td>(</td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>points</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>band</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>tuning</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">(tip, quaternion xyzw) frontal grasps for a z-up cluster in compartment ``band``.
+
+Tip just past the object's middle at mid height, approach +x tilted down, closing
+across y; ordered by height then pitch, empty when the object does not fit.
+``band``'s max_z is 0 with nothing above; ``tuning`` is pick_profiles.yaml's shelf.
+</pre> 
 </div>
 </div>
 <a id="a97666d31e7b7594b7071f7c4585002c1" name="a97666d31e7b7594b7071f7c4585002c1"></a>
@@ -1642,6 +1717,34 @@ Variables</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">dict perception_3d.geometric_grasps.SHAPE_TOLERANCE = {&quot;sphere&quot;: 0.003, &quot;cylinder&quot;: 0.004, &quot;box&quot;: 0.0045}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2ea3b1e7fa42d9bcf2037d7b4ff1fc0f" name="a2ea3b1e7fa42d9bcf2037d7b4ff1fc0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ea3b1e7fa42d9bcf2037d7b4ff1fc0f">&#9670;&#160;</a></span>SHELF_BAND_DOWN_TOLERANCE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float perception_3d.geometric_grasps.SHELF_BAND_DOWN_TOLERANCE = 0.05</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad11f4d26cfab42c72008fb6888abc91f" name="ad11f4d26cfab42c72008fb6888abc91f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad11f4d26cfab42c72008fb6888abc91f">&#9670;&#160;</a></span>SHELF_BAND_MARGIN</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float perception_3d.geometric_grasps.SHELF_BAND_MARGIN = 0.01</td>
         </tr>
       </table>
 </div><div class="memdoc">

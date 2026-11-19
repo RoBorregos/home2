@@ -99,8 +99,8 @@ $(document).ready(function(){initNavTree('namespacepick__and__place_1_1pipelines
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ae481bb29c63140aed967432438865fae"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1classification.html#ae481bb29c63140aed967432438865fae">resolve_pick_strategy</a> (str object_name, bool force_gpd=False)</td></tr>
-<tr class="separator:ae481bb29c63140aed967432438865fae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87b27e0cbaa05f29e1c86c90019c6048"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1classification.html#a87b27e0cbaa05f29e1c86c90019c6048">resolve_pick_strategy</a> (str object_name, bool force_gpd=False, bool shelf=False)</td></tr>
+<tr class="separator:a87b27e0cbaa05f29e1c86c90019c6048"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -116,6 +116,8 @@ Variables</h2></td></tr>
 <tr class="separator:ac8f8dabbe34b09a9b5bd0a29481ff12b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a124f75a66977df309f3747a91339426c"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1classification.html#a124f75a66977df309f3747a91339426c">PICK_STRATEGY_GEOMETRIC</a> = &quot;geometric&quot;</td></tr>
 <tr class="separator:a124f75a66977df309f3747a91339426c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84b31fa815a38b922bb59ca043203732"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1classification.html#a84b31fa815a38b922bb59ca043203732">PICK_STRATEGY_SHELF</a> = &quot;shelf&quot;</td></tr>
+<tr class="separator:a84b31fa815a38b922bb59ca043203732"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a97c710c129e94bc4271f5cf904e7aa"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1classification.html#a3a97c710c129e94bc4271f5cf904e7aa">PICK_STRATEGY_KEYS</a></td></tr>
 <tr class="separator:a3a97c710c129e94bc4271f5cf904e7aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b4826e5057f406c0e1e2f1e10208c41"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1classification.html#a0b4826e5057f406c0e1e2f1e10208c41">_STRATEGY_BY_OBJECT_NAME</a></td></tr>
@@ -131,8 +133,8 @@ an object is picked.
 The keys double as the profile keys in ``config/pick_profiles.yaml``; a mismatch
 between the two fails at node startup (see ``strategies.build_strategies``).
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
-<a id="ae481bb29c63140aed967432438865fae" name="ae481bb29c63140aed967432438865fae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae481bb29c63140aed967432438865fae">&#9670;&#160;</a></span>resolve_pick_strategy()</h2>
+<a id="a87b27e0cbaa05f29e1c86c90019c6048" name="a87b27e0cbaa05f29e1c86c90019c6048"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87b27e0cbaa05f29e1c86c90019c6048">&#9670;&#160;</a></span>resolve_pick_strategy()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -147,7 +149,13 @@ between the two fails at node startup (see ``strategies.build_strategies``).
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>force_gpd</em> = <code>False</code>&#160;</td>
+          <td class="paramname"><em>force_gpd</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>shelf</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -156,7 +164,10 @@ between the two fails at node startup (see ``strategies.build_strategies``).
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Name -&gt; strategy; unlisted names are solids, sent to GPD with ``force_gpd``.</pre> 
+<pre class="fragment">Name -&gt; strategy; unlisted names are solids, sent to GPD with ``force_gpd``.
+
+Any shelf pick is ``shelf``: a frontal grasp into the compartment, then GPD.
+</pre> 
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
@@ -262,7 +273,8 @@ between the two fails at node startup (see ``strategies.build_strategies``).
 <div class="line"><span class="lineno">    5</span>    PICK_STRATEGY_PEAK,</div>
 <div class="line"><span class="lineno">    6</span>    PICK_STRATEGY_GPD,</div>
 <div class="line"><span class="lineno">    7</span>    PICK_STRATEGY_GEOMETRIC,</div>
-<div class="line"><span class="lineno">    8</span>)</div>
+<div class="line"><span class="lineno">    8</span>    PICK_STRATEGY_SHELF,</div>
+<div class="line"><span class="lineno">    9</span>)</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -288,6 +300,20 @@ between the two fails at node startup (see ``strategies.build_strategies``).
       <table class="memname">
         <tr>
           <td class="memname">str pick_and_place.pipelines.classification.PICK_STRATEGY_RIM = &quot;rim&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a84b31fa815a38b922bb59ca043203732" name="a84b31fa815a38b922bb59ca043203732"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84b31fa815a38b922bb59ca043203732">&#9670;&#160;</a></span>PICK_STRATEGY_SHELF</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">str pick_and_place.pipelines.classification.PICK_STRATEGY_SHELF = &quot;shelf&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">

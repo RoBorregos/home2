@@ -4,6 +4,7 @@ var dir_7fd0cf9ff5e572a6c00dd1677e1d80bb =
     [ "AddPickPrimitives.srv", "AddPickPrimitives_8srv.html", null ],
     [ "AttachCollisionObject.srv", "AttachCollisionObject_8srv.html", null ],
     [ "ClusterObjectFromPoint.srv", "ClusterObjectFromPoint_8srv.html", null ],
+    [ "DetectShelf.srv", "DetectShelf_8srv.html", null ],
     [ "DockToHandle.srv", "DockToHandle_8srv.html", null ],
     [ "FixedDistanceMove.srv", "FixedDistanceMove_8srv.html", null ],
     [ "GenerateGrasps.srv", "GenerateGrasps_8srv.html", null ],

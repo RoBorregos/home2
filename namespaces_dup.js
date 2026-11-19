@@ -186,7 +186,7 @@ var namespaces_dup =
     [ "grasp_utils", "namespacegrasp__utils.html", [
       [ "fake_grasps", "namespacegrasp__utils.html#a66bfdc2901b1b5ef677a6921c55939d6", null ],
       [ "get_grasps", "namespacegrasp__utils.html#a9597ffd3c2a1573ab6036bd81117a64e", null ],
-      [ "move_to_pregrasp_nearest_ik", "namespacegrasp__utils.html#abd739b812ccc2ca74c2903ecd1e851f4", null ]
+      [ "move_to_pregrasp_nearest_ik", "namespacegrasp__utils.html#a8cae820e541b3688b1b95f0506bb7c50", null ]
     ] ],
     [ "hand_eye_calibration", "namespacehand__eye__calibration.html", [
       [ "angle", "namespacehand__eye__calibration.html#a026475245d2acdc376738c2e79d4bfdd", null ],
@@ -297,7 +297,7 @@ var namespaces_dup =
     [ "omnidriver", "namespaceomnidriver.html", "namespaceomnidriver" ],
     [ "perception_3d", "namespaceperception__3d.html", "namespaceperception__3d" ],
     [ "perception_utils", "namespaceperception__utils.html", [
-      [ "get_object_cluster", "namespaceperception__utils.html#ac1455008e46c7408e221e29ac0302030", null ],
+      [ "get_object_cluster", "namespaceperception__utils.html#a210ff8337ecb7f0522e20f58bcdbd92c", null ],
       [ "get_object_point", "namespaceperception__utils.html#a2c14626d1731182b72d1680307e9c488", null ],
       [ "point_in_range", "namespaceperception__utils.html#a906076edfe03facab943fe84636d2f69", null ]
     ] ],
@@ -473,6 +473,37 @@ var namespaces_dup =
     [ "test_pick_and_place", "namespacetest__pick__and__place.html", "namespacetest__pick__and__place" ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", "namespacetest__plan__parser" ],
     [ "test_ppc_cabinet_place", "namespacetest__ppc__cabinet__place.html", "namespacetest__ppc__cabinet__place" ],
+    [ "test_shelf_geometry", "namespacetest__shelf__geometry.html", [
+      [ "_back_wall", "namespacetest__shelf__geometry.html#a0d56f8b5c2bd359bfba104c009a5c6f5", null ],
+      [ "_box_on", "namespacetest__shelf__geometry.html#a595093b917e89aa865125daffc8d197a", null ],
+      [ "_horizontal", "namespacetest__shelf__geometry.html#a6a18b9fb2800a719667f1709ba16c413", null ],
+      [ "_patch", "namespacetest__shelf__geometry.html#a2b4afd399abc0a643d0dd88bc7cc0054", null ],
+      [ "_side_wall", "namespacetest__shelf__geometry.html#a49beceac60ab7064931b38605abe2f26", null ],
+      [ "geometry", "namespacetest__shelf__geometry.html#ac53d91df424e5a21ca07d7e7c00a981d", null ],
+      [ "shelf_frames", "namespacetest__shelf__geometry.html#a0d60ac3218b37977ca724d48ca2b7613", null ],
+      [ "test_back_wall_seen_only_as_a_strip", "namespacetest__shelf__geometry.html#a1b0f488a76799d6b12c939a3354f396d", null ],
+      [ "test_board_above_the_cameras_bounds_the_compartment", "namespacetest__shelf__geometry.html#a88ad93b6f2ea568646987c7f0167e5a7", null ],
+      [ "test_boxes_keep_a_safety_margin_except_on_board_tops", "namespacetest__shelf__geometry.html#a4c7597e72f14fd272e68c1a8a02694af", null ],
+      [ "test_clearances_and_ceiling", "namespacetest__shelf__geometry.html#a50ce745c5b22c6c4a5082725526accab", null ],
+      [ "test_collision_boxes_enclose_the_structure", "namespacetest__shelf__geometry.html#a5b9885ae6dc7b63ee55ad0e9e3d730c6", null ],
+      [ "test_empty_view_raises", "namespacetest__shelf__geometry.html#a289d98b990e031601db5e0a6c72fd879", null ],
+      [ "test_every_board_found_at_its_height", "namespacetest__shelf__geometry.html#a0365f085ac8bb612b2b9e322ea6c18d6", null ],
+      [ "test_narrow_face_behind_the_boards_is_not_a_back_wall", "namespacetest__shelf__geometry.html#ab4d7d1ab15356652d92d3aa9aac0cd7b", null ],
+      [ "test_objects_are_not_levels", "namespacetest__shelf__geometry.html#a79696f2c0cfb42acf813c4f156f65d04", null ],
+      [ "test_only_objects_raises", "namespacetest__shelf__geometry.html#ad1af1923a8e7d323c4fea6cdcfe55562", null ],
+      [ "test_thickness_from_undersides", "namespacetest__shelf__geometry.html#a842cbf131c6c90b59e3b7fe3d7e0d807", null ],
+      [ "test_walls_and_extents", "namespacetest__shelf__geometry.html#ab036592d18faa253c258786b6de6a5f1", null ],
+      [ "test_without_walls_extents_come_from_boards", "namespacetest__shelf__geometry.html#a850084446f40d37c38752c69e7756183", null ],
+      [ "BACK", "namespacetest__shelf__geometry.html#aca6b8ee5c85a8de3af10a804790c75ca", null ],
+      [ "BOARDS", "namespacetest__shelf__geometry.html#af3809c83c3b957fd6ce74c02ab289b45", null ],
+      [ "FRONT", "namespacetest__shelf__geometry.html#a1fdc48d2b66091e9eb95c34038c679d4", null ],
+      [ "NOISE", "namespacetest__shelf__geometry.html#a1488fbca76b5bb1ceafd8f63d3ad422a", null ],
+      [ "RNG", "namespacetest__shelf__geometry.html#a4db84c733cdc6a36d880d3532d0ba5b7", null ],
+      [ "STEP", "namespacetest__shelf__geometry.html#a8ec638e2003af68214811460c59c6f05", null ],
+      [ "THICKNESS", "namespacetest__shelf__geometry.html#af830144f097f5c64e16f9cf2cc9574a8", null ],
+      [ "TOP_UNDERSIDE", "namespacetest__shelf__geometry.html#a3cf8fbbc2df90d3498dec86531dbe864", null ],
+      [ "Y_HALF", "namespacetest__shelf__geometry.html#ae9cf954ad8de253e495ff36c13ed77e4", null ]
+    ] ],
     [ "test_start_button", "namespacetest__start__button.html", "namespacetest__start__button" ],
     [ "test_vision_manager", "namespacetest__vision__manager.html", "namespacetest__vision__manager" ],
     [ "tf_utils", "namespacetf__utils.html", [

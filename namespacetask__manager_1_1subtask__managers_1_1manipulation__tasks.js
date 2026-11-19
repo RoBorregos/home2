@@ -6,6 +6,8 @@ var namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks =
     [ "Manipulation_tasks", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#ad2c48d09d4fd7a7a4470eab00d2a31fa", null ],
     [ "node", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a18354872259448ef2be580869d23dc72", null ],
     [ "RAD_TO_DEG", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a15819095e4c3fb2c326672d8b2218181", null ],
+    [ "SHELF_PICK_TIMEOUT", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a141df0d860a32bb0d3e57e4a9e00965f", null ],
+    [ "SHELF_SCAN_TIMEOUT", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#ae9f9f1155b1a57bf79b4cb623ff2f6e2", null ],
     [ "TIMEOUT", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a801e74603aa06d40b4d6a5077a137ca9", null ],
     [ "try", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a1ff33d8283f59a7520363a0e7a74ab21", null ],
     [ "XARM_ENABLE_SERVICE", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#abba582e852efb634001953a6f6e13989", null ],

@@ -12,5 +12,6 @@ var arm_8py =
     [ "MODE_SWITCH_SETTLE_TIME", "arm_8py.html#a9175810973d80da6c333b613137c6bcc", null ],
     [ "MODE_SWITCH_TIMEOUT", "arm_8py.html#a0775bbae7741b06b14a83f8eae79526c", null ],
     [ "SERVICE_TIMEOUT", "arm_8py.html#ab974cdc13a17745112bdbb3ed14ca66e", null ],
-    [ "SET_MODE_RETRIES", "arm_8py.html#ad9029d5ad39c848a62aaf8d0ed230d05", null ]
+    [ "SET_MODE_RETRIES", "arm_8py.html#ad9029d5ad39c848a62aaf8d0ed230d05", null ],
+    [ "TGPIO_RESET_TIMEOUT", "arm_8py.html#a81a52cccecedf4ad32314e4a6e7e412c", null ]
 ];

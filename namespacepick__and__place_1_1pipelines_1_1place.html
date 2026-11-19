@@ -99,12 +99,16 @@ $(document).ready(function(){initNavTree('namespacepick__and__place_1_1pipelines
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:af861b469818962f59cde7548d328c6ed"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#af861b469818962f59cde7548d328c6ed">execute</a> (arm, perception, place_params, <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1PickOutcome.html">PickOutcome</a> pick_outcome)</td></tr>
-<tr class="separator:af861b469818962f59cde7548d328c6ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2234eee7215a7eb7adfac283be8d7570"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a2234eee7215a7eb7adfac283be8d7570">_reach_place_pose</a> (arm, PoseStamped place_pose, bool is_shelf)</td></tr>
-<tr class="separator:a2234eee7215a7eb7adfac283be8d7570"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a160fec93afae06c828d86ea767446d60"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a160fec93afae06c828d86ea767446d60">_place_pose_triple</a> (PoseStamped place_pose, int index, float step, bool is_shelf)</td></tr>
-<tr class="separator:a160fec93afae06c828d86ea767446d60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08321e82cd0a3e6e63c3cd1ddae4c61b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a08321e82cd0a3e6e63c3cd1ddae4c61b">execute</a> (arm, perception, place_params, <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1PickOutcome.html">PickOutcome</a> pick_outcome, bool straight_in=False, shelf=None)</td></tr>
+<tr class="separator:a08321e82cd0a3e6e63c3cd1ddae4c61b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fa52babaea9f7bac9384289192427c4"><td class="memItemLeft" align="right" valign="top">Optional[tuple]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a0fa52babaea9f7bac9384289192427c4">_shelf_place_bounds</a> (arm, PoseStamped place_pose, shelf)</td></tr>
+<tr class="separator:a0fa52babaea9f7bac9384289192427c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47cffc12a216fb09e96b13b9097a3d6d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a47cffc12a216fb09e96b13b9097a3d6d">_shelf_place_quat</a> (arm, <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1PickOutcome.html">PickOutcome</a> pick_outcome)</td></tr>
+<tr class="separator:a47cffc12a216fb09e96b13b9097a3d6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab12431584b078d496c3fda89b618b21b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#ab12431584b078d496c3fda89b618b21b">_reach_place_pose</a> (arm, PoseStamped place_pose, bool is_shelf, Optional[tuple] bounds=None, shelf_quat=AIM_STRAIGHT_FRONT_QUAT, bool straight_in=False)</td></tr>
+<tr class="separator:ab12431584b078d496c3fda89b618b21b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90a26d6cf9edeef483eaac54b6f6bf20"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a90a26d6cf9edeef483eaac54b6f6bf20">_place_pose_pair</a> (PoseStamped place_pose, int index, float step, bool is_shelf, Optional[tuple] bounds=None, shelf_quat=AIM_STRAIGHT_FRONT_QUAT)</td></tr>
+<tr class="separator:a90a26d6cf9edeef483eaac54b6f6bf20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2bf071daa8a4b884975722ce8d939989"><td class="memItemLeft" align="right" valign="top">PoseStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a2bf071daa8a4b884975722ce8d939989">_offset_along_local_z</a> (PoseStamped pose, float distance)</td></tr>
 <tr class="separator:a2bf071daa8a4b884975722ce8d939989"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af495165843f3095dec2ae23c4a44ebcb"><td class="memItemLeft" align="right" valign="top">Optional[PoseStamped]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#af495165843f3095dec2ae23c4a44ebcb">_choose_place_pose</a> (arm, perception, place_params, <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1PickOutcome.html">PickOutcome</a> pick_outcome)</td></tr>
@@ -136,6 +140,10 @@ Functions</h2></td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:af37a2d04cd1aaeaf6ec21c2d2fb59274"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#af37a2d04cd1aaeaf6ec21c2d2fb59274">SHELF_PLACE_DEPTH_BACK</a> = 0.07</td></tr>
 <tr class="separator:af37a2d04cd1aaeaf6ec21c2d2fb59274"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e59028569ee383660ecfe0ddc322244"><td class="memItemLeft" align="right" valign="top">GRIPPER_REACH&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a3e59028569ee383660ecfe0ddc322244">SHELF_PLACE_OBJECT_OFFSET</a> = GRIPPER_REACH - 0.03</td></tr>
+<tr class="separator:a3e59028569ee383660ecfe0ddc322244"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c0fc98456b87341d1abd3db5f2320c0"><td class="memItemLeft" align="right" valign="top">np&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a7c0fc98456b87341d1abd3db5f2320c0">GRASP_FRAME_YAW_FROM_EEF</a> = -np.pi / 4</td></tr>
+<tr class="separator:a7c0fc98456b87341d1abd3db5f2320c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a076f5eed121d7746e0e21c9ce5e66d79"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a076f5eed121d7746e0e21c9ce5e66d79">SHELF_LADDER</a> = (3, 0.02)</td></tr>
 <tr class="separator:a076f5eed121d7746e0e21c9ce5e66d79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af68859412e3d1f12779289b0519107d2"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#af68859412e3d1f12779289b0519107d2">TABLE_LADDER</a> = (8, 0.05)</td></tr>
@@ -152,6 +160,8 @@ Variables</h2></td></tr>
 <tr class="separator:adccf52ff884fdfd0af3183bb3f4a46df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32b4beaa4d3b08ee476b9335fbf5bad2"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a32b4beaa4d3b08ee476b9335fbf5bad2">TRASH_TIMEOUT</a> = 15.0</td></tr>
 <tr class="separator:a32b4beaa4d3b08ee476b9335fbf5bad2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86eb21aa52ca4ee01bdf315978b59230"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#a86eb21aa52ca4ee01bdf315978b59230">RELEASE_SETTLE</a> = 0.5</td></tr>
+<tr class="separator:a86eb21aa52ca4ee01bdf315978b59230"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcae70283fcc627343e5d6b71fea2dc9"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1place.html#afcae70283fcc627343e5d6b71fea2dc9">TOP_DOWN_QUAT</a> = [0.0, 1.0, 0.0, 0.0]</td></tr>
 <tr class="separator:afcae70283fcc627343e5d6b71fea2dc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -534,8 +544,8 @@ here would also wipe the collision scene mid-place.
 <pre class="fragment">Copy ``pose`` translated ``distance`` along its own local Z axis.</pre> 
 </div>
 </div>
-<a id="a160fec93afae06c828d86ea767446d60" name="a160fec93afae06c828d86ea767446d60"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a160fec93afae06c828d86ea767446d60">&#9670;&#160;</a></span>_place_pose_triple()</h2>
+<a id="a90a26d6cf9edeef483eaac54b6f6bf20" name="a90a26d6cf9edeef483eaac54b6f6bf20"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90a26d6cf9edeef483eaac54b6f6bf20">&#9670;&#160;</a></span>_place_pose_pair()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -544,7 +554,7 @@ here would also wipe the collision scene mid-place.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">def pick_and_place.pipelines.place._place_pose_triple </td>
+          <td class="memname">def pick_and_place.pipelines.place._place_pose_pair </td>
           <td>(</td>
           <td class="paramtype">PoseStamped&#160;</td>
           <td class="paramname"><em>place_pose</em>, </td>
@@ -564,9 +574,20 @@ here would also wipe the collision scene mid-place.
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool
-&#160;</td>
-          <td class="paramname"><em>is_shelf</em>&#160;</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>is_shelf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Optional[tuple] &#160;</td>
+          <td class="paramname"><em>bounds</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>shelf_quat</em> = <code>AIM_STRAIGHT_FRONT_QUAT</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -580,11 +601,7 @@ here would also wipe the collision scene mid-place.
   </tr>
 </table>
 </div><div class="memdoc">
-<pre class="fragment">Build (final, halfway, pre-place) for one rung of the ladder.
-
-On a table the three are identical; only the shelf needs an approach from
-further out along the gripper's local Z.
-</pre> 
+<pre class="fragment">(final, pre-place) for one rung; on a shelf the pre-place backs off along local Z.</pre> 
 </div>
 </div>
 <a id="a83f370dff22d2f347e4f45a2720603db" name="a83f370dff22d2f347e4f45a2720603db"></a>
@@ -629,8 +646,8 @@ further out along the gripper's local Z.
 <pre class="fragment">Segment the table or shelf surface the object will land on.</pre> 
 </div>
 </div>
-<a id="a2234eee7215a7eb7adfac283be8d7570" name="a2234eee7215a7eb7adfac283be8d7570"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2234eee7215a7eb7adfac283be8d7570">&#9670;&#160;</a></span>_reach_place_pose()</h2>
+<a id="ab12431584b078d496c3fda89b618b21b" name="ab12431584b078d496c3fda89b618b21b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab12431584b078d496c3fda89b618b21b">&#9670;&#160;</a></span>_reach_place_pose()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -654,7 +671,25 @@ further out along the gripper's local Z.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>is_shelf</em>&#160;</td>
+          <td class="paramname"><em>is_shelf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Optional[tuple] &#160;</td>
+          <td class="paramname"><em>bounds</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>shelf_quat</em> = <code>AIM_STRAIGHT_FRONT_QUAT</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>straight_in</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -672,6 +707,88 @@ further out along the gripper's local Z.
 
 No retract afterwards (mirroring the shelf pick): the cartesian retract left
 the wrist wound and the following table_stare then aborted.
+</pre> 
+</div>
+</div>
+<a id="a0fa52babaea9f7bac9384289192427c4" name="a0fa52babaea9f7bac9384289192427c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fa52babaea9f7bac9384289192427c4">&#9670;&#160;</a></span>_shelf_place_bounds()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> Optional[tuple] pick_and_place.pipelines.place._shelf_place_bounds </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>arm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">PoseStamped&#160;</td>
+          <td class="paramname"><em>place_pose</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>shelf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">EE-link (min_x, max_x, min_y, max_y) that releases over the scanned board, or None.</pre> 
+</div>
+</div>
+<a id="a47cffc12a216fb09e96b13b9097a3d6d" name="a47cffc12a216fb09e96b13b9097a3d6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47cffc12a216fb09e96b13b9097a3d6d">&#9670;&#160;</a></span>_shelf_place_quat()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.pipelines.place._shelf_place_quat </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>arm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1PickOutcome.html">PickOutcome</a>&#160;</td>
+          <td class="paramname"><em>pick_outcome</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">EE-link orientation that keeps the object's "up" as held at the pick.
+
+Same approach as AIM_STRAIGHT_FRONT_QUAT, rolled about it; that quaternion as is
+turned a frontally picked bottle upside down. Kept as is after a top-down pick.
 </pre> 
 </div>
 </div>
@@ -785,8 +902,8 @@ the wrist wound and the following table_stare then aborted.
 <pre class="fragment">Detect the trash bin; the estimator already offsets above it, top-down.</pre> 
 </div>
 </div>
-<a id="af861b469818962f59cde7548d328c6ed" name="af861b469818962f59cde7548d328c6ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af861b469818962f59cde7548d328c6ed">&#9670;&#160;</a></span>execute()</h2>
+<a id="a08321e82cd0a3e6e63c3cd1ddae4c61b" name="a08321e82cd0a3e6e63c3cd1ddae4c61b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08321e82cd0a3e6e63c3cd1ddae4c61b">&#9670;&#160;</a></span>execute()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -813,7 +930,19 @@ the wrist wound and the following table_stare then aborted.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1PickOutcome.html">PickOutcome</a>&#160;</td>
-          <td class="paramname"><em>pick_outcome</em>&#160;</td>
+          <td class="paramname"><em>pick_outcome</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>straight_in</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>shelf</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -822,7 +951,7 @@ the wrist wound and the following table_stare then aborted.
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Place the held object. Returns True on success.</pre> 
+<pre class="fragment">Place the held object; a shelf place needs ``shelf``, the ShelfScan. True on success.</pre> 
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
@@ -848,6 +977,20 @@ the wrist wound and the following table_stare then aborted.
       <table class="memname">
         <tr>
           <td class="memname">float pick_and_place.pipelines.place.DEFAULT_TABLE_DROP = 0.10</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7c0fc98456b87341d1abd3db5f2320c0" name="a7c0fc98456b87341d1abd3db5f2320c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c0fc98456b87341d1abd3db5f2320c0">&#9670;&#160;</a></span>GRASP_FRAME_YAW_FROM_EEF</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">np pick_and_place.pipelines.place.GRASP_FRAME_YAW_FROM_EEF = -np.pi / 4</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -896,6 +1039,20 @@ the wrist wound and the following table_stare then aborted.
 
 </div>
 </div>
+<a id="a86eb21aa52ca4ee01bdf315978b59230" name="a86eb21aa52ca4ee01bdf315978b59230"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86eb21aa52ca4ee01bdf315978b59230">&#9670;&#160;</a></span>RELEASE_SETTLE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float pick_and_place.pipelines.place.RELEASE_SETTLE = 0.5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a076f5eed121d7746e0e21c9ce5e66d79" name="a076f5eed121d7746e0e21c9ce5e66d79"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a076f5eed121d7746e0e21c9ce5e66d79">&#9670;&#160;</a></span>SHELF_LADDER</h2>
 
@@ -918,6 +1075,20 @@ the wrist wound and the following table_stare then aborted.
       <table class="memname">
         <tr>
           <td class="memname">float pick_and_place.pipelines.place.SHELF_PLACE_DEPTH_BACK = 0.07</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3e59028569ee383660ecfe0ddc322244" name="a3e59028569ee383660ecfe0ddc322244"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e59028569ee383660ecfe0ddc322244">&#9670;&#160;</a></span>SHELF_PLACE_OBJECT_OFFSET</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">GRIPPER_REACH pick_and_place.pipelines.place.SHELF_PLACE_OBJECT_OFFSET = GRIPPER_REACH - 0.03</td>
         </tr>
       </table>
 </div><div class="memdoc">

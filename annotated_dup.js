@@ -302,6 +302,17 @@ var annotated_dup =
         [ "GraspRejected", "classperception__3d_1_1geometric__grasps_1_1GraspRejected.html", null ],
         [ "Intrinsics", "classperception__3d_1_1geometric__grasps_1_1Intrinsics.html", null ],
         [ "Scene", "classperception__3d_1_1geometric__grasps_1_1Scene.html", "classperception__3d_1_1geometric__grasps_1_1Scene" ]
+      ] ],
+      [ "shelf_geometry", "namespaceperception__3d_1_1shelf__geometry.html", [
+        [ "Box", "classperception__3d_1_1shelf__geometry_1_1Box.html", null ],
+        [ "Frame", "classperception__3d_1_1shelf__geometry_1_1Frame.html", null ],
+        [ "ShelfGeometry", "classperception__3d_1_1shelf__geometry_1_1ShelfGeometry.html", "classperception__3d_1_1shelf__geometry_1_1ShelfGeometry" ],
+        [ "ShelfLevel", "classperception__3d_1_1shelf__geometry_1_1ShelfLevel.html", null ],
+        [ "ShelfNotFound", "classperception__3d_1_1shelf__geometry_1_1ShelfNotFound.html", null ],
+        [ "ShelfParams", "classperception__3d_1_1shelf__geometry_1_1ShelfParams.html", null ]
+      ] ],
+      [ "shelf_service", "namespaceperception__3d_1_1shelf__service.html", [
+        [ "ShelfService", "classperception__3d_1_1shelf__service_1_1ShelfService.html", "classperception__3d_1_1shelf__service_1_1ShelfService" ]
       ] ]
     ] ],
     [ "person_goal_smoother", "namespaceperson__goal__smoother.html", [
@@ -345,7 +356,11 @@ var annotated_dup =
         [ "profiles", "namespacepick__and__place_1_1pipelines_1_1profiles.html", [
           [ "ForceGuardProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile" ],
           [ "PickProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile" ],
-          [ "ProfileError", "classpick__and__place_1_1pipelines_1_1profiles_1_1ProfileError.html", null ]
+          [ "ProfileError", "classpick__and__place_1_1pipelines_1_1profiles_1_1ProfileError.html", null ],
+          [ "ShelfProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ShelfProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1ShelfProfile" ]
+        ] ],
+        [ "shelf", "namespacepick__and__place_1_1pipelines_1_1shelf.html", [
+          [ "ShelfScan", "classpick__and__place_1_1pipelines_1_1shelf_1_1ShelfScan.html", "classpick__and__place_1_1pipelines_1_1shelf_1_1ShelfScan" ]
         ] ],
         [ "strategies", "namespacepick__and__place_1_1pipelines_1_1strategies.html", [
           [ "CartesianApproachPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1CartesianApproachPick" ],
@@ -537,6 +552,8 @@ var annotated_dup =
       [ "TestNavigationManager", "classtest__navigation__manager_1_1TestNavigationManager.html", "classtest__navigation__manager_1_1TestNavigationManager" ]
     ] ],
     [ "test_pick_and_place", "namespacetest__pick__and__place.html", [
+      [ "_FakeClient", "classtest__pick__and__place_1_1__FakeClient.html", "classtest__pick__and__place_1_1__FakeClient" ],
+      [ "_FakeFuture", "classtest__pick__and__place_1_1__FakeFuture.html", "classtest__pick__and__place_1_1__FakeFuture" ],
       [ "_GoalHandle", "classtest__pick__and__place_1_1__GoalHandle.html", "classtest__pick__and__place_1_1__GoalHandle" ],
       [ "_Request", "classtest__pick__and__place_1_1__Request.html", "classtest__pick__and__place_1_1__Request" ]
     ] ],
@@ -707,9 +724,6 @@ var annotated_dup =
     [ "xarm_utils", "namespacexarm__utils.html", [
       [ "grasp_detector", "namespacexarm__utils_1_1grasp__detector.html", [
         [ "GraspDetector", "classxarm__utils_1_1grasp__detector_1_1GraspDetector.html", "classxarm__utils_1_1grasp__detector_1_1GraspDetector" ]
-      ] ],
-      [ "shelf_height_calibrator", "namespacexarm__utils_1_1shelf__height__calibrator.html", [
-        [ "ShelfHeightCalibrator", "classxarm__utils_1_1shelf__height__calibrator_1_1ShelfHeightCalibrator.html", "classxarm__utils_1_1shelf__height__calibrator_1_1ShelfHeightCalibrator" ]
       ] ]
     ] ],
     [ "XArmServices", "namespaceXArmServices.html", [

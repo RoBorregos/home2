@@ -102,14 +102,18 @@ $(document).ready(function(){initNavTree('classfakes_1_1FakePerception.html','')
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa094154e299cc7345316ddc91f5f5c35"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#aa094154e299cc7345316ddc91f5f5c35">__init__</a> (self, Optional[PointStamped] located_point=None, cluster=None, Optional[List[tuple]] grasps=None, Optional[Any] generated_grasps=None, Optional[PointStamped] heatmap_point=None, Optional[Any] surface_cloud=None)</td></tr>
-<tr class="separator:aa094154e299cc7345316ddc91f5f5c35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a561cb7322c821f938c8bea3f0cb30368"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#a561cb7322c821f938c8bea3f0cb30368">__init__</a> (self, Optional[PointStamped] located_point=None, cluster=None, Optional[List[tuple]] grasps=None, Optional[Any] generated_grasps=None, Optional[PointStamped] heatmap_point=None, Optional[Any] surface_cloud=None, Optional[Any] shelf_result=None, Optional[List[Any]] <a class="el" href="classfakes_1_1FakePerception.html#adb2fcbd439ce6eac9357592118ff45b4">detections</a>=None)</td></tr>
+<tr class="separator:a561cb7322c821f938c8bea3f0cb30368"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc30f9f183b1f3817589acfebfc0fa27"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#afc30f9f183b1f3817589acfebfc0fa27">logger</a> (self)</td></tr>
 <tr class="separator:afc30f9f183b1f3817589acfebfc0fa27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a770f164a726066c8a14f65ba243a1e1c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#a770f164a726066c8a14f65ba243a1e1c">locate_object</a> (self, object_name, timeout=2.0)</td></tr>
 <tr class="separator:a770f164a726066c8a14f65ba243a1e1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d52819523fb560b977b1709052957ce"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#a6d52819523fb560b977b1709052957ce">cluster_at</a> (self, point, add_collision_objects=True, timeout=60.0)</td></tr>
-<tr class="separator:a6d52819523fb560b977b1709052957ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a196cb0efde87cb83f0826dcb33f6c4ac"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#a196cb0efde87cb83f0826dcb33f6c4ac">cluster_at</a> (self, point, add_collision_objects=True, timeout=60.0, band=None)</td></tr>
+<tr class="separator:a196cb0efde87cb83f0826dcb33f6c4ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1add7b8cad76e47aec42dda9554cf09e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#a1add7b8cad76e47aec42dda9554cf09e">detect_shelf</a> (self, reset=False, capture=False, detect=False, timeout=30.0)</td></tr>
+<tr class="separator:a1add7b8cad76e47aec42dda9554cf09e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb2fcbd439ce6eac9357592118ff45b4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#adb2fcbd439ce6eac9357592118ff45b4">detections</a> (self, timeout=2.0)</td></tr>
+<tr class="separator:adb2fcbd439ce6eac9357592118ff45b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9fba1b5ae18204fbbde895de4839f9f3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#a9fba1b5ae18204fbbde895de4839f9f3">detect_grasps</a> (self, cluster, cfg_path)</td></tr>
 <tr class="separator:a9fba1b5ae18204fbbde895de4839f9f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:addb40305821d24cb6275977a28afdef8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#addb40305821d24cb6275977a28afdef8">generate_grasps</a> (self, object_name, timeout=8.0)</td></tr>
@@ -129,6 +133,10 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
+<tr class="memitem:addf50963296b72e8b588fba3a6c04196"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#addf50963296b72e8b588fba3a6c04196">_shelf_result</a></td></tr>
+<tr class="separator:addf50963296b72e8b588fba3a6c04196"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a237211650d2e1b71989396bdd328f27a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#a237211650d2e1b71989396bdd328f27a">_detections</a></td></tr>
+<tr class="separator:a237211650d2e1b71989396bdd328f27a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82729c8cbd0b7888ab8070df108ae7ac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#a82729c8cbd0b7888ab8070df108ae7ac">_logger</a></td></tr>
 <tr class="separator:a82729c8cbd0b7888ab8070df108ae7ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0e6afb4707fb3dfb7aee747f578c280"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfakes_1_1FakePerception.html#ae0e6afb4707fb3dfb7aee747f578c280">_located_point</a></td></tr>
@@ -142,8 +150,8 @@ Protected Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Scripted perception replies.</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="aa094154e299cc7345316ddc91f5f5c35" name="aa094154e299cc7345316ddc91f5f5c35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa094154e299cc7345316ddc91f5f5c35">&#9670;&#160;</a></span>__init__()</h2>
+<a id="a561cb7322c821f938c8bea3f0cb30368" name="a561cb7322c821f938c8bea3f0cb30368"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a561cb7322c821f938c8bea3f0cb30368">&#9670;&#160;</a></span>__init__()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -188,7 +196,19 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">Optional[Any] &#160;</td>
-          <td class="paramname"><em>surface_cloud</em> = <code>None</code>&#160;</td>
+          <td class="paramname"><em>surface_cloud</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Optional[Any] &#160;</td>
+          <td class="paramname"><em>shelf_result</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Optional[List[Any]] &#160;</td>
+          <td class="paramname"><em>detections</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -201,8 +221,8 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a6d52819523fb560b977b1709052957ce" name="a6d52819523fb560b977b1709052957ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6d52819523fb560b977b1709052957ce">&#9670;&#160;</a></span>cluster_at()</h2>
+<a id="a196cb0efde87cb83f0826dcb33f6c4ac" name="a196cb0efde87cb83f0826dcb33f6c4ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a196cb0efde87cb83f0826dcb33f6c4ac">&#9670;&#160;</a></span>cluster_at()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -229,7 +249,13 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>timeout</em> = <code>60.0</code>&#160;</td>
+          <td class="paramname"><em>timeout</em> = <code>60.0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>band</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -264,6 +290,80 @@ Protected Attributes</h2></td></tr>
           <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>cfg_path</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1add7b8cad76e47aec42dda9554cf09e" name="a1add7b8cad76e47aec42dda9554cf09e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1add7b8cad76e47aec42dda9554cf09e">&#9670;&#160;</a></span>detect_shelf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def fakes.FakePerception.detect_shelf </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>reset</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>capture</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>detect</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>timeout</em> = <code>30.0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="adb2fcbd439ce6eac9357592118ff45b4" name="adb2fcbd439ce6eac9357592118ff45b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb2fcbd439ce6eac9357592118ff45b4">&#9670;&#160;</a></span>detections()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def fakes.FakePerception.detections </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>timeout</em> = <code>2.0</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -426,6 +526,28 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a237211650d2e1b71989396bdd328f27a" name="a237211650d2e1b71989396bdd328f27a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a237211650d2e1b71989396bdd328f27a">&#9670;&#160;</a></span>_detections</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">fakes.FakePerception._detections</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a37de1550f945cd27a37ed23e6907ab3c" name="a37de1550f945cd27a37ed23e6907ab3c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a37de1550f945cd27a37ed23e6907ab3c">&#9670;&#160;</a></span>_generated_grasps</h2>
 
@@ -503,6 +625,28 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">fakes.FakePerception._logger</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="addf50963296b72e8b588fba3a6c04196" name="addf50963296b72e8b588fba3a6c04196"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#addf50963296b72e8b588fba3a6c04196">&#9670;&#160;</a></span>_shelf_result</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">fakes.FakePerception._shelf_result</td>
         </tr>
       </table>
   </td>

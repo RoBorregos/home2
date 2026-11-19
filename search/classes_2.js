@@ -4,9 +4,10 @@ var searchData=
   ['baxter_1',['Baxter',['../structvamp_1_1robots_1_1Baxter.html',1,'vamp::robots']]],
   ['bbox_2',['BBOX',['../classdetectors_1_1base_1_1BBOX.html',1,'detectors.base.BBOX'],['../classfrida__constants_1_1vision__classes_1_1BBOX.html',1,'frida_constants.vision_classes.BBOX']]],
   ['benchmarknode_3',['BenchmarkNode',['../classbenchmark__vamp_1_1BenchmarkNode.html',1,'benchmark_vamp']]],
-  ['boxestask_4',['BoxesTask',['../classcore_1_1tasks_1_1BoxesTask.html',1,'core::tasks']]],
-  ['boxprimitiveparams_5',['BoxPrimitiveParams',['../structBoxPrimitiveParams.html',1,'']]],
-  ['bsplinesettings_6',['BSplineSettings',['../structvamp_1_1planning_1_1BSplineSettings.html',1,'vamp::planning']]],
-  ['builderror_7',['BuildError',['../classembedding__gallery_1_1core_1_1gallery__build_1_1BuildError.html',1,'embedding_gallery::core::gallery_build']]],
-  ['buildframe_8',['BuildFrame',['../structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html',1,'vamp::collision::CAPT']]]
+  ['box_4',['Box',['../classperception__3d_1_1shelf__geometry_1_1Box.html',1,'perception_3d::shelf_geometry']]],
+  ['boxestask_5',['BoxesTask',['../classcore_1_1tasks_1_1BoxesTask.html',1,'core::tasks']]],
+  ['boxprimitiveparams_6',['BoxPrimitiveParams',['../structBoxPrimitiveParams.html',1,'']]],
+  ['bsplinesettings_7',['BSplineSettings',['../structvamp_1_1planning_1_1BSplineSettings.html',1,'vamp::planning']]],
+  ['builderror_8',['BuildError',['../classembedding__gallery_1_1core_1_1gallery__build_1_1BuildError.html',1,'embedding_gallery::core::gallery_build']]],
+  ['buildframe_9',['BuildFrame',['../structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html',1,'vamp::collision::CAPT']]]
 ];

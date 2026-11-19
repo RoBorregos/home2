@@ -122,15 +122,15 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a27e261d285af15e5333aa646d5cb4c83"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4450d77354d9cf622702fce188bbabf4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a4450d77354d9cf622702fce188bbabf4">remove_vertical_plane</a> (const std::shared_ptr&lt; rmw_request_id_t &gt; request_header, const std::shared_ptr&lt; frida_interfaces::srv::RemoveVerticalPlane::Request &gt; request, const std::shared_ptr&lt; frida_interfaces::srv::RemoveVerticalPlane::Response &gt; response)</td></tr>
 <tr class="separator:a4450d77354d9cf622702fce188bbabf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a76ebbdf9f87df71b5a0c44b7dd56ff61"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a76ebbdf9f87df71b5a0c44b7dd56ff61">get_cloud_without_plane</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_in, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out)</td></tr>
-<tr class="separator:a76ebbdf9f87df71b5a0c44b7dd56ff61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae934f16cd3371ba7918103abf70e1aa7"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#ae934f16cd3371ba7918103abf70e1aa7">get_cloud_without_plane</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_in, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out, const float max_plane_z=std::numeric_limits&lt; float &gt;::infinity())</td></tr>
+<tr class="separator:ae934f16cd3371ba7918103abf70e1aa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7aa040aa0740e0ab8475c8a465947648"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a7aa040aa0740e0ab8475c8a465947648">pointCloudCallback</a> (const sensor_msgs::msg::PointCloud2::SharedPtr msg)</td></tr>
 <tr class="separator:a7aa040aa0740e0ab8475c8a465947648"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2182ec905d48b6db8c0eb560ffe7ca75"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a2182ec905d48b6db8c0eb560ffe7ca75">copyPointCloud</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out)</td></tr>
 <tr class="separator:a2182ec905d48b6db8c0eb560ffe7ca75"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04770a379a6a0d7c661c989c2184f279"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a04770a379a6a0d7c661c989c2184f279">extractPlane</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out, bool extract_negative=false)</td></tr>
-<tr class="memdesc:a04770a379a6a0d7c661c989c2184f279"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts the plane from a point cloud. If extract_negative is true, the plane is removed from the point cloud.  <br /></td></tr>
-<tr class="separator:a04770a379a6a0d7c661c989c2184f279"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad29e525ff2a520288edc1195234fd31"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#aad29e525ff2a520288edc1195234fd31">extractPlane</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out, bool extract_negative=false, const float max_plane_z=std::numeric_limits&lt; float &gt;::infinity())</td></tr>
+<tr class="memdesc:aad29e525ff2a520288edc1195234fd31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts the plane from a point cloud. If extract_negative is true, the plane is removed from the point cloud.  <br /></td></tr>
+<tr class="separator:aad29e525ff2a520288edc1195234fd31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14ee89fc7b04d147b3c8dc1c4565fb08"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a14ee89fc7b04d147b3c8dc1c4565fb08">clusterFromPoint</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud, <a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointXYZ point, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out, <a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> bool keep_or_remove=true)</td></tr>
 <tr class="memdesc:a14ee89fc7b04d147b3c8dc1c4565fb08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts a pointcloud cluster given a point.  <br /></td></tr>
 <tr class="separator:a14ee89fc7b04d147b3c8dc1c4565fb08"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -353,8 +353,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a04770a379a6a0d7c661c989c2184f279" name="a04770a379a6a0d7c661c989c2184f279"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04770a379a6a0d7c661c989c2184f279">&#9670;&#160;</a></span>extractPlane()</h2>
+<a id="aad29e525ff2a520288edc1195234fd31" name="aad29e525ff2a520288edc1195234fd31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad29e525ff2a520288edc1195234fd31">&#9670;&#160;</a></span>extractPlane()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -378,7 +378,13 @@ Static Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>extract_negative</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>extract_negative</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float&#160;</td>
+          <td class="paramname"><em>max_plane_z</em> = <code>std::numeric_limits&lt;float&gt;::infinity()</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -405,8 +411,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a76ebbdf9f87df71b5a0c44b7dd56ff61" name="a76ebbdf9f87df71b5a0c44b7dd56ff61"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a76ebbdf9f87df71b5a0c44b7dd56ff61">&#9670;&#160;</a></span>get_cloud_without_plane()</h2>
+<a id="ae934f16cd3371ba7918103abf70e1aa7" name="ae934f16cd3371ba7918103abf70e1aa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae934f16cd3371ba7918103abf70e1aa7">&#9670;&#160;</a></span>get_cloud_without_plane()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -424,7 +430,13 @@ Static Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr&#160;</td>
-          <td class="paramname"><em>cloud_out</em>&#160;</td>
+          <td class="paramname"><em>cloud_out</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float&#160;</td>
+          <td class="paramname"><em>max_plane_z</em> = <code>std::numeric_limits&lt;float&gt;::infinity()</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

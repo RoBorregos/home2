@@ -1,6 +1,8 @@
 var hierarchy =
 [
     [ "fakes._DoneFuture", "classfakes_1_1__DoneFuture.html", null ],
+    [ "test_pick_and_place._FakeClient", "classtest__pick__and__place_1_1__FakeClient.html", null ],
+    [ "test_pick_and_place._FakeFuture", "classtest__pick__and__place_1_1__FakeFuture.html", null ],
     [ "test_pick_and_place._GoalHandle", "classtest__pick__and__place_1_1__GoalHandle.html", null ],
     [ "test_pick_and_place._Request", "classtest__pick__and__place_1_1__Request.html", null ],
     [ "task_manager.gpsr.merger._Segment", "classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html", null ],
@@ -29,6 +31,7 @@ var hierarchy =
       [ "task_manager.gpsr.leaf_behaviours.OneShotCallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1OneShotCallbackLeaf.html", null ],
       [ "task_manager.gpsr.leaf_behaviours.SequentialFallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1SequentialFallbackLeaf.html", null ]
     ] ],
+    [ "perception_3d.shelf_geometry.Box", "classperception__3d_1_1shelf__geometry_1_1Box.html", null ],
     [ "core.tasks.BoxesTask", "classcore_1_1tasks_1_1BoxesTask.html", null ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
     [ "vamp::planning::BSplineSettings", "structvamp_1_1planning_1_1BSplineSettings.html", null ],
@@ -51,6 +54,7 @@ var hierarchy =
     [ "Exception", null, [
       [ "embedding_gallery.core.gallery_build.BuildError", "classembedding__gallery_1_1core_1_1gallery__build_1_1BuildError.html", null ],
       [ "perception_3d.geometric_grasps.GraspRejected", "classperception__3d_1_1geometric__grasps_1_1GraspRejected.html", null ],
+      [ "perception_3d.shelf_geometry.ShelfNotFound", "classperception__3d_1_1shelf__geometry_1_1ShelfNotFound.html", null ],
       [ "pick_and_place.pipelines.errors.PickAborted", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAborted.html", null ],
       [ "pick_and_place.pipelines.errors.PickAttemptFailed", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAttemptFailed.html", null ],
       [ "pick_and_place.pipelines.errors.PickHardwareError", "classpick__and__place_1_1pipelines_1_1errors_1_1PickHardwareError.html", null ]
@@ -72,6 +76,7 @@ var hierarchy =
     [ "perception_3d.geometric_grasps.Fit", "classperception__3d_1_1geometric__grasps_1_1Fit.html", null ],
     [ "vamp::planning::FMTStarNeighborParams", "structvamp_1_1planning_1_1FMTStarNeighborParams.html", null ],
     [ "pick_and_place.pipelines.profiles.ForceGuardProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html", null ],
+    [ "perception_3d.shelf_geometry.Frame", "classperception__3d_1_1shelf__geometry_1_1Frame.html", null ],
     [ "vamp::robots::FRIDA_Real", "structvamp_1_1robots_1_1FRIDA__Real.html", null ],
     [ "embedding_gallery.core.gallery_matcher.Gallery", "classembedding__gallery_1_1core_1_1gallery__matcher_1_1Gallery.html", null ],
     [ "task_manager.subtask_managers.generic_tasks.GenericTask", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask.html", [
@@ -238,6 +243,12 @@ var hierarchy =
       [ "vamp::collision::Sphere< DataT >", "structvamp_1_1collision_1_1Sphere.html", null ]
     ] ],
     [ "frida_constants.vision_classes.ShelfDetection", "classfrida__constants_1_1vision__classes_1_1ShelfDetection.html", null ],
+    [ "perception_3d.shelf_geometry.ShelfGeometry", "classperception__3d_1_1shelf__geometry_1_1ShelfGeometry.html", null ],
+    [ "perception_3d.shelf_geometry.ShelfLevel", "classperception__3d_1_1shelf__geometry_1_1ShelfLevel.html", null ],
+    [ "perception_3d.shelf_geometry.ShelfParams", "classperception__3d_1_1shelf__geometry_1_1ShelfParams.html", null ],
+    [ "pick_and_place.pipelines.profiles.ShelfProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ShelfProfile.html", null ],
+    [ "pick_and_place.pipelines.shelf.ShelfScan", "classpick__and__place_1_1pipelines_1_1shelf_1_1ShelfScan.html", null ],
+    [ "perception_3d.shelf_service.ShelfService", "classperception__3d_1_1shelf__service_1_1ShelfService.html", null ],
     [ "vamp::planning::ShortcutSettings", "structvamp_1_1planning_1_1ShortcutSettings.html", null ],
     [ "vamp::SIMDVector< VectorT >", "structvamp_1_1SIMDVector.html", null ],
     [ "vamp::SIMDVector< __m256 >", "structvamp_1_1SIMDVector_3_01____m256_01_4.html", null ],
@@ -419,7 +430,6 @@ var hierarchy =
       [ "vlm_node.VLMNode", "classvlm__node_1_1VLMNode.html", null ],
       [ "wait_for_controller_input_node.WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", null ],
       [ "xarm_utils.grasp_detector.GraspDetector", "classxarm__utils_1_1grasp__detector_1_1GraspDetector.html", null ],
-      [ "xarm_utils.shelf_height_calibrator.ShelfHeightCalibrator", "classxarm__utils_1_1shelf__height__calibrator_1_1ShelfHeightCalibrator.html", null ],
       [ "zed_simulator.ZedSimulator", "classzed__simulator_1_1ZedSimulator.html", null ]
     ] ],
     [ "ParameterBuilder", null, [

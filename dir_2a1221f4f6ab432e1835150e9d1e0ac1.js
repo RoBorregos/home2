@@ -8,5 +8,6 @@ var dir_2a1221f4f6ab432e1835150e9d1e0ac1 =
     [ "place.py", "place_8py.html", "place_8py" ],
     [ "pour.py", "pour_8py.html", "pour_8py" ],
     [ "profiles.py", "profiles_8py.html", "profiles_8py" ],
+    [ "shelf.py", "shelf_8py.html", "shelf_8py" ],
     [ "strategies.py", "strategies_8py.html", "strategies_8py" ]
 ];

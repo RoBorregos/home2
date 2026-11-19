@@ -3,6 +3,7 @@ var namespacepick__and__place_1_1pipelines_1_1profiles =
     [ "ForceGuardProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile" ],
     [ "PickProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile" ],
     [ "ProfileError", "classpick__and__place_1_1pipelines_1_1profiles_1_1ProfileError.html", null ],
+    [ "ShelfProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ShelfProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1ShelfProfile" ],
     [ "_build", "namespacepick__and__place_1_1pipelines_1_1profiles.html#a75ca0b2f38df393a531a338f2a4c7ba5", null ],
     [ "_coerce", "namespacepick__and__place_1_1pipelines_1_1profiles.html#a3d10bd764cd2f0e9fb5e7d1940bdccb0", null ],
     [ "_require_positive", "namespacepick__and__place_1_1pipelines_1_1profiles.html#a05f5a2c0c832c44bc825adc130da6600", null ],

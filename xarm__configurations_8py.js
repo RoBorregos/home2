@@ -15,6 +15,8 @@ var xarm__configurations_8py =
     [ "PLACE_FLOOR_RIGHT", "xarm__configurations_8py.html#a9bf638907a515f7a982e0735f1a1d6de", null ],
     [ "RECEIVE_OBJECT", "xarm__configurations_8py.html#a1ebb73dff17d4fb86c8530a2eda2fe58", null ],
     [ "SCAN_FLOOR_CARRY_BAG_POSE", "xarm__configurations_8py.html#a2bb2a5e5161403e9e48a8ed3b652fa54", null ],
+    [ "SHELF_SURVEY_HIGH", "xarm__configurations_8py.html#ad755701445f4afbe0c7756bda838dc69", null ],
+    [ "SHELF_SURVEY_LOW", "xarm__configurations_8py.html#a09bde3679897cd8d30a7904f3107dd66", null ],
     [ "TABLE_STARE", "xarm__configurations_8py.html#a9eb785a1b94b7fb277bc12ed1644044b", null ],
     [ "TAKE_OBJECT", "xarm__configurations_8py.html#ab65d3bbb022f09a17bbe258ad7d3d377", null ],
     [ "XARM_CONFIGURATIONS", "xarm__configurations_8py.html#a9904f63744fd7b0759bfcf87a03f8ff9", null ]

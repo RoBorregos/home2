@@ -92,7 +92,8 @@ $(document).ready(function(){initNavTree('namespacefakes.html',''); initResizabl
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">fakes Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -124,10 +125,71 @@ Functions</h2></td></tr>
 <tr class="separator:a2132794781f5d0e74bcad64799d40aba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f2dad6f43b6c730b802e6f636eabe4c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefakes.html#a2f2dad6f43b6c730b802e6f636eabe4c">make_cluster</a> (z_low=0.30, z_high=0.40, frame=&quot;base_link&quot;)</td></tr>
 <tr class="separator:a2f2dad6f43b6c730b802e6f636eabe4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08c5f3b13a6a3d531cc65862e8dec089"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefakes.html#a08c5f3b13a6a3d531cc65862e8dec089">make_board</a> (height, thickness=0.02, front=0.5, back=0.85, y=(-0.4, 0.4), objects=())</td></tr>
+<tr class="separator:a08c5f3b13a6a3d531cc65862e8dec089"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfb951670145ba85ede680bf1a2d6c38"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefakes.html#abfb951670145ba85ede680bf1a2d6c38">make_shelf</a> (levels=((0.39, 0.02),(0.68, 0.02)), extent=(-10, 10, -10, 10), base=None)</td></tr>
+<tr class="separator:abfb951670145ba85ede680bf1a2d6c38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:aa546f457fecdb4690fc53152cd7a2fc8"><td class="memItemLeft" align="right" valign="top">load_profiles&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefakes.html#aa546f457fecdb4690fc53152cd7a2fc8">SHELF_TUNING</a></td></tr>
+<tr class="separator:aa546f457fecdb4690fc53152cd7a2fc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">A recording stand-in for RobotArm and Perception, so the pipelines can be
 tested without a robot or a ROS graph.</pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="a08c5f3b13a6a3d531cc65862e8dec089" name="a08c5f3b13a6a3d531cc65862e8dec089"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08c5f3b13a6a3d531cc65862e8dec089">&#9670;&#160;</a></span>make_board()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def fakes.make_board </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>height</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>thickness</em> = <code>0.02</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>front</em> = <code>0.5</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>back</em> = <code>0.85</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>y</em> = <code>(-0.4,&#160;0.4)</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>objects</em> = <code>()</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">A ShelfLevel as the scan returns it, in base_link.</pre> 
+</div>
+</div>
 <a id="a2f2dad6f43b6c730b802e6f636eabe4c" name="a2f2dad6f43b6c730b802e6f636eabe4c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2f2dad6f43b6c730b802e6f636eabe4c">&#9670;&#160;</a></span>make_cluster()</h2>
 
@@ -238,6 +300,58 @@ tested without a robot or a ROS graph.</pre> </div><h2 class="groupheader">Funct
 That keeps the offset arithmetic in the tests readable: applying a tip
 offset of -0.09 moves the pose to z - 0.09.
 </pre> 
+</div>
+</div>
+<a id="abfb951670145ba85ede680bf1a2d6c38" name="abfb951670145ba85ede680bf1a2d6c38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abfb951670145ba85ede680bf1a2d6c38">&#9670;&#160;</a></span>make_shelf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def fakes.make_shelf </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>levels</em> = <code>((0.39,&#160;0.02),&#160;(0.68,&#160;0.02))</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>extent</em> = <code>(-10,&#160;10,&#160;-10,&#160;10)</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>base</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">A ShelfScan with boards at ``levels`` [(height, thickness)]; a wide extent by default.</pre> 
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="aa546f457fecdb4690fc53152cd7a2fc8" name="aa546f457fecdb4690fc53152cd7a2fc8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa546f457fecdb4690fc53152cd7a2fc8">&#9670;&#160;</a></span>SHELF_TUNING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">load_profiles fakes.SHELF_TUNING</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  load_profiles(</div>
+<div class="line"><span class="lineno">    2</span>    Path(__file__).resolve().parents[1] / <span class="stringliteral">&quot;config&quot;</span> / <span class="stringliteral">&quot;pick_profiles.yaml&quot;</span></div>
+<div class="line"><span class="lineno">    3</span>)[<span class="stringliteral">&quot;shelf&quot;</span>].shelf</div>
+</div><!-- fragment -->
 </div>
 </div>
 </div><!-- contents -->

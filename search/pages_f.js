@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['🧛_20vector_2daccelerated_20motion_20planning_20_28vamp_29_0',['🧛 Vector-Accelerated Motion Planning (VAMP)',['../md_manipulation_packages_vamp_README.html',1,'']]]
+  ['working_20on_20the_20orins_0',['Working on the Orins',['../md_docs_ai_orin.html',1,'']]]
 ];

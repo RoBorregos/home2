@@ -2,6 +2,7 @@ var profiles_8py =
 [
     [ "pick_and_place.pipelines.profiles.ProfileError", "classpick__and__place_1_1pipelines_1_1profiles_1_1ProfileError.html", null ],
     [ "pick_and_place.pipelines.profiles.ForceGuardProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile" ],
+    [ "pick_and_place.pipelines.profiles.ShelfProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ShelfProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1ShelfProfile" ],
     [ "pick_and_place.pipelines.profiles.PickProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile" ],
     [ "_build", "profiles_8py.html#a75ca0b2f38df393a531a338f2a4c7ba5", null ],
     [ "_coerce", "profiles_8py.html#a3d10bd764cd2f0e9fb5e7d1940bdccb0", null ],

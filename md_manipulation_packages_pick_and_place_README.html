@@ -101,7 +101,7 @@ External contract</h1>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Interface   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Used by    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>/manipulation/manipulation_action_server</code>   </td><td class="markdownTableBodyNone"><code>ManipulationAction</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacetask__manager.html">task_manager</a></code> (pick / place / pour / place_on_shelf / place_in_point), <code><a class="el" href="keyboard__input_8py.html">keyboard_input.py</a></code>, <code><a class="el" href="pick__benchmark_8py.html">pick_benchmark.py</a></code>, <code><a class="el" href="manipulation__client_8py.html">manipulation_client.py</a></code>    </td></tr>
+<td class="markdownTableBodyNone"><code>/manipulation/manipulation_action_server</code>   </td><td class="markdownTableBodyNone"><code>ManipulationAction</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacetask__manager.html">task_manager</a></code> (pick / place / pour / scan_shelf / place_on_shelf / place_in_point), <code><a class="el" href="keyboard__input_8py.html">keyboard_input.py</a></code>, <code><a class="el" href="pick__benchmark_8py.html">pick_benchmark.py</a></code>, <code><a class="el" href="manipulation__client_8py.html">manipulation_client.py</a></code>    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/manipulation/go_to_hand_action_server</code>   </td><td class="markdownTableBodyNone"><code>GoToHand</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacetask__manager.html">task_manager</a></code> (handover)    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -140,6 +140,7 @@ Package architecture</h1>
 <div class="line">        pick[&quot;pick.py&quot;]</div>
 <div class="line">        place[&quot;place.py&quot;]</div>
 <div class="line">        pour[&quot;pour.py&quot;]</div>
+<div class="line">        shelf[&quot;shelf.py&lt;br/&gt;&lt;i&gt;survey, scan cache, face a level&lt;/i&gt;&quot;]</div>
 <div class="line">        strat[&quot;strategies.py&lt;br/&gt;&lt;i&gt;how the gripper closes&lt;/i&gt;&quot;]</div>
 <div class="line">        cls[&quot;classification.py&lt;br/&gt;&lt;i&gt;object -&gt; strategy&lt;/i&gt;&quot;]</div>
 <div class="line">        prof[&quot;profiles.py&lt;br/&gt;&lt;i&gt;YAML tuning&lt;/i&gt;&quot;]</div>
@@ -147,14 +148,14 @@ Package architecture</h1>
 <div class="line"> </div>
 <div class="line">    subgraph robot[Robot -- knows the hardware]</div>
 <div class="line">        arm[&quot;arm.py&lt;br/&gt;&lt;i&gt;RobotArm: move, grip, scene, xArm modes&lt;/i&gt;&quot;]</div>
-<div class="line">        perc[&quot;perception.py&lt;br/&gt;&lt;i&gt;Perception: detect, cluster, grasps&lt;/i&gt;&quot;]</div>
+<div class="line">        perc[&quot;perception.py&lt;br/&gt;&lt;i&gt;Perception: detect, cluster, grasps, shelf&lt;/i&gt;&quot;]</div>
 <div class="line">    end</div>
 <div class="line"> </div>
-<div class="line">    core --&gt; pick &amp; place &amp; pour</div>
+<div class="line">    core --&gt; pick &amp; place &amp; pour &amp; shelf</div>
 <div class="line">    pick --&gt; strat --&gt; prof</div>
 <div class="line">    pick --&gt; cls</div>
-<div class="line">    pick &amp; place &amp; pour --&gt; arm</div>
-<div class="line">    pick &amp; place &amp; pour --&gt; perc</div>
+<div class="line">    pick &amp; place &amp; pour &amp; shelf --&gt; arm</div>
+<div class="line">    pick &amp; place &amp; pour &amp; shelf --&gt; perc</div>
 </div><!-- fragment --><table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Layer   </th><th class="markdownTableHeadNone">May know   </th><th class="markdownTableHeadNone">Must not    </th></tr>
@@ -178,6 +179,7 @@ Tree structure</h1>
 <div class="line">│   │   ├── pick.py              stare -&gt; perceive -&gt; strategy -&gt; return</div>
 <div class="line">│   │   ├── place.py             choose a pose -&gt; reach it -&gt; release -&gt; return</div>
 <div class="line">│   │   ├── pour.py              find container -&gt; grasp source -&gt; tilt -&gt; return</div>
+<div class="line">│   │   ├── shelf.py             SCAN_SHELF survey, the scan the core keeps, face a level</div>
 <div class="line">│   │   ├── strategies.py        the 4 grasp motions + the STRATEGIES table</div>
 <div class="line">│   │   ├── follow.py            face / person tracking velocity commands</div>
 <div class="line">│   │   ├── classification.py    object_name -&gt; strategy key</div>
@@ -203,7 +205,7 @@ How a pick runs</h1>
 <li><b>Look</b> — <code>_move_to_stare_pose</code> moves to the named pose for this strategy (<code>STARE_POSES</code>, defaulting to <code>table_stare</code>).</li>
 <li><b>Perceive</b> — <code>_perceive</code> splits two ways. Every strategy except <code>gpd</code> asks the <b>grasp generator</b> (<code>_perceive_grasps</code>) for ranked grasp poses; it deliberately does <em>not</em> cluster, because clustering adds the table as an obstacle and MoveIt then rejects every near-table path. The generator answers per class: one top-down pose for flat, rim and peak objects; for a solid it fits a box, cylinder or sphere to the depth, tries every approach (top, diagonal, front, both closing axes, both flips) and returns the ones that clear the table, the neighbours and the gripper body, best first, plus the <b>fitted shape</b> as a collision object. <code>gpd</code> is detected, clustered and measured instead (<code>_perceive_cluster</code>).</li>
 <li><b>Grasp</b> — <code>_grasp_sets</code> yields batches of candidates: the generator's top five for a fitted shape, its one pose and the flip for a flat object, or one batch per GPD config so an unreachable config falls back to the next. <code>_run_strategy</code> applies the tip offset along the gripper's approach axis, then hands each candidate to the strategy until one succeeds.</li>
-<li><b>Return</b> — <code>_return_to_carry_pose</code>. Shelf picks retract to <code>front_stare</code> first; rim picks hold position (a basket is carried where it was grasped); everything else returns to a stare pose.</li>
+<li><b>Return</b> — <code>_return_to_carry_pose</code>. Shelf picks first lift and back out of the compartment along straight MoveIt paths (<code>_shelf_exit</code>); rim picks hold position (a basket is carried where it was grasped); everything else returns to a stare pose.</li>
 </ol>
 <p>The gripper opens <em>after</em> perceiving and <em>before</em> grasping — the fingers are in the camera's view while it looks.</p>
 <p>The pipeline never asks <em>which</em> strategy is running to decide these things; the data does:</p>
@@ -215,7 +217,7 @@ How a pick runs</h1>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">Retry with GPD when perception or every candidate fails   </td><td class="markdownTableBodyNone"><code>fallback_to_gpd</code> in the strategy's profile    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">Shelf and pour picks use GPD instead of the geometric generator   </td><td class="markdownTableBodyNone"><code>resolve_pick_strategy(name, force_gpd=...)</code>   </td></tr>
+<td class="markdownTableBodyNone">Shelf picks use the <code>shelf</code> strategy, pour picks GPD   </td><td class="markdownTableBodyNone"><code>resolve_pick_strategy(name, force_gpd=..., shelf=...)</code>   </td></tr>
 </table>
 <h2><a class="anchor" id="autotoc_md12"></a>
 Where the flow goes</h2>
@@ -238,7 +240,7 @@ Where the flow goes</h2>
 <div class="line">    Arm -.-&gt;|&quot;MoveIt, xArm, gripper&quot;| Ext([other nodes])</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md13"></a>
 Pick strategies</h1>
-<p>Which strategy runs is decided by <code>classification.resolve_pick_strategy(object_name, force_gpd)</code>. Order matters there: <code>bowl</code> is a member of <code>RIM_NAMES</code>, so it is tested first. A name that is not listed is a solid and goes to <code>geometric</code>; shelf and pour picks (<code>force_gpd</code>) send it to <code>gpd</code> instead.</p>
+<p>Which strategy runs is decided by <code>classification.resolve_pick_strategy(object_name, force_gpd, shelf)</code>. Every shelf pick is <code>shelf</code>. Order matters for the rest: <code>bowl</code> is a member of <code>RIM_NAMES</code>, so it is tested first. A name that is not listed is a solid and goes to <code>geometric</code>; pour picks (<code>force_gpd</code>) send it to <code>gpd</code> instead.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Profile   </th><th class="markdownTableHeadNone">Objects   </th><th class="markdownTableHeadNone">Class   </th><th class="markdownTableHeadNone">How it grasps    </th></tr>
@@ -253,7 +255,9 @@ Pick strategies</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>geometric</code>   </td><td class="markdownTableBodyNone">any other name: cans, boxes, fruit   </td><td class="markdownTableBodyNone"><code>CartesianApproachPick</code>   </td><td class="markdownTableBodyNone">Backs off along the generator's approach axis, drives straight in under cartesian velocity, closes, then attaches the fitted shape and reports object heights to <code>place</code>. Falls back to <code>gpd</code> when it fails.    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>gpd</code>   </td><td class="markdownTableBodyNone">no name, shelf and pour picks, the geometric fallback   </td><td class="markdownTableBodyNone"><code>DirectGraspPick</code>   </td><td class="markdownTableBodyNone">Plans straight to a GPD grasp. Attaches the object in the planning scene and reports object heights to <code>place</code>.   </td></tr>
+<td class="markdownTableBodyNone"><code>shelf</code>   </td><td class="markdownTableBodyNone">any shelf pick   </td><td class="markdownTableBodyNone"><code>CartesianApproachPick</code>   </td><td class="markdownTableBodyNone">Frontal grasps from the cluster inside the compartment (<code>geometric_grasps.shelf_frontal_grasps</code>), straight in, then two straight MoveIt paths out. Falls back to <code>gpd</code>. See <a class="el" href="md_manipulation_packages_pick_and_place_SHELF.html">`SHELF.md`</a>.    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>gpd</code>   </td><td class="markdownTableBodyNone">no name, pour picks, the geometric and shelf fallback   </td><td class="markdownTableBodyNone"><code>DirectGraspPick</code>   </td><td class="markdownTableBodyNone">Plans straight to a GPD grasp. Attaches the object in the planning scene and reports object heights to <code>place</code>.   </td></tr>
 </table>
 <p>Rim, bowl and peak are one algorithm with three parameter sets. The descent distance is always <code>pre_grasp_height - grasp_z_tweak</code>:</p>
 <table class="markdownTable">

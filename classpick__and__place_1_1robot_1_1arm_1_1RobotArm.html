@@ -92,6 +92,7 @@ $(document).ready(function(){initNavTree('classpick__and__place_1_1robot_1_1arm_
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
@@ -116,6 +117,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1c01fa0de8c1c10e89665b3905c0108b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a3608bcca55c29e3551dabb0a3db415"><td class="memItemLeft" align="right" valign="top">Optional[JointState]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a3a3608bcca55c29e3551dabb0a3db415">joint_state</a> (self)</td></tr>
 <tr class="separator:a3a3608bcca55c29e3551dabb0a3db415"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3ae26503838d1df9692a4ec864ae1c3"><td class="memItemLeft" align="right" valign="top">Optional[PoseStamped]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#af3ae26503838d1df9692a4ec864ae1c3">link_pose</a> (self, str link, str frame=&quot;link_base&quot;)</td></tr>
+<tr class="separator:af3ae26503838d1df9692a4ec864ae1c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65c6cf19bd48128812f90800b54872ae"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a65c6cf19bd48128812f90800b54872ae">to_frame</a> (self, msg, str frame)</td></tr>
+<tr class="separator:a65c6cf19bd48128812f90800b54872ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6693e6628f6cb8b1cbd12049a220e99e"><td class="memItemLeft" align="right" valign="top">Optional[np.ndarray]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a6693e6628f6cb8b1cbd12049a220e99e">tcp_xyz</a> (self)</td></tr>
 <tr class="separator:a6693e6628f6cb8b1cbd12049a220e99e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67be0c4ce4c80b701f8597f0adb64566"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a67be0c4ce4c80b701f8597f0adb64566">tip_offset</a> (self, str param_name)</td></tr>
@@ -140,6 +145,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab61edd8e8687b265c820728868645040"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a754b19993eb2af07ae4077c74c6ab381"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a754b19993eb2af07ae4077c74c6ab381">move_to_named_position</a> (self, str name, float velocity=0.75)</td></tr>
 <tr class="separator:a754b19993eb2af07ae4077c74c6ab381"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54a55688985a3b6ae635446a805f099f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a54a55688985a3b6ae635446a805f099f">acceleration_scaling</a> (self, float acceleration)</td></tr>
+<tr class="separator:a54a55688985a3b6ae635446a805f099f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a242ce12006c1fe489ce90ac605a978e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a242ce12006c1fe489ce90ac605a978e7">move_joints</a> (self, joint_positions, float velocity=0.2)</td></tr>
 <tr class="separator:a242ce12006c1fe489ce90ac605a978e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace870a6888fe30144bd73a31d267cb45"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ace870a6888fe30144bd73a31d267cb45">get_joints</a> (self, bool degrees=True)</td></tr>
@@ -168,10 +175,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a88d3b9757aed0ebd2c0c2d1b01e3604c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa18e3d6163b2b0d3fe2715e382d2ca98"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#aa18e3d6163b2b0d3fe2715e382d2ca98">add_collision_object</a> (self, CollisionObject obj)</td></tr>
 <tr class="separator:aa18e3d6163b2b0d3fe2715e382d2ca98"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a567a458776bc5a070a02116a024b26a0"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a567a458776bc5a070a02116a024b26a0">add_shelf_ceiling_guard</a> (self, place_pose, float table_height)</td></tr>
-<tr class="separator:a567a458776bc5a070a02116a024b26a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7d2b1bcfa3393cdfb331f2f0da63cf85"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a7d2b1bcfa3393cdfb331f2f0da63cf85">remove_shelf_ceiling_guard</a> (self)</td></tr>
-<tr class="separator:a7d2b1bcfa3393cdfb331f2f0da63cf85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21fd28570b5f51690d6a90fea2d2d156"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a21fd28570b5f51690d6a90fea2d2d156">set_shelf_boxes</a> (self, boxes)</td></tr>
+<tr class="separator:a21fd28570b5f51690d6a90fea2d2d156"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a688f46538f464609514d7ab8f1fdfc1b"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a688f46538f464609514d7ab8f1fdfc1b">remove_shelf_scene</a> (self)</td></tr>
+<tr class="separator:a688f46538f464609514d7ab8f1fdfc1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0096c6e79f38e0608767f82b58f4ac0"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ae0096c6e79f38e0608767f82b58f4ac0">object_pick_height</a> (self, obj, grasp_pose)</td></tr>
 <tr class="separator:ae0096c6e79f38e0608767f82b58f4ac0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f2b2793e53d0116812628da08a82b2e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a6f2b2793e53d0116812628da08a82b2e">object_height</a> (self, lowest, highest)</td></tr>
@@ -192,6 +199,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a585dfb91798b86a7ffc7b5ffab0838fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9358f8c60b6c09f78e1454372518d56"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#aa9358f8c60b6c09f78e1454372518d56">send_joint_velocity</a> (self, speeds)</td></tr>
 <tr class="separator:aa9358f8c60b6c09f78e1454372518d56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a4b7ae7c0ecf6e99e23cb714f5f8c5d06"><td class="memItemLeft" align="right" valign="top">PoseStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a4b7ae7c0ecf6e99e23cb714f5f8c5d06">look_at</a> (source, target)</td></tr>
+<tr class="separator:a4b7ae7c0ecf6e99e23cb714f5f8c5d06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -287,6 +299,10 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a00374da69a4bf32693f598e19e9849c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af85896092775d2abcfaccb47c795e083"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#af85896092775d2abcfaccb47c795e083">_tgpio_reset_client</a></td></tr>
 <tr class="separator:af85896092775d2abcfaccb47c795e083"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc6720272c7b72c951ed1dc04d00fedc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#acc6720272c7b72c951ed1dc04d00fedc">_tgpio_reset_disabled_logged</a></td></tr>
+<tr class="separator:acc6720272c7b72c951ed1dc04d00fedc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8341401d8ef935e441cf08b41308d3f7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a8341401d8ef935e441cf08b41308d3f7">_acceleration</a></td></tr>
+<tr class="separator:a8341401d8ef935e441cf08b41308d3f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad936f3e93dffad47ca279c00544c5f40"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#ad936f3e93dffad47ca279c00544c5f40">_place_pose_pub</a></td></tr>
 <tr class="separator:ad936f3e93dffad47ca279c00544c5f40"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3160b069c0b5213d3c027f646f02936"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#af3160b069c0b5213d3c027f646f02936">_debug_point_pub</a></td></tr>
@@ -899,6 +915,34 @@ config_tgpio_reset_when_stop(0) call made by disable_tgpio_reset.
 
 </div>
 </div>
+<a id="a54a55688985a3b6ae635446a805f099f" name="a54a55688985a3b6ae635446a805f099f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54a55688985a3b6ae635446a805f099f">&#9670;&#160;</a></span>acceleration_scaling()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.robot.arm.RobotArm.acceleration_scaling </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>acceleration</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Use ``acceleration`` for every planned move inside the block.</pre> 
+</div>
+</div>
 <a id="aa18e3d6163b2b0d3fe2715e382d2ca98" name="aa18e3d6163b2b0d3fe2715e382d2ca98"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa18e3d6163b2b0d3fe2715e382d2ca98">&#9670;&#160;</a></span>add_collision_object()</h2>
 
@@ -925,43 +969,6 @@ config_tgpio_reset_when_stop(0) call made by disable_tgpio_reset.
       </table>
 </div><div class="memdoc">
 
-</div>
-</div>
-<a id="a567a458776bc5a070a02116a024b26a0" name="a567a458776bc5a070a02116a024b26a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a567a458776bc5a070a02116a024b26a0">&#9670;&#160;</a></span>add_shelf_ceiling_guard()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"> None pick_and_place.robot.arm.RobotArm.add_shelf_ceiling_guard </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>place_pose</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">float&#160;</td>
-          <td class="paramname"><em>table_height</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Block the place return from routing up into the compartment ceiling.
-
-The eye-in-hand octomap never sees it, so a slab is added explicitly.
-</pre> 
 </div>
 </div>
 <a id="a65eddb35b9f058d7aa2cccff079c7cef" name="a65eddb35b9f058d7aa2cccff079c7cef"></a>
@@ -1440,6 +1447,40 @@ from rest during a clean descent, so an absolute test false-trips.
 
 </div>
 </div>
+<a id="af3ae26503838d1df9692a4ec864ae1c3" name="af3ae26503838d1df9692a4ec864ae1c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3ae26503838d1df9692a4ec864ae1c3">&#9670;&#160;</a></span>link_pose()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> Optional[PoseStamped] pick_and_place.robot.arm.RobotArm.link_pose </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>link</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>frame</em> = <code>&quot;link_base&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Where ``link`` is now, in ``frame``; None without TF.</pre> 
+</div>
+</div>
 <a id="adea420a2b432e108830e7025e1ee9ce6" name="adea420a2b432e108830e7025e1ee9ce6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adea420a2b432e108830e7025e1ee9ce6">&#9670;&#160;</a></span>logger()</h2>
 
@@ -1456,6 +1497,42 @@ from rest during a clean descent, so an absolute test false-trips.
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a4b7ae7c0ecf6e99e23cb714f5f8c5d06" name="a4b7ae7c0ecf6e99e23cb714f5f8c5d06"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b7ae7c0ecf6e99e23cb714f5f8c5d06">&#9670;&#160;</a></span>look_at()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> PoseStamped pick_and_place.robot.arm.RobotArm.look_at </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>source</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>target</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">The pose at ``source`` whose x axis points at ``target``.</pre> 
 </div>
 </div>
 <a id="a242ce12006c1fe489ce90ac605a978e7" name="a242ce12006c1fe489ce90ac605a978e7"></a>
@@ -1924,14 +2001,14 @@ the back; seeding IK with the current state keeps the motion short.
 
 </div>
 </div>
-<a id="a7d2b1bcfa3393cdfb331f2f0da63cf85" name="a7d2b1bcfa3393cdfb331f2f0da63cf85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7d2b1bcfa3393cdfb331f2f0da63cf85">&#9670;&#160;</a></span>remove_shelf_ceiling_guard()</h2>
+<a id="a688f46538f464609514d7ab8f1fdfc1b" name="a688f46538f464609514d7ab8f1fdfc1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a688f46538f464609514d7ab8f1fdfc1b">&#9670;&#160;</a></span>remove_shelf_scene()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"> None pick_and_place.robot.arm.RobotArm.remove_shelf_ceiling_guard </td>
+          <td class="memname"> None pick_and_place.robot.arm.RobotArm.remove_shelf_scene </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em></td><td>)</td>
@@ -1939,7 +2016,7 @@ the back; seeding IK with the current state keeps the motion short.
         </tr>
       </table>
 </div><div class="memdoc">
-
+<pre class="fragment">Drop the shelf boxes (they are in base_link and must not leave with the robot).</pre> 
 </div>
 </div>
 <a id="a268c34a915ccdf0f769c136cf8d85022" name="a268c34a915ccdf0f769c136cf8d85022"></a>
@@ -2016,6 +2093,34 @@ the back; seeding IK with the current state keeps the motion short.
 <pre class="fragment">Label the phases that follow, so logs and feedback name the attempt.</pre> 
 </div>
 </div>
+<a id="a21fd28570b5f51690d6a90fea2d2d156" name="a21fd28570b5f51690d6a90fea2d2d156"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21fd28570b5f51690d6a90fea2d2d156">&#9670;&#160;</a></span>set_shelf_boxes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool pick_and_place.robot.arm.RobotArm.set_shelf_boxes </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>boxes</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Put a shelf scan's boxes in the scene (ids are stable, so this replaces them).</pre> 
+</div>
+</div>
 <a id="aad15d6782640eea4f27e9d0d83c0bcdb" name="aad15d6782640eea4f27e9d0d83c0bcdb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aad15d6782640eea4f27e9d0d83c0bcdb">&#9670;&#160;</a></span>snapshot_scene()</h2>
 
@@ -2080,6 +2185,40 @@ the back; seeding IK with the current state keeps the motion short.
 <pre class="fragment">Read a tip-offset ROS parameter by name.</pre> 
 </div>
 </div>
+<a id="a65c6cf19bd48128812f90800b54872ae" name="a65c6cf19bd48128812f90800b54872ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65c6cf19bd48128812f90800b54872ae">&#9670;&#160;</a></span>to_frame()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.robot.arm.RobotArm.to_frame </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>msg</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>frame</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">``msg`` (a PointStamped or PoseStamped) in ``frame``; None without TF.</pre> 
+</div>
+</div>
 <a id="abc6ff1bf654004f4acfd4b80d2885c6b" name="abc6ff1bf654004f4acfd4b80d2885c6b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abc6ff1bf654004f4acfd4b80d2885c6b">&#9670;&#160;</a></span>wait_for_future()</h2>
 
@@ -2133,6 +2272,28 @@ the back; seeding IK with the current state keeps the motion short.
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a8341401d8ef935e441cf08b41308d3f7" name="a8341401d8ef935e441cf08b41308d3f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8341401d8ef935e441cf08b41308d3f7">&#9670;&#160;</a></span>_acceleration</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.robot.arm.RobotArm._acceleration</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a0a3745552ac7df6a4d761eab847e51a3" name="a0a3745552ac7df6a4d761eab847e51a3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0a3745552ac7df6a4d761eab847e51a3">&#9670;&#160;</a></span>_add_objects_client</h2>
 
@@ -2738,6 +2899,28 @@ the back; seeding IK with the current state keeps the motion short.
       <table class="memname">
         <tr>
           <td class="memname">pick_and_place.robot.arm.RobotArm._tgpio_reset_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="acc6720272c7b72c951ed1dc04d00fedc" name="acc6720272c7b72c951ed1dc04d00fedc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc6720272c7b72c951ed1dc04d00fedc">&#9670;&#160;</a></span>_tgpio_reset_disabled_logged</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.robot.arm.RobotArm._tgpio_reset_disabled_logged</td>
         </tr>
       </table>
   </td>

@@ -102,8 +102,8 @@ Functions</h2></td></tr>
 <tr class="separator:a9597ffd3c2a1573ab6036bd81117a64e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a66bfdc2901b1b5ef677a6921c55939d6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegrasp__utils.html#a66bfdc2901b1b5ef677a6921c55939d6">fake_grasps</a> (PointStamped object_point)</td></tr>
 <tr class="separator:a66bfdc2901b1b5ef677a6921c55939d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd739b812ccc2ca74c2903ecd1e851f4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegrasp__utils.html#abd739b812ccc2ca74c2903ecd1e851f4">move_to_pregrasp_nearest_ik</a> (compute_ik_client, move_joints_action_client, pose_stamped, latest_joint_state=None, float velocity=PICK_VELOCITY, fallback_move_to_pose=None, logger=None)</td></tr>
-<tr class="separator:abd739b812ccc2ca74c2903ecd1e851f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8cae820e541b3688b1b95f0506bb7c50"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegrasp__utils.html#a8cae820e541b3688b1b95f0506bb7c50">move_to_pregrasp_nearest_ik</a> (compute_ik_client, move_joints_action_client, pose_stamped, latest_joint_state=None, float velocity=PICK_VELOCITY, fallback_move_to_pose=None, logger=None, float acceleration=PICK_ACCELERATION)</td></tr>
+<tr class="separator:a8cae820e541b3688b1b95f0506bb7c50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a66bfdc2901b1b5ef677a6921c55939d6" name="a66bfdc2901b1b5ef677a6921c55939d6"></a>
@@ -158,8 +158,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="abd739b812ccc2ca74c2903ecd1e851f4" name="abd739b812ccc2ca74c2903ecd1e851f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd739b812ccc2ca74c2903ecd1e851f4">&#9670;&#160;</a></span>move_to_pregrasp_nearest_ik()</h2>
+<a id="a8cae820e541b3688b1b95f0506bb7c50" name="a8cae820e541b3688b1b95f0506bb7c50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8cae820e541b3688b1b95f0506bb7c50">&#9670;&#160;</a></span>move_to_pregrasp_nearest_ik()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -204,7 +204,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>logger</em> = <code>None</code>&#160;</td>
+          <td class="paramname"><em>logger</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>acceleration</em> = <code>PICK_ACCELERATION</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

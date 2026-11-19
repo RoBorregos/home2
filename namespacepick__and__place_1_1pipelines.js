@@ -1,7 +1,7 @@
 var namespacepick__and__place_1_1pipelines =
 [
     [ "classification", "namespacepick__and__place_1_1pipelines_1_1classification.html", [
-      [ "resolve_pick_strategy", "namespacepick__and__place_1_1pipelines_1_1classification.html#ae481bb29c63140aed967432438865fae", null ],
+      [ "resolve_pick_strategy", "namespacepick__and__place_1_1pipelines_1_1classification.html#a87b27e0cbaa05f29e1c86c90019c6048", null ],
       [ "_STRATEGY_BY_OBJECT_NAME", "namespacepick__and__place_1_1pipelines_1_1classification.html#a0b4826e5057f406c0e1e2f1e10208c41", null ],
       [ "PICK_STRATEGY_BOWL", "namespacepick__and__place_1_1pipelines_1_1classification.html#a04e9773210acbea052d57e8582bf8fee", null ],
       [ "PICK_STRATEGY_FLAT", "namespacepick__and__place_1_1pipelines_1_1classification.html#a17a6ec35dfa5e0efbf015ca7b9f1ccdb", null ],
@@ -9,7 +9,8 @@ var namespacepick__and__place_1_1pipelines =
       [ "PICK_STRATEGY_GPD", "namespacepick__and__place_1_1pipelines_1_1classification.html#ac24e186bca6e6a859ce472c85a7f5f8f", null ],
       [ "PICK_STRATEGY_KEYS", "namespacepick__and__place_1_1pipelines_1_1classification.html#a3a97c710c129e94bc4271f5cf904e7aa", null ],
       [ "PICK_STRATEGY_PEAK", "namespacepick__and__place_1_1pipelines_1_1classification.html#ac8f8dabbe34b09a9b5bd0a29481ff12b", null ],
-      [ "PICK_STRATEGY_RIM", "namespacepick__and__place_1_1pipelines_1_1classification.html#a155381714eff6e142df43925bd233e29", null ]
+      [ "PICK_STRATEGY_RIM", "namespacepick__and__place_1_1pipelines_1_1classification.html#a155381714eff6e142df43925bd233e29", null ],
+      [ "PICK_STRATEGY_SHELF", "namespacepick__and__place_1_1pipelines_1_1classification.html#a84b31fa815a38b922bb59ca043203732", null ]
     ] ],
     [ "errors", "namespacepick__and__place_1_1pipelines_1_1errors.html", "namespacepick__and__place_1_1pipelines_1_1errors" ],
     [ "follow", "namespacepick__and__place_1_1pipelines_1_1follow.html", "namespacepick__and__place_1_1pipelines_1_1follow" ],
@@ -24,25 +25,31 @@ var namespacepick__and__place_1_1pipelines =
       [ "_heatmap_pose", "namespacepick__and__place_1_1pipelines_1_1place.html#a77d467a9959053831236680b66ea93c8", null ],
       [ "_locate_point", "namespacepick__and__place_1_1pipelines_1_1place.html#ad9603c4614d992c841118f378780ff81", null ],
       [ "_offset_along_local_z", "namespacepick__and__place_1_1pipelines_1_1place.html#a2bf071daa8a4b884975722ce8d939989", null ],
-      [ "_place_pose_triple", "namespacepick__and__place_1_1pipelines_1_1place.html#a160fec93afae06c828d86ea767446d60", null ],
+      [ "_place_pose_pair", "namespacepick__and__place_1_1pipelines_1_1place.html#a90a26d6cf9edeef483eaac54b6f6bf20", null ],
       [ "_place_surface_cloud", "namespacepick__and__place_1_1pipelines_1_1place.html#a83f370dff22d2f347e4f45a2720603db", null ],
-      [ "_reach_place_pose", "namespacepick__and__place_1_1pipelines_1_1place.html#a2234eee7215a7eb7adfac283be8d7570", null ],
+      [ "_reach_place_pose", "namespacepick__and__place_1_1pipelines_1_1place.html#ab12431584b078d496c3fda89b618b21b", null ],
+      [ "_shelf_place_bounds", "namespacepick__and__place_1_1pipelines_1_1place.html#a0fa52babaea9f7bac9384289192427c4", null ],
+      [ "_shelf_place_quat", "namespacepick__and__place_1_1pipelines_1_1place.html#a47cffc12a216fb09e96b13b9097a3d6d", null ],
       [ "_special_request", "namespacepick__and__place_1_1pipelines_1_1place.html#ac978944968b72af3ad79189a3a4d320a", null ],
       [ "_to_base_link", "namespacepick__and__place_1_1pipelines_1_1place.html#a603b068a2d150c6d143b7b0f9d76b233", null ],
       [ "_trash_pose", "namespacepick__and__place_1_1pipelines_1_1place.html#a5203f32ed9e2f6e10ed73d668ef8bdda", null ],
-      [ "execute", "namespacepick__and__place_1_1pipelines_1_1place.html#af861b469818962f59cde7548d328c6ed", null ],
+      [ "execute", "namespacepick__and__place_1_1pipelines_1_1place.html#a08321e82cd0a3e6e63c3cd1ddae4c61b", null ],
       [ "DEFAULT_SHELF_DROP", "namespacepick__and__place_1_1pipelines_1_1place.html#a3e3948f1df9c322d0c92b309038e2577", null ],
       [ "DEFAULT_TABLE_DROP", "namespacepick__and__place_1_1pipelines_1_1place.html#abe687333580f9e597d3a179951f9f6ea", null ],
+      [ "GRASP_FRAME_YAW_FROM_EEF", "namespacepick__and__place_1_1pipelines_1_1place.html#a7c0fc98456b87341d1abd3db5f2320c0", null ],
       [ "HEATMAP_TIMEOUT", "namespacepick__and__place_1_1pipelines_1_1place.html#adccf52ff884fdfd0af3183bb3f4a46df", null ],
       [ "PLACE_TOLERANCE_ORIENTATION", "namespacepick__and__place_1_1pipelines_1_1place.html#a12cdfb5f33a841e5d49a4a33e4b55a88", null ],
       [ "PLACE_TOLERANCE_POSITION", "namespacepick__and__place_1_1pipelines_1_1place.html#abda330fee6e6f893ed1a9e0e7774d48d", null ],
+      [ "RELEASE_SETTLE", "namespacepick__and__place_1_1pipelines_1_1place.html#a86eb21aa52ca4ee01bdf315978b59230", null ],
       [ "SHELF_LADDER", "namespacepick__and__place_1_1pipelines_1_1place.html#a076f5eed121d7746e0e21c9ce5e66d79", null ],
       [ "SHELF_PLACE_DEPTH_BACK", "namespacepick__and__place_1_1pipelines_1_1place.html#af37a2d04cd1aaeaf6ec21c2d2fb59274", null ],
+      [ "SHELF_PLACE_OBJECT_OFFSET", "namespacepick__and__place_1_1pipelines_1_1place.html#a3e59028569ee383660ecfe0ddc322244", null ],
       [ "TABLE_LADDER", "namespacepick__and__place_1_1pipelines_1_1place.html#af68859412e3d1f12779289b0519107d2", null ],
       [ "TOP_DOWN_QUAT", "namespacepick__and__place_1_1pipelines_1_1place.html#afcae70283fcc627343e5d6b71fea2dc9", null ],
       [ "TRASH_TIMEOUT", "namespacepick__and__place_1_1pipelines_1_1place.html#a32b4beaa4d3b08ee476b9335fbf5bad2", null ]
     ] ],
     [ "pour", "namespacepick__and__place_1_1pipelines_1_1pour.html", "namespacepick__and__place_1_1pipelines_1_1pour" ],
     [ "profiles", "namespacepick__and__place_1_1pipelines_1_1profiles.html", "namespacepick__and__place_1_1pipelines_1_1profiles" ],
+    [ "shelf", "namespacepick__and__place_1_1pipelines_1_1shelf.html", "namespacepick__and__place_1_1pipelines_1_1shelf" ],
     [ "strategies", "namespacepick__and__place_1_1pipelines_1_1strategies.html", "namespacepick__and__place_1_1pipelines_1_1strategies" ]
 ];
