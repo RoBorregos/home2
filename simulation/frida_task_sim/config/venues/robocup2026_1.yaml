@@ -68,3 +68,20 @@ ppc:
   dishwasher: dishwasher
   trash: trash
   floor_trash: [0.45, -15.35]
+
+# HRIC layout: living room with the seats in front of the sofa sublocation
+hric:
+  spawn: [-0.61, -7.69, 0.02, -1.81]
+  # Top camera [x, y, z]
+  overview: [-1.2, -8.8, 7.0]
+  # Where an arriving guest stands, in the doorway in front of the entrance pose
+  door_spot: [-1.0, -6.3]
+  # Seat centres; the people on them face +x
+  seats:
+    - [-2.55, -8.0]
+    - [-2.55, -8.8]
+    - [-2.55, -9.6]
+  # People not in the scene yet wait here
+  park: [20.0, 20.0]
+  # Where the host asks for the bag
+  drop: {location: kitchen, center: [-0.85, -12.27], radius: 1.5}

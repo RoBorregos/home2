@@ -127,7 +127,24 @@ def ppc_counts(scenario: dict, events: list, final: dict) -> dict:
     return counts
 
 
-COUNTERS = {"ppc": ppc_counts}
+def hric_counts(scenario: dict, events: list, final: dict) -> dict:
+    """Row id -> details for the HRI Challenge scoresheet."""
+    counts = {}
+    for e in events:
+        if e["type"] == "judge" and e["row"]:
+            counts.setdefault(e["row"], []).append(e["detail"])
+    carried = "bag_handover" in counts or "bag_on_structure" in counts
+    drop = scenario["drop"]
+    bag = final.get("bag")
+    if carried and bag:
+        x, y, z = bag["position"]
+        dist = math.hypot(x - drop["center"][0], y - drop["center"][1])
+        if z < 0.1 and dist <= drop["radius"]:
+            counts["bag_drop_area"] = [f"bag left in the {drop['location']}"]
+    return counts
+
+
+COUNTERS = {"ppc": ppc_counts, "hric": hric_counts}
 
 
 def score(scenario: dict, events: list, final: dict) -> dict:

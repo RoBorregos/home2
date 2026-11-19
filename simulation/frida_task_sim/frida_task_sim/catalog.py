@@ -30,6 +30,12 @@ OBJECTS = {
     "toothpaste": ("box", (0.19, 0.045, 0.035), 0.12, (0.20, 0.75, 0.80)),
 }
 
+# Props that are not rulebook objects
+PROPS = {
+    "bag": ("cylinder", (0.025, 0.14), 0.05, (0.60, 0.30, 0.10)),
+}
+ALL = {**OBJECTS, **PROPS}
+
 CUTLERY = ("spoon", "fork", "knife")
 # Worldwide-available objects placed on the extra surface
 COMMON = ("coke", "pepsi", "pringles", "red_bull")
@@ -45,24 +51,24 @@ def categories() -> dict:
 
 
 def height(name: str) -> float:
-    return OBJECTS[name][1][-1]
+    return ALL[name][1][-1]
 
 
 def radius(name: str) -> float:
     """Half of the narrowest horizontal extent (what the fingers close on)."""
-    shape, size, _, _ = OBJECTS[name]
+    shape, size, _, _ = ALL[name]
     return size[0] if shape == "cylinder" else min(size[0], size[1]) / 2.0
 
 
 def footprint(name: str) -> float:
     """Radius of the circle that contains the object seen from above."""
-    shape, size, _, _ = OBJECTS[name]
+    shape, size, _, _ = ALL[name]
     return size[0] if shape == "cylinder" else (size[0] ** 2 + size[1] ** 2) ** 0.5 / 2
 
 
 def model_sdf(model: str, name: str, pose) -> str:
     """Free-standing model with its origin on the base centre."""
-    shape, size, mass, rgb = OBJECTS[name]
+    shape, size, mass, rgb = ALL[name]
     h = size[-1]
     if shape == "cylinder":
         geometry = (

@@ -4,7 +4,7 @@ import json
 import math
 import random
 
-from frida_task_sim import catalog, venue as venues
+from frida_task_sim import catalog, people, venue as venues
 
 # Free space kept between two spawned objects (m)
 SPACING = 0.07
@@ -171,7 +171,66 @@ def ppc(seed: int, venue_name: str = "robocup2026_1") -> dict:
     }
 
 
-GENERATORS = {"ppc": ppc}
+NAMES = ("Adam", "Emma", "Jack", "Olivia", "Noah", "Sophia", "Lucas", "Mia")
+DRINKS = ("water", "milk", "coke", "lemonade", "orange juice", "iced tea")
+
+
+def hric(seed: int, venue_name: str = "robocup2026_1") -> dict:
+    """HRI Challenge setup of the 2026 rulebook (section 5.1)."""
+    rng = random.Random(seed)
+    cfg = venues.load(venue_name)["hric"]
+    names = rng.sample(NAMES, 3)
+    drinks = rng.sample(DRINKS, 2)
+    colours = rng.sample(sorted(people.COLOURS), 3)
+    park_x, park_y = cfg["park"]
+    host_seat = rng.randrange(len(cfg["seats"]))
+    sx, sy = cfg["seats"][host_seat]
+    cast = [
+        {
+            "id": "host",
+            "name": names[2],
+            "colour": colours[2],
+            "seat": host_seat,
+            "pose": [sx, sy, -people.SEATED_DROP, 0.0],
+        }
+    ]
+    for i in range(2):
+        cast.append(
+            {
+                "id": f"guest_{i + 1}",
+                "name": names[i],
+                "drink": drinks[i],
+                "colour": colours[i],
+                # How clearly the guest is heard; below 0.7 the robot has to confirm
+                "stt_confidence": rng.choice((0.95, 0.95, 0.6)),
+                "seat": None,
+                "pose": [park_x + i, park_y, 0.0, 0.0],
+            }
+        )
+    bag = {
+        "id": "bag",
+        "name": "bag",
+        "category": "bag",
+        "role": "bag",
+        "surface": "floor",
+        "level": None,
+        "pose": [park_x, park_y + 1.0, 0.0, 0.0],
+    }
+    return {
+        "task": "hric",
+        "seed": seed,
+        "venue": venue_name,
+        "time_limit_s": 420,
+        "spawn": cfg["spawn"],
+        "people": cast,
+        "seats": cfg["seats"],
+        "drop": cfg["drop"],
+        "objects": [bag],
+        "detector": {"seed": seed, "miss_rate": 0.0, "mislabel_rate": 0.0},
+    }
+
+
+GENERATORS = {"ppc": ppc, "hric": hric}
 
 
 def generate(task: str, seed: int, venue_name: str = "robocup2026_1") -> dict:

@@ -52,6 +52,10 @@ def describe(event: dict) -> tuple[str, str] | None:
         )
     if kind == "knocked":
         return RED, f"KNOCKED  {event['object']} off {event['source']}"
+    if kind == "judge":
+        return (GREEN if event["good"] else RED), f"{event['title']}  {event['detail']}"
+    if kind == "scene":
+        return YELLOW, f"SCENE  {event['detail']}"
     if kind == "finish":
         return BOLD, "FINISH"
     return None

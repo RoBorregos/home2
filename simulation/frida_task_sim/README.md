@@ -6,7 +6,9 @@ ground truth against the 2026 scoresheet and saves a replayable report.
 
 ```bash
 ./run.sh simulation --build                 # once, and after pulling
-./run.sh simulation --task ppc --seed 3     # one run (add --gui for the Gazebo window)
+./run.sh simulation --task ppc --seed 3     # one run, with the Gazebo and RViz windows
+./run.sh simulation --task ppc --seed 3 --headless --no-rviz   # no windows
+./run.sh simulation --task hric --seed 1    # HRI Challenge
 ./run.sh simulation --scenario docker/simulation/logs/runs/<run>/scenario.json   # replay
 ./run.sh simulation --suite --tasks ppc --seeds 1,2,3   # several seeds + summary.md
 ./run.sh simulation --task ppc --seed 3 --hold          # stack only, to drive it by hand
@@ -43,8 +45,21 @@ Harness nodes (`launch/task_sim.launch.py`):
 | `fake_hri.py` | The speech stack: logs what the robot says and holds the call as long as a voice would |
 | `referee.py` | The human referee, including opening the arena door after the start signal |
 | `recorder.py` | Records the top view with clock, score, events and speech drawn on it |
+| `hric_director.py` | HRIC only: the guests, the host and the bag, plus people perception (person, face, seat and hand services) and the judgement of gaze, seats and introductions |
 
 Navigation, MoveIt, the pick and place pipeline and the task manager are the real ones.
+
+## HRI Challenge
+
+The scenario seeds two guests (name, drink, shirt colour, how clearly they are heard), the
+seat the host sits on and the bag. `fake_hri.py` answers the robot through the real
+speech-to-text action and extraction service, so `ask_and_confirm` runs unchanged; a guest
+heard with low confidence makes the robot confirm and lose the bonus for it. The director
+rings the doorbell when the robot arms it, paces the guest during the conversation, walks
+them behind the robot, seats them where the robot points and hands over the bag.
+
+Not simulated: opening the entrance door, following the host (the task manager asks for a
+destination instead), gaze while navigating.
 
 ## Run directory
 

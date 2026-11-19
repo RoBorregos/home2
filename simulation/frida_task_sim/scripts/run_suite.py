@@ -28,6 +28,8 @@ def run_one(task: str, seed: int, out: str) -> dict:
             str(seed),
             "--out",
             out,
+            "--headless",
+            "--no-rviz",
         ],
         check=False,
     ).returncode

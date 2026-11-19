@@ -44,6 +44,7 @@ GRASP_MAX_GAP = 0.06
 
 TASK_MANAGERS = {
     "ppc": ("pickandplace_task_manager.py", "PPC ready"),
+    "hric": ("hric_task_manager.py", "HRICTaskManager has started"),
 }
 
 
@@ -162,28 +163,29 @@ def prepare(args) -> tuple[dict, str]:
     with open(os.path.join(run_dir, "grasp_objects.json"), "w") as f:
         json.dump(grasp, f)
     venue = venues.load(scenario["venue"])
-    cabinet = venue["furniture"][venue["ppc"]["cabinet"]]
-    shelf = {
-        "frame": "base_link",
-        "compartment_height": 0.26,
-        "arenas": {"1": cabinet["levels"]},
-    }
-    with open(os.path.join(run_dir, "shelf_levels.json"), "w") as f:
-        json.dump(shelf, f)
+    if scenario["task"] == "ppc":
+        cabinet = venue["furniture"][venue["ppc"]["cabinet"]]
+        shelf = {
+            "frame": "base_link",
+            "compartment_height": 0.26,
+            "arenas": {"1": cabinet["levels"]},
+        }
+        with open(os.path.join(run_dir, "shelf_levels.json"), "w") as f:
+            json.dump(shelf, f)
     # slam_toolbox starts localizing from the spawn pose
     gz_share = get_package_share_directory("frida_gz_sim")
     with open(os.path.join(gz_share, "config", "mapper_params_sim.yaml")) as f:
         mapper = yaml.safe_load(f)
-    x, y, _, yaw = venue["spawn"]
+    x, y, _, yaw = scenario.get("spawn", venue["spawn"])
     mapper["slam_toolbox"]["ros__parameters"]["map_start_pose"] = [x, y, yaw]
     with open(os.path.join(run_dir, "mapper_params.yaml"), "w") as f:
         yaml.safe_dump(mapper, f)
     return scenario, run_dir
 
 
-def start_stack(stack: Stack, scenario: dict, run_dir: str, gui: bool):
+def start_stack(stack: Stack, scenario: dict, run_dir: str, gui: bool, rviz: bool):
     venue = venues.load(scenario["venue"])
-    x, y, z, yaw = venue["spawn"]
+    x, y, z, yaw = scenario.get("spawn", venue["spawn"])
     print(f"{DIM}starting Gazebo...{RESET}", flush=True)
     stack.start(
         "sim",
@@ -234,12 +236,24 @@ def start_stack(stack: Stack, scenario: dict, run_dir: str, gui: bool):
             "frida_task_sim",
             "task_sim.launch.py",
             f"scenario_file:={run_dir}/scenario.json",
+            f"task:={scenario['task']}",
             f"run_dir:={run_dir}",
         ],
     )
     stack.wait_for("manipulation", "Manipulation core started")
     stack.wait_for("navigation", "Finished Setup, Starting monitoring")
     stack.wait_for("harness", "Referee ready", "Ground-truth detector ready")
+    if rviz:
+        stack.start(
+            "rviz",
+            [
+                "ros2",
+                "launch",
+                "frida_gz_sim",
+                "sim_rviz.launch.py",
+                "config:=sim_nav.rviz",
+            ],
+        )
 
 
 def task_manager_cmd(scenario: dict, run_dir: str, spec: str) -> list[str]:
@@ -281,7 +295,7 @@ def run(args) -> int:
     monitor = Monitor(scenario)
     status, code = "completed", 0
     try:
-        start_stack(stack, scenario, run_dir, args.gui)
+        start_stack(stack, scenario, run_dir, not args.headless, not args.no_rviz)
         if args.hold:
             print("stack ready; holding until interrupted", flush=True)
             while True:
@@ -353,7 +367,8 @@ def main():
     )
     parser.add_argument("--spec", help="PPC spec file instead of ppc_sim.json")
     parser.add_argument("--runs-dir", default="/workspace/sim_logs/runs")
-    parser.add_argument("--gui", action="store_true", help="open the Gazebo window")
+    parser.add_argument("--headless", action="store_true", help="no Gazebo window")
+    parser.add_argument("--no-rviz", action="store_true", help="no RViz window")
     parser.add_argument(
         "--hold",
         action="store_true",
