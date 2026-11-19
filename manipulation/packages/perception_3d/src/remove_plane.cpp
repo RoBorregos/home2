@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <variant>
@@ -389,9 +390,15 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_radius_out(
         new pcl::PointCloud<pcl::PointXYZ>);
 
-    // radial filter, to eliminate chance of error by planes far from the point
+    // radial filter, to eliminate chance of error by planes far from the point.
+    // A shelf pick passes its compartment as the band: the default one merges the
+    // object with the boards and walls of a closed cabinet.
+    const float band_min =
+        request->min_height > 0.0f ? request->min_height : point.z - 0.3f;
+    const float band_max =
+        request->max_height > 0.0f ? request->max_height : point.z + 0.3f;
     response->status = this->DistanceFilterFromPoint(
-        last_, point, cloud_radius_out, 0.5, point.z - 0.3, point.z + 0.3);
+        last_, point, cloud_radius_out, 0.5, band_min, band_max);
     std::string base_path = this->package_path;
     response->status =
         savePointCloud(base_path + "/radial_filtered.pcd", cloud_radius_out);
@@ -399,8 +406,13 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
         new pcl::PointCloud<pcl::PointXYZ>);
 
+    // With a compartment band the board is already cropped out: any plane found
+    // is a slice through the walls and the object (a short one loses its base).
+    const float max_plane_z = request->min_height > 0.0f
+                                  ? -std::numeric_limits<float>::infinity()
+                                  : std::numeric_limits<float>::infinity();
     response->status =
-        this->get_cloud_without_plane(cloud_radius_out, cloud_out);
+        this->get_cloud_without_plane(cloud_radius_out, cloud_out, max_plane_z);
 
     ASSERT_AND_RETURN_CODE(response->status, OK,
                            "Error getting current cloud with code %d",
@@ -713,8 +725,10 @@ public:
   }
 
   uint32_t
-  get_cloud_without_plane(_IN_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in,
-                          _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
+  get_cloud_without_plane(
+      _IN_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in,
+      _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
+      const float max_plane_z = std::numeric_limits<float>::infinity()) {
 
     uint32_t status = OK;
     // cloud_out =
@@ -741,7 +755,7 @@ public:
     ASSERT_AND_RETURN_CODE_VALUE(
         status, OK, "Error copying point cloud with code %d", status);
 
-    status = this->extractPlane(cloud_out2, cloud_out, true);
+    status = this->extractPlane(cloud_out2, cloud_out, true, max_plane_z);
 
     ASSERT_AND_RETURN_CODE_VALUE(status, OK,
                                  "Error removing plane with code %d", status);
@@ -878,9 +892,11 @@ public:
    cloud
    */
 
-  uint32_t extractPlane(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
-                        _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
-                        bool extract_negative = false) {
+  uint32_t extractPlane(
+      _IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+      _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
+      bool extract_negative = false,
+      const float max_plane_z = std::numeric_limits<float>::infinity()) {
     uint32_t status = OK;
 
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
@@ -903,6 +919,15 @@ public:
     if (inliers->indices.size() == 0) {
       RCLCPP_ERROR(this->get_logger(), "Could not estimate a planar model");
       return COULD_NOT_ESTIMATE_PLANAR_MODEL;
+    }
+
+    // Horizontal plane ax + by + cz + d = 0, so its height is -d / c.
+    const float plane_z = -coefficients->values[3] / coefficients->values[2];
+    if (plane_z > max_plane_z) {
+      RCLCPP_INFO(this->get_logger(),
+                  "Plane at z %.3f is above %.3f: not a board, kept", plane_z,
+                  max_plane_z);
+      return this->copyPointCloud(cloud, cloud_out);
     }
 
     pcl::ExtractIndices<pcl::PointXYZ> extract;
