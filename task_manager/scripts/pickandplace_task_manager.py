@@ -233,7 +233,14 @@ class PickAndPlaceTM(Node):
         state = PPCState()
         if state_file:
             state = PPCState.from_dict(json.loads(Path(state_file).read_text()))
-        self.ppc = PickAndPlace(self.sm, load_spec(spec_file), state, self)
+        # Node clock so the time budget follows /clock under use_sim_time
+        self.ppc = PickAndPlace(
+            self.sm,
+            load_spec(spec_file),
+            state,
+            self,
+            clock=lambda: self.get_clock().now().nanoseconds / 1e9,
+        )
         CLog.fsm(self, "STATE", f"PPC ready (start_at={self.start_at}, mock={mock_areas}).")
 
     def run(self):
