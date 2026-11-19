@@ -90,6 +90,9 @@ add_or_update_variable .env "BASE_IMAGE" "ros:jazzy"
 add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:simulation-${ENV_TYPE}"
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
+  # Hybrid-GPU laptops otherwise render the Gazebo window through Mesa and it freezes
+  add_or_update_variable .env "GLX_VENDOR" "nvidia"
+  add_or_update_variable .env "NV_PRIME" "1"
 fi
 mkdir -p build install log cache/gz cache/ultralytics logs
 
