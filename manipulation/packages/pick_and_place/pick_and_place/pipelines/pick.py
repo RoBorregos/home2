@@ -26,9 +26,9 @@ from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_FLAT,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_PEAK,
+    PICK_STRATEGY_PLATE,
     PICK_STRATEGY_RIM,
     resolve_pick_strategy,
-    PICK_STRATEGY_PLATE,
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.strategies import GraspCandidate, PickOutcome
@@ -349,8 +349,14 @@ def _grasp_sets(
             # Already ranked across every approach, flips included.
             poses, scores = list(response.grasps[:5]), list(response.scores[:5])
         elif strategy_key == PICK_STRATEGY_PLATE:
-            # Every rim azimuth (0, -5, +5 ... deg) and flip clear of neighbours, so a drive through the wrist singularity falls through to the next
-            poses, scores = list(response.grasps), list(response.scores)
+            # One pose per rim azimuth (0, -5, +5 ... deg), each with its flip, so a
+            # drive that crosses the wrist singularity falls through to the next.
+            poses = [
+                flip
+                for pose in response.grasps
+                for flip in (pose, _rotate_about_approach(pose, 180))
+            ]
+            scores = [score for score in response.scores for _ in range(2)]
         else:
             # A 90 deg alternative would align the fingers with a fork's long axis
             # and collide with it, so the only alternative is the symmetric flip.
