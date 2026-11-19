@@ -90,10 +90,10 @@ TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
-TEST_MAP = False
 TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
+TEST_CONFIRM = False
 TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
@@ -238,9 +238,6 @@ class TestHriManager(Node):
         if TEST_STREAMING:
             self.test_streaming()
 
-        if TEST_MAP:
-            self.test_map()
-
         if TEST_OBJECT_LOCATION:
             self.test_object_location()
 
@@ -249,6 +246,9 @@ class TestHriManager(Node):
 
         if TEST_IS_NEGATIVE:
             self.test_is_negative()
+
+        if TEST_CONFIRM:
+            self.test_confirm()
 
         if TEST_DATA_EXTRACTOR:
             self.test_data_extractor()
@@ -515,24 +515,6 @@ class TestHriManager(Node):
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
 
-    def test_map(self):
-        """
-        Test the map functionality of the HRITasks.
-        """
-        self.get_logger().info("Testing map functionality...")
-
-        # Show the map with a specific item
-        self.hri_manager.show_map(name="Phone")
-        time.sleep(5)
-
-        # Clear the map
-        self.hri_manager.show_map(clear_map=True)
-        time.sleep(2)
-
-        # Show the map again to verify it is cleared
-        self.hri_manager.show_map(name="Mug")
-        time.sleep(5)
-
     def test_object_location(self):
         object_name = "cheese"
         self.get_logger().info("Testing object location retrieval without context...")
@@ -712,6 +694,41 @@ class TestHriManager(Node):
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
         return cases
+
+    def test_confirm(self):
+        """Classify replies to "Did you say <target>?" (yes / no / new_word correction / none)."""
+        test_cases_file = os.path.join(DATA_DIR, "confirm.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"confirm_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        for i, (reply, target, expected, hotwords, *rest) in enumerate(test_cases, 1):
+            query = rest[0] if rest else "drink"
+            try:
+                answer = self.hri_manager._interpret_confirmation(
+                    reply, target, query, hotwords=hotwords
+                )
+                actual = {"yes": "yes", "no": "no", "": "none"}.get(answer, "new_word")
+            except Exception as e:
+                answer = actual = f"EXCEPTION: {e}"
+            success = actual == expected
+            passed_tests += success
+            log = self.get_logger().info if success else self.get_logger().error
+            log(f"Test case {i}: '{reply}' (target={target}) -> {answer}, expected {expected}")
+            results.append([i, reply, target, expected, answer, success])
+
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["test_number", "reply", "target", "expected", "actual", "success"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
 
     def test_data_extractor(self):
         test_cases_file = os.path.join(DATA_DIR, "data_extractor.json")

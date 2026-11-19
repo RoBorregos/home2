@@ -1,0 +1,3 @@
+insightface==1.0.1
+ultralytics==8.4.19
+mediapipe==0.10.18

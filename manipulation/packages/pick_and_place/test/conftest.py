@@ -28,8 +28,6 @@ _OPTIONAL_MODULES = [
     "xarm_msgs",
     "xarm_msgs.msg",
     "xarm_msgs.srv",
-    "xarm_utils",
-    "xarm_utils.shelf_levels",
 ]
 
 # Values a stub must provide concretely, because the code destructures them.

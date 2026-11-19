@@ -18,14 +18,21 @@ def launch_setup(context, *args, **kwargs):
         name='sllidar_rear',
         parameters=[{
             'channel_type': 'serial',
-            'serial_port': '/dev/ttyOmniLidar2',
+            # Ports swapped: the USB adapters are crossed between the two lidars
+            # (udev binds ttyOmniLidar* to the adapter serial, not the lidar).
+            # Swap back if the adapters are re-wired.
+            'serial_port': '/dev/ttyOmniLidar1',
             'serial_baudrate': 460800,
             'frame_id': 'lidar_rear',
             'inverted': False,
             'angle_compensate': True,
             'scan_mode': 'Standard',
             'ignore_array': '-2, 92.0',
-            'min_range': 0.0,
+            # Anything closer than this is the chassis, not an obstacle: the
+            # lidars sit on the footprint corners (circumscribed radius 0.41 m),
+            # so a short return lands inside the robot's own footprint and the
+            # obstacle layer then marks the robot as an obstacle to itself.
+            'min_range': 0.12,
         }],
         respawn=True,
         respawn_delay=2.0,
@@ -41,14 +48,22 @@ def launch_setup(context, *args, **kwargs):
         name='sllidar_front',
         parameters=[{
             'channel_type': 'serial',
-            'serial_port': '/dev/ttyOmniLidar1',
+            'serial_port': '/dev/ttyOmniLidar2',
             'serial_baudrate': 460800,
             'frame_id': 'lidar_front',
             'inverted': False,
             'angle_compensate': True,
             'scan_mode': 'Standard',
-            'ignore_array': '-2, 92.0',
-            'min_range': 0.0,
+            # The 145..180 / -180..-135 pair is the chassis as seen from this
+            # lidar, measured on the four-wheel base: 33% of this scan's returns
+            # fell in a contiguous 70 deg wedge at a median of 0.178-0.220 m with
+            # a std dev <= 0.013 m over 25 scans (rigid structure, not an
+            # obstacle). A sector spanning +-180 needs two pairs, because the
+            # driver compares degree against each pair as a plain interval
+            # (sllidar_node.cpp:295). /scan_rear measures clean with the
+            # original mask, so only this node needs the extra wedge.
+            'ignore_array': '-2, 92.0, 145.0, 180.0, -180.0, -135.0',
+            'min_range': 0.12,
         }],
         respawn=True,
         respawn_delay=2.0,
