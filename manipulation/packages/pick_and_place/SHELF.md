@@ -6,27 +6,7 @@ scan from where the robot stands fails.
 
 ## The flow and its files
 
-```mermaid
-flowchart TB
-    tm["task manager<br/><i>manipulation_tasks.py: scan_shelf(), pick_object(from_shelf=True),<br/>place_on_shelf(level=N)</i>"]
-    subgraph core["manipulation_core.py: the only owner of the shelf scan and its boxes"]
-        shelf["pipelines/shelf.py<br/><i>survey, ShelfScan cache, find the object's level, face a level</i>"]
-        pick["pipelines/pick.py<br/><i>shelf strategy: frontal grasp, GPD fallback, straight exit</i>"]
-        place["pipelines/place.py<br/><i>release over the scanned board</i>"]
-        arm["robot/arm.py · robot/perception.py<br/><i>the only door to ROS</i>"]
-    end
-    detect["perception_3d/shelf_service.py → shelf_geometry.py<br/><i>DetectShelf: levels, walls, collision boxes</i>"]
-    grasps["perception_3d/geometric_grasps.py<br/><i>shelf_frontal_grasps, compartment_band</i>"]
-    yaml["config/pick_profiles.yaml<br/><i>shelf profile: every shelf number</i>"]
-
-    tm -->|"ManipulationAction<br/>SCAN_SHELF · PICK · PLACE"| core
-    shelf --> arm
-    pick --> arm
-    place --> arm
-    arm -->|"DetectShelf (internal)"| detect
-    pick -.->|"pure geometry"| grasps
-    yaml -.-> pick & place & shelf
-```
+![Shelf pick and place: the main files and how they call each other](../../../docs/ai/diagrams/shelf_architecture.png)
 
 | Goal | What `manipulation_core` does | Result |
 | --- | --- | --- |
