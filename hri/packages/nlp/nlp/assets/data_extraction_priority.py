@@ -17,13 +17,6 @@ NAME_PRIORITY_LABELS = [
     "GPE",
     "LOC",
     "FAC",
-    "DATE",
-    "TIME",
-    "ORDINAL",
-    "CARDINAL",
-    "PERCENT",
-    "MONEY",
-    "QUANTITY",
 ]
 
 LOC_PRIORITY_LABELS = [
@@ -55,14 +48,15 @@ def extract_by_priority(
     """
     Extracts information from entities based on priority labels.
     If multiple labels are present, the first one in the priority list is used.
-    All entities with the same chosen label will be concatenated and returned.
+    Repeated entities and entities contained in a longer one ("Ethan" in "Ethan Hunt") collapse
+    into one; if several different entities remain ("Adel and Jane") the answer is ambiguous.
 
     Args:
         ents (List[Span]): List of spaCy named entity spans.
         priority_labels (List[str]): Labels to prioritize, in order.
 
     Returns:
-        str: Concatenated entity texts for the highest priority label found.
+        str: The entity text for the highest priority label found, "" if none or ambiguous.
     """
     label_to_ents = {}
     for ent in ents:
@@ -73,6 +67,12 @@ def extract_by_priority(
     # Pick the first priority label that exists in the entities
     for label in priority_labels:
         if label in label_to_ents:
-            return " ".join(label_to_ents[label])
+            texts = set(label_to_ents[label])
+            unique = [
+                t
+                for t in texts
+                if not any(t != o and t.lower() in o.lower() for o in texts)
+            ]
+            return unique[0] if len(unique) == 1 else ""
 
     return ""
