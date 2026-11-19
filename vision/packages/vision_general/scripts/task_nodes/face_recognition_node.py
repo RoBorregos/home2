@@ -25,11 +25,10 @@ from frida_constants.vision_constants import (
     PERSON_NAME_TOPIC,
     SAVE_NAME_TOPIC,
     TALKING_REQUEST_FRAMES,
-    TALKING_PEOPLE_TOPIC,
 )
 
 from frida_interfaces.msg import Person, PersonList
-from frida_interfaces.srv import IsTalking, SaveName, TalkingPeople
+from frida_interfaces.srv import IsTalking, SaveName
 from models.face_recognition import FaceModel, TRACK_THRESHOLD
 from utils.debug_pub import DebugImagePublisher
 from vision_runtime import VisionRuntime, spin
@@ -75,12 +74,6 @@ class FaceRecognition(VisionRuntime):
         self.is_talking_client = self.create_client(
             IsTalking,
             IS_TALKING_TOPIC,
-            callback_group=self.callback_group,
-        )
-        self.create_service(
-            TalkingPeople,
-            TALKING_PEOPLE_TOPIC,
-            self.talking_people_callback,
             callback_group=self.callback_group,
         )
 
@@ -213,24 +206,6 @@ class FaceRecognition(VisionRuntime):
             return None, last_stamp
         return frame, stamp
 
-    def _collect_face_crops(self, timeout):
-        tracks = []
-        last_stamp = None
-        deadline = time.time() + timeout
-
-        while time.time() < deadline:
-            if tracks and all(
-                len(t["crops"]) >= TALKING_REQUEST_FRAMES for t in tracks
-            ):
-                break
-            frame, last_stamp = self._next_frame(last_stamp)
-            if frame is None:
-                time.sleep(0.005)
-                continue
-            self._add_face_crops(frame, tracks, time.time())
-
-        return tracks
-
     def _request_talking(self, tracks):
         """Send one is_talking request per full track at once; returns [(track, future)]."""
         pending = []
@@ -245,63 +220,21 @@ class FaceRecognition(VisionRuntime):
             pending.append((track, self.is_talking_client.call_async(request)))
         return pending
 
-    def _talking_results(self, pending, log=True):
+    def _talking_results(self, pending):
         """Collect the answered requests; drops the ones that did not finish."""
         talkers = []
-        answered = 0
         for track, future in pending:
             if not future.done():
                 self.is_talking_client.remove_pending_request(future)
-                if log:
-                    self.get_logger().warn(f"is_talking timed out for {track['name']}")
                 continue
             response = future.result()
-            answered += 1
-            if log:
-                self.get_logger().info(f"{track['name']}: {response.message}")
             track["was_talking"], track["talking"] = (
                 track["talking"],
                 response.is_talking,
             )
             if response.is_talking:
                 talkers.append(track)
-        return talkers, answered
-
-    def talking_people_callback(self, req, res):
-        self.get_logger().info("Executing service talking people")
-        res.success = False
-        res.people = []
-
-        if not self.is_talking_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().error("is_talking service not available")
-            return res
-
-        timeout = req.timeout if req.timeout > 0 else 5.0
-
-        tracks = self._collect_face_crops(timeout)
-        if not tracks:
-            self.get_logger().info("No faces detected")
-            return res
-        pending = self._request_talking(tracks)
-        # is_talking answers one request at a time, so the budget grows per face.
-        deadline = time.time() + IS_TALKING_TIMEOUT * len(pending)
-        while time.time() < deadline and not all(f.done() for _, f in pending):
-            time.sleep(0.01)
-        talkers, answered = self._talking_results(pending)
-
-        height, width = self.image.shape[:2]
-        for track in talkers:
-            x1, y1, x2, y2 = track["bbox"]
-            person = Person()
-            person.name = track["name"]
-            person.x = int((track["x"] - width / 2) * MAX_DEGREE / (width / 2))
-            person.y = int((height / 2 - track["y"]) * MAX_DEGREE / (height / 2))
-            person.x1, person.y1 = int(x1), int(y1)
-            person.x2, person.y2 = int(x2), int(y2)
-            res.people.append(person)
-
-        res.success = answered > 0
-        return res
+        return talkers
 
     def _talker_loop(self):
         # Crops are collected continuously, also while is_talking answers, and each
@@ -328,7 +261,7 @@ class FaceRecognition(VisionRuntime):
                 for entry in [p for p in pending if p[1].done() or now > p[2]]:
                     pending.remove(entry)
                     track, future, _, gen = entry
-                    talkers, _ = self._talking_results([(track, future)], log=False)
+                    talkers = self._talking_results([(track, future)])
                     if talkers:
                         self._set_last_talker(track, tracks, gen)
 
