@@ -1,11 +1,8 @@
 """Subtasks that combine several areas (vision, manipulation, navigation, hri)."""
 
-import os
-
 import rclpy
 from geometry_msgs.msg import PointStamped
 from rclpy.duration import Duration
-from std_srvs.srv import Empty
 from tf2_ros import Buffer, TransformException, TransformListener
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transform type)
 
@@ -14,15 +11,8 @@ from frida_constants.vision_constants import CAMERA_FRAME
 from frida_interfaces.msg import GripperGraspState
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.grasp_confirmation import count_by_class, picked_ok
-from task_manager.utils.shelf_pick_logic import (
-    MIN_REACHABLE_SHELF_Z,
-    find_target_on_level,
-    height_matches_level,
-)
+from task_manager.utils.shelf_pick_logic import MIN_REACHABLE_SHELF_Z
 from task_manager.utils.status import Status
-from xarm_utils.shelf_levels import get_shelf_levels
-
-SHELF_SETTLE_S = 3.0
 
 
 class CompositeTasks:
@@ -35,14 +25,13 @@ class CompositeTasks:
         self.manipulation = manipulation
         self.hri = hri
         self.tf_buffer = tf_buffer
-        self.shelf_level_cache: dict[str, float] = {}
         self._rooms: dict[str, str] = {}
-        self._shelves: dict[int, list[str]] | None = None
+        # Manipulation's SCAN_SHELF of the shelf in front: [(height, objects)], lowest first
+        self._shelf: list[tuple[float, list[str]]] | None = None
         self.gripper_has_object = False
         # The grasp bit is trusted only once the gripper sensor has published
         self.grasp_sensor = False
         node.create_subscription(GripperGraspState, GRIPPER_GRASP_STATE_TOPIC, self._gripper_cb, 10)
-        self._clear_octomap_client = node.create_client(Empty, "/clear_octomap")
 
     def enable_tf(self):
         """Start the TF listener; call early so the buffer is filled before the first lookup."""
@@ -76,6 +65,7 @@ class CompositeTasks:
     def navigate_and_dock(self, place: str, dock: bool = True, say: bool = True) -> Status:
         """Tuck the arm, drive to a map sublocation and dock to its surface."""
         self.manipulation.move_to_position("nav_pose")
+        self._shelf = None  # the scan only holds while the base stays put
         if say:
             self.hri.say(f"Now I will go to the {place.replace('_', ' ')}.", wait=False)
         # TODO(navigation): resolve the room from the sublocation inside move_to_location
@@ -88,10 +78,14 @@ class CompositeTasks:
             self.nav.dock_table()
         return Status.EXECUTION_SUCCESS
 
-    def shelf_heights(self) -> list[float]:
-        """Shelf level surface heights (base_link Z), lowest first."""
-        # TODO(manipulation): detect shelf levels live instead of the calibration JSON
-        return sorted(get_shelf_levels(int(os.environ.get("FRIDA_ARENA", "1"))))
+    def shelf_scan(self, rescan: bool = False):
+        """[(height, objects seen)] of the shelf in front, lowest first; scanned once per stop."""
+        if self._shelf is None or rescan:
+            status, levels = self.manipulation.scan_shelf()
+            self._shelf = levels if status == Status.EXECUTION_SUCCESS and levels else None
+            if self._shelf is None:
+                CLog.manip(self.node, "SHELF", "Shelf scan failed.", level="error")
+        return self._shelf
 
     # ── Perception helpers ──
 
@@ -112,25 +106,6 @@ class CompositeTasks:
         except Exception as e:
             CLog.vision(self.node, "TF", f"Error converting point: {e}", level="error")
         return None
-
-    def detections_at_level(self, detections, level_height: float) -> list:
-        """Detections whose base_link height belongs to the shelf at level_height."""
-        result = []
-        for det in detections or []:
-            point = self.detection_point(det)
-            if point is not None and height_matches_level(point[2], level_height):
-                result.append(det)
-        return result
-
-    def detect_with_retries(self, retries: int = 3):
-        """detect_objects, retrying on service errors."""
-        status, dets = self.vision.detect_objects()
-        for _ in range(retries):
-            if status == Status.EXECUTION_SUCCESS:
-                break
-            self.wait(1.0)
-            status, dets = self.vision.detect_objects()
-        return status, dets or []
 
     def detect_on_surface(self, view_pose: str = "table_stare"):
         """Aim the camera at the surface in front and detect objects."""
@@ -203,81 +178,37 @@ class CompositeTasks:
             CLog.manip(self.node, "PICK", f"Pick {name} failed {attempt}/{attempts}.", level="warn")
         return Status.EXECUTION_ERROR
 
-    def view_shelf_level(self, height: float):
-        """Aim the camera at a shelf level and let the octomap settle."""
-        self.manipulation.get_optimal_position_for_plane(
-            height, tolerance=0.1, table_or_shelf=False, approach_plane=True
-        )
-        self.wait(SHELF_SETTLE_S)
-
-    def _find_on_level(self, height: float, name: str):
-        """Look at a level, cache what sits there and return counts if name is framed."""
-        self.view_shelf_level(height)
-        status, dets = self.detect_with_retries()
-        if status != Status.EXECUTION_SUCCESS or not dets:
-            return None
-        candidates = []
-        for det in dets:
-            point = self.detection_point(det)
-            if point is None:
-                continue
-            candidates.append((det.classname, point[2]))
-            if det.classname and height_matches_level(point[2], height):
-                self.shelf_level_cache[det.classname.lower()] = height
-        if find_target_on_level(candidates, name, height) is None:
-            return None
-        return count_by_class([n for n, h in candidates if height_matches_level(h, height)])
-
-    def _locate_on_shelf(self, name: str, heights: list[float]):
-        cached = self.shelf_level_cache.get(name.lower())
-        if cached is not None:
-            counts = self._find_on_level(cached, name)
-            if counts is not None:
-                return cached, counts
-            self.shelf_level_cache.pop(name.lower(), None)
-        for height in sorted(heights):
-            counts = self._find_on_level(height, name)
-            if counts is not None:
-                return height, counts
-        return None, None
-
-    def _clear_octomap(self):
-        if self._clear_octomap_client.wait_for_service(timeout_sec=2.0):
-            self._clear_octomap_client.call_async(Empty.Request())
-            self.wait(SHELF_SETTLE_S)
-
     def pick_from_shelf(
         self,
         name: str,
-        heights: list[float],
         attempts: int = 2,
         vision_confirm: bool = True,
         use_grasp_detector: bool = False,
-        clear_octomap: bool = False,
         say_name: str = "",
     ) -> Status:
-        """Find the object level by level (cached), then pick it keeping that viewing pose."""
+        """Pick from the scanned shelf; manipulation finds the level, faces it and backs out."""
+        shelf = self.shelf_scan()
+        if shelf is None:
+            return Status.EXECUTION_ERROR
+        target = name.lower()
+        seen = [[o.lower() for o in objs] for _, objs in shelf]
+        hint = next((i + 1 for i, objs in enumerate(seen) if target in objs), 0)
+        self.announce_objects([name])
+        if say_name:
+            self.hri.say(f"I will pick the {say_name}.", wait=False)
         for attempt in range(1, attempts + 1):
-            level, before = self._locate_on_shelf(name, heights)
-            if level is None:
-                CLog.manip(self.node, "PICK", f"{name} not found on any shelf.", level="error")
-                return Status.EXECUTION_ERROR
-            if attempt == 1:
-                self.announce_objects([name])
-                if say_name:
-                    self.hri.say(f"I will pick the {say_name}.", wait=False)
-            if clear_octomap:
-                self._clear_octomap()
-            status = self.manipulation.pick_object(
-                name, in_configuration=True, scan_environment=True
-            )
+            status = self.manipulation.pick_object(name, from_shelf=True, shelf_level=hint)
+            level = self.manipulation.last_shelf_level
             if status == Status.EXECUTION_SUCCESS and not self._grasp_holds(use_grasp_detector):
                 status = Status.EXECUTION_ERROR
-            if status == Status.EXECUTION_SUCCESS and vision_confirm and before.get(name.lower()):
-                self.view_shelf_level(level)
-                _, dets = self.vision.detect_objects()
-                after = count_by_class([d.classname for d in self.detections_at_level(dets, level)])
-                if not picked_ok(before, after, name):
+            if status == Status.EXECUTION_SUCCESS and vision_confirm and level:
+                # A held object is closer than the camera's minimum depth, so a rescan skips it
+                rescan = self.shelf_scan(rescan=True)
+                if (
+                    rescan
+                    and level <= len(rescan)
+                    and target in map(str.lower, rescan[level - 1][1])
+                ):
                     CLog.manip(self.node, "PICK", f"{name} still on the shelf.", level="warn")
                     status = Status.EXECUTION_ERROR
             if status == Status.EXECUTION_SUCCESS:
@@ -287,51 +218,25 @@ class CompositeTasks:
 
     # ── Shelves ──
 
-    def scan_shelves(self, heights: list[float]) -> dict[int, list[str]]:
-        """Classes seen per level index (0 = lowest)."""
-        shelves = {}
-        for idx, height in enumerate(sorted(heights)):
-            self.hri.say(f"Scanning shelf number {idx + 1}.", wait=False)
-            self.view_shelf_level(height)
-            status, dets = self.detect_with_retries()
-            names = [d.classname or "unknown" for d in self.detections_at_level(dets, height)]
-            shelves[idx] = names if status == Status.EXECUTION_SUCCESS else []
-            CLog.vision(self.node, "SHELF", f"Shelf {idx + 1} ({height:.2f} m): {shelves[idx]}")
-        return shelves
-
-    def place_on_shelf_fallback(self, heights: list[float], attempts: int = 2, scan=True):
-        """Try each shelf height in order, attempts times each. Returns (Status, height)."""
-        # TODO(manipulation): reject unreachable heights fast instead of planning against them
-        for i, height in enumerate(heights):
-            if scan and i == 0:
-                self.view_shelf_level(height)
-            for attempt in range(1, attempts + 1):
-                # front_stare gives MoveIt a neutral start; the last scan pose has no valid IK
-                self.manipulation.move_to_position("front_stare")
-                self.manipulation.get_optimal_position_for_plane(
-                    height, tolerance=0.1, table_or_shelf=False, approach_plane=False
-                )
-                status = self.manipulation.place_on_shelf(plane_height=height, tolerance=0.1)
-                if status == Status.EXECUTION_SUCCESS:
-                    return Status.EXECUTION_SUCCESS, height
-                CLog.manip(self.node, "PLACE", f"Shelf {height:.2f} m failed {attempt}/{attempts}.")
-        return Status.EXECUTION_ERROR, None
-
     def place_on_shelf_near_similar(self, name: str, attempts: int = 2) -> Status:
         """Place on the shelf in front, next to objects of the same category."""
-        heights = self.shelf_heights()
-        if self._shelves is None:
-            self._shelves = self.scan_shelves(heights)
-        status, _, to_add, _ = self.hri.categorize_objects([name], self._shelves)
+        shelf = self.shelf_scan()
+        if shelf is None:
+            return Status.EXECUTION_ERROR
+        shelves = {i: list(objs) for i, (_, objs) in enumerate(shelf)}
+        status, _, to_add, _ = self.hri.categorize_objects([name], shelves)
         idx = None
         if status == Status.EXECUTION_SUCCESS:
             idx = next((int(i) for i, names in to_add.items() if name in names), None)
         # The right level is still announced; unreachable ones give way to the nearest reachable
-        order = [h for h in heights if h >= MIN_REACHABLE_SHELF_Z]
-        if idx is not None:
+        order = [i for i, (h, _) in enumerate(shelf) if h >= MIN_REACHABLE_SHELF_Z]
+        if idx is not None and idx < len(shelf):
             self.hri.say(f"The {name} goes on shelf {idx + 1}.", wait=False)
-            order.sort(key=lambda h: abs(h - heights[idx]))
-        status, height = self.place_on_shelf_fallback(order, attempts)
-        if status == Status.EXECUTION_SUCCESS:
-            self._shelves.setdefault(heights.index(height), []).append(name)
-        return status
+            order.sort(key=lambda i: abs(shelf[i][0] - shelf[idx][0]))
+        for i in order:
+            for attempt in range(1, attempts + 1):
+                if self.manipulation.place_on_shelf(level=i + 1) == Status.EXECUTION_SUCCESS:
+                    shelf[i][1].append(name)
+                    return Status.EXECUTION_SUCCESS
+                CLog.manip(self.node, "PLACE", f"Shelf {i + 1} failed {attempt}/{attempts}.")
+        return Status.EXECUTION_ERROR

@@ -139,8 +139,11 @@ class PickAndPlace:
     def pick(self, item: Item, source: str) -> Status:
         self.say(f"I will pick the {item.name}.")
         if source in self.spec["shelves"]:
-            heights = self.sm.composite.shelf_heights()
-            status = self.sm.composite.pick_from_shelf(item.name, heights, use_grasp_detector=True)
+            # The grasp bit confirms the pick; the slow rescan is only for a robot without it
+            composite = self.sm.composite
+            status = composite.pick_from_shelf(
+                item.name, use_grasp_detector=True, vision_confirm=not composite.grasp_sensor
+            )
         else:
             status = self.sm.composite.pick_confirmed(item.name, use_grasp_detector=True)
         if status == OK:
