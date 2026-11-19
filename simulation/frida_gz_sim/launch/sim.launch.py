@@ -64,14 +64,18 @@ def launch_setup(context, *args, **kwargs):
     )
     sim_time = {"use_sim_time": True}
 
-    gz_cmd = ["gz", "sim", "-r", "-v", "3", world]
-    if not gui:
-        gz_cmd[2:2] = ["-s", "--headless-rendering"]
+    env = {"GZ_SIM_RESOURCE_PATH": _resource_path()}
     gazebo = ExecuteProcess(
-        cmd=gz_cmd,
+        cmd=["gz", "sim", "-s", "--headless-rendering", "-r", "-v", "3", world],
         output="screen",
-        additional_env={"GZ_SIM_RESOURCE_PATH": _resource_path()},
+        additional_env=env,
     )
+    # The window runs apart from the server: started together they hang on some hybrid-GPU laptops
+    gazebo_gui = [
+        ExecuteProcess(
+            cmd=["gz", "sim", "-g", "-v", "3"], output="screen", additional_env=env
+        )
+    ]
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
@@ -177,6 +181,7 @@ def launch_setup(context, *args, **kwargs):
         [
             SetEnvironmentVariable("GZ_SIM_RESOURCE_PATH", _resource_path()),
             gazebo,
+            *(gazebo_gui if gui else []),
             robot_state_publisher,
             spawn,
         ]
