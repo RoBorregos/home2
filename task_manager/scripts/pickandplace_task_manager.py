@@ -104,7 +104,9 @@ class PickAndPlace:
         if self.state.location == place:
             return OK
         dock = place not in self.spec["trash"]
-        status = self.sm.composite.navigate_and_dock(place, dock=dock)
+        # Stand-off per surface; 0 keeps the docker default
+        offset = self.spec.get("dock_offsets", {}).get(place, 0.0)
+        status = self.sm.composite.navigate_and_dock(place, dock=dock, offset=offset)
         self.state.location = place if status == OK else None
         return status
 

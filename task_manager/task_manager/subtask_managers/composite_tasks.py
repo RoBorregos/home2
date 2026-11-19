@@ -62,7 +62,9 @@ class CompositeTasks:
                         self._rooms.setdefault(sub, room)
         return self._rooms.get(place, "")
 
-    def navigate_and_dock(self, place: str, dock: bool = True, say: bool = True) -> Status:
+    def navigate_and_dock(
+        self, place: str, dock: bool = True, say: bool = True, offset: float = 0.0
+    ) -> Status:
         """Tuck the arm, drive to a map sublocation and dock to its surface."""
         self.manipulation.move_to_position("nav_pose")
         self._shelf = None  # the scan only holds while the base stays put
@@ -75,7 +77,7 @@ class CompositeTasks:
             return status
         if dock:
             # TODO(navigation): table_docker picks a safe stand-off per surface on its own
-            self.nav.dock_table()
+            self.nav.dock_table(offset=offset)
         return Status.EXECUTION_SUCCESS
 
     def shelf_scan(self, rescan: bool = False):
