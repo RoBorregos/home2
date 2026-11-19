@@ -209,6 +209,9 @@ class CompositeTasks:
             if status == Status.EXECUTION_SUCCESS:
                 return status
             CLog.manip(self.node, "PICK", f"Shelf pick {name} failed {attempt}/{attempts}.")
+            # Manipulation drops its scan once the base shifts; retry on a fresh one
+            if attempt < attempts and self.shelf_scan(rescan=True) is None:
+                break
         return Status.EXECUTION_ERROR
 
     # ── Shelves ──
@@ -227,10 +230,16 @@ class CompositeTasks:
         if idx is not None and idx < len(shelf):
             self.hri.say(f"The {name} goes on shelf {idx + 1}.", wait=False)
             order = [idx] + [i for i in order if i != idx]
+        rescanned = False
         for i in order:
             for attempt in range(1, attempts + 1):
                 if self.manipulation.place_on_shelf(level=i + 1) == Status.EXECUTION_SUCCESS:
                     shelf[i][1].append(name)
                     return Status.EXECUTION_SUCCESS
                 CLog.manip(self.node, "PLACE", f"Shelf {i + 1} failed {attempt}/{attempts}.")
+                # Manipulation drops its scan once the base shifts; one fresh scan per place
+                if not rescanned:
+                    rescanned = True
+                    if self.shelf_scan(rescan=True) is None:
+                        return Status.EXECUTION_ERROR
         return Status.EXECUTION_ERROR
