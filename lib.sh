@@ -177,24 +177,54 @@ clean_directories() {
   rm -rf "$target/build" "$target/log" "$target/install"
 }
 
+FRIDA_INTERFACES_CACHE="docker/frida_interfaces_cache"
+FRIDA_INTERFACES_HASH_FILE="$FRIDA_INTERFACES_CACHE/build/.interfaces_hash"
+
+# The cache build is incremental and CMake does not notice removed interface
+# files, so any change to the interface set must trigger a clean rebuild.
+frida_interfaces_hash() {
+  local files
+  files=$(find frida_interfaces -type f \( -name '*.msg' -o -name '*.srv' -o -name '*.action' -o -name 'CMakeLists.txt' \) | LC_ALL=C sort)
+  { echo "$files"; echo "$files" | xargs cat; } | cksum
+}
+
+frida_interfaces_cache_stale() {
+  [ ! -f "$FRIDA_INTERFACES_HASH_FILE" ] || [ "$(cat "$FRIDA_INTERFACES_HASH_FILE")" != "$(frida_interfaces_hash)" ]
+}
+
 run_frida_interfaces() {
   local compose_yaml
-  if [ -f "docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml" ]; then
-    compose_yaml="docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml"
+  if [ -f "$FRIDA_INTERFACES_CACHE/docker-compose-${ENV_TYPE}.yaml" ]; then
+    compose_yaml="$FRIDA_INTERFACES_CACHE/docker-compose-${ENV_TYPE}.yaml"
   else
     echo "frida_interfaces cache compose file not found for env=${ENV_TYPE}" >&2
     return 1
   fi
 
+  if frida_interfaces_cache_stale; then
+    echo "frida_interfaces changed since last cache build, removing stale build"
+    # Caches built before UID was exported are owned by root, wipe them entirely
+    if [ -n "$(find "$FRIDA_INTERFACES_CACHE"/{build,install,log} ! -user "$(id -u)" -print -quit 2>/dev/null)" ]; then
+      docker run --rm --user 0:0 -v "$PWD/$FRIDA_INTERFACES_CACHE:/cache" "roborregos/home2:${ENV_TYPE}_base" \
+        rm -rf /cache/build /cache/install /cache/log ||
+        { echo "Could not remove stale cache, run: sudo rm -rf $FRIDA_INTERFACES_CACHE/{build,install,log}" >&2; return 1; }
+    else
+      rm -rf "$FRIDA_INTERFACES_CACHE/build/frida_interfaces" "$FRIDA_INTERFACES_CACHE/install/frida_interfaces"
+    fi
+  fi
+
   echo "Running frida_interfaces_cache to build frida_interfaces (using $compose_yaml)"
-  mkdir -p "docker/frida_interfaces_cache/build" "docker/frida_interfaces_cache/install" "docker/frida_interfaces_cache/log"
-  export GID=$(id -g) && docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
+  mkdir -p "$FRIDA_INTERFACES_CACHE/build" "$FRIDA_INTERFACES_CACHE/install" "$FRIDA_INTERFACES_CACHE/log"
+  export UID
+  export GID=$(id -g)
+  docker compose -f "$compose_yaml" run --rm frida_interfaces_cache || return 1
+  frida_interfaces_hash > "$FRIDA_INTERFACES_HASH_FILE"
 }
 
 run_area() {
   # simulation builds frida_interfaces itself inside its own workspace
-  if [ "$INPUT" != "zed" ] && [ "$INPUT" != "simulation" ] && [ ! -d "docker/frida_interfaces_cache/build" ]; then
-    echo "Cache directory missing. Building frida_interfaces_cache first..."
+  if [ "$INPUT" != "zed" ] && [ "$INPUT" != "simulation" ] && frida_interfaces_cache_stale; then
+    echo "frida_interfaces cache missing or outdated. Building frida_interfaces_cache first..."
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi
 
