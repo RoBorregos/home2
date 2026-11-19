@@ -9,6 +9,7 @@
   },
   "shelves": ["cabinet"],
   "trash": ["trashbin"],
+  "dock_offsets": {"cabinet": 0.30, "dishwasher": 0.32},
   "breakfast": [
     {"object": "bowl", "from": "dishwasher"},
     {"object": "cornflakes", "from": "cabinet", "pour_into": "bowl", "next_to": "bowl"},
