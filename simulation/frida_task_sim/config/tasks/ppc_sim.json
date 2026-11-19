@@ -2,6 +2,7 @@
   "time_limit_s": 420,
   "cleanup_until_s": 180,
   "table": "dinner_table",
+  "table_range_m": 1.3,
   "destinations": {
     "fruit": "trash",
     "dish": "dishwasher",

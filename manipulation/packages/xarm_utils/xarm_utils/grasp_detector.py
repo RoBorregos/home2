@@ -19,6 +19,7 @@ class GraspDetector(Node):
             GripperGraspState, "gripper/grasp_state", 10
         )
         timer_period = 0.5  # seconds
+        self.last_state = None
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def timer_callback(self):
@@ -31,7 +32,11 @@ class GraspDetector(Node):
                 msg = GripperGraspState()
                 msg.object_detected = bool(response.digitals[1])
                 self.grasp_state_pub.publish(msg)
-                self.get_logger().info(f"Gripper grasp state: {msg.object_detected}")
+                if msg.object_detected != self.last_state:
+                    self.get_logger().info(
+                        f"Gripper grasp state: {msg.object_detected}"
+                    )
+                    self.last_state = msg.object_detected
             except Exception as e:
                 self.get_logger().error(f"Service call failed: {str(e)}")
 

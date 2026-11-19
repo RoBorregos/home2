@@ -242,7 +242,7 @@ def start_stack(stack: Stack, scenario: dict, run_dir: str, gui: bool):
     stack.wait_for("harness", "Referee ready", "Ground-truth detector ready")
 
 
-def task_manager_cmd(scenario: dict, run_dir: str, spec: str) -> list[str]:
+def task_manager_cmd(scenario: dict, run_dir: str, args) -> list[str]:
     share = get_package_share_directory("frida_task_sim")
     script, _ = TASK_MANAGERS[scenario["task"]]
     cmd = [
@@ -257,10 +257,14 @@ def task_manager_cmd(scenario: dict, run_dir: str, spec: str) -> list[str]:
     if scenario["task"] == "ppc":
         cmd += [
             "-p",
-            f"spec_file:={spec or share + '/config/tasks/ppc_sim.json'}",
+            f"spec_file:={args.spec or share + '/config/tasks/ppc_sim.json'}",
             "-p",
             f"log_dir:={run_dir}/bt",
+            "-p",
+            f"start_at:={args.start_at}",
         ]
+        if args.state_file:
+            cmd += ["-p", f"state_file:={args.state_file}"]
     return cmd
 
 
@@ -288,7 +292,7 @@ def run(args) -> int:
                 rclpy.spin_once(monitor, timeout_sec=0.5)
         _, ready = TASK_MANAGERS[scenario["task"]]
         stack.log_dir = run_dir
-        stack.start("tm", task_manager_cmd(scenario, run_dir, args.spec))
+        stack.start("tm", task_manager_cmd(scenario, run_dir, args))
         stack.wait_for("tm", ready, timeout=120)
         tm = stack.processes["tm"]
         limit = scenario["time_limit_s"] + GRACE
@@ -352,6 +356,10 @@ def main():
         "--out", help="run directory (default: <runs-dir>/<task>_seed<N>_<time>)"
     )
     parser.add_argument("--spec", help="PPC spec file instead of ppc_sim.json")
+    parser.add_argument("--start-at", default="start", help="PPC phase to start at")
+    parser.add_argument(
+        "--state-file", default="", help="PPC state snapshot to resume from"
+    )
     parser.add_argument("--runs-dir", default="/workspace/sim_logs/runs")
     parser.add_argument("--gui", action="store_true", help="open the Gazebo window")
     parser.add_argument(

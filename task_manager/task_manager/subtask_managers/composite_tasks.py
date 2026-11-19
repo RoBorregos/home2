@@ -11,6 +11,7 @@ from frida_constants.vision_constants import CAMERA_FRAME
 from frida_interfaces.msg import GripperGraspState
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.grasp_confirmation import count_by_class, picked_ok
+from task_manager.utils.shelf_pick_logic import MIN_REACHABLE_SHELF_Z
 from task_manager.utils.status import Status
 
 
@@ -28,6 +29,8 @@ class CompositeTasks:
         # Manipulation's SCAN_SHELF of the shelf in front: [(height, objects)], lowest first
         self._shelf: list[tuple[float, list[str]]] | None = None
         self.gripper_has_object = False
+        # The grasp bit is trusted only once the gripper sensor has published
+        self.grasp_sensor = False
         node.create_subscription(GripperGraspState, GRIPPER_GRASP_STATE_TOPIC, self._gripper_cb, 10)
 
     def enable_tf(self):
@@ -38,6 +41,7 @@ class CompositeTasks:
 
     def _gripper_cb(self, msg):
         self.gripper_has_object = msg.object_detected
+        self.grasp_sensor = True
 
     def wait(self, seconds: float):
         """Sleep while keeping the node's callbacks alive."""
@@ -52,7 +56,10 @@ class CompositeTasks:
         if not self._rooms:
             _, areas = self.nav.retrieve_areas()
             if isinstance(areas, dict):
-                self._rooms = {sub: room for room, subs in areas.items() for sub in subs}
+                # A sublocation in several rooms (e.g. trashbin) resolves to the first one
+                for room, subs in areas.items():
+                    for sub in subs:
+                        self._rooms.setdefault(sub, room)
         return self._rooms.get(place, "")
 
     def navigate_and_dock(
@@ -124,7 +131,7 @@ class CompositeTasks:
         """Place whatever is held at the current spot so a new pick never drops it."""
         if not held_name:
             return Status.EXECUTION_SUCCESS
-        if use_grasp_detector and not self.gripper_has_object:
+        if use_grasp_detector and self.grasp_sensor and not self.gripper_has_object:
             CLog.manip(self.node, "PICK", "Grasp bit reports empty gripper.")
             return Status.EXECUTION_SUCCESS
         CLog.manip(self.node, "PICK", f"Still holding {held_name}; placing it here.", level="warn")
@@ -137,7 +144,7 @@ class CompositeTasks:
         return Status.EXECUTION_ERROR
 
     def _grasp_holds(self, use_grasp_detector: bool) -> bool:
-        if not use_grasp_detector:
+        if not (use_grasp_detector and self.grasp_sensor):
             return True
         rclpy.spin_once(self.node, timeout_sec=0.5)
         if not self.gripper_has_object:
@@ -226,10 +233,11 @@ class CompositeTasks:
         idx = None
         if status == Status.EXECUTION_SUCCESS:
             idx = next((int(i) for i, names in to_add.items() if name in names), None)
-        order = list(range(len(shelf)))
+        # The right level is still announced; unreachable ones give way to the nearest reachable
+        order = [i for i, (h, _) in enumerate(shelf) if h >= MIN_REACHABLE_SHELF_Z]
         if idx is not None and idx < len(shelf):
             self.hri.say(f"The {name} goes on shelf {idx + 1}.", wait=False)
-            order = [idx] + [i for i in order if i != idx]
+            order.sort(key=lambda i: abs(shelf[i][0] - shelf[idx][0]))
         rescanned = False
         for i in order:
             for attempt in range(1, attempts + 1):

@@ -7,6 +7,7 @@ Debug: -p start_at:=cleanup|breakfast -p state_file:=<snapshot.json>
 """
 
 import json
+import math
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -27,7 +28,7 @@ OK = Status.EXECUTION_SUCCESS
 @dataclass
 class Item:
     name: str
-    status: str = "pending"  # pending | picked | placed | skipped
+    status: str = "pending"  # pending | picked | placed | skipped | failed
 
 
 @dataclass
@@ -59,7 +60,7 @@ def load_spec(path: str = "") -> dict:
 class PickAndPlace:
     """Task tree; knows nothing about the venue beyond the spec."""
 
-    PHASES = ("start", "cleanup", "breakfast")
+    PHASES = ("start", "cleanup", "breakfast", "retry")
 
     def __init__(self, sm, spec: dict, state: PPCState, node, clock=time.time):
         self.sm = sm
@@ -112,12 +113,27 @@ class PickAndPlace:
     def perceive_table(self) -> Status:
         self.go(self.spec["table"])
         status, dets = self.sm.composite.detect_on_surface()
-        self.state.objects = [Item(d.classname) for d in dets or []]
+        # Objects on furniture behind the table are in view too; only the table's count
+        near = [d for d in dets or [] if self.on_table(d)]
+        self.state.objects = [Item(d.classname) for d in near]
         self.sm.composite.announce_objects([o.name for o in self.state.objects])
         return status
 
+    def on_table(self, detection) -> bool:
+        point = self.sm.composite.detection_point(detection)
+        return point is not None and math.hypot(point[0], point[1]) <= self.spec["table_range_m"]
+
     def free_gripper(self) -> Status:
-        status = self.sm.composite.ensure_gripper_empty(self.state.holding)
+        if not self.state.holding:
+            return OK
+        # Shelves and the trash have no free flat top in front, so a put-down there lands on the floor
+        flat = self.state.location not in (None, *self.spec["shelves"], *self.spec["trash"])
+        composite = self.sm.composite
+        if not flat and (composite.gripper_has_object or not composite.grasp_sensor):
+            # Keep holding rather than release where it is unknown what is below
+            if self.go(self.spec["table"]) != OK:
+                return Status.EXECUTION_ERROR
+        status = self.sm.composite.ensure_gripper_empty(self.state.holding, use_grasp_detector=True)
         if status == OK:
             self.state.holding = None
         return status
@@ -125,9 +141,13 @@ class PickAndPlace:
     def pick(self, item: Item, source: str) -> Status:
         self.say(f"I will pick the {item.name}.")
         if source in self.spec["shelves"]:
-            status = self.sm.composite.pick_from_shelf(item.name)
+            # The grasp bit confirms the pick; the slow rescan is only for a robot without it
+            composite = self.sm.composite
+            status = composite.pick_from_shelf(
+                item.name, use_grasp_detector=True, vision_confirm=not composite.grasp_sensor
+            )
         else:
-            status = self.sm.composite.pick_confirmed(item.name)
+            status = self.sm.composite.pick_confirmed(item.name, use_grasp_detector=True)
         if status == OK:
             item.status = "picked"
             self.state.holding = item.name
@@ -161,10 +181,26 @@ class PickAndPlace:
     def next_breakfast(self):
         return next((b for b in self.state.breakfast if b.status == "pending"), None)
 
+    def next_retry(self):
+        return next(
+            (i for i in self.state.objects + self.state.breakfast if i.status == "skipped"), None
+        )
+
     @staticmethod
     def done(item: Item, ok: bool):
         if item.status == "pending":
             item.status = "skipped"
+
+    @staticmethod
+    def done_retry(item: Item, ok: bool):
+        if item.status == "skipped":
+            item.status = "failed"
+
+    def retry(self, item: Item):
+        # Spare time goes to a second try; a failed dock or a bad view often clears up
+        if any(item is b for b in self.state.breakfast):
+            return self.serve(item)
+        return self.clean(item)
 
     def clean(self, obj: Item):
         table, dest = self.spec["table"], self.destination(obj.name)
@@ -203,6 +239,7 @@ class PickAndPlace:
                 ForEach("cleanup_loop", self.next_object, self.clean, self.done),
             ],
             "breakfast": [ForEach("breakfast", self.next_breakfast, self.serve, self.done)],
+            "retry": [ForEach("retry", self.next_retry, self.retry, self.done_retry)],
         }
         if start_at not in phases:
             raise ValueError(f"start_at must be one of {self.PHASES}")
