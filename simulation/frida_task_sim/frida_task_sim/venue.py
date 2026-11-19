@@ -98,6 +98,12 @@ def furniture_sdf(name: str, f: dict) -> str:
             )
         for i, level in enumerate(f["levels"] + [h]):
             parts += _box(f"board_{i}", (0, 0, level - BOARD / 2), (w, d, BOARD), rgb)
+        closed = f.get("closed_below", 0.0)
+        if closed:
+            # Doors over the bottom compartment: the base lidar sees a front, the wheels a wall
+            front = (fx * d / 2, fy * d / 2, closed / 2)
+            size = (w if fy else PANEL, PANEL if fy else d, closed)
+            parts += _box("doors", front, size, rgb)
     return f"""    <model name="{name}">
       <static>true</static>
       <pose>{x:.4f} {y:.4f} 0 0 0 0</pose>
