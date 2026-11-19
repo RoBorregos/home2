@@ -28,6 +28,8 @@ services:
       TERM: xterm-256color
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: all
+      __GLX_VENDOR_LIBRARY_NAME: ${GLX_VENDOR:-mesa}
+      __NV_PRIME_RENDER_OFFLOAD: ${NV_PRIME:-0}
       # Isolated DDS domain so the sim never mixes with other running FRIDA containers
       ROS_DOMAIN_ID: ${SIM_ROS_DOMAIN_ID:-77}
       RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
