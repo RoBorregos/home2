@@ -687,7 +687,10 @@ class RobotArm:
         label = "ForceGuard"
         self._log.info(f"[{label}] starting force-guarded descent")
 
-        baseline = self._sample_effort_baseline(label)
+        # Quick fail-fast check only (not the real baseline): the mode switch
+        # biases effort anyway, so the actual baseline comes from post_switch
+        # below. This is just a cheap fallback for if that one comes up empty.
+        baseline = self._sample_effort_baseline(label, required=1, samples=2)
         if baseline is None:
             return ContactResult(contact=False, descended_m=0.0)
 
@@ -698,45 +701,83 @@ class RobotArm:
             if post_switch is not None:
                 baseline = post_switch
 
-            self._send_cartesian_velocity(-guard.descent_speed, label)
+            start_speed = guard.fast_descent_speed or guard.descent_speed
+            self._send_cartesian_velocity(-start_speed, label)
             self._log.info(
-                f"[{label}] descending at {guard.descent_speed:.1f} mm/s "
+                f"[{label}] descending at {start_speed:.1f} mm/s "
                 f"(jump_trip={guard.jump_trip}N, ceiling={guard.hard_ceiling}N)"
             )
             contact, descended = self._monitor_for_contact(guard, baseline, label)
 
         return ContactResult(contact=contact, descended_m=descended)
 
-    def _sample_effort_baseline(self, label: str, required: int = 5):
+    def _sample_effort_baseline(self, label: str, required: int = 5, samples: int = 10):
         """Median joint effort over a short window, or None if unavailable."""
         if self._latest_joint_state is None:
             self._log.error(f"[{label}] no joint_states received")
             return None
 
-        samples = []
-        for _ in range(10):
+        readings = []
+        for _ in range(samples):
             if self._latest_joint_state is not None:
-                samples.append(list(self._latest_joint_state.effort))
+                readings.append(list(self._latest_joint_state.effort))
             time.sleep(0.02)
 
-        if len(samples) < required:
+        if len(readings) < required:
             self._log.error(f"[{label}] not enough baseline readings")
             return None
 
-        baseline = np.median(samples, axis=0)
+        baseline = np.median(readings, axis=0)
         self._log.info(f"[{label}] effort baseline: {[f'{e:.2f}' for e in baseline]}")
         return baseline
 
     def _monitor_for_contact(self, guard: ForceGuardProfile, baseline, label: str):
-        """Watch joint effort at 50 Hz. Returns (contact, metres descended)."""
+        """Watch joint effort at 50 Hz. Returns (contact, metres descended).
+
+        Descends at ``fast_descent_speed`` (if set), ramping smoothly down to
+        the slower, guarded ``descent_speed`` over the last ``ramp_distance``
+        before ``fast_until``. Contact is never honored before
+        ``min_contact_descent`` (see below).
+        """
         history = deque()  # (timestamp, effort) inside the jump window
         consecutive = 0
         last_log = 0.0
         start_time = time.time()
+        last_time = start_time
+
+        fast_until = guard.fast_until or guard.min_contact_descent
+        ramp_start = max(0.0, fast_until - guard.ramp_distance)
+        fast_speed = guard.fast_descent_speed or guard.descent_speed
+
+        def target_speed(d):
+            if d < ramp_start:
+                return fast_speed
+            if d < fast_until:
+                frac = (d - ramp_start) / (fast_until - ramp_start)
+                return fast_speed + (guard.descent_speed - fast_speed) * frac
+            return guard.descent_speed
+
+        speed = target_speed(0.0)
+        descended = 0.0
+        entered_ramp = speed != fast_speed
 
         while (time.time() - start_time) < guard.timeout:
             time.sleep(0.02)
-            elapsed = time.time() - start_time
+            now = time.time()
+            elapsed = now - start_time
+            descended += (now - last_time) * speed / 1000.0
+            last_time = now
+
+            new_speed = target_speed(descended)
+            if new_speed != speed:
+                speed = new_speed
+                self._send_cartesian_velocity(-speed, label)
+                if not entered_ramp:
+                    entered_ramp = True
+                    self._log.info(
+                        f"[{label}] near the table (~{descended * 1000:.0f}mm), "
+                        f"slowing toward {guard.descent_speed:.1f} mm/s"
+                    )
 
             # The mode-5 loop bypasses MoveIt, so nothing else would stop the arm
             # on an e-stop; the context manager restores mode 1 on the way out.
@@ -753,12 +794,10 @@ class RobotArm:
             if elapsed < guard.contact_settle:
                 continue
 
-            now = time.time()
             history.append((now, current))
             while len(history) > 1 and now - history[0][0] > guard.jump_window:
                 history.popleft()
 
-            descended = elapsed * guard.descent_speed / 1000.0
             abs_delta = np.abs(current - baseline)
             jump = np.abs(current - history[0][1])
             for joint in guard.ignore_joints:
@@ -792,7 +831,6 @@ class RobotArm:
                 return True, descended
 
         elapsed = time.time() - start_time
-        descended = elapsed * guard.descent_speed / 1000.0
         self._log.warn(
             f"[{label}] timeout after {elapsed:.1f}s "
             f"(~{descended * 1000:.1f}mm descended)"

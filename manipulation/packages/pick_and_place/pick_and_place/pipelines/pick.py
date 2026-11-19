@@ -18,6 +18,7 @@ from frida_constants.manipulation_constants import (
     SAFETY_HEIGHT_GEOMETRIC,
     TOP_GRASP_DEPTH,
 )
+from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from geometry_msgs.msg import PointStamped
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
@@ -75,7 +76,7 @@ ZED_OFFSET = np.array([-0.096, 0.0, 0.041])
 STARE_POSES = {
     PICK_STRATEGY_RIM: "look_side_stare",
     PICK_STRATEGY_PEAK: "look_side_stare",
-    PICK_STRATEGY_FLAT: "flat_stare",
+    PICK_STRATEGY_FLAT: "table_stare",
 }
 DEFAULT_STARE_POSE = "table_stare"
 
@@ -215,9 +216,31 @@ def _fall_back_or_fail(
 # ======================================================================
 
 
+POSE_TOLERANCE_DEG = 5.0
+
+
+def _already_at(arm, named: str) -> bool:
+    """True if every joint is already within tolerance of the named pose."""
+    target = XARM_CONFIGURATIONS.get(named)
+    if target is None:
+        return False
+    current = arm.get_joints(degrees=True)
+    current_joints = current.get("joints", {})
+    return all(
+        abs(current_joints.get(joint, 1e9) - deg) <= POSE_TOLERANCE_DEG
+        for joint, deg in target["joints"].items()
+    )
+
+
 def _move_to_stare_pose(arm, strategy_key: str) -> None:
-    """Point the camera where this kind of object lives."""
+    """Point the camera where this kind of object lives.
+
+    Skipped if the arm is already there (e.g. back-to-back flat picks): never
+    skipped otherwise, so perception never runs from an uncontrolled pose.
+    """
     named = STARE_POSES.get(strategy_key, DEFAULT_STARE_POSE)
+    if _already_at(arm, named):
+        return
     with arm.phase(f"stare/{named}"):
         arm.move_to_named_position(named, velocity=0.75)
 
@@ -573,7 +596,7 @@ def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
     with arm.phase(f"return/{named}"):
         for _ in range(5):
             arm.clear_octomap()
-            if arm.move_to_named_position(named, velocity=0.5):
+            if arm.move_to_named_position(named, velocity=0.75):
                 return
         log.warn(f"Could not return to {named} after 5 attempts")
 
