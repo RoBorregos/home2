@@ -17,7 +17,7 @@ demonstrates vision working per task step without eating bandwidth.
    (`MODELS_PATH`), e.g. `robocup2026_v1.pt`, `yolo26n.pt`, `yoloe-11l-seg.pt`.
 3. `vlm_run`: HF cache mount `./moondream_cache:/home/ros/.cache/huggingface`.
 
-`.gitignore` excludes all `.pt`/`.engine` (except `tmr2025.pt`), so a fresh machine or a
+`.gitignore` excludes all `.pt`/`.engine`, so a fresh machine or a
 recreated container **needs internet** to fetch weights, then minutes of TRT export.
 `ultralytics==8.4.19` is pinned; `insightface` is not. `Dockerfile.l4t` still clones the
 legacy **yolov5** repo (vestigial — `/workspace/yolov5`).
@@ -48,7 +48,7 @@ Target layout (host `docker/vision/models/`, mounted at `/workspace/models`):
 docker/vision/models/
 ├── weights/            # all .pt, one place, synced between machines
 │   ├── yolo11m-pose.pt, yolov8n.pt, yolo26n.pt, yoloe-11l-seg.pt
-│   ├── robocup2026_v1.pt, tmr2025.pt, dishwasher_{layout,rack,tablet}.pt
+│   ├── robocup2026_v1.pt, dishwasher_{layout,rack,tablet}.pt
 │   └── MANIFEST.json   # name → sha256 + source URL + ultralytics version
 ├── engines/<device>/   # TRT engines are DEVICE- and TRT-version-specific:
 │   └── orin-agx/…      # never sync engines between laptop and Orin
