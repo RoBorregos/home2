@@ -183,11 +183,14 @@ public:
 
   STATUS_RESPONSE
   service_from_point(geometry_msgs::msg::PointStamped point,
-                     sensor_msgs::msg::PointCloud2::SharedPtr cloud) {
+                     sensor_msgs::msg::PointCloud2::SharedPtr cloud,
+                     float min_height = 0.0f, float max_height = 0.0f) {
 
     auto request = std::make_shared<
         frida_interfaces::srv::ClusterObjectFromPoint::Request>();
     request->point = point;
+    request->min_height = min_height;
+    request->max_height = max_height;
 
     RCLCPP_INFO(this->get_logger(), " 123123123123 Sending request");
 
@@ -301,6 +304,8 @@ public:
         frida_interfaces::srv::ClusterObjectFromPoint::Request>();
     req5->point = point;
     req5->is_get_all_other_surrounding_objects = true;
+    req5->min_height = min_height;
+    req5->max_height = max_height;
     RCLCPP_INFO(this->get_logger(), "Sending request for other objects");
     auto res5 = this->call_services_node->cluster_object_from_point_client
                     ->async_send_request(req5);
@@ -440,7 +445,9 @@ public:
     std::shared_ptr<sensor_msgs::msg::PointCloud2> cloud =
         std::make_shared<sensor_msgs::msg::PointCloud2>();
 
-    auto res = this->service_from_point(request->point, cloud);
+    auto res = this->service_from_point(request->point, cloud,
+                                        request->min_height,
+                                        request->max_height);
 
     response->cluster_result = *cloud;
     // response->status = res;
