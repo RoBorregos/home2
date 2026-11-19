@@ -65,7 +65,7 @@ ros2 run vision_general zed_simulator.py
 Vision is divided into the following packages:
 - vision_general
 - object_detector_2d
-- moondream_run
+- vlm_run
 
 # Adding an object
 

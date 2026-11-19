@@ -16,6 +16,9 @@ RUN chown -R ros:ros /workspace
 RUN apt-get update && apt-get install -y ros-${ROS_DISTRO}-zed-msgs ros-${ROS_DISTRO}-moveit* \
     && rm -rf /var/lib/apt/lists/*
 
+COPY docker/manipulation/install_patched_fcl.sh docker/manipulation/fcl_empty_octree.patch /tmp/fcl/
+RUN /tmp/fcl/install_patched_fcl.sh && rm -rf /tmp/fcl
+
 # Install manipulation dependencies from the package.xml files of this checkout
 # (bind mount: nothing from the context is stored in the image)
 RUN --mount=type=bind,source=.,target=/installs/home2_install \

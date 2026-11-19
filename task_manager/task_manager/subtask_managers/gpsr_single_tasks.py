@@ -1,15 +1,7 @@
-import os
 import time
-
-import rclpy.time
-from rclpy.duration import Duration
-from geometry_msgs.msg import PointStamped
-from tf2_ros import Buffer, TransformListener, TransformException
-from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transform type)
 
 from frida_constants.hri_constants import GPSR_COMMANDS
 from frida_constants.vision_constants import (
-    CAMERA_FRAME,
     DETECTIONS_IMAGE_TOPIC,
     IMAGE_ORIENTED_TOPIC,
 )
@@ -22,11 +14,7 @@ from task_manager.utils.baml_client.types import (
     SayWithContext,
 )
 from task_manager.utils.grasp_confirmation import count_by_class, picked_ok
-from task_manager.utils.shelf_pick_logic import (
-    find_target_on_level,
-    height_matches_level,
-    levels_from_sorted_heights,
-)
+from task_manager.utils.shelf_pick_logic import levels_from_sorted_heights
 from task_manager.utils.status import Status
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
@@ -37,7 +25,6 @@ RETRIES = 1
 MIN_REACHABLE_SHELF_Z = 0.20
 # A pick/place location whose name contains one of these is treated as a shelf:
 SHELF_FURNITURE_HINTS = ("shelf", "cabinet", "rack", "pantry", "bookcase")
-SHELF_SETTLE_S = 3.0  # let the octomap build at a level's viewing pose
 
 
 def search_command(command, objects: list[object]):
@@ -56,18 +43,10 @@ class GPSRSingleTask(GenericTask):
         """Initialize the class"""
         super().__init__(subtask_manager)
 
-        node = self.subtask_manager.manipulation.node
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, node, spin_thread=True)
         self.last_location = ""  # furniture the robot last navigated to
-        self._shelf_level_cache: dict[str, float] = {}
-        try:
-            from xarm_utils.shelf_levels import get_shelf_levels
-
-            arena = int(os.environ.get("FRIDA_ARENA", "1"))
-            self.shelf_level_heights = levels_from_sorted_heights(get_shelf_levels(arena))
-        except Exception:
-            self.shelf_level_heights = {1: 0.095, 2: 0.39, 3: 0.68, 4: 1.05}
+        self._shelf_objects: dict[int, list[str]] = {}  # the scan's labels per level
+        self.shelf_level_heights: dict[int, float] = {}  # measured, 1 = lowest
+        self._shelf_measured = False  # the scan boxes are only valid until the base moves
 
     ## Nav
     def go_to(self, command: GoTo):
@@ -103,6 +82,7 @@ class GPSRSingleTask(GenericTask):
 
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
         self.last_location = target
+        self._shelf_measured = False
         return result, "arrived to:" + command.location_to_go
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
@@ -116,6 +96,7 @@ class GPSRSingleTask(GenericTask):
 
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
         self.last_location = sublocation if sublocation else location
+        self._shelf_measured = False
         return result
 
     ## Manipulation
@@ -146,112 +127,53 @@ class GPSRSingleTask(GenericTask):
         loc = (self.last_location or "").lower()
         return any(hint in loc for hint in SHELF_FURNITURE_HINTS)
 
-    def _detection_height(self, detection):
-        """base_link Z of a detection's 3D point, or None on TF failure."""
-        try:
-            p = PointStamped()
-            p.header.frame_id = CAMERA_FRAME
-            p.header.stamp = rclpy.time.Time().to_msg()  # latest available
-            p.point.x = float(detection.px)
-            p.point.y = float(detection.py)
-            p.point.z = float(detection.pz)
-            transformed = self.tf_buffer.transform(p, "base_link", timeout=Duration(seconds=1.0))
-            return transformed.point.z
-        except TransformException:
-            return None
-
-    def _shelf_counts(self, detections, level: float) -> dict:
-        """Count detections whose height matches a shelf level, per class."""
-        names = []
-        for det in detections or []:
-            h = self._detection_height(det)
-            if det.classname and h is not None and height_matches_level(h, level):
-                names.append(det.classname)
-        return count_by_class(names)
-
-    def _visit_shelf_level(self, height: float, object_name: str):
-        """Move to a shelf level, settle, detect, and learn what sits there.
-
-        Returns (found, before_counts). Only detections whose height matches this
-        level are cached (classname -> height): the camera also frames adjacent
-        levels and caching those would send later picks to the wrong level.
-        """
-        self.subtask_manager.manipulation.get_optimal_position_for_plane(
-            height, tolerance=0.1, table_or_shelf=False, approach_plane=True
-        )
-        self.timeout(SHELF_SETTLE_S)
-        s, detections = self.subtask_manager.vision.detect_objects()
-        retry = 0
-        while s != Status.EXECUTION_SUCCESS and retry < RETRIES:
-            self.timeout(1)
-            s, detections = self.subtask_manager.vision.detect_objects()
-            retry += 1
-        if s != Status.EXECUTION_SUCCESS or not detections:
-            return (False, None)
-        candidates = [
-            (det.classname, h)
-            for det in detections
-            if (h := self._detection_height(det)) is not None
-        ]
-        for name, h in candidates:
-            if name and height_matches_level(h, height):
-                self._shelf_level_cache[name.lower()] = height
-        if find_target_on_level(candidates, object_name, height) is not None:
-            return (True, self._shelf_counts(detections, height))
-        return (False, None)
-
-    def _confirm_pick_shelf(self, target_label: str, before_counts: dict, level: float) -> bool:
-        """Re-look at the shelf level; fail only if the object is clearly still there."""
-        target = (target_label or "").lower()
-        if not before_counts or before_counts.get(target, 0) == 0:
-            return True
-        self.subtask_manager.manipulation.get_optimal_position_for_plane(
-            level, tolerance=0.1, table_or_shelf=False, approach_plane=True
-        )
-        self.timeout(2)
-        _, dets = self.subtask_manager.vision.detect_objects()
-        return picked_ok(before_counts, self._shelf_counts(dets, level), target)
+    def _measure_shelf(self) -> None:
+        """Scan the shelf in front of the robot, once per stop."""
+        if self._shelf_measured:
+            return
+        status, levels = self.subtask_manager.manipulation.scan_shelf()
+        if status != Status.EXECUTION_SUCCESS or not levels:
+            return
+        # Manipulation numbers the levels lowest first, as levels_from_sorted_heights.
+        self.shelf_level_heights = levels_from_sorted_heights([h for h, _ in levels])
+        self._shelf_objects = {i + 1: objects for i, (_, objects) in enumerate(levels)}
+        self._shelf_measured = True
 
     def _pick_from_shelf(self, object_name: str):
-        """Find the target by detecting at each reachable shelf level, then pick there.
-
-        Fast path: a level already cached for this object is confirmed with one
-        detect; a miss drops the entry and falls back to the full sweep. Levels
-        below MIN_REACHABLE_SHELF_Z are skipped (view-only). The pick keeps the
-        found level's viewing pose (in_configuration) — table_stare frames only
-        the lower levels (see docs/ai/shelf_pick_plan.md).
-        """
-        found_level = None
-        before_counts = None
-
-        cached = self._shelf_level_cache.get(object_name.lower())
-        if cached is not None:
-            found, before_counts = self._visit_shelf_level(cached, object_name)
-            if found:
-                found_level = cached
-            else:
-                self._shelf_level_cache.pop(object_name.lower(), None)
-
-        if found_level is None:
-            for height in sorted(self.shelf_level_heights.values()):
-                if height < MIN_REACHABLE_SHELF_Z:
-                    continue  # real level 1: too low to grasp from
-                found, before_counts = self._visit_shelf_level(height, object_name)
-                if found:
-                    found_level = height
-                    break
-
-        if found_level is None:
+        """Pick from the scanned shelf: manipulation finds the object's level (where the
+        scan saw it first), faces it, grasps and backs out."""
+        self._measure_shelf()
+        if not self._shelf_measured:
             return Status.TARGET_NOT_FOUND
-
-        s = self.subtask_manager.manipulation.pick_object(
-            object_name, in_configuration=True, scan_environment=True
+        target = object_name.lower()
+        hint = next(
+            (
+                level
+                for level, objects in sorted(self._shelf_objects.items())
+                if target in (o.lower() for o in objects)
+            ),
+            0,
         )
-        if s == Status.EXECUTION_SUCCESS and not self._confirm_pick_shelf(
-            object_name, before_counts, found_level
-        ):
+        s = self.subtask_manager.manipulation.pick_object(
+            object_name, from_shelf=True, shelf_level=hint
+        )
+        level = self.subtask_manager.manipulation.last_shelf_level
+        if s == Status.EXECUTION_SUCCESS and not self._confirm_pick_shelf(target, level):
             return Status.EXECUTION_ERROR
         return s
+
+    def _confirm_pick_shelf(self, target: str, level: int) -> bool:
+        """Rescan; fail only if ``target`` is still on the level it was picked from.
+
+        The pick can report success while holding air. The held object is closer to the
+        camera than the ZED's minimum depth, so the scan does not file it on a level.
+        Two of the same object on one level read as a miss.
+        """
+        self._shelf_measured = False
+        self._measure_shelf()
+        if not self._shelf_measured or not level:
+            return True  # nothing to compare against: trust the pick
+        return target not in (o.lower() for o in self._shelf_objects.get(level, []))
 
     def pick_object(self, command: PickObject):
         """
@@ -291,6 +213,7 @@ class GPSRSingleTask(GenericTask):
                         f"I have picked the {command.object_to_pick}.", wait=True
                     )
                     return s, f"picked {command.object_to_pick}"
+                self._shelf_measured = False  # rescan: the base may have moved (docking)
                 self.subtask_manager.hri.say("My picking plan failed. I will try again", wait=True)
                 current_try += 1
             return self.deus_pick(command)
@@ -402,24 +325,19 @@ class GPSRSingleTask(GenericTask):
         self.subtask_manager.hri.say("I will place the object.", wait=False)
 
         if self._at_shelf_furniture():
+            self._measure_shelf()
             reachable = sorted(
                 h for h in self.shelf_level_heights.values() if h >= MIN_REACHABLE_SHELF_Z
             )
+            levels = {h: lvl for lvl, h in self.shelf_level_heights.items()}
             for height in reachable[:RETRIES]:
-                self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                    height, tolerance=0.1, table_or_shelf=False, approach_plane=True
-                )
-                self.timeout(SHELF_SETTLE_S)
-                self.subtask_manager.manipulation.move_to_position("front_stare")
-                self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                    height, tolerance=0.1, table_or_shelf=False, approach_plane=False
-                )
-                s = self.subtask_manager.manipulation.place_on_shelf(
-                    plane_height=height, tolerance=0.1
-                )
+                self._measure_shelf()  # again after a failure: the base may have moved
+                # Manipulation faces the level and places within the scanned board.
+                s = self.subtask_manager.manipulation.place_on_shelf(level=levels[height])
                 if s == Status.EXECUTION_SUCCESS:
                     self.subtask_manager.hri.say("I have placed the object.")
                     return Status.EXECUTION_SUCCESS, "placed"
+                self._shelf_measured = False
             # All levels failed: fall through to the human-help fallback below.
         else:
             while place_retries < RETRIES:

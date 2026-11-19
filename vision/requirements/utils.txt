@@ -1,4 +1,5 @@
 tqdm
 pillow
 timm
+-r clip.txt
 mediapipe

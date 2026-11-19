@@ -1,0 +1,2 @@
+# Official OpenAI CLIP; the unrelated PyPI package named 'clip' is not compatible.
+clip @ https://github.com/openai/CLIP/archive/d05afc436d78f1c48dc0dbf8e5980a9d471f35f6.zip

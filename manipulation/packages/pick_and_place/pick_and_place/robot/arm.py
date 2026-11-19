@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from typing import Optional
 
 import numpy as np
+import rclpy
 from frida_constants.manipulation_constants import (
     ADD_COLLISION_OBJECT_SERVICE,
     ATTACH_COLLISION_OBJECT_SERVICE,
@@ -21,6 +22,9 @@ from frida_constants.manipulation_constants import (
     GET_JOINT_SERVICE,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
+    JOINT_VELOCITY_MODE,
+    MANIPULATION_ENSURE_ARM_READY_SERVICE,
+    MOVEIT_MODE,
     MOVE_JOINTS_ACTION_SERVER,
     MOVE_TO_POSE_ACTION_SERVER,
     PICK_ACCELERATION,
@@ -31,6 +35,8 @@ from frida_constants.manipulation_constants import (
     SAFETY_HEIGHT,
     SCAN_ANGLE_HORIZONTAL,
     SCAN_ANGLE_VERTICAL,
+    SHELF_COLLISION_NAMESPACE,
+    XARM_MOVEVELOCITY_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
 )
 from frida_interfaces.action import MoveJoints, MoveToPose
@@ -43,6 +49,11 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
 )
 from frida_motion_planning.utils.ros_utils import wait_for_future
+from frida_motion_planning.utils.tf_utils import (
+    look_at,
+    transform_point,
+    transform_pose,
+)
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
     get_joint_positions,
@@ -56,11 +67,10 @@ from rclpy.duration import Duration
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
-from std_srvs.srv import Empty, SetBool
-from tf2_ros import Buffer, TransformListener
+from std_srvs.srv import Empty, SetBool, Trigger
+from tf2_ros import Buffer, TransformException, TransformListener
 from xarm_msgs.msg import RobotMsg
 from xarm_msgs.srv import MoveVelocity, SetInt16
-from xarm_utils.shelf_levels import get_compartment_height
 
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
@@ -69,10 +79,17 @@ from pick_and_place.utils.self_collision_utils import endpoint_self_collides
 
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
-MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
-MODE1_RECOVERY_TIME = 3.0  # s - wait after restoring mode 1 for traj controller
+MODE_SWITCH_SETTLE_TIME = 0.2  # s - wait after mode 5 reports ready
+MODE_SWITCH_TIMEOUT = 1.0  # s - limit waiting for a mode change to be reported
+MODE_PENDING_STATE = 5  # robot_states value until set_state(0) takes effect
+MODE1_MIN_WAIT = 1.0  # s - covers the gripper close and the controller restart
+MODE1_RECOVERY_TIME = 3.0  # s - limit waiting for the arm to report mode 1 ready
+MODE1_READY_STATES = (0, 2)  # robot_states values for an idle arm
 MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 DESCENT_TIMEOUT_FACTOR = 2.5  # closed-loop descent timeout vs. expected duration
+SERVICE_TIMEOUT = 5.0
+TGPIO_RESET_TIMEOUT = 0.5  # s; the robot answers in 3 ms (median), 11 ms (max of 30)
+SET_MODE_RETRIES = 2
 
 
 class ContactResult:
@@ -119,6 +136,8 @@ class RobotArm:
         self._latest_robot_state: Optional[RobotMsg] = None
         self._estop = False
         self._scene_snapshot = []
+        # True while a velocity command is in flight (face follow sends one at a time)
+        self.joint_velocity_busy = False
 
         # --- observability context ------------------------------------------
         self._goal_handle = None
@@ -176,6 +195,16 @@ class RobotArm:
         self._set_state_client = node.create_client(
             SetInt16, "/xarm/set_state", callback_group=group
         )
+        self._joint_velocity_client = node.create_client(
+            MoveVelocity, XARM_MOVEVELOCITY_SERVICE, callback_group=group
+        )
+        self._reset_controller_client = node.create_client(
+            Trigger, MANIPULATION_ENSURE_ARM_READY_SERVICE, callback_group=group
+        )
+        self._tgpio_reset_client = node.create_client(
+            SetInt16, "/xarm/config_tgpio_reset_when_stop", callback_group=group
+        )
+        self._tgpio_reset_disabled_logged = False
 
         # --- subscriptions ---------------------------------------------------------------
         node.create_subscription(
@@ -199,6 +228,7 @@ class RobotArm:
             depth=10,
         )
         self.tf_buffer = Buffer(cache_time=Duration(seconds=2.0))
+        self._acceleration = PICK_ACCELERATION  # MoveIt scaling for the moves below
         self.tf_listener = TransformListener(
             self.tf_buffer, node, qos=qos, spin_thread=True
         )
@@ -252,11 +282,42 @@ class RobotArm:
     def joint_state(self) -> Optional[JointState]:
         return self._latest_joint_state
 
-    def tcp_z(self) -> Optional[float]:
-        """Current tool-centre-point Z in metres, or None if unknown."""
+    def link_pose(self, link: str, frame: str = "link_base") -> Optional[PoseStamped]:
+        """Where ``link`` is now, in ``frame``; None without TF."""
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                frame, link, rclpy.time.Time()
+            ).transform
+        except TransformException as error:
+            self._log.warn(f"No TF {frame} -> {link}: {error}")
+            return None
+        pose = PoseStamped()
+        pose.header.frame_id = frame
+        pose.header.stamp = self.now()
+        pose.pose.position.x = transform.translation.x
+        pose.pose.position.y = transform.translation.y
+        pose.pose.position.z = transform.translation.z
+        pose.pose.orientation = transform.rotation
+        return pose
+
+    def to_frame(self, msg, frame: str):
+        """``msg`` (a PointStamped or PoseStamped) in ``frame``; None without TF."""
+        if msg.header.frame_id == frame:
+            return msg
+        convert = transform_pose if isinstance(msg, PoseStamped) else transform_point
+        ok, moved = convert(msg, frame, self.tf_buffer)
+        return moved if ok else None
+
+    @staticmethod
+    def look_at(source, target) -> PoseStamped:
+        """The pose at ``source`` whose x axis points at ``target``."""
+        return look_at(source, target)
+
+    def tcp_xyz(self) -> Optional[np.ndarray]:
+        """Current tool-centre-point XYZ in metres, or None if unknown."""
         if self._latest_robot_state is None:
             return None
-        return self._latest_robot_state.pose[2] / 1000.0
+        return np.array(self._latest_robot_state.pose[:3]) / 1000.0
 
     def tip_offset(self, param_name: str) -> float:
         """Read a tip-offset ROS parameter by name."""
@@ -344,7 +405,7 @@ class RobotArm:
         request.pose = pose
         request.velocity = float(PICK_VELOCITY if velocity is None else velocity)
         request.acceleration = float(
-            PICK_ACCELERATION if acceleration is None else acceleration
+            self._acceleration if acceleration is None else acceleration
         )
         request.planner_id = planner_id
         request.target_link = target_link
@@ -366,7 +427,9 @@ class RobotArm:
         # goal acceptance, which is fast.
         return bool(goal_handle.get_result().result.success)
 
-    def move_to_pregrasp(self, pose, velocity: float = PICK_VELOCITY) -> bool:
+    def move_to_pregrasp(
+        self, pose, velocity: float = PICK_VELOCITY, allow_pose_goal: bool = True
+    ) -> bool:
         """Move to a pre-grasp via the nearest IK solution.
 
         A free pose goal lets the planner wind joint 1 almost 360 degrees around
@@ -378,8 +441,9 @@ class RobotArm:
             pose,
             latest_joint_state=self._latest_joint_state,
             velocity=velocity,
-            fallback_move_to_pose=self._move_to_pose_pair,
+            fallback_move_to_pose=self._move_to_pose_pair if allow_pose_goal else None,
             logger=self._log,
+            acceleration=self._acceleration,
         )
 
     def _move_to_pose_pair(self, pose, velocity=PICK_VELOCITY):
@@ -398,8 +462,18 @@ class RobotArm:
                 move_joints_action_client=self._move_joints_client,
                 named_position=name,
                 velocity=velocity,
+                acceleration=self._acceleration,
             )
         )
+
+    @contextmanager
+    def acceleration_scaling(self, acceleration: float):
+        """Use ``acceleration`` for every planned move inside the block."""
+        previous, self._acceleration = self._acceleration, float(acceleration)
+        try:
+            yield
+        finally:
+            self._acceleration = previous
 
     def move_joints(self, joint_positions, velocity: float = 0.2) -> bool:
         return bool(
@@ -458,10 +532,11 @@ class RobotArm:
     # Planning scene
     # ==================================================================
 
-    def clear_octomap(self, settle_s: float = 0.3) -> None:
+    def clear_octomap(self, settle_s: float = 0.0) -> None:
         """Clear the octomap so stale voxels do not block the next plan."""
         if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
-            self._clear_octomap_client.call_async(Empty.Request())
+            future = self._clear_octomap_client.call_async(Empty.Request())
+            self.wait_for_future(future, timeout=2.0)
         time.sleep(settle_s)
 
     def get_collision_objects(self):
@@ -545,35 +620,33 @@ class RobotArm:
             self.wait_for_future(self._attach_client.call_async(request), timeout=10)
         return True
 
-    def add_shelf_ceiling_guard(self, place_pose, table_height: float) -> None:
-        """Block the place return from routing up into the compartment ceiling.
-
-        The eye-in-hand octomap never sees it, so a slab is added explicitly.
-        """
-        compartment_h = get_compartment_height()
-        obj = CollisionObject()
-        obj.id = "shelf_ceiling_guard"
-        obj.type = "box"
-        obj.pose.header.frame_id = place_pose.header.frame_id or "base_link"
-        obj.pose.header.stamp = self._node.get_clock().now().to_msg()
-        obj.pose.pose.position.x = float(place_pose.pose.position.x) + 0.10
-        obj.pose.pose.position.y = float(place_pose.pose.position.y)
-        obj.pose.pose.position.z = float(table_height) + compartment_h + 0.10
-        obj.pose.pose.orientation.w = 1.0
-        obj.dimensions.x = 0.40
-        obj.dimensions.y = 0.80
-        obj.dimensions.z = 0.20
-
+    def add_collision_object(self, obj: CollisionObject) -> None:
         request = AddCollisionObjects.Request()
         request.collision_objects.append(obj)
         if not self._add_objects_client.wait_for_service(timeout_sec=3.0):
-            self._log.warn("add_collision_objects unavailable; no ceiling guard")
+            self._log.warn(f"add_collision_objects unavailable; '{obj.id}' not added")
             return
         self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
-        self._log.info("Added shelf ceiling guard collision")
 
-    def remove_shelf_ceiling_guard(self) -> None:
-        self.remove_collision_object("shelf_ceiling_guard")
+    def set_shelf_boxes(self, boxes) -> bool:
+        """Put a shelf scan's boxes in the scene (ids are stable, so this replaces them)."""
+        request = AddCollisionObjects.Request()
+        request.collision_objects = list(boxes)
+        if not self._add_objects_client.wait_for_service(timeout_sec=3.0):
+            self._log.warn("add_collision_objects unavailable; shelf not in the scene")
+            return False
+        future = self._add_objects_client.call_async(request)
+        if not self.wait_for_future(future, timeout=5.0):
+            self._log.warn("add_collision_objects did not answer")
+            return False
+        self._log.info(f"Shelf boxes in the scene: {len(request.collision_objects)}")
+        return True
+
+    def remove_shelf_scene(self) -> None:
+        """Drop the shelf boxes (they are in base_link and must not leave with the robot)."""
+        for obj in self.get_collision_objects():
+            if obj.id.startswith(SHELF_COLLISION_NAMESPACE):
+                self.remove_collision_object(obj.id)
 
     def object_pick_height(self, obj, grasp_pose) -> float:
         """Height of the grasp above the bottom of ``obj``, for placing later."""
@@ -606,7 +679,7 @@ class RobotArm:
     # ==================================================================
 
     @contextmanager
-    def cartesian_velocity_mode(self, label: str):
+    def cartesian_velocity_mode(self, label: str, on_mode1=None):
         """Hold the arm in mode 5 for the duration of the block.
 
         Whatever happens inside -- an exception, an e-stop, an early return --
@@ -614,9 +687,11 @@ class RobotArm:
         in mode 5 takes the trajectory controller offline, so every subsequent
         MoveIt goal would fail.
         """
+        # Mode switches and xArm stops reset the tool IO, opening the gripper, unless this is off.
+        self.disable_tgpio_reset()
+
         if not self._set_xarm_mode(0):
             raise PickHardwareError(f"[{label}] could not enter mode 0")
-        time.sleep(0.5)
 
         if not self._set_xarm_mode(5):
             self._restore_mode1()
@@ -628,14 +703,16 @@ class RobotArm:
             yield
         finally:
             self._stop_cartesian_velocity()
-            self._restore_mode1()
+            self._restore_mode1(on_mode1)
 
-    def _send_cartesian_velocity(self, speed_mm_s: float, label: str) -> None:
+    def _send_cartesian_velocity(
+        self, speed_mm_s: float, label: str, direction=(0.0, 0.0, 1.0)
+    ) -> None:
         if not self._cartesian_velocity_client.wait_for_service(timeout_sec=2.0):
             raise PickHardwareError(f"[{label}] vc_set_cartesian_velocity unavailable")
 
         request = MoveVelocity.Request()
-        request.speeds = [0.0, 0.0, speed_mm_s, 0.0, 0.0, 0.0]
+        request.speeds = [*(speed_mm_s * np.asarray(direction)), 0.0, 0.0, 0.0]
         request.is_tool_coord = False
         request.duration = 0.0
 
@@ -768,37 +845,55 @@ class RobotArm:
     def fixed_distance_descent(
         self, distance_m: float, speed_mm_s: float, descend: bool = True
     ) -> bool:
-        """Move a fixed Z distance under cartesian velocity, closed on TCP Z.
-
-        ``descend=False`` drives +Z instead, reusing the same mechanism.
-        """
-        label = "FixedDescent"
-        sign = -1.0 if descend else 1.0
-        direction = "descending" if descend else "ascending"
-        self._log.info(
-            f"[{label}] {direction} {distance_m * 1000:.0f}mm at {speed_mm_s:.1f} mm/s"
+        """Move a fixed Z distance, a vertical cartesian_approach."""
+        return self.cartesian_approach(
+            (0.0, 0.0, -1.0 if descend else 1.0), distance_m, speed_mm_s
         )
 
-        # Read the start height before any mode switch, so a stale TCP reading
+    def cartesian_approach(
+        self,
+        direction,
+        distance_m: float,
+        speed_mm_s: float,
+        close_on_reach: bool = False,
+    ) -> bool:
+        """Drive distance_m along a unit direction, closed on the TCP position."""
+        label = "CartesianApproach"
+        direction = np.asarray(direction)
+        self._log.info(
+            f"[{label}] moving {distance_m * 1000:.0f}mm along "
+            f"{direction.round(2).tolist()} at {speed_mm_s:.1f} mm/s"
+        )
+
+        # Read the start position before any mode switch, so a stale TCP reading
         # cannot be mistaken for progress.
         wait_start = time.time()
-        while self.tcp_z() is None:
+        while self.tcp_xyz() is None:
             if time.time() - wait_start > 2.0:
                 self._log.error(
-                    f"[{label}] no robot_states after 2s, cannot verify descent"
+                    f"[{label}] no robot_states after 2s, cannot verify the move"
                 )
                 return False
             time.sleep(0.05)
 
-        start_z = self.tcp_z()
+        start_xyz = self.tcp_xyz()
         self._log.info(
-            f"[{label}] start_z={start_z * 1000:.1f}mm "
-            f"target_z={(start_z + sign * distance_m) * 1000:.1f}mm"
+            f"[{label}] start={(start_xyz * 1000).round(1).tolist()}mm "
+            f"target={((start_xyz + direction * distance_m) * 1000).round(1).tolist()}mm"
         )
 
         reached = False
-        with self.cartesian_velocity_mode(label):
-            self._send_cartesian_velocity(sign * speed_mm_s, label)
+        gripper_closed = False
+
+        def close_now():
+            nonlocal gripper_closed
+            if reached and close_on_reach:
+                self._log.info(f"[{label}] closing gripper")
+                self.close_gripper(settle_s=0.0)
+                gripper_closed = True
+
+        with self.cartesian_velocity_mode(label, on_mode1=close_now):
+            self._send_cartesian_velocity(speed_mm_s, label, direction)
 
             timeout = (distance_m * 1000.0 / speed_mm_s) * DESCENT_TIMEOUT_FACTOR
             loop_start = time.time()
@@ -814,14 +909,14 @@ class RobotArm:
                     break
 
                 if self._estop:
-                    self._log.warn(f"[{label}] e-stop during descent")
-                    raise PickAborted("e-stop during fixed-distance descent")
+                    self._log.warn(f"[{label}] e-stop during approach")
+                    raise PickAborted("e-stop during cartesian approach")
 
-                current_z = self.tcp_z()
-                if current_z is None:
+                current_xyz = self.tcp_xyz()
+                if current_xyz is None:
                     continue
 
-                moved = (start_z - current_z) if descend else (current_z - start_z)
+                moved = float(np.dot(current_xyz - start_xyz, direction))
                 if moved >= distance_m:
                     self._log.info(
                         f"[{label}] reached: moved={moved * 1000:.1f}mm "
@@ -830,7 +925,110 @@ class RobotArm:
                     reached = True
                     break
 
+        if reached and close_on_reach and not gripper_closed:
+            self._log.error(f"[{label}] mode 1 not restored, gripper not closed")
+            return False
         return reached
+
+    # ==================================================================
+    # xArm joint-velocity mode (face / person following)
+    # ==================================================================
+
+    def enter_joint_velocity_mode(self) -> bool:
+        return self._set_mode_and_state(JOINT_VELOCITY_MODE)
+
+    def leave_joint_velocity_mode(self) -> bool:
+        return self._set_mode_and_state(MOVEIT_MODE, reset_controller=True)
+
+    def disable_tgpio_reset(self):
+        # Disable TGPIO reset on state changes so the gripper stays closed
+        # across mode switches. Must be called AFTER the driver is up.
+        if self._tgpio_reset_client.wait_for_service(timeout_sec=SERVICE_TIMEOUT):
+            req = SetInt16.Request()
+            req.data = 0
+            future = self._tgpio_reset_client.call_async(req)
+            answered = self.wait_for_future(future, timeout=TGPIO_RESET_TIMEOUT)
+            if not answered or future.result() is None:
+                self._log.warn("config_tgpio_reset_when_stop(0) got no answer")
+                return
+            if not self._tgpio_reset_disabled_logged:
+                self._log.info(
+                    "TGPIO reset on stop disabled (gripper preserved across mode switches)"
+                )
+                self._tgpio_reset_disabled_logged = True
+        else:
+            self._log.warn(
+                "config_tgpio_reset_when_stop service not available -- gripper may open during mode switches",
+            )
+
+    def _set_mode_and_state(self, mode: int, reset_controller: bool = False) -> bool:
+        """Set xArm mode and state.
+
+        Gripper state is preserved automatically thanks to the
+        config_tgpio_reset_when_stop(0) call made by disable_tgpio_reset.
+        """
+        mode_request = SetInt16.Request()
+        mode_request.data = mode
+        state_request = SetInt16.Request()
+        state_request.data = 0
+
+        for attempt in range(SET_MODE_RETRIES):
+            try:
+                self._log.info(f"Setting mode to {mode} (attempt {attempt + 1})")
+                future_mode = self._set_mode_client.call_async(mode_request)
+                future_mode = wait_for_future(future_mode)
+                if not future_mode:
+                    self._log.error("Failed to set mode")
+                    continue
+                self._log.info("Mode set")
+
+                self._log.info("Setting state to 0 (active)")
+                future_state = self._set_state_client.call_async(state_request)
+                future_state = wait_for_future(future_state)
+                if not future_state:
+                    self._log.error("Failed to set state")
+                    continue
+                self._log.info("State set")
+
+                if reset_controller:
+                    self._log.info("Resetting trajectory controller")
+                    future_ctrl = self._reset_controller_client.call_async(
+                        Trigger.Request()
+                    )
+                    future_ctrl = wait_for_future(future_ctrl)
+                    if not future_ctrl:
+                        self._log.error("Failed to reset controller")
+                        continue
+                    self._log.info("Controller reset successfully")
+
+                return True
+            except Exception as e:
+                self._log.error(f"Error setting arm mode: {e}")
+
+        self._log.error(f"Failed to set mode {mode} after {SET_MODE_RETRIES} attempts")
+        return False
+
+    def send_joint_velocity(self, speeds):
+        """Send one joint velocity command; the done callback reports it."""
+        request = MoveVelocity.Request()
+        request.is_sync = True
+        request.speeds = speeds
+        future = self._joint_velocity_client.call_async(request)
+        future.add_done_callback(self._on_joint_velocity_done)
+
+    def _on_joint_velocity_done(self, future):
+        try:
+            result = future.result()
+            if result is None:
+                self._log.error("Velocity service returned None")
+            elif result.ret != 0:
+                self._log.warn(
+                    f"Velocity service ret={result.ret}", throttle_duration_sec=2.0
+                )
+        except Exception as e:
+            self._log.error(f"Velocity command failed: {e}")
+        finally:
+            self.joint_velocity_busy = False
 
     def _set_xarm_mode(self, mode: int) -> bool:
         try:
@@ -845,7 +1043,7 @@ class RobotArm:
                 self._log.error(f"[xArm] set_mode({mode}) failed")
                 return False
 
-            time.sleep(0.3)
+            self._wait_mode_report(lambda r: r.mode == mode, f"mode {mode}")
 
             if not self._set_state_client.wait_for_service(timeout_sec=2.0):
                 self._log.error("[xArm] set_state service unavailable")
@@ -858,12 +1056,25 @@ class RobotArm:
                 self._log.error("[xArm] set_state(0) failed")
                 return False
 
+            self._wait_mode_report(
+                lambda r: r.mode == mode and r.state != MODE_PENDING_STATE,
+                f"mode {mode} ready",
+            )
             self._log.info(f"[xArm] mode {mode}, state 0 OK")
             return True
 
         except Exception as exc:
             self._log.error(f"[xArm] _set_xarm_mode({mode}) error: {exc}")
             return False
+
+    def _wait_mode_report(self, reported, label: str):
+        start = time.time()
+        while time.time() - start < MODE_SWITCH_TIMEOUT:
+            robot = self._latest_robot_state
+            if robot is not None and reported(robot):
+                return
+            time.sleep(0.02)
+        self._log.warn(f"[xArm] {label} not reported after {MODE_SWITCH_TIMEOUT}s")
 
     def _stop_cartesian_velocity(self):
         try:
@@ -879,7 +1090,7 @@ class RobotArm:
         except Exception as exc:
             self._log.error(f"[xArm] stop error: {exc}")
 
-    def _restore_mode1(self):
+    def _restore_mode1(self, on_mode1=None):
         self._log.info("[xArm] restoring mode 1...")
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
@@ -888,18 +1099,29 @@ class RobotArm:
                 time.sleep(1.0)
                 continue
 
-            time.sleep(0.5)
-
             if not self._set_xarm_mode(1):
                 self._log.warn(f"[xArm] mode 1 failed (attempt {attempt + 1})")
                 time.sleep(1.0)
                 continue
 
-            self._log.info(
-                f"[xArm] waiting {MODE1_RECOVERY_TIME}s for the trajectory controller"
-            )
-            time.sleep(MODE1_RECOVERY_TIME)
+            if on_mode1 is not None:
+                on_mode1()
+            self._wait_mode1_ready()
             self._log.info(f"[xArm] mode 1 restored (attempt {attempt + 1})")
             return
 
         self._log.error("[xArm] CRITICAL: could not restore mode 1!")
+
+    def _wait_mode1_ready(self):
+        start = time.time()
+        time.sleep(MODE1_MIN_WAIT)
+        while time.time() - start < MODE1_RECOVERY_TIME:
+            robot = self._latest_robot_state
+            if robot is not None and robot.mode == 1:
+                if robot.state in MODE1_READY_STATES:
+                    self._log.info(
+                        f"[xArm] mode 1 ready after {time.time() - start:.2f}s"
+                    )
+                    return
+            time.sleep(0.05)
+        self._log.warn(f"[xArm] mode 1 not ready after {MODE1_RECOVERY_TIME}s")

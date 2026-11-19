@@ -2,7 +2,8 @@
 
 # Default instructions content
 DEFAULT_CONTENT="You are an expert developer on this project.
-Before writing code, ALWAYS read the necessary context files in the docs/ai/ directory to understand our architecture, tech stack, and coding standards."
+Before writing code, ALWAYS read the necessary context files in the docs/ai/ directory to understand our architecture, tech stack, and coding standards.
+Before doing anything on the Orins (the robot computers), read docs/ai/orin.md."
 
 function show_usage() {
     echo "Usage: $0 [agent_type]"

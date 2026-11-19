@@ -20,7 +20,6 @@ hri/packages/nlp/assets/**
 yolov5/
 **/baml_client
 mobileclip_blt.ts
-!vision/packages/object_detector_2d/models/tmr2025.pt
 *.engine
 *.onnx
 *.pth
@@ -32,13 +31,16 @@ onnxruntime_gpu-1.17.0-cp38-cp38-linux_aarch64.whl
 navigation/packages/map_context/config/rosbag/*
 docker/hri/sql_dumps
 **/moondream_cache
+**/lfm_cache
 hri/packages/speech/assets/event_detections/
 CLAUDE.md
 GEMINI.md
 .github/copilot-instructions.md
 **/trt_cache
+vision/packages/vision_general/models/*.task
 manipulation/packages/contact_graspnet/
 restaurant_runs/
 gpsr_runs/
 hri/benchmarks/*/results/*
 !hri/benchmarks/*/results/.gitkeep
+logs/evidence/

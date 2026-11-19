@@ -24,6 +24,20 @@ class DOOR_CHECK(Enum):
 ###Map areas service
 AREAS_SERVICE = "/navigation/areas_json"
 
+### Point -> area/sublocation lookup (nav_central owns the polygons; vision and
+### task_manager query this instead of duplicating point-in-polygon)
+GET_AREA_FOR_POINT_SERVICE = "/navigation/get_area_for_point"
+SUBLOCATION_MAX_DISTANCE = 1.5  # m, default radius for nearest-sublocation ranking
+
+### Semantic navigation node (patrol routes over the tagged sublocation poses)
+PLAN_PATROL_SERVICE = "/navigation/plan_patrol"
+PATROL_STALENESS_TOPIC = (
+    "/navigation/patrol/staleness"  # std_msgs/String, JSON, latched
+)
+PATROL_MARKERS_TOPIC = "/navigation/patrol/markers"  # visualization_msgs/MarkerArray
+PATROL_SCAN_RADIUS = 1.0  # m from a viewpoint that counts as "scanned"
+PATROL_SCAN_YAW_TOLERANCE = 35.0  # deg of heading error still counted as scanned
+
 ### Move to location service
 MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
 

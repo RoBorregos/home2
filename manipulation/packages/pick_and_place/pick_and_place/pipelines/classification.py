@@ -20,6 +20,8 @@ PICK_STRATEGY_FLAT = "flat"
 PICK_STRATEGY_RIM = "rim"
 PICK_STRATEGY_BOWL = "bowl"
 PICK_STRATEGY_PEAK = "peak"
+PICK_STRATEGY_GEOMETRIC = "geometric"
+PICK_STRATEGY_SHELF = "shelf"
 
 PICK_STRATEGY_KEYS = (
     PICK_STRATEGY_FLAT,
@@ -27,6 +29,8 @@ PICK_STRATEGY_KEYS = (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_GPD,
+    PICK_STRATEGY_GEOMETRIC,
+    PICK_STRATEGY_SHELF,
 )
 
 # Order matters: BOWL_NAME is a member of RIM_NAMES, so bowl must be tested
@@ -40,16 +44,19 @@ _STRATEGY_BY_OBJECT_NAME = (
 )
 
 
-def resolve_pick_strategy(object_name: str) -> str:
-    """Map an object name to the pick strategy that should handle it.
+def resolve_pick_strategy(
+    object_name: str, force_gpd: bool = False, shelf: bool = False
+) -> str:
+    """Name -> strategy; unlisted names are solids, sent to GPD with ``force_gpd``.
 
-    Unknown objects fall back to the GPD strategy, which is the historical
-    default.
+    Any shelf pick is ``shelf``: a frontal grasp into the compartment, then GPD.
     """
+    if shelf:
+        return PICK_STRATEGY_SHELF
     if not object_name:
         return PICK_STRATEGY_GPD
     key = object_name.lower()
     for strategy, names in _STRATEGY_BY_OBJECT_NAME:
         if key in names:
             return strategy
-    return PICK_STRATEGY_GPD
+    return PICK_STRATEGY_GPD if force_gpd else PICK_STRATEGY_GEOMETRIC

@@ -1,0 +1,7 @@
+2026-11-02T00:48:13 operator: with GPD, soup_bar and coca_cola_can mainly fail because the object slips out of the gripper when approached from above.
+2026-11-02T00:55:17 TABLE_CLEARANCE changed from 5 mm to 0 mm after soup_bar P5 succeeded; geometric rows at 5 mm moved to pilot and are being repeated; GPD unaffected.
+2026-11-02T01:09:55 operator: coca_cola_can geometric failures at 0 mm came from the gripper; objects slipped and the gripper may be deformed.
+2026-11-02T01:14:54 operator: suspected limitation of the geometric method: Cartesian approach near singularities or the reach limit, seen at cornflakes P3 (approach of 60 mm timed out after reaching pre-grasp); cause not confirmed by logs.
+2026-11-02T01:36:54 operator: banana GPD not repeated; operator reports GPD has never picked the banana. Banana GPD run predates the first stack restart.
+2026-11-02T02:27:47 scene 3: detector published banana and soup_bar after they were removed, false positives; earlier GPD went for the can when asked for banana.
+2026-11-02T02:44:55 scene 5: coca_cola_can not detected on 3 checks, operator rotated it; excluded from scene 5 for both methods. Scene 5 compares 4 objects.

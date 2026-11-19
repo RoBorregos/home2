@@ -26,9 +26,9 @@ def generate_launch_description():
                 emulate_tty=True,
             ),
             Node(
-                package="moondream_run",
-                executable="moondream_node.py",
-                name="moondream_node",
+                package="vlm_run",
+                executable="vlm_node.py",
+                name="vlm_node",
                 output="screen",
                 emulate_tty=True,
             ),
