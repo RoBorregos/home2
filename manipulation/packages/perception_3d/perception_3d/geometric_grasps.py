@@ -134,10 +134,23 @@ LEDGE_DIRECTION = np.array([0.0, 1.0])
 PLATE_TABLE_BAND = 0.04
 PLATE_TABLE_FIT = 0.005
 PLATE_EDGE_FIT = 0.01
-PLATE_DIAMETER = (0.12, 0.40)
+PLATE_DIAMETER = (0.12, 0.60)
 PLATE_TILT = 35  # gripper geometry based
+PLATE_TABLE_CLEARANCE = -0.011
 PLATE_SWEEP = 15
 PLATE_SWEEP_STEP = 5
+PLATE_PRE_GRASP = 0.035
+PLATE_PAST_ENDPOINT = 0.02
+PLATE_NEIGHBOUR_MARGIN = 0.01
+PLATE_SWEEP_GROW = np.array(
+    [
+        [-PLATE_NEIGHBOUR_MARGIN] * 2
+        + [PRE_GRASP_DISTANCE - PLATE_PRE_GRASP - PLATE_NEIGHBOUR_MARGIN],
+        [PLATE_NEIGHBOUR_MARGIN] * 2 + [PLATE_PAST_ENDPOINT + PLATE_NEIGHBOUR_MARGIN],
+    ]
+)
+PLATE_FINGER_SWEEP = FINGER_SWEEP + PLATE_SWEEP_GROW
+PLATE_BODY_SWEEP = BODY_SWEEP + PLATE_SWEEP_GROW
 
 UP = np.array([0.0, 0.0, 1.0])
 
@@ -235,6 +248,19 @@ def above_support(points: np.ndarray, margin: float) -> tuple:
     return support_z, above if len(above) >= MIN_POINTS_FOR_PCA else points
 
 
+def depth_edges(depth: np.ndarray) -> np.ndarray:
+    """Pixels on either side of a depth step larger than DEPTH_JUMP (NaN = no depth)."""
+    with np.errstate(invalid="ignore"):
+        jump_v = np.abs(np.diff(depth, axis=0)) > DEPTH_JUMP
+        jump_u = np.abs(np.diff(depth, axis=1)) > DEPTH_JUMP
+    edges = np.zeros(depth.shape, dtype=bool)
+    edges[1:] |= jump_v
+    edges[:-1] |= jump_v
+    edges[:, 1:] |= jump_u
+    edges[:, :-1] |= jump_u
+    return edges
+
+
 def segment(scene: Scene, margin: float) -> tuple:
     # Object = blob with most pixels in the bbox; everything else is an obstacle.
     xmin, ymin, xmax, ymax = scene.bbox
@@ -258,15 +284,8 @@ def segment(scene: Scene, margin: float) -> tuple:
 
     with np.errstate(invalid="ignore"):
         above = xyz[..., 2] > support_z + margin
-        jump_v = np.abs(np.diff(depth, axis=0)) > DEPTH_JUMP
-        jump_u = np.abs(np.diff(depth, axis=1)) > DEPTH_JUMP
-    edges = np.zeros_like(above)
-    edges[1:] |= jump_v
-    edges[:-1] |= jump_v
-    edges[:, 1:] |= jump_u
-    edges[:, :-1] |= jump_u
 
-    labels, _ = ndi.label(above & ~edges)
+    labels, _ = ndi.label(above & ~depth_edges(depth))
     counts = np.bincount(labels[inside])
     counts[0] = 0
     target = np.argmax(counts)
@@ -410,7 +429,7 @@ def fit_box(points: np.ndarray, trim: float = 1) -> tuple:
 
 
 def fit_circle(xy: np.ndarray) -> tuple:
-    """Algebraic least-squares circle: (center, radius)."""
+    """center, radius"""
     sol = np.linalg.lstsq(
         np.column_stack((2 * xy, np.ones(len(xy)))), (xy**2).sum(axis=1), rcond=None
     )[0]
@@ -450,10 +469,12 @@ def fit_plate(scene: Scene) -> tuple:
         require(near.sum() >= MIN_POINTS_FOR_PCA, "table around the plate not flat")
         plane = np.linalg.lstsq(flat[near], ring[near, 2], rcond=None)[0]
 
+    depth = window.roi.astype(float)
+    depth[~valid] = np.nan
     with np.errstate(invalid="ignore"):
         height = xyz[..., 2] - xyz[..., :2] @ plane[:2] - plane[2]
         standing = (height > PLATE_CUT) & (height < PLATE_TABLE_BAND)
-    labels, _ = ndi.label(ndi.binary_opening(standing))
+    labels, _ = ndi.label(ndi.binary_opening(standing & ~depth_edges(depth)))
     counts = np.bincount(labels[inside])
     counts[0] = 0
     require(counts.max() >= MIN_POINTS_FOR_PCA, "no plate over the table")
@@ -463,6 +484,10 @@ def fit_plate(scene: Scene) -> tuple:
     require(len(outline) >= MIN_POINTS_FOR_PCA, "plate outline not visible")
 
     center, radius = fit_circle(outline)
+    # Refit on the half nearest the circle: a touching neighbour merges into the blob and drags the first fit
+    for _ in range(3):
+        res = np.abs(np.linalg.norm(outline - center, axis=1) - radius)
+        center, radius = fit_circle(outline[res <= np.median(res)])
     camera = scene.cam_to_base[:2, 3]
     for _ in range(3):
         offset = outline - center
@@ -475,11 +500,14 @@ def fit_plate(scene: Scene) -> tuple:
         PLATE_DIAMETER[0] < 2 * radius < PLATE_DIAMETER[1],
         f"plate measured {200 * radius:.0f} cm wide",
     )
-    return center, radius, plane
+    with np.errstate(invalid="ignore"):
+        outside = np.linalg.norm(xyz[..., :2] - center, axis=-1) > radius + SELF_MARGIN
+        neighbours = xyz[((height > PLATE_CUT) & outside) | (height > PLATE_TABLE_BAND)]
+    return center, radius, plane, neighbours
 
 
 def plate(scene: Scene) -> tuple:
-    center, radius, plane = fit_plate(scene)
+    center, radius, plane, neighbours = fit_plate(scene)
     tilt = np.radians(PLATE_TILT)
     lip = GRIPPER_MAX_APERTURE / 2 * np.sin(tilt)
     grasps = []
@@ -487,7 +515,7 @@ def plate(scene: Scene) -> tuple:
         range(-PLATE_SWEEP, PLATE_SWEEP + 1, PLATE_SWEEP_STEP), key=abs
     ):
         out = turn(LEDGE_DIRECTION, azimuth)
-        finger = center + (radius) * out
+        finger = center + radius * out
         z = (
             plane @ [*finger, 1.0]
             + PLATE_TABLE_CLEARANCE
@@ -495,7 +523,17 @@ def plate(scene: Scene) -> tuple:
         )
         tip = np.array([*(center + (radius - lip) * out), z])
         approach = np.array([*(-out * np.cos(tilt)), -np.sin(tilt)])
-        grasps.append(Grasp(tip, grasp_frame(approach, UP), f"az{azimuth:+d}"))
+        rotation = Rotation.from_quat(grasp_frame(approach, UP)).as_matrix()
+        flange = tip - approach * GRIPPER_REACH
+        for sign, suffix in ((1, ""), (-1, " flipped")):
+            flipped = rotation * [sign, sign, 1]
+            hits = count_inside(
+                (neighbours - tip) @ flipped, PLATE_FINGER_SWEEP
+            ) + count_inside((neighbours - flange) @ flipped, PLATE_BODY_SWEEP)
+            if hits < OBSTACLE_MIN_POINTS:
+                orientation = Rotation.from_matrix(flipped).as_quat()
+                grasps.append(Grasp(tip, orientation, f"az{azimuth:+d}{suffix}", 1.0))
+    require(grasps, "a neighbour blocks every rim grasp")
     return None, grasps
 
 
