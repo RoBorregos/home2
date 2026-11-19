@@ -21,7 +21,8 @@ jobs:
       - name: Build the packages the tests import
         run: |
           . /opt/ros/jazzy/setup.sh
-          colcon build --packages-select frida_constants frida_gz_sim frida_task_sim
+          # Only these paths are discovered, so their other in-repo dependencies count as external
+          colcon build --base-paths frida_constants simulation/frida_gz_sim simulation/frida_task_sim
 
       - name: Test
         run: |
