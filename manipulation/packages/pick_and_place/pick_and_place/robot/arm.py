@@ -88,6 +88,7 @@ MODE1_READY_STATES = (0, 2)  # robot_states values for an idle arm
 MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 DESCENT_TIMEOUT_FACTOR = 2.5  # closed-loop descent timeout vs. expected duration
 SERVICE_TIMEOUT = 5.0
+TGPIO_RESET_TIMEOUT = 0.5  # s; the robot answers in 3 ms (median), 11 ms (max of 30)
 SET_MODE_RETRIES = 2
 
 
@@ -946,7 +947,8 @@ class RobotArm:
             req = SetInt16.Request()
             req.data = 0
             future = self._tgpio_reset_client.call_async(req)
-            if not self.wait_for_future(future, timeout=5) or future.result() is None:
+            answered = self.wait_for_future(future, timeout=TGPIO_RESET_TIMEOUT)
+            if not answered or future.result() is None:
                 self._log.warn("config_tgpio_reset_when_stop(0) got no answer")
                 return
             if not self._tgpio_reset_disabled_logged:
