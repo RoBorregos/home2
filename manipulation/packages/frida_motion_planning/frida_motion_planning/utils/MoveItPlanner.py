@@ -19,6 +19,9 @@ from frida_constants.manipulation_constants import (
 
 PYMOVEIT_FUTURE_TIMEOUT = 3
 RATE_MAX_PERIOD = 0.01
+CARTESIAN_MAX_STEP = 0.005  # m between the IK waypoints of a straight-line plan
+CARTESIAN_MIN_FRACTION = 0.8
+CARTESIAN_REVOLUTE_JUMP = 0.5  # rad between waypoints; more is an IK branch flip
 
 
 class _ThreadRate:
@@ -92,6 +95,9 @@ class MoveItPlanner(Planner):
         self.moveit2.max_velocity = max_velocity
         self.moveit2.max_acceleration = max_acceleration
         self.moveit2.planner_id = planner_id
+        # KDL restarts from random seeds near a singularity; this cuts the path there.
+        self.moveit2.cartesian_revolute_jump_threshold = CARTESIAN_REVOLUTE_JUMP
+        self.moveit2.cartesian_avoid_collisions = True  # the request defaults to False
 
     def set_velocity(self, velocity: float) -> None:
         self.moveit2.max_velocity = velocity
@@ -223,8 +229,8 @@ class MoveItPlanner(Planner):
         tolerance_orientation: float = 0.05,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
-        cartesian_max_step: float = 0.05,
-        cartesian_fraction_threshold: float = 0.8,
+        cartesian_max_step: float = CARTESIAN_MAX_STEP,
+        cartesian_fraction_threshold: float = CARTESIAN_MIN_FRACTION,
     ) -> Union[bool, Future]:
         return self.moveit2.plan(
             position=[pose.pose.position.x, pose.pose.position.y, pose.pose.position.z],
