@@ -466,7 +466,9 @@ class HRITasks:
             if sub not in ("safe_place", "polygon", "description")
         ]
         hotwords = ", ".join(dict.fromkeys(n.replace("_", " ") for n in [*areas, *places]))
-        if status == Status.EXECUTION_SUCCESS:  # don't cache the areas.json fallback; retry nav next time
+        if (
+            status == Status.EXECUTION_SUCCESS
+        ):  # don't cache the areas.json fallback; retry nav next time
             self._location_hotwords = hotwords
         return hotwords
 
