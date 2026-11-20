@@ -53,6 +53,7 @@ fi
 
 # 3) The live X server: turn off X screensaver + DPMS and wake the monitor now.
 if [ -n "$X_DISPLAY" ] && command -v xset >/dev/null 2>&1; then
-  DISPLAY="$X_DISPLAY" XAUTHORITY="$X_AUTH" xset s off s noblank -dpms 2>/dev/null || true
+  # Wake first: "dpms force on" re-enables DPMS, so disable it afterwards.
   DISPLAY="$X_DISPLAY" XAUTHORITY="$X_AUTH" xset dpms force on 2>/dev/null || true
+  DISPLAY="$X_DISPLAY" XAUTHORITY="$X_AUTH" xset s off s noblank -dpms 2>/dev/null || true
 fi
