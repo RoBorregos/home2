@@ -278,6 +278,9 @@ class HRITasks:
             self.names = json.load(file)["names"]
 
         self.names_hotwords = ", ".join(self.names)
+        # Set by SubtaskManager; navigation's areas are the source of truth for location hotwords.
+        self.nav = None
+        self._location_hotwords = ""
 
         if not self.mock_data:
             self.setup_services()
@@ -447,6 +450,27 @@ class HRITasks:
             self.door_event_detected = True
         except Exception as e:
             self.node.get_logger().error(f"Error parsing door event JSON: {e}")
+
+    def location_hotwords(self) -> str:
+        """Area and sublocation names from navigation's areas (rooms first, so they survive the STT budget)."""
+        if self._location_hotwords or self.nav is None:
+            return self._location_hotwords
+        status, areas = self.nav.retrieve_areas()
+        if not isinstance(areas, dict):
+            return ""
+        places = [
+            sub
+            for subs in areas.values()
+            if isinstance(subs, dict)
+            for sub in subs
+            if sub not in ("safe_place", "polygon", "description")
+        ]
+        hotwords = ", ".join(dict.fromkeys(n.replace("_", " ") for n in [*areas, *places]))
+        if (
+            status == Status.EXECUTION_SUCCESS
+        ):  # don't cache the areas.json fallback; retry nav next time
+            self._location_hotwords = hotwords
+        return hotwords
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked speech", {}))
     @service_check("_action_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)
@@ -858,6 +882,8 @@ class HRITasks:
             Status: the status of the execution
             str: answer to the question
         """
+        if not hotwords and query == "location":
+            hotwords = self.location_hotwords()
         current_attempt = 0
         while current_attempt < retries:
             current_attempt += 1
