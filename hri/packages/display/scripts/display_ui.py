@@ -300,6 +300,7 @@ class DisplaySignals(QObject):
     command_index_changed = pyqtSignal(int)
     heard_buffered = pyqtSignal(str)  # "heard" text held back while listening
     capture_added = pyqtSignal(str, QImage)  # label, snapshot
+    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
 
 
 class EvidenceRecorder:
@@ -369,8 +370,6 @@ class EvidenceRecorder:
         files, self._files = self._files, {}
         for f in files.values():
             f.close()
-
-    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
 
 
 class DisplayRosNode(Node):
