@@ -135,8 +135,6 @@ HEARD_WATCHDOG_S = 5.0
 
 # KWS keywords worth showing ("frida" and "stop" are no longer used by tasks).
 DISPLAY_KEYWORDS = {"yes", "no"}
-# /AudioState values meaning a task is actively listening (e.g. interpret_keyword).
-LISTENING_STATES = {"listening", "listening_silent"}
 
 # Display modes shared by the GPSR/HRIC step machines.
 MODE_BUTTON = "button"
@@ -305,6 +303,7 @@ class DisplaySignals(QObject):
     command_index_changed = pyqtSignal(int)
     heard_buffered = pyqtSignal(str)  # "heard" text held back while listening
     capture_added = pyqtSignal(str, QImage)  # label, snapshot
+    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
 
 
 class EvidenceRecorder:
@@ -374,8 +373,6 @@ class EvidenceRecorder:
         files, self._files = self._files, {}
         for f in files.values():
             f.close()
-
-    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
 
 
 class DisplayRosNode(Node):
@@ -522,12 +519,8 @@ class DisplayRosNode(Node):
                 and keyword not in self._shown_keywords
             ):
                 self._shown_keywords.add(keyword)
-                self.signals.message_received.emit("keyword", keyword)
-            keyword = data.get("keyword")
-            if keyword:
-                self._emit_message("keyword", str(keyword))
-                self.signals.message_received.emit("keyword", str(keyword))
-                self.signals.keyword_detected.emit(str(keyword))
+                self._emit_message("keyword", keyword)
+                self.signals.keyword_detected.emit(keyword)
         except (json.JSONDecodeError, AttributeError) as e:
             self.get_logger().warn(f"Error parsing KWS message: {e}")
 
