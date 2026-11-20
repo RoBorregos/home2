@@ -43,7 +43,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
+from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, qos_profile_sensor_data
 from rclpy.time import Time as RclpyTime
 from rclpy.duration import Duration
 
@@ -300,7 +300,7 @@ class TableDocker(Node):
         sensor_cb = ReentrantCallbackGroup()
         srv_cb = MutuallyExclusiveCallbackGroup()
 
-        self.create_subscription(LaserScan, self.scan_topic, self._scan_cb, 10, callback_group=sensor_cb)
+        self.create_subscription(LaserScan, self.scan_topic, self._scan_cb, qos_profile_sensor_data, callback_group=sensor_cb)
         self.create_subscription(PointCloud2, self.cloud_topic, self._cloud_cb, 1, callback_group=sensor_cb)
         self.create_subscription(Odometry, self.odom_topic, self._odom_cb, 10, callback_group=sensor_cb)
 

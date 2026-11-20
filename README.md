@@ -12,6 +12,7 @@ ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Re
 - [Cyclone DDS Setup](#cyclone-dds-setup)
 - [AI Agent Setup](#ai-agent-setup)
 - [Documentation](#documentation)
+- [Related Repositories](#related-repositories)
 - [Video Demonstrations](#video-demonstrations)
 - [Team Members](#team-members)
 - [Past Contributors](#past-contributors)
@@ -139,10 +140,12 @@ For detailed configuration options, see the [CycloneDDS setup docs](docs/cyclone
 To set up personalized instructions for your AI development agent (Claude, Gemini, or Copilot), run the setup script:
 
 ```bash
-./scripts/setup-agent.sh [agent_type]
+./scripts/setup_agent.sh [agent_type]
 ```
 
 Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no argument is provided, the script will prompt you for a choice.
+
+All agent context lives in `docs/ai/` (e.g. `docs/ai/orin.md` — how to connect, test and sync code on the robot); the generated instructions file points every agent there.
 
 ## Documentation
 
@@ -151,6 +154,11 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 - [RoboCup @Home Rule Book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoBorregos/home2)
+
+## Related Repositories
+
+- [home-custom-base](https://github.com/RoBorregos/home-custom-base): firmware (STM32, ODrive S1 over CAN, on-MCU EKF) and ROS 2 dashboard for FRIDA's omnidirectional base.
+- [home-pipelines](https://github.com/RoBorregos/home-pipelines): Jupyter notebook pipelines for the HRI command interpreter and the vision object detector.
 
 ## Video Demonstrations
 
@@ -164,22 +172,34 @@ Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no a
 
 | Name | GitHub | Role |
 | --- | --- | --- |
-| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg) | HRI, Integration |
 | Gerardo Fregoso | [@GerardoFJ](https://github.com/GerardoFJ) | Navigation, Integration |
-| Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
-| Danae Sanchez | [@DanaeSG](https://github.com/DanaeSG) | Vision, Navigation, Integration |
 | Alejandro Gonzalez | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation |
 | Emil Winkler | [@emilwinkp](https://github.com/emilwinkp) | Manipulation |
-| Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
-| Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI |
-| Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
+| Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation, Integration |
+| Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI, Navigation |
 | Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27) | HRI, Integration |
 | Jose Dominguez | [@JLDominguezM](https://github.com/JLDominguezM) | Manipulation, Integration |
+| Luis Benvenuto | [@biweep863](https://github.com/biweep863) | HRI, Integration |
+| Jeremy Martino| [@Isai-JQ](https://github.com/Isai-JQ) | Mechanics, Navigation, Integration |
+| Juan Pablo Gutierrez| [@jpgtzg](https://github.com/jpgtzg) | HRI, Vision |
+| Andrés Rodríguez | [@TEC-Andres](https://github.com/TEC-Andres) | HRI |
+| Marco Galindo | [@m2galindo](https://github.com/m2galindo) | Vision, Manipulation |
+| Jasiel Aldana Palacios | [@JasielAlPa](https://github.com/JasielAlPa) | Navigation, Electronics|
+| Jared Aldana Palacios | [@JaredAlPa](https://github.com/JaredAlPa) | Navigation, Manipulation |
+| Santiago Ramirez Cepeda | [@Champtiago](https://github.com/Champtiago)| Manipulation, Electronics|
+| Rebecca Gómez | [@Becca-731](https://github.com/Becca-731) | Mechanics |
+| Rodrigo Gamboa Herrera | [@Rodrogamby](https://github.com/Rodrogamby) | Electronics |
+| Luis Alvaro Rosales Salazar | [@luisrosales852](https://github.com/luisrosales852) | HRI, Integration |
+
 
 ## Past Contributors
 
 | Name | GitHub | Role |
 | --- | --- | --- |
+| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg) | HRI, Integration |
+| Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
+| Danae Sanchez | [@DanaeSG](https://github.com/DanaeSG) | Vision, Navigation, Integration |
+| Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
 | Adan Flores-Ramirez | [@afr2903](https://github.com/afr2903) | Research |
 | David Vazquez | [@deivideich](https://github.com/Deivideich) | Manipulation |
 | Emiliano Flores | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration |

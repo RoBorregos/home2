@@ -19,7 +19,7 @@ _run_sh_autocomplete() {
             ;;
         integration)
             # TODO: add other important scripts
-            flags="$flags --test-hri --demo-becas"
+            flags="$flags --test-hri --demo-becas --demo-roborregosday"
             ;;
     esac
 

@@ -1,0 +1,61 @@
+{
+  "box_proposers": [
+    {
+      "name": "yolo_generic_agnostic",
+      "type": "yolo",
+      "filename": "yolo26n.pt",
+      "conf": 0.25,
+      "agnostic_nms": true
+    },
+    {
+      "name": "yoloe_broad_prompt",
+      "type": "yolo_e",
+      "filename": "yoloe-11l-seg.pt",
+      "conf": 0.25,
+      "prompt_classes": ["object", "item", "container", "tool", "food", "drink", "toy"]
+    },
+    {
+      "name": "yoloe_prompt_free",
+      "type": "yolo_e",
+      "filename": "yoloe-11l-seg-pf.pt",
+      "conf": 0.25,
+      "note": "winner of Phase 0 box_recall_eval.py on real RCW2026_v2 crops: 89.4% recall@IoU0.5 (vs 8.7% yolo_generic_agnostic, 4.8% yoloe_broad_prompt) — see results/box_recall.json"
+    },
+    {
+      "name": "yoloe_prompt_free_lowconf",
+      "type": "yolo_e",
+      "filename": "yoloe-11l-seg-pf.pt",
+      "conf": 0.10,
+      "note": "same checkpoint, lower confidence floor — more false positives is fine, the embedding matcher's job is rejecting them as unknown anyway"
+    }
+  ],
+  "backbones": [
+    {
+      "name": "dinov2_vits14",
+      "id": "vit_small_patch14_dinov2.lvd142m",
+      "dim": 384
+    },
+    {
+      "name": "dinov2_vitb14",
+      "id": "vit_base_patch14_dinov2.lvd142m",
+      "dim": 768
+    },
+    {
+      "name": "dinov2_vitl14",
+      "id": "vit_large_patch14_dinov2.lvd142m",
+      "dim": 1024
+    },
+    {
+      "name": "dinov2_vitb14_224px",
+      "id": "vit_base_patch14_dinov2.lvd142m",
+      "dim": 768,
+      "img_size": 224,
+      "note": "DINOv2's timm default is 518px; measured 1532ms->263ms for an 8-crop batch on a Jetson Orin at 224px. Re-benchmarking accuracy here before switching production over."
+    },
+    {
+      "name": "clip_vit_b32",
+      "id": "clip:ViT-B/32",
+      "dim": 512
+    }
+  ]
+}

@@ -143,7 +143,7 @@ headless, since it watches the robot and both tables from outside.
 | `sim.launch.py` | Gazebo world, robot spawn, `gz_ros2_control`, ZED topic bridge, gripper bridge, grasp assist |
 | `sim_manipulation.launch.py` | MoveIt + `pick_and_place/pick_and_place.launch.py`, all on sim time |
 | `sim_vision.launch.py` | `image_orienter` + `object_detector_2d` with the COCO `yolo26s` model |
-| `sim_nav.launch.py` | `laserscan_multi_merger` + `localization.launch.py` + `nav2_omni.launch.py` + `nav_central.py`, all on sim time |
+| `sim_nav.launch.py` | `laserscan_multi_merger` + `localization.launch.py` + `nav2_omni.launch.py` + `nav_central.py` + `table_docker.py` (scan only), all on sim time |
 
 Sim-only pieces:
 

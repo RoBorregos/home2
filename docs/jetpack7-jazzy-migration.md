@@ -50,6 +50,13 @@ cuDNN 9 / TensorRT 10.16, Ampere GPU `sm_87`.
   (`rmw_create_node: failed to create domain, error Error`), in any container.
   Raised to 2 GB via `/etc/sysctl.d/60-cyclonedds.conf` on the Orin (outside the
   repo — it is host config, not image config).
+- systemd-logind's default `RemoveIPC=yes` deletes every shared-memory file of
+  the `orin` user when its last login session closes, including RouDi's
+  `/dev/shm/iceoryx_mgmt`. RouDi keeps running with the deleted mapping, so every
+  container started afterwards dies with `POSH__SHM_APP_MAPP_ERR` (ZED,
+  navigation, display, ...). Fixed with `sudo loginctl enable-linger orin` on the
+  main Orin (the user never logs out, so its IPC is kept); undo with
+  `loginctl disable-linger orin`. Check with `loginctl show-user orin -p Linger`.
 
 ## By area
 

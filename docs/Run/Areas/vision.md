@@ -65,7 +65,20 @@ ros2 run vision_general zed_simulator.py
 Vision is divided into the following packages:
 - vision_general
 - object_detector_2d
-- moondream_run
+- vlm_run
+
+# Adding an object
+
+Objects outside the finetuned YOLO can be added from photos, without retraining. Put 10-30
+photos in `vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/`
+and, inside `home2-vision`:
+
+```bash
+cd /workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery
+./add_object.sh <object_name>   # then restart ObjectDetect2D
+```
+
+More in [embedding_gallery/README.md](../../../vision/packages/object_detector_2d/scripts/embedding_gallery/README.md).
 
 # Camera
 

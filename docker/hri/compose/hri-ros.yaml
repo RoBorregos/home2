@@ -16,6 +16,8 @@ services:
     runtime: ${RUNTIME:-runc}
     volumes:
       - ../../../:/workspace/src
+      # Host timezone, so evidence logs and folder names use local time, not UTC
+      - /etc/localtime:/etc/localtime:ro
       - /run/user/${LOCAL_USER_ID:-1000}/pulse:/tmp/pulse
       - ~/.config/pulse:/tmp/pulse-cookie
       - ../build:/workspace/build

@@ -8,7 +8,6 @@ find_package(std_msgs REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
-find_package(xarm_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 
 #Install directories
@@ -47,7 +46,7 @@ install(PROGRAMS ${MISC_NODES}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch scripts
+install(DIRECTORY scripts
   DESTINATION share/${PROJECT_NAME})
 
 # Install python config

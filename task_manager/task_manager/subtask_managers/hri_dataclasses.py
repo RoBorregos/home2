@@ -33,20 +33,6 @@ class CommandHistory:
 
 
 @dataclass
-class HandItem:
-    """Hand location item from the embeddings postgres service."""
-
-    id: int
-    name: str
-    description: str
-    x_loc: float
-    y_loc: float
-    m_loc_x: float
-    m_loc_y: float
-    color: str
-
-
-@dataclass
 class FindClosestResult:
     """Bundled results and similarity scores from find_closest."""
 

@@ -7,6 +7,7 @@ HRI Subtask manager
 import json
 import os
 import re
+import time
 
 # from datetime import datetime
 from typing import List, Union
@@ -17,8 +18,9 @@ from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     ANSWER_PUBLISHER,
     COMMAND_INTERPRETER_SERVICE,
+    DEFAULT_HOTWORDS,
+    DISPLAY_CAPTURE_TOPIC,
     DISPLAY_IMAGE_TOPIC,
-    DISPLAY_MAP_TOPIC,
     DISPLAY_PUBLISHER,
     EXTRACT_DATA_SERVICE,
     FIND_CLOSEST_SERVICE,
@@ -39,6 +41,7 @@ from frida_constants.hri_constants import (
     TASK_STEP_TOPIC,
     TIMEOUT,
     KEYWORD_TOPIC,
+    DISPLAY_KEYWORD_TOPIC,
     EI_DETECTION_TOPIC,
     DOORBELL_ARMED_TOPIC,
 )
@@ -67,7 +70,6 @@ from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
     CommandHistory,
     FindClosestResult,
-    HandItem,
     Location,
 )
 from task_manager.utils.baml_client.sync_client import b
@@ -175,10 +177,11 @@ class HRITasks:
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
         self.is_coherent_service = self.node.create_client(IsCoherent, IS_COHERENT_SERVICE)
         self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
-        self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
+        self.display_capture_publisher = self.node.create_publisher(
+            String, DISPLAY_CAPTURE_TOPIC, 10
+        )
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
-        self.mock_db = self.mock_data
         self.add_entry_service = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.query_entry_service = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
         self.find_closest_service = self.node.create_client(FindClosest, FIND_CLOSEST_SERVICE)
@@ -213,6 +216,9 @@ class HRITasks:
         )
         self.task_status_publisher = self.node.create_publisher(String, TASK_STATUS_TOPIC, 10)
         self.task_step_publisher = self.node.create_publisher(String, TASK_STEP_TOPIC, 10)
+        self.display_keyword_publisher = self.node.create_publisher(
+            String, DISPLAY_KEYWORD_TOPIC, 10
+        )
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
@@ -257,10 +263,11 @@ class HRITasks:
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
             self.positive = json.load(file)["affirmations"]
-
-        file_path = os.path.join(package_share_directory, "data/hand_items.json")
+        file_path = os.path.join(package_share_directory, "data/negative.json")
         with open(file_path, "r") as file:
-            self.hand_items = json.load(file)
+            self.negation_words = set(json.load(file)["negations"])
+        # Phrases like "thats right" never equal a single word, so they are harmless here
+        self.affirmation_words = set(self.positive)
 
         file_path = os.path.join(package_share_directory, "data/objects.json")
         with open(file_path, "r") as file:
@@ -388,6 +395,7 @@ class HRITasks:
             self.say(f"Sorry, I don't know how to {command}")
             return Status.TARGET_NOT_FOUND
 
+    @mockable(return_value=True)
     def hear_multi(self, status: int) -> bool:
         request = HearMultiThread.Request()
         if status == 0:
@@ -421,6 +429,7 @@ class HRITasks:
             self.node.get_logger().error(f"Error parsing KWS JSON: {e}")
             self.keyword = ""
 
+    @mockable()
     def arm_door_detection(self, armed: bool) -> None:
         """Enable/disable the doorbell detector.
 
@@ -469,7 +478,9 @@ class HRITasks:
         goal_future = accepted_future.result().get_result_async()
 
         # Add an extra second to ensure the action server has enough time to process the request
-        rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=max_audio_length + 1)
+        rclpy.spin_until_future_complete(
+            self.node, goal_future, timeout_sec=start_silence_time + max_audio_length + 1
+        )
         self.cancel_hear_action()
 
         result = goal_future.result().result
@@ -502,6 +513,7 @@ class HRITasks:
 
         return execution_status, heard_text, word_confidences
 
+    @mockable(return_value=lambda self: Future())
     def hear_streaming(
         self,
         timeout: float = 13.0,
@@ -533,7 +545,7 @@ class HRITasks:
         goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
         goal_msg.initial_prompt = initial_prompt
-        self.last_hotwords = hotwords
+        self.last_hotwords = hotwords or DEFAULT_HOTWORDS
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
 
@@ -555,9 +567,11 @@ class HRITasks:
                 # Add a callback to remove the goal when it's done
                 result_future = goal_handle.get_result_async()
                 result_future.add_done_callback(
-                    lambda _: self._active_goals.remove(goal_handle)
-                    if goal_handle in self._active_goals
-                    else None
+                    lambda _: (
+                        self._active_goals.remove(goal_handle)
+                        if goal_handle in self._active_goals
+                        else None
+                    )
                 )
 
         future.add_done_callback(goal_response_callback)
@@ -568,6 +582,7 @@ class HRITasks:
         self.current_transcription = feedback_msg.feedback.current_transcription
         self.node.get_logger().info("Received feedback: {0}".format(self.current_transcription))
 
+    @mockable()
     def set_light_state(self, state: AudioStates, play_chime: bool = True):
         """
         Method to set the light state of the respeaker.
@@ -584,12 +599,17 @@ class HRITasks:
         else:
             self.audio_state_publisher.publish(String(data=state.value))
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "yes"))
     def confirm(
         self,
         question: str,
         use_keyword: bool = True,
         retries: int = 3,
-        wait_between_retries: float = 5,
+        wait_between_retries: float = 10,
+        query: str = "",
+        context: str = "",
+        target: str = "",
+        hotwords: str = "",
     ):
         """
         Method to confirm a specific question. Could be used for deus ex machina, to confirm a specific action.
@@ -599,9 +619,14 @@ class HRITasks:
             use_keyword: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             wait_between_retries: the amount of time to wait between retries
+            query: if set, the user may correct the value being confirmed (e.g. "No, I said Andres"); the correction is extracted with this query. "yes" is still caught by the keyword filter while listening; a "no" waits for the rest of the reply to look for a correction.
+            context: context for the correction extraction
+            target: the value being confirmed, used to tell a correction apart from a repetition
+            hotwords: hotwords for the STT when listening for a correction
         Returns:
             Status: the status of the execution
-            str: "yes" (user confirms), "no" (user doesn't confirm), or "" (no response interpreted).
+            str: "yes" (user confirms), "no" (user doesn't confirm), "" (no response interpreted),
+                or the corrected value (only when query is set).
         """
         Logger.info(
             self.node,
@@ -611,10 +636,46 @@ class HRITasks:
         while current_attempt < retries:
             current_attempt += 1
 
-            # Say the question
             self.say(question)
 
-            if use_keyword:
+            if query:
+                self.keyword = ""
+                accepted_future = self.hear_streaming(
+                    timeout=wait_between_retries, hotwords=hotwords, silence_time=1.0
+                )
+                rclpy.spin_until_future_complete(
+                    self.node, accepted_future, timeout_sec=wait_between_retries + 1
+                )
+                goal_future = accepted_future.result().get_result_async()
+
+                heard_no = False
+                # Deadline in case the STT server dies mid-listen and never resolves the goal
+                deadline = time.monotonic() + wait_between_retries + 1
+                while not goal_future.done() and time.monotonic() < deadline:
+                    words = format_transcription(self.current_transcription)
+                    if self.negation_words.intersection(words) or self.keyword == "no":
+                        # Keep listening: "No, I said Andres" carries the correction after the "no"
+                        heard_no = True
+                    elif not heard_no and (
+                        self.affirmation_words.intersection(words) or self.keyword == "yes"
+                    ):
+                        self.cancel_hear_action()
+                        return Status.EXECUTION_SUCCESS, "yes"
+                    rclpy.spin_once(self.node, timeout_sec=0.1)
+                self.cancel_hear_action()
+
+                text = (
+                    goal_future.result().result.transcription.strip() if goal_future.done() else ""
+                )
+                if text == self.last_hotwords.strip():
+                    text = ""
+                keyword = "no" if heard_no else self.keyword
+                answer = self._interpret_confirmation(
+                    text, target, query, context, hotwords, keyword=keyword
+                )
+                if answer:
+                    return Status.EXECUTION_SUCCESS, answer
+            elif use_keyword:
                 # self.say("Please confirm by saying yes or no")
 
                 s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
@@ -628,33 +689,30 @@ class HRITasks:
                 )
                 goal_future = accepted_future.result().get_result_async()
 
-                while not goal_future.done():
-                    if contains_any(
-                        format_transcription(self.current_transcription), self.positive
-                    ):
-                        self.cancel_hear_action()
-                        return Status.EXECUTION_SUCCESS, "yes"
-                    if "no" in format_transcription(self.current_transcription):
+                deadline = time.monotonic() + wait_between_retries + 1
+                while not goal_future.done() and time.monotonic() < deadline:
+                    words = format_transcription(self.current_transcription)
+                    # Negations first, so "not sure" is a no
+                    if self.negation_words.intersection(words):
                         self.cancel_hear_action()
                         return Status.EXECUTION_SUCCESS, "no"
+                    if contains_any(words, self.positive):
+                        self.cancel_hear_action()
+                        return Status.EXECUTION_SUCCESS, "yes"
                     rclpy.spin_once(self.node, timeout_sec=0.1)
 
-                # Add an extra second to ensure the action server has enough time to process the request
-                rclpy.spin_until_future_complete(
-                    self.node, goal_future, timeout_sec=wait_between_retries + 1
-                )
                 self.cancel_hear_action()
 
                 # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
                 if (
-                    len(goal_future.result().result.transcription.strip()) > 0
-                    and goal_future.result().result.transcription != self.last_hotwords
+                    goal_future.done()
+                    and len(goal_future.result().result.transcription.strip()) > 0
+                    and goal_future.result().result.transcription.strip()
+                    != self.last_hotwords.strip()
                 ):
-                    if (
-                        contains_any(
-                            format_transcription(self.current_transcription),
-                            self.positive,
-                        )
+                    words = format_transcription(self.current_transcription)
+                    if not self.negation_words.intersection(words) and (
+                        contains_any(words, self.positive)
                         or self.is_positive(self.current_transcription)[1]
                     ):
                         return Status.EXECUTION_SUCCESS, "yes"
@@ -667,6 +725,102 @@ class HRITasks:
         )
         return Status.TIMEOUT, ""
 
+    def _interpret_confirmation(
+        self,
+        text: str,
+        target: str,
+        query: str,
+        context: str = "",
+        hotwords: str = "",
+        keyword: str = "",
+    ) -> str:
+        """Classify a reply to "Did you say <target>?".
+
+        The yes/no keyword decides first; the query only turns a "no" (or a reply with no
+        keyword) into a correction when it extracts a value different from the target.
+
+        Args:
+            keyword: "yes"/"no" from the keyword spotter while listening, "" if none was heard.
+        Returns:
+            str: "yes", "no", "" (nothing heard or unclear, ask again) or the corrected value.
+        """
+        text = (text or "").strip()
+        if text == hotwords.strip():
+            text = ""
+        words = format_transcription(text) if text else []
+
+        # The transcription's keyword wins over the keyword spotter, like interpret_keyword
+        if self.negation_words.intersection(words):
+            keyword = "no"
+        elif self.affirmation_words.intersection(words):
+            keyword = "yes"
+
+        if keyword == "yes":
+            return "yes"
+        if not words or self.negation_words.issuperset(words):
+            return keyword
+
+        s, value = self.extract_data(query, text, context)
+        value = value.strip() if s == Status.EXECUTION_SUCCESS else ""
+        yes_no = self.negation_words | self.affirmation_words
+        value = " ".join(w for w in value.split() if remove_punctuation(w) not in yes_no)
+        if value and remove_punctuation(value) != remove_punctuation(target):
+            target_words = set(format_transcription(target))
+            corrected = " ".join(
+                w for w in value.split() if remove_punctuation(w) not in target_words
+            )
+            return corrected or value
+        if keyword == "no":
+            return "no"
+        if value:
+            return "yes"
+
+        return ""
+
+    def _match_answer(
+        self, target_info: str, options: list[str] | None = None, remap: dict | None = None
+    ):
+        """Map an answer to the closest option and apply the remap.
+
+        Returns:
+            str: the matched (and remapped) answer
+            bool: whether an option was found (True when no options are given)
+            float: similarity to the matched option
+            bool: whether the match was exact
+        """
+        target_found = options is None
+        similarity = 1
+        found_exact = False
+        if options is not None:
+            normalized_target_info = remove_punctuation(target_info)
+            for option in options:
+                normalized_option = remove_punctuation(option)
+                if (
+                    normalized_option == normalized_target_info
+                    or normalized_option in normalized_target_info
+                ):
+                    target_info = option
+                    found_exact = True
+                    target_found = True
+                    break
+
+            if not found_exact:
+                s, similarity_list = self.find_closest(options, target_info)
+                if s == Status.EXECUTION_SUCCESS:
+                    target_found = True
+                    target_info = similarity_list.results[0]
+                    similarity = similarity_list.similarities[0]
+
+        if remap is not None:
+            normalized_target_info = remove_punctuation(target_info)
+            for remap_key, remap_value in remap.items():
+                if remove_punctuation(remap_key) == normalized_target_info:
+                    target_info = remap_value
+                    break
+
+        return target_info, target_found, similarity, found_exact
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_answer"))
     def ask_and_confirm(
         self,
         question: str,
@@ -726,35 +880,21 @@ class HRITasks:
                     # If no options provided, directly extract the data without looking for matches
                     if not skip_extract_data and not options:
                         s, target_info = self.extract_data(query, interpreted_text, context)
-                        if s != Status.EXECUTION_SUCCESS:
+                        yes_no = self.negation_words | self.affirmation_words
+                        target_info = " ".join(
+                            w for w in target_info.split() if remove_punctuation(w) not in yes_no
+                        )
+                        if s != Status.EXECUTION_SUCCESS or not target_info:
                             self.say("Sorry, I couldn't understand.")
                             continue
                         target_found = True
 
                     # If extracted data options provided look for exact or closest match
-                    if options is not None:
-                        foundExact = False
-                        normalized_target_info = remove_punctuation(target_info)
-                        for option in options:
-                            normalized_option = remove_punctuation(option)
-                            if (
-                                normalized_option == normalized_target_info
-                                or normalized_option in normalized_target_info
-                            ):
-                                target_info = option
-                                foundExact = True
-                                target_found = True
-                                skip_confirmation = (
-                                    True  # Skip confirmation if an exact match is found
-                                )
-                                break
-
-                        if not foundExact:
-                            s, similarity_list = self.find_closest(options, target_info)
-                            if s == Status.EXECUTION_SUCCESS:
-                                target_found = True
-                                target_info = similarity_list.results[0]
-                                similarity = similarity_list.similarities[0]
+                    target_info, target_found, similarity, found_exact = self._match_answer(
+                        target_info, options
+                    )
+                    if found_exact:
+                        skip_confirmation = True  # Skip confirmation if an exact match is found
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
                     normalized_confidences = {
@@ -779,12 +919,7 @@ class HRITasks:
                         skip_confirmation = True
 
                     # Remap the target_info if a remap dictionary is provided
-                    if remap is not None:
-                        normalized_target_info = remove_punctuation(target_info)
-                        for remap_key, remap_value in remap.items():
-                            if remove_punctuation(remap_key) == normalized_target_info:
-                                target_info = remap_value
-                                break
+                    target_info = self._match_answer(target_info, remap=remap)[0]
 
                 except Exception as e:
                     print("Failed matching result:", e)
@@ -798,11 +933,33 @@ class HRITasks:
                 else:
                     confirmation_text = confirm_question
 
-                # Ask for confirmation
-                if target_info != "" and target_found:
-                    s, confirmation = self.confirm(confirmation_text, use_keyword, 3)
+                # Ask for confirmation, letting the user correct the value without repeating the question
+                for _ in range(retries):
+                    if target_info == "" or not target_found:
+                        break
+                    s, confirmation = self.confirm(
+                        confirmation_text,
+                        use_keyword,
+                        3,
+                        query="" if skip_extract_data else query,
+                        context=context,
+                        target=target_info,
+                        hotwords=hotwords,
+                    )
                     if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
                         return Status.EXECUTION_SUCCESS, target_info
+                    if s != Status.EXECUTION_SUCCESS or confirmation in ("no", ""):
+                        break
+                    Logger.info(self.node, f"User corrected the answer to: {confirmation}")
+                    try:
+                        target_info, target_found, _, _ = self._match_answer(
+                            confirmation, options, remap
+                        )
+                    except Exception as e:
+                        print("Failed matching result:", e)
+                        break
+                    if callable(confirm_question):
+                        confirmation_text = confirm_question(confirmation, target_info)
 
             # Wait for the minimum time between retries
             while (
@@ -816,6 +973,12 @@ class HRITasks:
         )
         return Status.TIMEOUT, None
 
+    @mockable(
+        _mock_callback=lambda self, keywords, *args, **kwargs: (
+            Status.EXECUTION_SUCCESS,
+            keywords[0],
+        )
+    )
     def interpret_keyword(
         self, keywords: list[str], timeout: float, play_chime: bool = True
     ) -> str:
@@ -840,7 +1003,11 @@ class HRITasks:
 
         keyword_listened = contains_any(format_transcription(self.current_transcription), keywords)
 
-        if not keyword_listened:
+        if keyword_listened in keywords:
+            self.display_keyword_publisher.publish(
+                String(data=json.dumps({"keyword": keyword_listened, "source": "stt"}))
+            )
+        else:
             keyword_listened = self.keyword
 
         execution_status = (
@@ -861,6 +1028,7 @@ class HRITasks:
         self.cancel_hear_action()
         return execution_status, keyword_listened
 
+    @mockable(_mock_callback=lambda self, text: (Status.EXECUTION_SUCCESS, text))
     @service_check("grammar_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def refactor_text(self, text: str) -> str:
         request = Grammar.Request(text=text)
@@ -1019,6 +1187,7 @@ class HRITasks:
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
+    @mockable()
     def cancel_hear_action(self):
         # Cancel all goals sent by this action client
         self.set_light_state(AudioStates.IDLE)
@@ -1049,7 +1218,7 @@ class HRITasks:
             "roborregos_knowledge",
             "tec_knowledge",
         ],
-    ) -> tuple[Status, str]:
+    ) -> tuple[Status, str, float]:
         """
         Method to answer a question using the RAG service.
 
@@ -1135,10 +1304,9 @@ class HRITasks:
 
     # Embeddings services — delegate to HRI postgres_service node via ROS
 
+    @mockable(return_value=True)
     def _call_add_entry(self, collection: str, documents: list, metadata: dict = None) -> bool:
         """Fire-and-forget AddEntry service call."""
-        if self.mock_db:
-            return True
         req = AddEntry.Request()
         req.document = documents
         req.collection = collection
@@ -1146,12 +1314,11 @@ class HRITasks:
         self.add_entry_service.call_async(req)
         return True
 
+    @mockable(return_value=[])
     def _call_query_entry(
         self, collection: str, query_texts: list, top_k: int, metadata: dict = None
     ) -> list[str]:
         """Synchronous QueryEntry service call. Returns list of JSON strings."""
-        if self.mock_db:
-            return []
         if not self.query_entry_service.service_is_ready():
             self.node.get_logger().warn(f"QueryEntry service not ready (collection={collection})")
             return []
@@ -1222,7 +1389,7 @@ class HRITasks:
         Find the closest item to the query using the HRI FindClosest service.
         documents can be list[str] or list[tuple[str, embedding]] (embeddings are ignored).
         """
-        if self.mock_db or not documents:
+        if not documents:
             return Status.TARGET_NOT_FOUND, FindClosestResult(results=[], similarities=[])
 
         if not self.find_closest_service.service_is_ready():
@@ -1250,9 +1417,10 @@ class HRITasks:
         s = Status.EXECUTION_SUCCESS if result.results else Status.TARGET_NOT_FOUND
         return s, result
 
+    @mockable(return_value=[])
     def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
         """Find the closest items to the query, returning (text, similarity) pairs."""
-        if self.mock_db or not documents:
+        if not documents:
             return []
 
         req = FindClosest.Request()
@@ -1280,19 +1448,6 @@ class HRITasks:
         """
         raw = self._call_query_entry(collection="items", query_texts=[], top_k=10000)
         return [json.loads(r)["text"] for r in raw]
-
-    def get_hand_items(self, query: str) -> tuple[list[HandItem], list[HandItem]]:
-        """
-        Query hand_items from postgres service.
-        Returns:
-            tuple: (by_name, by_description) lists of HandItem objects.
-        """
-        raw = self._call_query_entry(collection="hand_items", query_texts=[query], top_k=10000)
-        if len(raw) < 2:
-            return [], []
-        by_name = [HandItem(**item) for item in json.loads(raw[0])]
-        by_description = [HandItem(**item) for item in json.loads(raw[1])]
-        return by_name, by_description
 
     # TODO: Make async
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_llm_answer"))
@@ -1332,6 +1487,7 @@ class HRITasks:
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 1))
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, 0), TIMEOUT)
     def count_from_detections(
         self, detected_labels: list[str], target_object: str
@@ -1462,6 +1618,18 @@ class HRITasks:
 
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add, categorized_shelves
 
+    def publish_display_capture(self, label: str, topic: str = "", data: dict = None) -> None:
+        """Ask the display to snapshot a frame (from `topic`, or its current feed).
+
+        The display saves it under logs/evidence/<run>/ (with `data` in
+        captures.jsonl) and shows it in the end-of-task gallery.
+        """
+        self.display_capture_publisher.publish(
+            String(data=json.dumps({"label": label, "topic": topic, "data": data}))
+        )
+        Logger.info(self.node, f"Published display capture: {label} ({topic or 'current feed'})")
+
+    @mockable()
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
@@ -1478,6 +1646,7 @@ class HRITasks:
         if getattr(self, "_last_display_topic", None):
             self.display_publisher.publish(String(data=self._last_display_topic))
 
+    @mockable()
     def publish_display_step(self, step: str, topic: str = TASK_STEP_TOPIC) -> None:
         if topic == TASK_STEP_TOPIC:
             self.task_step_publisher.publish(String(data=step))
@@ -1512,27 +1681,7 @@ class HRITasks:
             self.node.get_logger().error(f"Error finding closest object: {e}")
             return "unknown"
 
-    def show_map(self, name="", clear_map: bool = False):
-        """
-        Method to show the map on the display.
-        """
-        show_items = self.hand_items.copy()
-
-        if clear_map:
-            show_items["image_path"] = ""
-            Logger.info(self.node, "Map cleared on the screen.")
-        else:
-            filtered_items = []
-
-            # Filter items to only include those matching the specified name
-            for item in show_items["markers"]:
-                if name == "" or item["name"].strip().lower() == name.strip().lower():
-                    filtered_items.append(item)
-
-            show_items["markers"] = filtered_items
-
-        self.display_map_publisher.publish(String(data=json.dumps(show_items)))
-
+    @mockable(return_value=True)
     def send_display_answer(self, answer: str) -> bool:
         try:
             msg = String()

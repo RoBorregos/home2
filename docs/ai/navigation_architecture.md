@@ -157,13 +157,7 @@ auto-restarts failed components, and chooses base/backend from launch params.
 | `GOAL_NAV_ACTION_SERVER` | `nav2_msgs/NavigateToPose` | Primary "reach this pose" goal. |
 | `COMPUTE_PATH_ACTION_SERVER` | `nav2_msgs/ComputePathToPose` | Path-planning only (backs `NavQuery`). |
 
-**Topics published** (latched, `TRANSIENT_LOCAL`)
-- `/nav/current_goal` (`geometry_msgs/PoseStamped`) — current goal; consumed by the arm
-  pointer so the camera can aim at where the robot is heading.
-- `/nav/goal_active` (`std_msgs/Bool`) — whether a goal is currently being pursued.
-
 **Topics subscribed**
-- `/nav/arm_ready` (`std_msgs/Bool`) — arm pointer says "camera aimed, proceed".
 - `INITIAL_POSE_TOPIC` (`PoseWithCovarianceStamped`) — initial pose from RViz / `nav_ui`.
 - `SCAN_TOPIC` = `/scan` (`LaserScan`) — used by the door check.
 

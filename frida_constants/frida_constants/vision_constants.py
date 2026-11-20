@@ -25,6 +25,14 @@ ZERO_SHOT_DETECTIONS_POSES_TOPIC = "/vision/zero_shot_detections_poses"
 ZERO_SHOT_DETECTIONS_3D_TOPIC = "/vision/zero_shot_detections_3d"
 ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
+
+# EMBEDDING GALLERY OBJECT DETECTOR TOPICS
+GALLERY_DETECTIONS_TOPIC = "/vision/gallery_detections"
+GALLERY_DETECTIONS_IMAGE_TOPIC = "/vision/gallery_detections_image"
+GALLERY_DETECTIONS_POSES_TOPIC = "/vision/gallery_detections_poses"
+GALLERY_DETECTIONS_3D_TOPIC = "/vision/gallery_detections_3d"
+GALLERY_DETECTIONS_ACTIVE_TOPIC = "/vision/gallery_detections_active"
+GALLERY_DETECTOR_ACTIVE_TOPIC = "/vision/gallery_detector/active"
 DETECTIONS_ACTIVE_TOPIC = "asd"
 DEBUG_IMAGE_TOPIC = "asd"
 ZERO_SHOT_DEFAULT_CLASSES = [
@@ -100,6 +108,7 @@ PERSON_POSTURE_TOPIC = "/vision/person_posture"
 QUERY_TOPIC = "/vision/query"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 CROP_QUERY_TOPIC = "/vision/crop_query"
+LFM_CROP_QUERY_TOPIC = "/vision/lfm_crop_query"
 OBJECT_POINTS_TOPIC = "/vision/object_points"
 MOONDREAM_DETECTION_TOPIC = "/vision/moondream_detection"
 
@@ -149,8 +158,41 @@ YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 CHAIRS_TO_REMOVE_SERVICE = "/vision/chairs_to_remove"
 CHAIR_REMOVAL_IMAGE_TOPIC = "/vision/chair_removal_image"
 
+# Talking detection node
+IS_TALKING_TOPIC = "/vision/is_talking"
+TALKING_MESSAGE = "TALKING"
+SILENT_MESSAGE = "SILENT"
+
+# MediaPipe face landmarker
+FACE_LANDMARKER_MODEL = "face_landmarker.task"
+
+# Face landmark indices used for the mouth ratio
+UPPER_LIP_LANDMARK = 13
+LOWER_LIP_LANDMARK = 14
+LEFT_MOUTH_LANDMARK = 61
+RIGHT_MOUTH_LANDMARK = 291
+
+# Talking detection tuning
+TALKING_HISTORY_FRAMES = 25
+TALKING_MIN_DELTA = 0.01
+TALKING_DIRECTION_CHANGE_THRESHOLD = 2
+TALKING_DEBOUNCE_ON_FRAMES = 3
+TALKING_DEBOUNCE_OFF_FRAMES = 5
+TALKING_RATIO_CEILING = 0.3
+TALKING_MIN_MEAN_DELTA = 0.01
+TALKING_SMOOTHING_WINDOW = 5
+TALKING_MAX_MISSED_FRAMES = 3
+
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
 DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"
 DISHWASHER_TABLET_DETECTION_TOPIC = "/vision/dishwasher/tablet_detection"
 DISHWASHER_DEBUG_IMAGE_TOPIC = "/vision/dishwasher/debug_image"
+
+# Semantic mapping
+EMBED_TEXT_SERVICE = "/vision/embed_text"
+EMBED_CROPS_SERVICE = "/vision/embed_crops"
+
+CLIP_EMBEDDING_MODEL = "clip:ViT-B/32"
+FINALS_BUFFER_SECONDS = 3
+FINALS_BUFFER_MAX_FRAMES = 150  # safety cap: ZED can publish up to ~30 fps

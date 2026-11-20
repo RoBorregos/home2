@@ -2,13 +2,14 @@
 
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionServer
+from rclpy.action import ActionServer, CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from std_msgs.msg import Bool
 from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
+    CARTESIAN_PLANNER,
     GET_COLLISION_OBJECTS_SERVICE,
 )
 from frida_interfaces.srv import (
@@ -37,17 +38,17 @@ from frida_constants.manipulation_constants import (
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
     ESTOP_TOPIC,
     MANIPULATION_ENSURE_ARM_READY_SERVICE,
-    MANIPULATION_ARM_BUSY_TOPIC,
 )
 
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
 from frida_motion_planning.utils.XArmServices import XArmServices
+from frida_pymoveit2.robots import xarm6
 
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
-from rclpy.qos import QoSProfile, DurabilityPolicy
+from rclpy.qos import QoSProfile
 
 
 class MotionPlanningServer(Node):
@@ -73,16 +74,6 @@ class MotionPlanningServer(Node):
         self._in_estop = False
         self.current_mode = -1
 
-        # Latched "arm in use" flag so nav_goal_arm_pointer yields the xArm mode
-        # while a MoveJoints/MoveToPose goal executes (no /xarm/set_mode fight).
-        self._arm_busy = False
-        self._arm_busy_pub = self.create_publisher(
-            Bool,
-            MANIPULATION_ARM_BUSY_TOPIC,
-            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
-        )
-        self._publish_busy(False)
-
         self.servo = MoveItServo(
             self,
             self.callback_group,
@@ -107,6 +98,7 @@ class MotionPlanningServer(Node):
             MoveJoints,
             MOVE_JOINTS_ACTION_SERVER,
             self.move_joints_execute_callback,
+            cancel_callback=self._move_joints_cancel_callback,
             callback_group=self.callback_group,
         )
 
@@ -217,11 +209,6 @@ class MotionPlanningServer(Node):
 
         self.get_logger().info("Motion Planning Action Server has been started")
 
-    def _publish_busy(self, busy: bool):
-        """Latch whether the arm is executing a goal (consumed by the arm pointer)."""
-        self._arm_busy = busy
-        self._arm_busy_pub.publish(Bool(data=busy))
-
     def move_to_pose_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
         if self._in_estop:
@@ -237,7 +224,6 @@ class MotionPlanningServer(Node):
         feedback = MoveToPose.Feedback()
         result = MoveToPose.Result()
         self.set_planning_settings(goal_handle)
-        self._publish_busy(True)
         try:
             was_successful = self.move_to_pose(goal_handle, feedback)
             self.get_logger().info(
@@ -261,7 +247,6 @@ class MotionPlanningServer(Node):
         finally:
             self.get_logger().info("Resetting planning settings...")
             self.reset_planning_settings(goal_handle)
-            self._publish_busy(False)
 
         return result
 
@@ -302,6 +287,11 @@ class MotionPlanningServer(Node):
         )
         return None
 
+    def _move_joints_cancel_callback(self, goal_handle):
+        """Lets callers cancel an in-flight joint goal, e.g. to stop a search sweep early."""
+        self.get_logger().warn("MoveJoints cancellation requested")
+        return CancelResponse.ACCEPT
+
     def move_joints_execute_callback(self, goal_handle):
         """Manages the lifecycle of the MoveJoints action."""
         if self._in_estop:
@@ -313,7 +303,6 @@ class MotionPlanningServer(Node):
         self.get_logger().info("Executing joint goal action...")
         result = MoveJoints.Result()
         self.set_planning_settings(goal_handle)
-        self._publish_busy(True)
 
         try:
             # Here we call the worker and get the final result (True or False)
@@ -323,6 +312,9 @@ class MotionPlanningServer(Node):
             if was_successful:
                 goal_handle.succeed()
                 result.success = True
+            elif goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+                result.success = False
             else:
                 goal_handle.abort()
                 result.success = False
@@ -336,23 +328,8 @@ class MotionPlanningServer(Node):
 
         finally:
             self.reset_planning_settings(goal_handle)
-            self._publish_busy(False)
 
         return result
-
-    def _slow_cartesian(self, traj, factor=3.0):
-        """Humble GetCartesianPath ignores velocity scaling, so retime the
-        cartesian trajectory: scale timing up, velocities/accels down."""
-        if traj is None or not getattr(traj, "points", None):
-            return
-        for pt in traj.points:
-            t = (pt.time_from_start.sec + pt.time_from_start.nanosec * 1e-9) * factor
-            pt.time_from_start.sec = int(t)
-            pt.time_from_start.nanosec = int(round((t - int(t)) * 1e9))
-            if pt.velocities:
-                pt.velocities = [v / factor for v in pt.velocities]
-            if pt.accelerations:
-                pt.accelerations = [a / (factor * factor) for a in pt.accelerations]
 
     def move_to_pose(self, goal_handle, feedback):
         """Perform the pick operation."""
@@ -371,17 +348,22 @@ class MotionPlanningServer(Node):
         )
 
         original_planner = self.planner.moveit2.planner_id
+        cartesian = goal_handle.request.planner_id == CARTESIAN_PLANNER
+        if cartesian and target_link not in ("", xarm6.end_effector_name()):
+            # pymoveit2 plans straight lines for the end effector whatever the target.
+            self.get_logger().error(
+                f"Straight-line plans move {xarm6.end_effector_name()}, not {target_link}"
+            )
+            return False
 
         # Try planning with requested planner
         was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
             pose=pose,
             target_link=target_link,
-            cartesian=(goal_handle.request.planner_id == "cartesian"),
+            cartesian=cartesian,
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
         )
-        if was_plan_successful and goal_handle.request.planner_id == "cartesian":
-            self._slow_cartesian(trajectory_plan)
 
         # Fallback to RRTConnect if requested planner (e.g. VAMP) fails
         if not was_plan_successful and original_planner == "vamp":
@@ -471,11 +453,15 @@ class MotionPlanningServer(Node):
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
             was_execution_successful = self.planner.execute_plan(
-                trajectory_plan, is_estop_active=lambda: self._in_estop
+                trajectory_plan,
+                is_estop_active=lambda: self._in_estop
+                or goal_handle.is_cancel_requested,
             )
             if was_execution_successful:
                 self.get_logger().info("Trajectory executed successfully.")
                 return True
+            elif goal_handle.is_cancel_requested:
+                self.get_logger().info("Trajectory execution cancelled.")
             else:
                 self.get_logger().error("Trajectory execution failed.")
         else:
@@ -521,7 +507,7 @@ class MotionPlanningServer(Node):
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
         self.planner.set_planner(
-            "RRTConnect" if planner_id == "cartesian" else planner_id
+            "RRTConnect" if planner_id == CARTESIAN_PLANNER else planner_id
         )
         self.get_logger().info(
             f"Planning settings: velocity={velocity}, acceleration={acceleration}, planner_id={planner_id}, planning_time={planning_time}"

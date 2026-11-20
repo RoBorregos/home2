@@ -29,6 +29,8 @@ XARM_ALL_JOINTS_ID = 8  # pass to motion_enable to target all joints
 FACE_RECOGNITION_LIFETIME = 0.1
 FOLLOW_FACE_SPEED = 1.5
 FOLLOW_FACE_TOLERANCE = 0.15
+FOLLOW_FACE_ARM_SERVICE = "/follow_face"
+FOLLOW_PERSON_ARM_SERVICE = "/follow_person"
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 SET_JOINT_VELOCITY_SERVICE = "/manipulation/set_joint_velocity"
@@ -38,18 +40,17 @@ JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
 ESTOP_TOPIC = "/manipulation/estop"
-# Latched Bool: True while motion_planning_server is executing a MoveJoints/
-# MoveToPose goal (arm in use). nav_goal_arm_pointer yields the xArm mode while
-# this is True so it never fights manipulation for /xarm/set_mode.
-MANIPULATION_ARM_BUSY_TOPIC = "/manipulation/arm_busy"
 MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
 MIN_CONFIGURATION_DISTANCE_TRESHOLD = 0.01
 PICK_VELOCITY = 0.5
-PICK_ACCELERATION = 0.15
+PICK_ACCELERATION = 0.3
 PICK_PLANNER = "RRTConnect"
+FAST_VELOCITY = 0.75  # free moves: the shelf survey, facing a level, the returns
+SLOW_VELOCITY = 0.3  # straight paths into and out of a shelf compartment
+CARTESIAN_PLANNER = "cartesian"  # MoveToPose planner_id: a straight-line MoveIt path
 
 # Scan
 SCAN_ANGLE_VERTICAL = 30.0  # degrees
@@ -67,8 +68,20 @@ GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
 GRIPPER_GRASP_STATE_TOPIC = "/gripper/grasp_state"
 SAFETY_HEIGHT = 0.05
+SAFETY_HEIGHT_GEOMETRIC = 0.005
+GRIPPER_FINGER_LENGTH = 0.085
+TOP_GRASP_DEPTH = 0.9 * GRIPPER_FINGER_LENGTH
+GRIPPER_PALM_TO_FLANGE = 0.085
+GRIPPER_REACH = GRIPPER_FINGER_LENGTH + GRIPPER_PALM_TO_FLANGE
+GRIPPER_MAX_APERTURE = 0.095
+GRIPPER_HALF_THICKNESS = 0.032
+GRIPPER_FINGER_THICKNESS = 0.03
+GRIPPER_BODY_CORNERS = ((-0.091, -0.099, 0.0), (0.039, 0.099, 0.081))
+PRE_GRASP_DISTANCE = 0.06
 PICK_MIN_HEIGHT = 0.04
-# Objects picked with the flat-grasp estimator. toothpaste/sponge/dishwasher_tab are
+# ZED depth reads ~1.4% short
+ZED_DEPTH_SCALE = 1.014
+# Objects the grasp generator treats as flat. toothpaste/sponge/dishwasher_tab are
 # low, flat items GPD fails to grasp from above (PPC run 2026-07-02: toothpaste 0/2).
 # These are detector labels -- they must match what the vision model publishes.
 FLAT_OBJECT_NAMES = [
@@ -89,6 +102,15 @@ GRASP_LINK_FRAME = "gripper_grasp_frame"
 BOWL_NAME = "bowl"
 RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME]
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
+
+GENERATE_GRASPS_SERVICE = "/manipulation/generate_grasps"
+GRASP_CLASS_FLAT = "flat"
+GRASP_CLASS_BOX = "box"
+GRASP_CLASS_CYLINDRICAL = "cylindrical"
+GRASP_CLASS_ROUND = "round"
+GRASP_CLASS_RIM = "rim"
+GRASP_CLASS_PEAK = "peak"
+GRASP_CLASS_TRASH = "trash"
 
 # Default speed for the generic /manipulation/fixed_distance_move service,
 RIM_DESCENT_SPEED = 20.0  # mm/s
@@ -146,3 +168,13 @@ AIM_STRAIGHT_FRONT_QUAT = [0.650, -0.290, 0.636, -0.299]
 SHELF_MIN_REACH = 0.40
 SHELF_REACH_BASE = 0.75
 SHELF_REACH_SLOPE = 0.25
+
+# Shelf detection from the eye-in-hand depth camera (perception_3d shelf_service).
+DETECT_SHELF_SERVICE = "/manipulation/detect_shelf"
+SHELF_COLLISION_NAMESPACE = "frida_shelf_"  # ids of the boards/walls in the scene
+# Named arm poses (xarm_configurations) visited in order to see the whole cabinet.
+SHELF_SURVEY_POSES = ("shelf_survey_high", "shelf_survey_low")
+SHELF_SCAN_TOLERANCE = 0.1  # m around a level height when facing it
+SHELF_ACCELERATION = 0.5  # planned shelf moves (PICK_ACCELERATION is 0.3), robot-tested
+SHELF_SURVEY_SETTLE = 0.3  # s after reaching a survey pose, before the capture
+SHELF_LEVEL_SETTLE = 1.5  # s for the octomap and detections at a level's pose

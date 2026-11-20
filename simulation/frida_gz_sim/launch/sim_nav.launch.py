@@ -8,6 +8,7 @@ sim.launch.py must be running with mobile_base:=true and the arena world, so tha
 import os
 
 from ament_index_python.packages import get_package_share_directory
+from frida_constants.navigation_constants import RETREAT_DISTANCE
 from frida_gz_sim.nav import SPAWN_POSE
 from launch import LaunchDescription
 from launch.actions import (
@@ -112,6 +113,37 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # Semantic navigation: patrol routes over the tagged furniture poses of the
+    # same areas_<map>.json nav_central serves (issue #1268). Plans only, never
+    # drives, so it is safe to have up for every sim run.
+    semantic_nav = Node(
+        package="nav_main",
+        executable="semantic_nav_node.py",
+        name="semantic_nav",
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            os.path.join(nav_main, "config", "semantic_nav.yaml"),
+            {"map_name": map_name},
+        ],
+    )
+
+    # dock_table goes through table_docker, as in general_navigation.launch.py. The sim
+    # has no /point_cloud and publishes odometry on /odom, so it docks off the merged scan
+    table_docker = Node(
+        package="nav_main",
+        executable="table_docker.py",
+        name="table_docker",
+        output="screen",
+        parameters=[
+            {
+                "retreat_distance": RETREAT_DISTANCE,
+                "odom_topic": "/odom",
+                "detect_source": "scan",
+            }
+        ],
+    )
+
     # nav_central blocks until someone sets the start pose; in sim we already know it
     initial_pose = Node(
         package="frida_gz_sim",
@@ -126,10 +158,13 @@ def launch_setup(context, *args, **kwargs):
         localization,
         nav2,
         nav2_sim_time,
+        table_docker,
         # nav_central sends the nav2 STARTUP; give the lifecycle manager time first
         TimerAction(period=10.0, actions=[nav_central]),
         # After nav_central, so the pose is not delivered before the node that waits for it
         TimerAction(period=12.0, actions=[initial_pose]),
+        # After nav_central, whose areas service it asks for the furniture poses
+        TimerAction(period=14.0, actions=[semantic_nav]),
     ]
 
 

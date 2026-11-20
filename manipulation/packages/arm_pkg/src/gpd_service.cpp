@@ -34,15 +34,6 @@ public:
     pcd_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(GRASP_POINTCLOUD_TOPIC, 10);
     marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(GRASP_MARKER_TOPIC, 10);
 
-    // create timer -> This timer kills the node when the service runs once, as I have not found a way to properly use GPD more than once on a single runtime
-    timer_ = this->create_wall_timer(
-      std::chrono::milliseconds(50),
-      [this]() {
-        if (exit_) {
-          kill_timer();
-        }
-      });
-
     // Create service
     service_ = this->create_service<frida_interfaces::srv::GraspDetection>(
       GRASP_DETECTION_SERVICE, 
@@ -54,14 +45,6 @@ public:
 
 private:
 
-  void kill_timer() {
-    if (exit_) {
-      RCLCPP_INFO(this->get_logger(), "Killing node");
-      // wait for the service to finish
-      rclcpp::sleep_for(std::chrono::milliseconds(500));
-      rclcpp::shutdown();
-    }
-  }
   bool load_cloud_from_pcd(const std::string &pcd_path, pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
     if (pcl::io::loadPCDFile<pcl::PointXYZRGB>(pcd_path, cloud) == -1) return false;
     return true;
@@ -353,7 +336,8 @@ private:
                   centroid[0], centroid[1], centroid[2]);
 
       cloud_rgba = convert_to_rgba(cloud);
-      Eigen::MatrixXi camera_source = Eigen::MatrixXi::Zero(1, cloud_rgba->size());
+      // Marks every point as seen by the camera; GPD only computes normals for those.
+      Eigen::MatrixXi camera_source = Eigen::MatrixXi::Ones(1, cloud_rgba->size());
 
       Eigen::Matrix3Xd view_points(3, 1);
       view_points.setZero();
@@ -462,7 +446,6 @@ private:
       auto marker_array = create_gripper_markers(res->grasp_poses, res->grasp_scores);      
       marker_pub_->publish(marker_array);
       res->success = true;
-      exit_ = true;
       return;
     }
     catch (const std::exception& e) {
@@ -477,8 +460,6 @@ private:
   rclcpp::Service<frida_interfaces::srv::GraspDetection>::SharedPtr service_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcd_pub_;
-  rclcpp::TimerBase::SharedPtr timer_;
-  bool exit_ = false;
 };
 
 } // namespace gpd_ros2

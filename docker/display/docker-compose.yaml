@@ -13,6 +13,8 @@ services:
     cpuset: "${COMPUTE_CPUSET:-4-11}"
     volumes:
       - ../../:/workspace/src
+      # Host timezone, so evidence logs and folder names use local time, not UTC
+      - /etc/localtime:/etc/localtime:ro
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${XAUTHORITY_HOST:-$HOME/.Xauthority}:/home/ros/.Xauthority:rw
