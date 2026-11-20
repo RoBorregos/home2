@@ -1,10 +1,7 @@
 # gz -> ROS topic map; ROS names match the real ZED wrapper topics in frida_constants
-- ros_topic_name: /clock
-  gz_topic_name: /clock
-  ros_type_name: rosgraph_msgs/msg/Clock
-  gz_type_name: gz.msgs.Clock
-  direction: GZ_TO_ROS
-
+# /clock is bridged by its own process (bridge_clock.yaml): sharing one with the
+# camera images and cloud let a slow reliable image reader stall /clock for minutes,
+# freezing every sim-time timer (nav_central never left its first setup step).
 - ros_topic_name: /zed/zed_node/rgb/color/rect/image
   gz_topic_name: /zed_rgbd/image
   ros_type_name: sensor_msgs/msg/Image

@@ -27,6 +27,7 @@ import rclpy
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.navigation_constants import (
+    INITIAL_POSE_TOPIC,
     FOLLOW_STATUS_TOPIC,
     GO_TO_POSE_SERVICE,
     GOAL_UPDATE_TOPIC,
@@ -35,7 +36,10 @@ from frida_constants.vision_constants import SET_TARGET_TOPIC
 from frida_gz_sim import ground_truth as gt
 from frida_gz_sim.nav import MAP_NAME
 from frida_interfaces.srv import GoToPose
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from gz.msgs10.boolean_pb2 import Boolean
+from gz.msgs10.pose_pb2 import Pose
+from gz.transport13 import Node as GzNode
 from nav_msgs.msg import Odometry
 from rcl_interfaces.srv import GetParameters
 from rclpy.node import Node
@@ -144,6 +148,10 @@ class SimFollowTest(Node):
             GetParameters, "/controller_server/get_parameters"
         )
         self.route_pub = self.create_publisher(String, "/sim/person/route", 10)
+        self.initial_pose_pub = self.create_publisher(
+            PoseWithCovarianceStamped, INITIAL_POSE_TOPIC, 10
+        )
+        self.gz = GzNode()
 
         maps = f"{get_package_share_directory('map_context')}/maps"
         with open(f"{maps}/{MAP_NAME}.yaml") as f:
@@ -212,6 +220,41 @@ class SimFollowTest(Node):
             return False, "staging timed out"
         return res.success, res.error
 
+    def teleport(self, x, y, yaw):
+        """Put the robot at (x, y, yaw) in Gazebo and re-seed slam_toolbox there.
+
+        Driving across the arena between scenarios is slow and leaves the robot
+        wedged against walls after a bad run; teleporting makes every scenario
+        start from the same pose. slam_toolbox re-localizes on /initialpose, so
+        the estimate follows the jump."""
+        req = Pose()
+        req.name = "frida"
+        req.position.x, req.position.y, req.position.z = float(x), float(y), 0.02
+        req.orientation.z, req.orientation.w = math.sin(yaw / 2), math.cos(yaw / 2)
+        ok, _ = self.gz.request(
+            f"/world/arena_{MAP_NAME}/set_pose", req, Pose, Boolean, 3000
+        )
+        if not ok:
+            return False, "gz set_pose failed"
+        self.wait(1.0)
+        msg = PoseWithCovarianceStamped()
+        msg.header.frame_id = "map"
+        msg.pose.pose.position.x, msg.pose.pose.position.y = float(x), float(y)
+        msg.pose.pose.orientation.z = math.sin(yaw / 2)
+        msg.pose.pose.orientation.w = math.cos(yaw / 2)
+        cov = [0.0] * 36
+        cov[0] = cov[7] = 0.05
+        cov[35] = 0.03
+        msg.pose.covariance = cov
+        for _ in range(3):
+            msg.header.stamp = self.get_clock().now().to_msg()
+            self.initial_pose_pub.publish(msg)
+            self.wait(0.5)
+        self.wait(3.0)
+        if self.robot is None or math.hypot(self.robot[0] - x, self.robot[1] - y) > 0.1:
+            return False, f"robot not at start after teleport: {self.robot}"
+        return True, ""
+
     def track(self, on):
         if not self.track_client.wait_for_service(timeout_sec=5.0):
             return False
@@ -252,7 +295,7 @@ class SimFollowTest(Node):
         self.navigation.follow_person(False)
         self.track(False)
         self.place_person(*sc.get("person_start", PERSON_START))
-        ok, err = self.go_to(*ROBOT_START)
+        ok, err = self.teleport(*ROBOT_START)
         if not ok:
             return {"name": name, "passed": False, "error": f"staging: {err}"}
         self.wait(1.5)
