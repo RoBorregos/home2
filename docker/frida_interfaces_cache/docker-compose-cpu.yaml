@@ -15,4 +15,4 @@ services:
     tty: true
     user: ${UID}:${GID}
     entrypoint: ["bash", "-il", "-c"]
-    command: ["source /opt/ros/jazzy/setup.bash && bash src/scripts/build_frida_constants.sh && colcon build --packages-select frida_interfaces --cmake-args -DFRIDA_MODULES=${FRIDA_MODULES:-all}"]
+    command: ["source /opt/ros/jazzy/setup.bash && bash src/scripts/build_frida_constants.sh && colcon build --packages-select frida_interfaces"]

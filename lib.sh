@@ -177,40 +177,7 @@ clean_directories() {
   rm -rf "$target/build" "$target/log" "$target/install"
 }
 
-# Translate --hri/--vision/--manipulation/--navigation/--task-manager/--all
-# flags into FRIDA_MODULES (comma-separated) for the frida_interfaces build.
-parse_frida_modules_flags() {
-  local modules=()
-  local all_requested=false
-
-  for arg in "$@"; do
-    case $arg in
-      "--hri")           modules+=("hri") ;;
-      "--vision")        modules+=("vision") ;;
-      "--manipulation")  modules+=("manipulation") ;;
-      "--navigation")    modules+=("navigation") ;;
-      "--task-manager")  modules+=("task_manager") ;;
-      "--all")           all_requested=true ;;
-      *)
-        echo "Unknown frida_interfaces flag: $arg" >&2
-        echo "Valid flags: --hri --vision --manipulation --navigation --task-manager --all" >&2
-        return 1
-        ;;
-    esac
-  done
-
-  if [ "$all_requested" = true ] || [ ${#modules[@]} -eq 0 ]; then
-    FRIDA_MODULES="all"
-  else
-    local IFS=,
-    FRIDA_MODULES="${modules[*]}"
-  fi
-  export FRIDA_MODULES
-}
-
 run_frida_interfaces() {
-  parse_frida_modules_flags "$@" || return 1
-
   local compose_yaml
   if [ -f "docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml" ]; then
     compose_yaml="docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml"
@@ -219,7 +186,7 @@ run_frida_interfaces() {
     return 1
   fi
 
-  echo "Running frida_interfaces_cache to build frida_interfaces (using $compose_yaml, FRIDA_MODULES=${FRIDA_MODULES})"
+  echo "Running frida_interfaces_cache to build frida_interfaces (using $compose_yaml)"
   mkdir -p "docker/frida_interfaces_cache/build" "docker/frida_interfaces_cache/install" "docker/frida_interfaces_cache/log"
   export GID=$(id -g) && docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
 }
