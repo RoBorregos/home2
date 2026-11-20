@@ -154,6 +154,27 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
+def match_hotwords(text: str, hotwords: str, exclude: str = "") -> str:
+    """Return the only hotword (comma-separated list) said in text, "" if none or several.
+
+    Hyphens and punctuation count as spaces so "coca-cola" matches "coca cola", and a hotword
+    contained in a longer matched one ("tea" in "iced tea") is not counted twice.
+    """
+
+    def words(s: str) -> str:
+        return " ".join(re.sub(r"[^\w\s]", " ", s.lower()).split())
+
+    said = f" {words(text)} "
+    excluded = words(exclude)
+    found = {}
+    for hotword in hotwords.split(","):
+        key = words(hotword)
+        if key and key != excluded and f" {key} " in said:
+            found[key] = hotword.strip()
+    keys = [k for k in found if not any(k != o and f" {k} " in f" {o} " for o in found)]
+    return found[keys[0]] if len(keys) == 1 else ""
+
+
 class HRITasks:
     """Class to manage the HRI tasks"""
 
@@ -769,6 +790,10 @@ class HRITasks:
         if not words or self.negation_words.issuperset(words):
             return keyword
 
+        corrected = match_hotwords(text, hotwords, exclude=target)
+        if corrected:
+            return corrected
+
         s, value = self.extract_data(query, text, context)
         value = value.strip() if s == Status.EXECUTION_SUCCESS else ""
         yes_no = self.negation_words | self.affirmation_words
@@ -900,7 +925,15 @@ class HRITasks:
                 try:
                     # If no options provided, directly extract the data without looking for matches
                     if not skip_extract_data and not options:
-                        s, target_info = self.extract_data(query, interpreted_text, context)
+                        # A single hotword said without negation ("I don't like coke") is the answer, no LLM needed
+                        negated = (self.negation_words | {"dont", "never"}).intersection(
+                            format_transcription(interpreted_text)
+                        )
+                        matched = "" if negated else match_hotwords(interpreted_text, hotwords)
+                        if matched:
+                            s, target_info = Status.EXECUTION_SUCCESS, matched
+                        else:
+                            s, target_info = self.extract_data(query, interpreted_text, context)
                         yes_no = self.negation_words | self.affirmation_words
                         target_info = " ".join(
                             w for w in target_info.split() if remove_punctuation(w) not in yes_no
