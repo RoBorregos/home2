@@ -15,6 +15,9 @@ find_package(shape_msgs REQUIRED)
 find_package(unique_identifier_msgs REQUIRED)
 find_package(rosidl_default_runtime REQUIRED)
 
+# Comma-separated modules to build (hri,manipulation,navigation,task_manager,vision), or "all".
+set(FRIDA_MODULES "all" CACHE STRING "Comma-separated frida_interfaces modules to build, or 'all'")
+
 set(hri_files
   "hri/action/SpeechStream.action"
   "hri/msg/AudioData.msg"
@@ -154,13 +157,26 @@ set(vision_files
   "vision/srv/EmbedCrops.srv"
 )
 
+set(frida_interfaces_valid_modules hri manipulation navigation task_manager vision)
+
+if(FRIDA_MODULES STREQUAL "" OR FRIDA_MODULES STREQUAL "all")
+  set(frida_interfaces_requested_modules ${frida_interfaces_valid_modules})
+else()
+  string(REPLACE "," ";" frida_interfaces_requested_modules "${FRIDA_MODULES}")
+endif()
+
+set(interface_files "")
+foreach(module ${frida_interfaces_requested_modules})
+  list(FIND frida_interfaces_valid_modules "${module}" module_index)
+  if(module_index EQUAL -1)
+    message(FATAL_ERROR "Unknown frida_interfaces module '${module}'. Valid modules: ${frida_interfaces_valid_modules}")
+  endif()
+  list(APPEND interface_files ${${module}_files})
+endforeach()
+
 # Generate interfaces only keep the necessary runtimes (python, c++)
 rosidl_generate_interfaces(${PROJECT_NAME}
-  ${hri_files}
-  ${manipulation_files}
-  ${navigation_files}
-  ${task_manager_files}
-  ${vision_files}
+  ${interface_files}
   DEPENDENCIES std_msgs unique_identifier_msgs action_msgs geometry_msgs sensor_msgs shape_msgs
 )
 
