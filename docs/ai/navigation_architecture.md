@@ -496,3 +496,60 @@ glued to the robot, boxing the planner in. Task side:
 try/finally). Changing `ApproachPoint.srv` fields requires rebuilding the
 interface cache: `./run.sh frida_interfaces`, then restart the nav + integration
 containers.
+
+## Addendum (2026-11-15): follow person — closed loop, recovery and the handoff contract
+
+Pipeline: `tracker_node` → `RESULTS_TOPIC` (PointStamped, camera frame) →
+`person_goal_smoother.py` → `GOAL_UPDATE_TOPIC` (`/goal_update`) → Nav2 `GoalUpdater`
+inside `bt/follow_dynamic_point.xml` → MPPI. `nav_central` orchestrates it through
+`FOLLOW_PERSON_NAV_SERVICE` (`/navigation/follow_person`, SetBool).
+
+What each piece guarantees:
+
+- **`nav_central`** (`_start_follow_person`, `_follow_result_cb`): idempotent start;
+  waits for the smoother's follow-mode param switch before sending the BT; seeds the
+  BT with a fresh goal (never one cached from a previous follow); **re-sends the
+  follow BT whenever Nav2 ends it while follow is active** (0.5 s, then 2 s backoff).
+  Stop cancels the goal (waits for the ack) and restores the standard params; the
+  service response reports whether the restore happened.
+- **BT**: 4 Hz replan (was 1 Hz), a `RecoveryNode` around planning and control
+  (clear costmap + retry; no Spin/BackUp, they break line of sight), 30 outer retries.
+- **`person_goal_smoother.py`** (pure maths in `nav_main/follow_planner.py`, tests in
+  `test/test_follow_planner.py`): tracker point transformed at its own stamp (the
+  camera pans on the arm); EMA `alpha 0.5`; velocity lead `lead_time 0.6 s` capped at
+  1 m; `follow_distance 0.8`; goal pulled out of inscribed/lethal cost **along the
+  person→robot line** on the live global costmap (the person's legs are a lidar
+  obstacle); **2 Hz heartbeat** re-publishing the goal with a fresh stamp (Jazzy's
+  `GoalUpdater` ignores goals older than the BT seed). Follow mode also raises MPPI
+  `GoalAngleCritic.threshold_to_consider` to 3 m so the base keeps facing the person
+  while it drives, and tightens `xy_goal_tolerance` to 0.25.
+- **Lost-person recovery**, reported on `FOLLOW_STATUS_TOPIC` =
+  `/navigation/follow_status` (std_msgs/String, latched): `following` → no tracker
+  data for 2 s → `lost` (drive to the last-known position facing their direction of
+  travel) → arrived or 8 s → `searching` (turn in place through 0, ±60, ±120, 180° from
+  the travel direction, 2.5 s each) → 15 s → `gave_up` (hold still). Tracker data
+  returns to `following` from any state; follow mode off → `idle`.
+
+### Handoff contract
+
+| owns | call | responsibility |
+|---|---|---|
+| vision | `vision.track_person(True/False)` | lock the person; publish 3D point and centroid; ReID re-lock after short occlusions |
+| navigation | `nav.follow_person(True/False)`, `nav.follow_status()`, `nav.follow_lost_for()` | base motion, follow-mode Nav2 params, lost/search recovery, status topic |
+| manipulation | `manipulation.follow_person(True/False)` | camera pan: joint1 PID on the centroid; recentre to neutral on centroid timeout. `/follow/base_yaw` is not consumed |
+| task manager | HRIC `FOLLOW_PERSON`, GPSR `follow_person_until` | sequencing, speech, re-lock |
+
+Rules:
+1. Start `track → nav → arm`; stop `nav → arm → track`.
+2. Any other arm action preempts the pan (`manipulation_core._preempt_follow`): stop
+   the nav follow before `move_to_position(...)` or a pick.
+3. Short losses are navigation's job. The task manager re-locks only on
+   `follow_status() == "gave_up"` or a long loss (HRIC `FOLLOW_RELOCK_AFTER_S` = 12 s,
+   `_relock_person`; GPSR `_recover_lost_person`).
+4. `adaptive_goal_publisher.py` also publishes `/goal_update`: never run it together
+   with person following.
+
+Validation: `./run.sh simulation --nav --headless --no-rviz`, then
+`./run.sh simulation --follow-test` (see `simulation/frida_gz_sim/README.md`). On the
+robot: `ros2 run task_manager test_follow_person.py` with
+`ros2 topic echo /navigation/follow_status` alongside.
