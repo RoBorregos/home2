@@ -17,6 +17,7 @@ from rclpy.node import Node
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.time_budget import Priority, Step, TimeBudget
 
 ATTEMPT_LIMIT = 5
 FIRST_GUEST_IDX = 0
@@ -31,6 +32,9 @@ FOLLOW_STOP_KEYWORDS = ["stop", "stop following", "halt", "you can stop"]
 FOLLOW_LISTEN_TIMEOUT = 5.0
 FOLLOW_MAX_DURATION = 180.0
 DOOR_WAIT_TIMEOUT = 15.0
+
+# Default task time limit in seconds, from the start button; override with the ROS param time_limit.
+TASK_TIME_LIMIT = 480.0
 
 
 class Guest:
@@ -91,6 +95,38 @@ class HRIC_TM(Node):
         self.carrying_bag = False
         self.should_follow_person = False
 
+        # Expected chain of states after the start button. Estimates (s) = one try per
+        # question in the sim_hric.sh timing report + ~15 s per navigation; re-measure on the
+        # real robot. Priority = what to protect when time runs out (MUST never skipped,
+        # LOW first to go; retries/waits inside a step also keep time for same-priority steps).
+        s = HRIC_TM.TaskStates
+        guest = [
+            Step(s.WAIT_FOR_DOOR, 12, Priority.MUST),
+            Step(s.START, 20, Priority.MUST),
+            Step(s.WAIT_FOR_GUEST, 5, Priority.MUST),
+            Step(s.GREETING, 25, Priority.HIGH),
+            Step(s.SAVE_FACE, 8, Priority.HIGH),
+        ]
+        self.chain = [
+            *guest,
+            Step(s.NAVIGATE_TO_LIVING_ROOM, 20, Priority.MUST),
+            Step(s.FIND_SEAT, 12, Priority.HIGH),
+            Step(s.NAVIGATE_TO_WAIT_AREA, 20, Priority.MUST),
+            *guest,
+            Step(s.SHOW_VIDEO_TAKE_BAG, 10, Priority.LOW),
+            Step(s.TAKE_BAG, 25, Priority.HIGH),
+            Step(s.NAVIGATE_TO_LIVING_ROOM, 20, Priority.MUST),
+            Step(s.FIND_SEAT, 12, Priority.HIGH),
+            Step(s.INTRODUCTION, 15, Priority.MUST),
+            Step(s.FOLLOW_PERSON, 60, Priority.LOW),
+            Step(s.LEAVE_BAG, 10, Priority.HIGH),
+            Step(s.END, 5, Priority.MUST),
+        ]
+        # Whole steps dropped when the budget can't afford them, and where to go instead
+        self.skip_to = {s.SHOW_VIDEO_TAKE_BAG: s.TAKE_BAG, s.FOLLOW_PERSON: s.LEAVE_BAG}
+        self.time_limit = self.declare_parameter("time_limit", TASK_TIME_LIMIT).value
+        self.budget = None  # created when the start button is pressed
+
         self.current_state = HRIC_TM.TaskStates.WAIT_FOR_BUTTON
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         # Face recognition starts off, activated only when needed
@@ -127,6 +163,13 @@ class HRIC_TM(Node):
         # Update for new state
         self.previous_state = new_state
         self.state_start_time = current_time
+        if self.budget:
+            drift = self.budget.enter(new_state)
+            Logger.info(
+                self,
+                f"Budget: {self.budget.remaining():.0f}s left, "
+                f"{'behind' if drift > 0 else 'ahead of'} plan by {abs(drift):.0f}s",
+            )
 
         # Log cumulative times
         if self.state_times:
@@ -160,8 +203,13 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.say(
                 f"I'll guide you to the {location}. Please follow me.",
                 wait=False,
+                priority=Priority.LOW,
             )
         self.subtask_manager.nav.move_to_location(location, sublocation)
+
+    def _can_spend(self, cost: float = 1.0, priority: Priority = Priority.HIGH) -> bool:
+        """Extra work inside a step (waits, searches): go on only while the budget affords it."""
+        return not self.budget or self.budget.allows(priority, cost, extra=True)
 
     def timeout(self, timeout: int = 2):
         time.sleep(timeout)
@@ -193,6 +241,12 @@ class HRIC_TM(Node):
     def run(self):
         """Finite State Machine"""
 
+        skip_to = self.skip_to.get(self.current_state)
+        if skip_to and self.budget and not self.budget.affords(self.current_state):
+            Logger.warn(self, f"Out of time, skipping step {self.current_state}")
+            self.current_state = skip_to
+            return
+
         if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_BUTTON:
             self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_BUTTON)
             Logger.state(self, "Waiting for start button...")
@@ -205,6 +259,7 @@ class HRIC_TM(Node):
                 rclpy.spin_once(self, timeout_sec=0.1)
 
             Logger.success(self, "Start button pressed, now waiting for a door event")
+            self.budget = self.subtask_manager.hri.budget = TimeBudget(self.time_limit, self.chain)
             self.current_state = HRIC_TM.TaskStates.WAIT_FOR_DOOR
 
         elif self.current_state == HRIC_TM.TaskStates.WAIT_FOR_DOOR:
@@ -214,7 +269,7 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.door_event_detected = False
             self.subtask_manager.hri.last_door_event = ""
             self.subtask_manager.hri.say(
-                "I will wait until I hear someone at the door.",
+                "Waiting for someone at the door.",
                 wait=True,
             )
             time.sleep(2)
@@ -227,7 +282,11 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.last_door_event = ""
             # Safety timeout: if no doorbell is heard, continue anyway
             deadline = time.time() + DOOR_WAIT_TIMEOUT
-            while not self.subtask_manager.hri.door_event_detected and time.time() < deadline:
+            while (
+                not self.subtask_manager.hri.door_event_detected
+                and time.time() < deadline
+                and self._can_spend()
+            ):
                 rclpy.spin_once(self, timeout_sec=0.1)
             self.subtask_manager.hri.arm_door_detection(False)
 
@@ -237,7 +296,7 @@ class HRIC_TM(Node):
                     self, f"Heard a {trigger} at the door, HRI Challenge task will begin now"
                 )
                 self.subtask_manager.hri.say(
-                    "I heard someone at the door. Referee, please open the door so that I can greet them.",
+                    "I heard someone at the door. Referee, please open it.",
                     wait=True,
                 )
             else:
@@ -246,8 +305,7 @@ class HRIC_TM(Node):
                     f"No door event after {DOOR_WAIT_TIMEOUT:.0f} seconds, continuing with the task",
                 )
                 self.subtask_manager.hri.say(
-                    "I did not hear the doorbell, but I will continue with the task. "
-                    "Referee, please open the door so that I can greet them.",
+                    "I did not hear the doorbell. Referee, please open the door.",
                     wait=True,
                 )
             time.sleep(3)
@@ -282,9 +340,7 @@ class HRIC_TM(Node):
             self.subtask_manager.manipulation.follow_face(True)
             self.timeout(1)
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
-            self.subtask_manager.hri.say(
-                "Hi there! My name is Frida and I'll be your receptionist today. I'm going to ask you some questions, please speak loudly so that I can hear you."
-            )
+            self.subtask_manager.hri.say("Hi, I'm Frida, your receptionist. Please answer loudly.")
             current_guest = self.get_current_guest()
             status, name = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your name?",
@@ -293,6 +349,7 @@ class HRIC_TM(Node):
                 initial_prompt="The question 'What is your name?' was asked",
                 retries=5,
                 hotwords=self.subtask_manager.hri.names_hotwords,
+                priority=Priority.HIGH,
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -307,6 +364,7 @@ class HRIC_TM(Node):
                 initial_prompt="The question 'What is your favorite drink?' was asked",
                 retries=5,
                 hotwords=HOT_DRINKS,
+                priority=Priority.HIGH,
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -324,9 +382,9 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.SAVE_FACE:
             self._track_state_change(HRIC_TM.TaskStates.SAVE_FACE)
             self.subtask_manager.hri.say(
-                "Please stand still in front of me and look at me so I can remember your face."
+                "Please stand still and look at me so I can remember your face."
                 if self.current_attempts == 0
-                else "Please get closer to me and look at my camera so I can remember your face."
+                else "Please come closer and look at my camera."
             )
             result = self.subtask_manager.vision.save_face_name(self.get_current_guest().name)
 
@@ -346,7 +404,7 @@ class HRIC_TM(Node):
             self._track_state_change(HRIC_TM.TaskStates.SHOW_VIDEO_TAKE_BAG)
             self.subtask_manager.hri.publish_display_topic("take_bag.mp4")
             self.subtask_manager.hri.say(
-                "I see you brought a bag for the host. Let me take care of it for you. Please look at my display to see how to give me the bag.",
+                "I'll take your bag for the host. My display shows how to hand it to me.",
                 wait=True,
             )
             self.timeout(6)
@@ -358,12 +416,10 @@ class HRIC_TM(Node):
             # Show the hand detection (annotated by hric_commands) on the display
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
 
-            self.subtask_manager.hri.say(
-                "Please hold the bag with your hand and extend it so I can see it.", wait=False
-            )
+            self.subtask_manager.hri.say("Please hold out the bag so I can see it.", wait=False)
             self.subtask_manager.manipulation.move_to_position("hand_bag_pose")
             self.subtask_manager.hri.say(
-                "I'll approach your hand to take the bag. Please keep your hand still, I won't close my gripper yet."
+                "I'll reach for your hand. Keep it still, I won't close my gripper yet."
             )
 
             hand_reached = False
@@ -390,9 +446,7 @@ class HRIC_TM(Node):
                 else:
                     Logger.warn(self, f"go_to_hand attempt {attempt + 1} failed")
                     if attempt < ATTEMPT_LIMIT - 1:
-                        self.subtask_manager.hri.say(
-                            "I could not reach your hand. Come a little closer and place your hand right in front of me."
-                        )
+                        self.subtask_manager.hri.say("I can't reach your hand. Please come closer.")
 
             if not hand_reached:
                 self.subtask_manager.hri.say(
@@ -403,9 +457,7 @@ class HRIC_TM(Node):
 
             # TODO: Detect if the bag was placed in the gripper instead of timeout.
             self.timeout(5)
-            self.subtask_manager.hri.say(
-                "Please be careful with your hand, I'll close my gripper in 3"
-            )
+            self.subtask_manager.hri.say("Careful with your hand, closing my gripper in 3")
             self.timeout(0.5)
             self.subtask_manager.hri.say("2")
             self.timeout(0.5)
@@ -419,7 +471,7 @@ class HRIC_TM(Node):
             self.timeout(3)
             guest_1 = self.guests[FIRST_GUEST_IDX]
             self.subtask_manager.hri.say(
-                f"Please follow me to the living room. By the way, another guest named {guest_1.name} is already in the living room. {guest_1.description}.",
+                f"Please follow me to the living room, where {guest_1.name} is waiting. {guest_1.description}.",
                 wait=False,
             )
             self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM
@@ -431,7 +483,9 @@ class HRIC_TM(Node):
 
         elif self.current_state == HRIC_TM.TaskStates.FIND_SEAT:
             self._track_state_change(HRIC_TM.TaskStates.FIND_SEAT)
-            self.subtask_manager.hri.say("Let me find a free seat for you.", wait=False)
+            self.subtask_manager.hri.say(
+                "Let me find a free seat for you.", wait=False, priority=Priority.LOW
+            )
             self.subtask_manager.vision.deactivate_face_recognition()
             self.timeout(1)
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
@@ -472,7 +526,7 @@ class HRIC_TM(Node):
             self.subtask_manager.vision.follow_by_name(guest_2.name)
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.say(
-                f"Thanks for taking a seat {guest_2.name}. Allow me to introduce you to {guest_1.name}, their favorite drink is {guest_1.drink}.",
+                f"{guest_2.name}, this is {guest_1.name}, their favorite drink is {guest_1.drink}.",
                 wait=True,
             )
             self.subtask_manager.hri.publish_display_capture(
@@ -489,11 +543,13 @@ class HRIC_TM(Node):
             )
             guest_1_found = False
             for offset in self.seat_angles:
-                if guest_1_found:
+                if guest_1_found or not self._can_spend():
                     break
 
                 self.subtask_manager.manipulation.pan_to(offset)
                 for _ in range(ATTEMPT_LIMIT):
+                    if not self._can_spend():
+                        break
                     if self.subtask_manager.vision.isPerson(guest_1.name):
                         guest_1_found = True
                         self.subtask_manager.hri.publish_display_capture(
@@ -508,7 +564,7 @@ class HRIC_TM(Node):
             self.subtask_manager.manipulation.follow_face(True)
             self.timeout(2)
             self.subtask_manager.hri.say(
-                f"Hello {guest_1.name}. This is {guest_2.name} and their favorite drink is {guest_2.drink}",
+                f"{guest_1.name}, this is {guest_2.name}, their favorite drink is {guest_2.drink}.",
                 wait=True,
             )
             self.subtask_manager.manipulation.follow_face(False)
@@ -533,6 +589,7 @@ class HRIC_TM(Node):
                     initial_prompt="The question 'Where would you like me to go?' was asked",
                     retries=3,
                     always_confirm=True,
+                    priority=Priority.LOW,
                 )
                 if status == Status.EXECUTION_SUCCESS and destination:
                     self.subtask_manager.hri.say(
@@ -559,7 +616,7 @@ class HRIC_TM(Node):
             # person's 3D point on RESULTS_TOPIC; person_goal_smoother turns it into
             # the moving Nav2 goal that nav.follow_person chases.
             self.subtask_manager.hri.say(
-                "Host, please stand in front of me so I can start following you.", wait=True
+                "Host, please stand in front of me so I can follow you.", wait=True
             )
             self.timeout(5)
             tracking = False
@@ -575,15 +632,13 @@ class HRIC_TM(Node):
             if not tracking:
                 # No locked target -> there is no goal to follow; skip rather than
                 # chase the smoother's dummy pose.
-                self.subtask_manager.hri.say(
-                    "I could not lock onto you, so I will skip following and continue."
-                )
+                self.subtask_manager.hri.say("I can't see you, I'll skip following.")
                 self.subtask_manager.vision.track_person(False)
                 self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
                 return
 
             self.subtask_manager.hri.say(
-                "I will start following you now, you can start walking. Please say stop whenever you want me to stop.",
+                "Following you now. Say stop when you want me to stop.",
                 wait=True,
             )
 

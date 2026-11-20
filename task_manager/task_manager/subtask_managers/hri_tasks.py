@@ -93,6 +93,7 @@ from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
+from task_manager.utils.time_budget import Priority
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -153,6 +154,27 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
+def match_hotwords(text: str, hotwords: str, exclude: str = "") -> str:
+    """Return the only hotword (comma-separated list) said in text, "" if none or several.
+
+    Hyphens and punctuation count as spaces so "coca-cola" matches "coca cola", and a hotword
+    contained in a longer matched one ("tea" in "iced tea") is not counted twice.
+    """
+
+    def words(s: str) -> str:
+        return " ".join(re.sub(r"[^\w\s]", " ", s.lower()).split())
+
+    said = f" {words(text)} "
+    excluded = words(exclude)
+    found = {}
+    for hotword in hotwords.split(","):
+        key = words(hotword)
+        if key and key != excluded and f" {key} " in said:
+            found[key] = hotword.strip()
+    keys = [k for k in found if not any(k != o and f" {k} " in f" {o} " for o in found)]
+    return found[keys[0]] if len(keys) == 1 else ""
+
+
 class HRITasks:
     """Class to manage the HRI tasks"""
 
@@ -167,6 +189,8 @@ class HRITasks:
         self.door_event_detected = False
         self.last_door_event = ""
         self.keyword = ""
+        # TimeBudget set by the task manager; None = no deadline, nothing is ever skipped
+        self.budget = None
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
@@ -300,8 +324,14 @@ class HRITasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> Status:
-        """Method to publish directly text to the speech node"""
+    def say(
+        self, text: str, wait: bool = True, speed: float = 1.15, priority: Priority = Priority.MUST
+    ) -> Status:
+        """Method to publish directly text to the speech node. Non-MUST messages are dropped
+        when the time budget can no longer afford them (~15 chars per second of speech)."""
+        if self.budget and not self.budget.allows(priority, len(text) / 15):
+            Logger.warn(self.node, f"Out of time, skipping {priority.name} message: {text}")
+            return Status.EXECUTION_SUCCESS
         Logger.info(self.node, f"Sending to saying service: {text}")
         self.set_light_state(AudioStates.SAYING)
 
@@ -760,6 +790,10 @@ class HRITasks:
         if not words or self.negation_words.issuperset(words):
             return keyword
 
+        corrected = match_hotwords(text, hotwords, exclude=target)
+        if corrected:
+            return corrected
+
         s, value = self.extract_data(query, text, context)
         value = value.strip() if s == Status.EXECUTION_SUCCESS else ""
         yes_no = self.negation_words | self.affirmation_words
@@ -839,6 +873,7 @@ class HRITasks:
         initial_prompt: str = "",
         silence_time: float = 1.0,
         max_audio_length: float = 13.0,
+        priority: Priority = Priority.MUST,
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -854,12 +889,26 @@ class HRITasks:
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
             silence_time: the time to wait for silence before considering the speech complete
             max_audio_length: the maximum length of seconds to listen to the user
+            priority: with a time budget, non-MUST dialogs stop retrying (and skip the
+                confirmation when behind schedule) to save time for more important steps
         Returns:
             Status: the status of the execution
             str: answer to the question
         """
         current_attempt = 0
+        attempt_cost = 0.0  # duration of the last attempt, the estimate for the next one
+        start_time = self.node.get_clock().now()
         while current_attempt < retries:
+            if current_attempt:
+                attempt_cost = (self.node.get_clock().now() - start_time).nanoseconds / 1e9
+            # the first ask is the step itself, retries are extra work
+            if self.budget and not self.budget.allows(
+                priority, attempt_cost, extra=current_attempt > 0
+            ):
+                Logger.warn(self.node, f"Out of time, skipping {priority.name} dialog: {question}")
+                break
+            if self.budget and priority != Priority.MUST and self.budget.behind():
+                skip_confirmation = True
             current_attempt += 1
 
             start_time = self.node.get_clock().now()
@@ -879,7 +928,15 @@ class HRITasks:
                 try:
                     # If no options provided, directly extract the data without looking for matches
                     if not skip_extract_data and not options:
-                        s, target_info = self.extract_data(query, interpreted_text, context)
+                        # A single hotword said without negation ("I don't like coke") is the answer, no LLM needed
+                        negated = (self.negation_words | {"dont", "never"}).intersection(
+                            format_transcription(interpreted_text)
+                        )
+                        matched = "" if negated else match_hotwords(interpreted_text, hotwords)
+                        if matched:
+                            s, target_info = Status.EXECUTION_SUCCESS, matched
+                        else:
+                            s, target_info = self.extract_data(query, interpreted_text, context)
                         yes_no = self.negation_words | self.affirmation_words
                         target_info = " ".join(
                             w for w in target_info.split() if remove_punctuation(w) not in yes_no
