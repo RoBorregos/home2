@@ -1,34 +1,52 @@
-ARG BASE_IMAGE
+ARG BASE_IMAGE=roborregos/home2:cpu_base
 FROM ${BASE_IMAGE}
 ARG ROS_DISTRO=jazzy
+# Extra pip index for torch/torchaudio. Empty = pick by base: the CPU-only wheels
+# when the base has no CUDA (cpu_base), PyPI's CUDA build otherwise (cuda_base).
+# l4t_base already provides torch, so it is never installed there.
+ARG TORCH_INDEX_URL=
 
-RUN apt-get update && apt-get install -y \
-    python3-pyaudio \
+# Audio stack. pulseaudio pulls the ALSA -> PulseAudio plugin that PortAudio
+# (sounddevice/pyaudio) uses to reach the host's socket; alsa-utils gives `aplay`
+# for audio_feedback.py.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     alsa-base \
     alsa-utils \
-    gstreamer-1.0 \
-    libasound-dev \
-    portaudio19-dev \
+    libasound2-dev \
     libportaudio2 \
     libportaudiocpp0 \
+    portaudio19-dev \
     pulseaudio \
+    pulseaudio-utils \
+    python3-pyaudio \
     curl \
-    cargo \
-    rustc \
     && rm -rf /var/lib/apt/lists/*
 
 # Python modules: one resolver run for nlp + speech + postgres so every package
 # is installed once. On l4t, pip-install-reqs (from l4t_base) skips the pins the
 # base already provides (numpy, scipy, torch, torchaudio, onnxruntime).
+# The pip cache lives in a BuildKit cache mount, not in the layer. cargo/rustc
+# are only needed to compile wheels without a prebuilt binary, so they are
+# removed in the same step.
 COPY hri/requirements/nlp.txt hri/requirements/speech.txt hri/requirements/postgres.txt /tmp/requirements/
-RUN if command -v pip-install-reqs >/dev/null; then \
-        pip-install-reqs /tmp/requirements/nlp.txt /tmp/requirements/speech.txt /tmp/requirements/postgres.txt; \
+RUN --mount=type=cache,target=/root/.cache/pip \
+    apt-get update && apt-get install -y --no-install-recommends cargo rustc \
+    && cd /tmp/requirements \
+    && if command -v pip-install-reqs >/dev/null; then \
+        pip-install-reqs nlp.txt speech.txt postgres.txt; \
     else \
-        pip install -r /tmp/requirements/nlp.txt -r /tmp/requirements/speech.txt -r /tmp/requirements/postgres.txt; \
+        TORCH_INDEX="${TORCH_INDEX_URL}"; \
+        if [ -z "$TORCH_INDEX" ] && [ ! -d /usr/local/cuda ]; then TORCH_INDEX=https://download.pytorch.org/whl/cpu; fi; \
+        if [ -n "$TORCH_INDEX" ]; then set -- --extra-index-url "$TORCH_INDEX"; fi; \
+        pip install "$@" -r nlp.txt -r speech.txt -r postgres.txt; \
     fi \
+    && cd / \
     && pip install --no-deps openwakeword==0.6.0 deepfilternet==0.5.6 deepfilterlib==0.5.6 \
     && python3 -m spacy download en_core_web_md \
-    && rm -rf /tmp/requirements
+    && apt-get purge -y --auto-remove cargo rustc \
+    && rm -rf /var/lib/apt/lists/* /root/.cargo /tmp/requirements
+
+# DeepFilterNet 0.5.6 imports torchaudio.backend, which torchaudio 2.x removed.
 RUN python3 -c "\
 import importlib.util, os; \
 path = os.path.join(importlib.util.find_spec('df').submodule_search_locations[0], 'io.py'); \
@@ -45,7 +63,7 @@ open(path, 'w').write(content)"
 
 # display_ui.py (PyQt5 desktop UI, default) deps, plus rosbridge / web_video_server
 # / nodejs for the legacy Next.js UI kept as the --backup fallback.
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-cv-bridge \
     ros-${ROS_DISTRO}-rosbridge-server \
     ros-${ROS_DISTRO}-web-video-server \
