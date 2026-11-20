@@ -17,10 +17,11 @@
   <!-- =================== base_link =================== -->
   <link name="base_link">
     <inertial>
-      <origin xyz="0.0035289 4.9532E-05 0.18881" rpy="0 0 0"/>
-      <mass value="31.284"/>
-      <inertia ixx="0.16472" ixy="6.3557E-05" ixz="0.00075615"
-               iyy="0.12042" iyz="-0.0002185" izz="0.20341"/>
+      <!-- OmniFridaNuevo2 export (rear expansion), COM shifted to the wheel-centre frame -->
+      <origin xyz="-0.009784 0.0012309 0.21654" rpy="0 0 0"/>
+      <mass value="30.612"/>
+      <inertia ixx="0.17939" ixy="5.3792E-05" ixz="0.00079012"
+               iyy="0.15041" iyz="-8.6802E-05" izz="0.2079"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -32,7 +33,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <!-- decimated collision mesh (~3.9k tris) to avoid MoveIt/FCL
+        <!-- box collision mesh (~284 tris, incl. rear expansion) to avoid MoveIt/FCL
              "too many vertices in collision geometry" on the 430k visual mesh -->
         <mesh filename="${mesh_dir}/base_link_collision.stl"/>
       </geometry>
