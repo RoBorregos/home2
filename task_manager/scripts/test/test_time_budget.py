@@ -34,6 +34,17 @@ def test_time_budget():
     assert not b.allows(Priority.LOW, cost=10)  # 35 - 10 < 30 reserved for intro
     assert b.allows(Priority.LOW, cost=5)
 
+    # extra work (retries) also protects the steps as important as itself
+    now[0] = 0
+    b = TimeBudget(120, chain, clock=lambda: now[0])
+    b.enter("greet")
+    assert b.reserve(Priority.LOW, extra=True) == 90  # nav + chat + intro
+    assert b.allows(Priority.LOW, cost=31) and not b.allows(Priority.LOW, cost=31, extra=True)
+    assert b.affords("chat")  # 120 - 20 >= nav + intro
+    now[0] = 40
+    assert not b.affords("chat")  # 80 - 20 < 70: skip the whole LOW step
+    assert b.affords("intro") and b.affords("unknown")  # MUST and unplanned steps always run
+
 
 if __name__ == "__main__":
     test_time_budget()

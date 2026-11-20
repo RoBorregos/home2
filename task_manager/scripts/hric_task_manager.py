@@ -95,32 +95,35 @@ class HRIC_TM(Node):
         self.carrying_bag = False
         self.should_follow_person = False
 
-        # Expected chain of states after the start button. Estimates (s) are first guesses:
-        # replace them with the FINAL TIMING REPORT of real runs. Priority = what to protect
-        # when time runs out (MUST never skipped, LOW dialogs are dropped first).
+        # Expected chain of states after the start button. Estimates (s) = one try per
+        # question in the sim_hric.sh timing report + ~15 s per navigation; re-measure on the
+        # real robot. Priority = what to protect when time runs out (MUST never skipped,
+        # LOW first to go; retries/waits inside a step also keep time for same-priority steps).
         s = HRIC_TM.TaskStates
         guest = [
-            Step(s.WAIT_FOR_DOOR, 20, Priority.MUST),
+            Step(s.WAIT_FOR_DOOR, 12, Priority.MUST),
             Step(s.START, 20, Priority.MUST),
-            Step(s.WAIT_FOR_GUEST, 10, Priority.MUST),
-            Step(s.GREETING, 40, Priority.HIGH),
-            Step(s.SAVE_FACE, 15, Priority.HIGH),
+            Step(s.WAIT_FOR_GUEST, 5, Priority.MUST),
+            Step(s.GREETING, 25, Priority.HIGH),
+            Step(s.SAVE_FACE, 8, Priority.HIGH),
         ]
         self.chain = [
             *guest,
-            Step(s.NAVIGATE_TO_LIVING_ROOM, 25, Priority.MUST),
-            Step(s.FIND_SEAT, 20, Priority.HIGH),
+            Step(s.NAVIGATE_TO_LIVING_ROOM, 20, Priority.MUST),
+            Step(s.FIND_SEAT, 12, Priority.HIGH),
             Step(s.NAVIGATE_TO_WAIT_AREA, 20, Priority.MUST),
             *guest,
-            Step(s.SHOW_VIDEO_TAKE_BAG, 12, Priority.LOW),
-            Step(s.TAKE_BAG, 40, Priority.HIGH),
-            Step(s.NAVIGATE_TO_LIVING_ROOM, 25, Priority.MUST),
-            Step(s.FIND_SEAT, 20, Priority.HIGH),
-            Step(s.INTRODUCTION, 30, Priority.MUST),
+            Step(s.SHOW_VIDEO_TAKE_BAG, 10, Priority.LOW),
+            Step(s.TAKE_BAG, 25, Priority.HIGH),
+            Step(s.NAVIGATE_TO_LIVING_ROOM, 20, Priority.MUST),
+            Step(s.FIND_SEAT, 12, Priority.HIGH),
+            Step(s.INTRODUCTION, 15, Priority.MUST),
             Step(s.FOLLOW_PERSON, 60, Priority.LOW),
-            Step(s.LEAVE_BAG, 20, Priority.HIGH),
+            Step(s.LEAVE_BAG, 10, Priority.HIGH),
             Step(s.END, 5, Priority.MUST),
         ]
+        # Whole steps dropped when the budget can't afford them, and where to go instead
+        self.skip_to = {s.SHOW_VIDEO_TAKE_BAG: s.TAKE_BAG, s.FOLLOW_PERSON: s.LEAVE_BAG}
         self.time_limit = self.declare_parameter("time_limit", TASK_TIME_LIMIT).value
         self.budget = None  # created when the start button is pressed
 
@@ -204,6 +207,10 @@ class HRIC_TM(Node):
             )
         self.subtask_manager.nav.move_to_location(location, sublocation)
 
+    def _can_spend(self, cost: float = 1.0, priority: Priority = Priority.HIGH) -> bool:
+        """Extra work inside a step (waits, searches): go on only while the budget affords it."""
+        return not self.budget or self.budget.allows(priority, cost, extra=True)
+
     def timeout(self, timeout: int = 2):
         time.sleep(timeout)
 
@@ -233,6 +240,12 @@ class HRIC_TM(Node):
 
     def run(self):
         """Finite State Machine"""
+
+        skip_to = self.skip_to.get(self.current_state)
+        if skip_to and self.budget and not self.budget.affords(self.current_state):
+            Logger.warn(self, f"Out of time, skipping step {self.current_state}")
+            self.current_state = skip_to
+            return
 
         if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_BUTTON:
             self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_BUTTON)
@@ -269,7 +282,11 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.last_door_event = ""
             # Safety timeout: if no doorbell is heard, continue anyway
             deadline = time.time() + DOOR_WAIT_TIMEOUT
-            while not self.subtask_manager.hri.door_event_detected and time.time() < deadline:
+            while (
+                not self.subtask_manager.hri.door_event_detected
+                and time.time() < deadline
+                and self._can_spend()
+            ):
                 rclpy.spin_once(self, timeout_sec=0.1)
             self.subtask_manager.hri.arm_door_detection(False)
 
@@ -526,11 +543,13 @@ class HRIC_TM(Node):
             )
             guest_1_found = False
             for offset in self.seat_angles:
-                if guest_1_found:
+                if guest_1_found or not self._can_spend():
                     break
 
                 self.subtask_manager.manipulation.pan_to(offset)
                 for _ in range(ATTEMPT_LIMIT):
+                    if not self._can_spend():
+                        break
                     if self.subtask_manager.vision.isPerson(guest_1.name):
                         guest_1_found = True
                         self.subtask_manager.hri.publish_display_capture(

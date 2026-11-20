@@ -901,7 +901,10 @@ class HRITasks:
         while current_attempt < retries:
             if current_attempt:
                 attempt_cost = (self.node.get_clock().now() - start_time).nanoseconds / 1e9
-            if self.budget and not self.budget.allows(priority, attempt_cost):
+            # the first ask is the step itself, retries are extra work
+            if self.budget and not self.budget.allows(
+                priority, attempt_cost, extra=current_attempt > 0
+            ):
                 Logger.warn(self.node, f"Out of time, skipping {priority.name} dialog: {question}")
                 break
             if self.budget and priority != Priority.MUST and self.budget.behind():
