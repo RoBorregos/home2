@@ -301,7 +301,10 @@ def flat(scene: Scene) -> tuple:
     eigenvalues, eigenvectors = principal_axes(xy)
     ratio = eigenvalues[1] / eigenvalues[0] if eigenvalues[0] > 1e-9 else -1.0
     extent = xy.max(axis=0) - xy.min(axis=0)
-    print(f"[DEBUG flat] bbox={scene.bbox} extent_xy={extent} ratio={ratio:.3f}", flush=True)
+    print(
+        f"[DEBUG flat] bbox={scene.bbox} extent_xy={extent} ratio={ratio:.3f}",
+        flush=True,
+    )
     require(
         eigenvalues[0] > 1e-9 and ratio >= ELONGATION_MIN_RATIO,
         f"not elongated enough for a reliable long axis (ratio={ratio:.2f})",

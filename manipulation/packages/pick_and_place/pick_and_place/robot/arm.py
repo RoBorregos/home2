@@ -687,9 +687,7 @@ class RobotArm:
         label = "ForceGuard"
         self._log.info(f"[{label}] starting force-guarded descent")
 
-        # Quick fail-fast check only (not the real baseline): the mode switch
-        # biases effort anyway, so the actual baseline comes from post_switch
-        # below. This is just a cheap fallback for if that one comes up empty.
+        # Cheap fail-fast only; the real baseline comes from post_switch below.
         baseline = self._sample_effort_baseline(label, required=1, samples=2)
         if baseline is None:
             return ContactResult(contact=False, descended_m=0.0)
@@ -734,10 +732,7 @@ class RobotArm:
     def _monitor_for_contact(self, guard: ForceGuardProfile, baseline, label: str):
         """Watch joint effort at 50 Hz. Returns (contact, metres descended).
 
-        Descends at ``fast_descent_speed`` (if set), ramping smoothly down to
-        the slower, guarded ``descent_speed`` over the last ``ramp_distance``
-        before ``fast_until``. Contact is never honored before
-        ``min_contact_descent`` (see below).
+        Ramps from ``fast_descent_speed`` down to ``descent_speed`` near ``fast_until``.
         """
         history = deque()  # (timestamp, effort) inside the jump window
         consecutive = 0

@@ -235,8 +235,7 @@ def _already_at(arm, named: str) -> bool:
 def _move_to_stare_pose(arm, strategy_key: str) -> None:
     """Point the camera where this kind of object lives.
 
-    Skipped if the arm is already there (e.g. back-to-back flat picks): never
-    skipped otherwise, so perception never runs from an uncontrolled pose.
+    Skipped if the arm is already there, e.g. back-to-back flat picks.
     """
     named = STARE_POSES.get(strategy_key, DEFAULT_STARE_POSE)
     if _already_at(arm, named):
