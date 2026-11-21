@@ -21,6 +21,7 @@ PARSE_PROMPT = """Split a household robot command into the object it asks for an
 Every value must be in English: translate the command first if it is in another language.
 - target: the object wanted, with its attributes. Empty if it is only described by its location.
 - anchor: the object or piece of furniture it is located relative to. Never a room. Empty if none.
+  Furniture in this house: {furniture}. Use those exact names for furniture.
 - room: one of {rooms} when the command names a room, otherwise empty.
 
 "bring me the red drink in the kitchen" -> target "red drink", anchor "", room "kitchen"
@@ -61,13 +62,28 @@ class Query:
     room: str = ""
 
 
-def parse_prompt(text: str, rooms: list[str]) -> str:
+def parse_prompt(text: str, rooms: list[str], furniture: list[str] = ()) -> str:
     """LLM prompt that splits `text` into the fields parse_query reads."""
-    return PARSE_PROMPT.format(rooms=rooms, text=text)
+    return PARSE_PROMPT.format(rooms=rooms, furniture=list(furniture), text=text)
 
 
-def parse_query(text: str, reply: str, rooms: list[str]) -> Query:
-    """The LLM's JSON split of `text`; the whole text as the target when the reply is unusable."""
+def _exact(name: str, choices: list[str]) -> str:
+    return name if name in choices else ""
+
+
+def parse_query(
+    text: str,
+    reply: str,
+    rooms: list[str],
+    furniture: list[str] = (),
+    snap: Callable[[str, list[str]], str] = _exact,
+) -> Query:
+    """The LLM's JSON split of `text`; the whole text as the target when the reply is unusable.
+
+    `snap(name, choices)` maps a name the LLM made up to the closest real one ("" if
+    none is close): the room must be a real room, and a furniture anchor becomes the
+    real piece of furniture (an object anchor, e.g. "cup", is kept as said).
+    """
     try:
         fields = json.loads(reply[reply.index("{") : reply.rindex("}") + 1])
     except ValueError:
@@ -75,8 +91,9 @@ def parse_query(text: str, reply: str, rooms: list[str]) -> Query:
     if not isinstance(fields, dict):
         return Query(target=text)
     query = Query(**{key: str(fields.get(key) or "") for key in ("target", "anchor", "room")})
-    if query.room not in rooms:
-        query.room = ""
+    query.room = snap(query.room, rooms) if query.room else ""
+    if query.anchor:
+        query.anchor = snap(query.anchor, list(furniture)) or query.anchor
     return query if query.target or query.anchor or query.room else Query(target=text)
 
 

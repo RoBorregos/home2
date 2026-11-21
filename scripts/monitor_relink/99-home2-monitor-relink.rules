@@ -1,5 +1,0 @@
-# The robot monitor's USB touch controller (wch.cn TouchScreen, 27c0:0859)
-# re-enumerates whenever the monitor resets; use that as the "monitor came
-# back" signal. DRM hotplug events are included in case the driver emits them.
-ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="27c0", ATTR{idProduct}=="0859", TAG+="systemd", ENV{SYSTEMD_WANTS}+="home2-monitor-relink.service"
-ACTION=="change", SUBSYSTEM=="drm", ENV{HOTPLUG}=="1", TAG+="systemd", ENV{SYSTEMD_WANTS}+="home2-monitor-relink.service"

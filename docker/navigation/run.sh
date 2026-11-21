@@ -74,11 +74,6 @@ add_or_update_variable .env "MAP_NAME" "$RESOLVED_MAP_NAME"
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
 
-# Open GUIs (nav_ui for --mapping) on the robot's monitor, not a stale DISPLAY.
-prepare_physical_display
-add_or_update_variable .env "DISPLAY" "$DISPLAY"
-add_or_update_variable .env "XAUTHORITY_HOST" "$XAUTHORITY_HOST"
-
 add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
 add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:navigation-${ENV_TYPE}"
 add_or_update_variable .env "DOCKERFILE" "docker/navigation/Dockerfile.${ENV_TYPE}"

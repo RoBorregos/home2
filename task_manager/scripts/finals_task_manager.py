@@ -38,6 +38,10 @@ STOP_WORDS = ("stop", "finish", "that's all", "that is all", "terminar")
 HOTWORDS = "where is bring find look stop"
 # Replies that answer a yes/no question, not "what are you looking for"
 YES_NO = {"yes", "yeah", "yep", "no", "nope", "si", "sí", "ok", "okay", "sure"}
+# Keys of an area in areas.json that are not furniture
+NOT_FURNITURE = {"polygon", "safe_place", "description"}
+# Minimum HRI embedding similarity to replace a spoken place with a map name
+SNAP_SIMILARITY = 0.5
 
 
 class ExecutionStates(Enum):
@@ -162,6 +166,9 @@ class FinalsTaskManager(Node):
             if time.monotonic() - started > time_limit_s:
                 Logger.warn(self, f"Patrol out of time after {reached}/{len(route)} viewpoints")
                 break
+            # Say it too: the display alone leaves the robot silent while it drives.
+            place = self._place(step["area"], step["sublocation"])
+            self.subtask_manager.hri.say(f"Now I am going to check {place}.", wait=False)
             # Never drive with the arm out in a looking pose.
             if arm_pose not in ("", ARM_TRAVEL_POSE):
                 self.subtask_manager.manipulation.move_to_position(ARM_TRAVEL_POSE)
@@ -185,6 +192,8 @@ class FinalsTaskManager(Node):
                 return True
             Logger.warn(self, f"Could not reach {name} ({error}), attempt {attempt + 1}")
         Logger.error(self, f"Skipping {name}")
+        place = self._place(step["area"], step["sublocation"])
+        self.subtask_manager.hri.say(f"I cannot get to {place}. I will skip it.", wait=False)
         return False
 
     def _look(self, step: dict) -> None:
@@ -284,14 +293,44 @@ class FinalsTaskManager(Node):
         self._guide_to(matches[0])
 
     def _parse(self, text: str) -> Query:
-        """Split a command with the LLM; the whole text is the target if that fails."""
+        """Split a command with the LLM; the whole text is the target if that fails.
+
+        The LLM gets this map's rooms and furniture, and the names it answers are
+        snapped to the real ones with HRI embeddings (as GPSR does), so a made-up
+        place like "the sofa" still lands on the map's "couch".
+        """
         rooms = [
             n for n, data in self.areas.items() if isinstance(data, dict) and data.get("polygon")
         ]
-        status, reply = self.subtask_manager.hri.answer_with_context(parse_prompt(text, rooms), "")
+        furniture = sorted(
+            {
+                name
+                for data in self.areas.values()
+                if isinstance(data, dict)
+                for name in data
+                if name not in NOT_FURNITURE
+            }
+        )
+        status, reply = self.subtask_manager.hri.answer_with_context(
+            parse_prompt(text, rooms, furniture), ""
+        )
         if status != Status.EXECUTION_SUCCESS:
             return Query(target=text)
-        return parse_query(text, reply, rooms)
+        query = parse_query(text, reply, rooms, furniture, snap=self._snap)
+        Logger.info(self, f"Command '{text}' -> {query}")
+        return query
+
+    def _snap(self, name: str, choices: list[str]) -> str:
+        """The map name closest to `name` by HRI embeddings, or "" if none is close."""
+        if name in choices:
+            return name
+        spoken = [self._speakable(choice) for choice in choices]
+        status, closest = self.subtask_manager.hri.find_closest(
+            spoken, self._speakable(name), threshold=SNAP_SIMILARITY
+        )
+        if status != Status.EXECUTION_SUCCESS or not closest.results:
+            return ""
+        return choices[spoken.index(closest.results[0])]
 
     def _select(self, query: Query) -> list[SeenObject]:
         text_embedding = None
