@@ -1,5 +1,8 @@
 var NAVTREEINDEX40 =
 {
+"namespacecore_1_1embed.html#aeae2ad6dadcbc39ea1b7704b84484ca8":[41,0,15,1,3],
+"namespacecore_1_1embed.html#af8648bfe24dcbed11ba9bd5afecac939":[41,0,15,1,7],
+"namespacecore_1_1metrics.html":[41,0,15,2],
 "namespacecore_1_1metrics.html#a0ed07b9f8db3fc711089891a38c465be":[41,0,15,2,8],
 "namespacecore_1_1metrics.html#a25885b8b3329aff785b7aac0c3a12dfa":[41,0,15,2,3],
 "namespacecore_1_1metrics.html#a2ab460a79dabcdf4c15cf082e9209081":[41,0,15,2,10],
@@ -246,8 +249,5 @@ var NAVTREEINDEX40 =
 "namespacefollow__face__node__copt.html#ad90829df3507e34e8d64a58fd1256927":[41,0,49,1],
 "namespacefollow__face__node__copt.html#adb0266db47c1994069215011007717f8":[41,0,49,3],
 "namespacefollow__person__node.html":[41,0,50],
-"namespacefollow__person__node.html#a3094696c3de17bc4d279ba3bf1c2684f":[41,0,50,10],
-"namespacefollow__person__node.html#a448d579804da144965357e505dff5c0f":[41,0,50,3],
-"namespacefollow__person__node.html#a44bd9b7dd07ac60865c69767af3940a2":[41,0,50,6],
-"namespacefollow__person__node.html#a63f3789e3e174b5f2f3760788e0de37d":[41,0,50,5]
+"namespacefollow__person__node.html#a3094696c3de17bc4d279ba3bf1c2684f":[41,0,50,10]
 };

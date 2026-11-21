@@ -1,5 +1,7 @@
 var NAVTREEINDEX34 =
 {
+"finals__launch_8py.html":[43,0,7,1,1,0,2],
+"finals__launch_8py.html#a01a23ef4f313696a4346f41d9e5e5a8d":[43,0,7,1,1,0,2,0],
 "finetune__arcface_8py.html":[43,0,7,0,0,1,0],
 "finetune__arcface_8py.html#a4302081339abddd38aac2450cc6dec55":[43,0,7,0,0,1,0,3],
 "finetune__arcface_8py.html#a5caff5cedcd4bc43b0622a0ca7d758a5":[43,0,7,0,0,1,0,5],
@@ -137,8 +139,8 @@ var NAVTREEINDEX34 =
 "functions_d.html":[42,3,0,4],
 "functions_e.html":[42,3,0,5],
 "functions_f.html":[42,3,0,6],
-"functions_func.html":[42,3,1],
 "functions_func.html":[42,3,1,0],
+"functions_func.html":[42,3,1],
 "functions_func_a.html":[42,3,1,1],
 "functions_func_b.html":[42,3,1,2],
 "functions_func_c.html":[42,3,1,3],
@@ -184,8 +186,8 @@ var NAVTREEINDEX34 =
 "functions_type.html":[42,3,3],
 "functions_u.html":[42,3,0,21],
 "functions_v.html":[42,3,0,22],
-"functions_vars.html":[42,3,2],
 "functions_vars.html":[42,3,2,0],
+"functions_vars.html":[42,3,2],
 "functions_vars_a.html":[42,3,2,1],
 "functions_vars_b.html":[42,3,2,2],
 "functions_vars_c.html":[42,3,2,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX34 =
 "generate__scenes_8py.html#ac731783209a0dfc9f0948eca7e1aea53":[43,0,3,1,5,1,6,1],
 "generate__scenes_8py.html#ac81fc6757d7c7b2b4c1abb1394e927c8":[43,0,3,1,5,1,6,0],
 "generic__tasks_8py.html":[43,0,6,1,1,1],
-"geometric__grasps_8py.html":[43,0,3,1,4,2,1],
-"geometric__grasps_8py.html#a01322ec8896706e47e433522ac6f6b6a":[43,0,3,1,4,2,1,60],
-"geometric__grasps_8py.html#a018915ef65b3d419320737a1fde61aa7":[43,0,3,1,4,2,1,55]
+"geometric__grasps_8py.html":[43,0,3,1,4,2,1]
 };

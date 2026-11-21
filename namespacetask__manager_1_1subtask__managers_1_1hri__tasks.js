@@ -4,6 +4,7 @@ var namespacetask__manager_1_1subtask__managers_1_1hri__tasks =
     [ "confirm_query", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#acb3de2e45c2ebfe133179c42b0b983e1", null ],
     [ "contains_any", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a80eea2cd019132d5e097a50ba62f5a71", null ],
     [ "format_transcription", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a8351689b4ef9ecb6ec60607400d447b3", null ],
+    [ "match_hotwords", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a5be58f8f40c0c8032fc87d8825022883", null ],
     [ "remove_punctuation", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ad3289042cb213f59aa6594b68d43bd1a", null ],
     [ "InterpreterAvailableCommands", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a44f64af8d322961b668968e808f3d511", null ],
     [ "node", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a0a0bb2397299d3fff811cf842302b87d", null ],

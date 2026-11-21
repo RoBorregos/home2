@@ -1,5 +1,8 @@
 var NAVTREEINDEX45 =
 {
+"namespacepick__and__place_1_1pipelines_1_1classification.html#ac24e186bca6e6a859ce472c85a7f5f8f":[41,0,110,7,0,5],
+"namespacepick__and__place_1_1pipelines_1_1classification.html#ac8f8dabbe34b09a9b5bd0a29481ff12b":[41,0,110,7,0,7],
+"namespacepick__and__place_1_1pipelines_1_1errors.html":[41,0,110,7,1],
 "namespacepick__and__place_1_1pipelines_1_1follow.html":[41,0,110,7,2],
 "namespacepick__and__place_1_1pipelines_1_1follow.html#a016d09e76f349202f3c0313dcd2a7738":[41,0,110,7,2,9],
 "namespacepick__and__place_1_1pipelines_1_1follow.html#a0fa8c7dd0adaaea0cc4180d611a0dd32":[41,0,110,7,2,8],
@@ -246,8 +249,5 @@ var NAVTREEINDEX45 =
 "namespacerandom__dance.html#a8bbebe78043a08027ef40579653add21":[41,0,119,1],
 "namespacerandom__dance.html#ac1529052cb9529d85902c8182845cddb":[41,0,119,0],
 "namespacereceptionist.html":[41,0,120],
-"namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8":[41,0,120,0],
-"namespacereceptionist__task__manager.html":[41,0,121],
-"namespacereceptionist__task__manager.html#a190fa117b34e8f98afa854494e664047":[41,0,121,3],
-"namespacereceptionist__task__manager.html#ab6e6d47fc4ae90351efa864eacc5c880":[41,0,121,2]
+"namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8":[41,0,120,0]
 };

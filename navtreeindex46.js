@@ -1,5 +1,8 @@
 var NAVTREEINDEX46 =
 {
+"namespacereceptionist__task__manager.html":[41,0,121],
+"namespacereceptionist__task__manager.html#a190fa117b34e8f98afa854494e664047":[41,0,121,3],
+"namespacereceptionist__task__manager.html#ab6e6d47fc4ae90351efa864eacc5c880":[41,0,121,2],
 "namespacerecord__joints__node.html":[41,0,122],
 "namespacerecord__joints__node.html#affacd92dfdac1d2fd31eb665364dfa8e":[41,0,122,1],
 "namespacerecord__relative__pose.html":[41,0,123],
@@ -188,14 +191,15 @@ var NAVTREEINDEX46 =
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#afb2081d78235f69ee43ea83db2d954ab":[41,0,145,1,3,8],
 "namespacetask__manager_1_1subtask__managers_1_1hri__dataclasses.html":[41,0,145,1,4],
 "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html":[41,0,145,1,5],
-"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a0a0bb2397299d3fff811cf842302b87d":[41,0,145,1,5,6],
-"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a44f64af8d322961b668968e808f3d511":[41,0,145,1,5,5],
-"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a63fe5db1c4b4e863170f23945233b405":[41,0,145,1,5,8],
+"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a0a0bb2397299d3fff811cf842302b87d":[41,0,145,1,5,7],
+"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a44f64af8d322961b668968e808f3d511":[41,0,145,1,5,6],
+"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a5be58f8f40c0c8032fc87d8825022883":[41,0,145,1,5,4],
+"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a63fe5db1c4b4e863170f23945233b405":[41,0,145,1,5,9],
 "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a80eea2cd019132d5e097a50ba62f5a71":[41,0,145,1,5,2],
 "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a8351689b4ef9ecb6ec60607400d447b3":[41,0,145,1,5,3],
 "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#acb3de2e45c2ebfe133179c42b0b983e1":[41,0,145,1,5,1],
-"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ad3289042cb213f59aa6594b68d43bd1a":[41,0,145,1,5,4],
-"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ae0b3b1c391b51f0bfa80905dcb3cdce5":[41,0,145,1,5,7],
+"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ad3289042cb213f59aa6594b68d43bd1a":[41,0,145,1,5,5],
+"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ae0b3b1c391b51f0bfa80905dcb3cdce5":[41,0,145,1,5,8],
 "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html":[41,0,145,1,6],
 "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a141df0d860a32bb0d3e57e4a9e00965f":[41,0,145,1,6,6],
 "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a15819095e4c3fb2c326672d8b2218181":[41,0,145,1,6,5],
@@ -245,9 +249,5 @@ var NAVTREEINDEX46 =
 "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a5a91d09201029807b3ebe743e108a79b":[41,0,145,2,4,0],
 "namespacetask__manager_1_1utils_1_1status.html":[41,0,145,2,5],
 "namespacetask__manager_1_1utils_1_1subtask__manager.html":[41,0,145,2,6],
-"namespacetask__manager_1_1utils_1_1subtask__manager.html#a06ed8dd88828ee3f08bc2d9ed6312c06":[41,0,145,2,6,1],
-"namespacetask__manager_1_1utils_1_1task.html":[41,0,145,2,7],
-"namespacetemp__follow.html":[41,0,146],
-"namespacetemp__follow.html#a027d977acaf4012fe97da3b05f6a746d":[41,0,146,7],
-"namespacetemp__follow.html#a24e0bd389d3274839f801a5f6d7cf9b6":[41,0,146,4]
+"namespacetask__manager_1_1utils_1_1subtask__manager.html#a06ed8dd88828ee3f08bc2d9ed6312c06":[41,0,145,2,6,1]
 };

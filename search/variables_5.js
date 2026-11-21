@@ -49,7 +49,8 @@ var searchData=
   ['explore_5fstep_46',['EXPLORE_STEP',['../namespacetest__navigation__manager.html#a5256605248217a2f78055b2467adfbf8',1,'test_navigation_manager']]],
   ['extent_5fbin_47',['extent_bin',['../classperception__3d_1_1shelf__geometry_1_1ShelfParams.html#ac7e20d06bf7ed212ca0716b392dcffff',1,'perception_3d::shelf_geometry::ShelfParams']]],
   ['extra_5fsurface_48',['EXTRA_SURFACE',['../classpickandplace__task__manager_1_1Location.html#a5902a008c7ad88402aa88237bacccfe7',1,'pickandplace_task_manager::Location']]],
-  ['extract_5fdata_5fservice_49',['extract_data_service',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a034c2802fed0aab16f50ac298eb63ef7',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['extract_5fdata_5fservice_50',['EXTRACT_DATA_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31',1,'frida_constants::hri_constants']]],
-  ['extract_5finfo_5frequested_51',['EXTRACT_INFO_REQUESTED',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#ad9d756d252df3f3f233a4e8736da0c21',1,'frida_constants::hri_constants::MODEL']]]
+  ['extract_5fdata_5flive_5frounds_49',['EXTRACT_DATA_LIVE_ROUNDS',['../namespacetest__hri__manager.html#a1ead7456077ae55a6373a1f95a910401',1,'test_hri_manager']]],
+  ['extract_5fdata_5fservice_50',['extract_data_service',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a034c2802fed0aab16f50ac298eb63ef7',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['extract_5fdata_5fservice_51',['EXTRACT_DATA_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31',1,'frida_constants::hri_constants']]],
+  ['extract_5finfo_5frequested_52',['EXTRACT_INFO_REQUESTED',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#ad9d756d252df3f3f233a4e8736da0c21',1,'frida_constants::hri_constants::MODEL']]]
 ];

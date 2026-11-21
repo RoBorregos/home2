@@ -1,5 +1,7 @@
 var NAVTREEINDEX36 =
 {
+"hri__constants_8py.html#a6b6228c6ea413ec24c0b26890dac3fb5":[43,0,1,0,1,11],
+"hri__constants_8py.html#a8641c72f60bac81a60265b6b494950cd":[43,0,1,0,1,28],
 "hri__constants_8py.html#a8991597884d20fbe00d82139b7026ebf":[43,0,1,0,1,18],
 "hri__constants_8py.html#a99a70242344952dd09be65d3260da4a7":[43,0,1,0,1,24],
 "hri__constants_8py.html#aa04127dd3af14465c6ed0fdea141cd3c":[43,0,1,0,1,21],
@@ -23,14 +25,15 @@ var NAVTREEINDEX36 =
 "hri__constants_8py.html#afa75347167cbfc3cf035e80d0f56bacf":[43,0,1,0,1,23],
 "hri__dataclasses_8py.html":[43,0,6,1,1,5],
 "hri__tasks_8py.html":[43,0,6,1,1,6],
-"hri__tasks_8py.html#a0a0bb2397299d3fff811cf842302b87d":[43,0,6,1,1,6,6],
-"hri__tasks_8py.html#a44f64af8d322961b668968e808f3d511":[43,0,6,1,1,6,5],
-"hri__tasks_8py.html#a63fe5db1c4b4e863170f23945233b405":[43,0,6,1,1,6,8],
+"hri__tasks_8py.html#a0a0bb2397299d3fff811cf842302b87d":[43,0,6,1,1,6,7],
+"hri__tasks_8py.html#a44f64af8d322961b668968e808f3d511":[43,0,6,1,1,6,6],
+"hri__tasks_8py.html#a5be58f8f40c0c8032fc87d8825022883":[43,0,6,1,1,6,4],
+"hri__tasks_8py.html#a63fe5db1c4b4e863170f23945233b405":[43,0,6,1,1,6,9],
 "hri__tasks_8py.html#a80eea2cd019132d5e097a50ba62f5a71":[43,0,6,1,1,6,2],
 "hri__tasks_8py.html#a8351689b4ef9ecb6ec60607400d447b3":[43,0,6,1,1,6,3],
 "hri__tasks_8py.html#acb3de2e45c2ebfe133179c42b0b983e1":[43,0,6,1,1,6,1],
-"hri__tasks_8py.html#ad3289042cb213f59aa6594b68d43bd1a":[43,0,6,1,1,6,4],
-"hri__tasks_8py.html#ae0b3b1c391b51f0bfa80905dcb3cdce5":[43,0,6,1,1,6,7],
+"hri__tasks_8py.html#ad3289042cb213f59aa6594b68d43bd1a":[43,0,6,1,1,6,5],
+"hri__tasks_8py.html#ae0b3b1c391b51f0bfa80905dcb3cdce5":[43,0,6,1,1,6,8],
 "hric__commands_8py.html":[43,0,7,1,1,1,1,4],
 "hric__commands_8py.html#a19297de37a6bae70e0adcd79a9f3d19e":[43,0,7,1,1,1,1,4,10],
 "hric__commands_8py.html#a1a0e3f0c859c7561246de2440181ff63":[43,0,7,1,1,1,1,4,1],
@@ -246,8 +249,5 @@ var NAVTREEINDEX36 =
 "manipulation__constants_8py.html#a38b21f89e935776f5580a76d35638040":[43,0,1,0,3,47],
 "manipulation__constants_8py.html#a3a0498c16978b309e61bdc1cd6f65576":[43,0,1,0,3,64],
 "manipulation__constants_8py.html#a3c391e2fa884a47ca7d52b4c45a89397":[43,0,1,0,3,39],
-"manipulation__constants_8py.html#a3d27ed87794f2324a9105cd6423dea8b":[43,0,1,0,3,52],
-"manipulation__constants_8py.html#a4051ca9c2409003c40538cd7b9e52464":[43,0,1,0,3,74],
-"manipulation__constants_8py.html#a43afa8c982d18e63e85d35eda600e92e":[43,0,1,0,3,114],
-"manipulation__constants_8py.html#a48007c7e8276ef7a9a33223763673f37":[43,0,1,0,3,35]
+"manipulation__constants_8py.html#a3d27ed87794f2324a9105cd6423dea8b":[43,0,1,0,3,52]
 };

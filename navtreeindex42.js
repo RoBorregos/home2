@@ -1,5 +1,8 @@
 var NAVTREEINDEX42 =
 {
+"namespacefrida__constants_1_1navigation__constants.html#ac6a7f5f5abb49204b1b6a9107471b4da":[41,0,53,3,26],
+"namespacefrida__constants_1_1navigation__constants.html#ac70316b214d4409478d245282227a5c1":[41,0,53,3,15],
+"namespacefrida__constants_1_1navigation__constants.html#adb19bc481c12ff6451b03795dfd7edb4":[41,0,53,3,7],
 "namespacefrida__constants_1_1navigation__constants.html#ae7328b3a2550ea9c4a6ebfe2485d6df2":[41,0,53,3,25],
 "namespacefrida__constants_1_1navigation__constants.html#af7df70f29ab383ddb7ba4b43157d8a8b":[41,0,53,3,41],
 "namespacefrida__constants_1_1navigation__constants.html#af8010b150d0b6da04c72b4103f1598f6":[41,0,53,3,52],
@@ -246,8 +249,5 @@ var NAVTREEINDEX42 =
 "namespacehric__commands.html#aeaf88a67551199d69d4562b00d45e9d4":[41,0,76,7],
 "namespacehric__commands.html#af03db957d9708f5ed4c50c673255fb0f":[41,0,76,9],
 "namespacehric__launch.html":[41,0,77],
-"namespacehric__launch.html#a5dcfeb834a4cf01df9f2c377d4893dce":[41,0,77,0],
-"namespacehric__task__manager.html":[41,0,78],
-"namespacehric__task__manager.html#a382ad48d04ed621895853369210133ab":[41,0,78,6],
-"namespacehric__task__manager.html#a390be6ea37c37215e8d5901f4e30624c":[41,0,78,9]
+"namespacehric__launch.html#a5dcfeb834a4cf01df9f2c377d4893dce":[41,0,77,0]
 };

@@ -113,6 +113,8 @@ Functions</h2></td></tr>
 <tr class="separator:ad3289042cb213f59aa6594b68d43bd1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8351689b4ef9ecb6ec60607400d447b3"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a8351689b4ef9ecb6ec60607400d447b3">format_transcription</a> (str text)</td></tr>
 <tr class="separator:a8351689b4ef9ecb6ec60607400d447b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5be58f8f40c0c8032fc87d8825022883"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a5be58f8f40c0c8032fc87d8825022883">match_hotwords</a> (str text, str hotwords, str exclude=&quot;&quot;)</td></tr>
+<tr class="separator:a5be58f8f40c0c8032fc87d8825022883"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -208,6 +210,44 @@ Returns:
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Format the interpreted text to remove punctuation and convert to lowercase.</pre> 
+</div>
+</div>
+<a id="a5be58f8f40c0c8032fc87d8825022883" name="a5be58f8f40c0c8032fc87d8825022883"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5be58f8f40c0c8032fc87d8825022883">&#9670;&#160;</a></span>match_hotwords()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> str task_manager.subtask_managers.hri_tasks.match_hotwords </td>
+          <td>(</td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>text</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>hotwords</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>exclude</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Return the only hotword (comma-separated list) said in text, "" if none or several.
+
+Hyphens and punctuation count as spaces so "coca-cola" matches "coca cola", and a hotword
+contained in a longer matched one ("tea" in "iced tea") is not counted twice.
+</pre> 
 </div>
 </div>
 <a id="ad3289042cb213f59aa6594b68d43bd1a" name="ad3289042cb213f59aa6594b68d43bd1a"></a>

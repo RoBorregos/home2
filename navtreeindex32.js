@@ -1,5 +1,7 @@
 var NAVTREEINDEX32 =
 {
+"classvlm__node_1_1VLMNode.html#aff38578d1b08767d6acdcc003e27c030":[41,0,183,0,2],
+"classvlm__node_1_1VLMNode.html#aff38578d1b08767d6acdcc003e27c030":[42,0,109,0,2],
 "classvlm__pb2__grpc_1_1VLMService.html":[42,0,110,0],
 "classvlm__pb2__grpc_1_1VLMService.html":[41,0,185,0],
 "classvlm__pb2__grpc_1_1VLMServiceServicer.html":[42,0,110,1],
@@ -106,8 +108,8 @@ var NAVTREEINDEX32 =
 "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a8c3f24418fe9bcf525f5e25001d78211":[42,0,116,0,5],
 "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a8dc2635cdc4c7b7da36a21fd20113148":[41,0,192,0,4],
 "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a8dc2635cdc4c7b7da36a21fd20113148":[42,0,116,0,4],
-"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a929bf4941b7956113e100b8fd4c9c731":[42,0,116,0,1],
 "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a929bf4941b7956113e100b8fd4c9c731":[41,0,192,0,1],
+"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a929bf4941b7956113e100b8fd4c9c731":[42,0,116,0,1],
 "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#ab42125b19504f64ee13718840abb4e4a":[41,0,192,0,2],
 "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#ab42125b19504f64ee13718840abb4e4a":[42,0,116,0,2],
 "close__by__generators_8py.html":[43,0,3,1,6,0,0,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX32 =
 "dir_50b6433ef0b1c6458f6acc4dfc98a2af.html":[43,0,2,4],
 "dir_525b099ff0210248a1a8c35429bd6f54.html":[43,0,7,1,1,0],
 "dir_525d5b5a8c0f7ee3752189b7d8f00c9c.html":[43,0,3,1,5,1,1],
-"dir_5327a4aace7892e8dd611715e058a4f2.html":[43,0,3,1,0,3],
-"dir_56682153e34d4d89055b144500acadd3.html":[43,0,7,0,0],
-"dir_587e96fa0c4a988447c83ad6eb3458c7.html":[43,0,3,1,7,2,1]
+"dir_5327a4aace7892e8dd611715e058a4f2.html":[43,0,3,1,0,3]
 };
