@@ -128,12 +128,11 @@ class PickAndPlace:
             return OK
         # Shelves and the trash have no free flat top in front, so a put-down there lands on the floor
         flat = self.state.location not in (None, *self.spec["shelves"], *self.spec["trash"])
-        composite = self.sm.composite
-        if not flat and (composite.gripper_has_object or not composite.grasp_sensor):
+        if not flat:
             # Keep holding rather than release where it is unknown what is below
             if self.go(self.spec["table"]) != OK:
                 return Status.EXECUTION_ERROR
-        status = self.sm.composite.ensure_gripper_empty(self.state.holding, use_grasp_detector=True)
+        status = self.sm.composite.ensure_gripper_empty(self.state.holding)
         if status == OK:
             self.state.holding = None
         return status
@@ -141,13 +140,9 @@ class PickAndPlace:
     def pick(self, item: Item, source: str) -> Status:
         self.say(f"I will pick the {item.name}.")
         if source in self.spec["shelves"]:
-            # The grasp bit confirms the pick; the slow rescan is only for a robot without it
-            composite = self.sm.composite
-            status = composite.pick_from_shelf(
-                item.name, use_grasp_detector=True, vision_confirm=not composite.grasp_sensor
-            )
+            status = self.sm.composite.pick_from_shelf(item.name)
         else:
-            status = self.sm.composite.pick_confirmed(item.name, use_grasp_detector=True)
+            status = self.sm.composite.pick_confirmed(item.name)
         if status == OK:
             item.status = "picked"
             self.state.holding = item.name
