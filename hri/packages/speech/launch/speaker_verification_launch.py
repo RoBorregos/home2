@@ -3,10 +3,12 @@
     ros2 launch speech speaker_verification_launch.py                     # node only
     ros2 launch speech speaker_verification_launch.py with_capture:=true  # + mic capture
     ros2 launch speech speaker_verification_launch.py with_capture:=true with_legacy_vad:=true
+    ros2 launch speech speaker_verification_launch.py with_capture:=true with_spatial:=true
 
 ``with_capture`` starts audio_capturer (needed when the full HRI stack is not
 running); ``with_legacy_vad`` also starts noise_cancellation + voice_detection so
-the monitor can compare the old VAD side by side. Extra node parameters can be
+the monitor can compare the old VAD side by side; ``with_spatial`` starts the
+spatial front end (MVDR + streaming DFN) on /hri/enhancedAudioChunk. Extra node parameters can be
 overridden with ``params:=/path/to/override.yaml``.
 """
 
@@ -36,6 +38,7 @@ def _truthy(value: str) -> bool:
 def _setup(context):
     with_capture = _truthy(context.launch_configurations["with_capture"])
     with_legacy = _truthy(context.launch_configurations["with_legacy_vad"])
+    with_spatial = _truthy(context.launch_configurations["with_spatial"])
     override = context.launch_configurations["params"]
 
     params = [_config("speaker_verification.yaml", "speaker_verification")]
@@ -63,6 +66,18 @@ def _setup(context):
                 output="screen",
                 emulate_tty=True,
                 parameters=[_config("microphone.yaml", "audio_capturer")],
+            )
+        )
+    if with_spatial:
+        nodes.append(
+            Node(
+                package="speech",
+                executable="spatial_audio.py",
+                name="spatial_audio",
+                ros_arguments=["--log-level", f"spatial_audio:={LOG_LEVEL}"],
+                output="screen",
+                emulate_tty=True,
+                parameters=[_config("spatial_audio.yaml", "spatial_audio")],
             )
         )
     if with_legacy:
@@ -94,6 +109,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("with_capture", default_value="false"),
             DeclareLaunchArgument("with_legacy_vad", default_value="false"),
+            DeclareLaunchArgument("with_spatial", default_value="false"),
             DeclareLaunchArgument("params", default_value=""),
             OpaqueFunction(function=_setup),
         ]
