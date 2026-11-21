@@ -677,6 +677,20 @@ class MatrixServerTests(unittest.TestCase):
             self.assertEqual(moved._compute_path.call_count, 2)
             self.assertEqual(moved._location_path_cache[(AREAS[0], AREAS[1])], 8)
 
+    def test_remap_rewrites_cache_file_before_planning(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            nav, _ = server()
+            nav._path_cache_file = f"{tmp}/cache.json"
+            nav._refresh_path_cache(full=False)
+            moved, _ = server()
+            moved._path_cache_file = nav._path_cache_file
+            moved.areas_data = json.loads(json.dumps(LIVE))
+            moved.areas_data["kitchen"]["table"][0] = 8
+            moved._sync_path_cache()
+            _, areas, pairs = STORE.load_path_cache(moved._path_cache_file)
+            self.assertEqual(areas["kitchen"]["table"][0], 8)
+            self.assertEqual(pairs, {})
+
     def test_unwritable_cache_file_does_not_fail_warmup(self):
         nav, _ = server()
         nav._path_cache_file = "/nonexistent/dir/cache.json"

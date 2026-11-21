@@ -1198,6 +1198,8 @@ class Nav_Central(Node):
             self._location_path_cache.clear()
             self._path_cache_context = context
             self._restore_path_cache()
+            # Rewrite now so GPSR never pairs the old file's distances with its own areas
+            self._persist_path_cache()
 
     def _restore_path_cache(self):
         if not self._path_cache_file:
