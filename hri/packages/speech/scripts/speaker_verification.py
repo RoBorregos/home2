@@ -14,6 +14,14 @@ Outputs:
     SPEAKER_ID_RESULT_TOPIC         String JSON, one per partial/final decision
     SPEAKER_ID_METRICS_TOPIC        String JSON, periodic health/latency metrics
     SPEAKER_ID_STATUS_TOPIC         String JSON, reply to commands (transient local)
+    SPEAKER_ID_LOCATED_TOPIC        String JSON, who spoke and from where (needs
+                                    MULTICHANNEL_AUDIO_TOPIC)
+    SOUND_DOA_TOPIC                 String JSON, live direction while someone speaks
+
+With MULTICHANNEL_AUDIO_TOPIC set the node reads the 6 ReSpeaker channels: the
+mono channel MONO_CHANNEL feeds VAD + embeddings exactly as before, and ch1-4
+feed SRP-PHAT (speech.spatial.doa) over the *same* window used for each
+embedding, so every decision carries the direction of that voice.
 
 Commands (String JSON on SPEAKER_ID_COMMAND_TOPIC), e.g.::
 
@@ -42,8 +50,8 @@ from frida_interfaces.msg import AudioData
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
-from std_msgs.msg import Bool, String
-
+from speech.spatial.doa import ArrayGeometry, DoaConfig, SrpPhat, direction_label
+from speech.spatial.tracker import SpeakerTracker, TrackerConfig
 from speech.speaker_id.embedder import DEFAULT_MODEL_FILE, SpeakerEmbedder
 from speech.speaker_id.profiles import ProfileStore
 from speech.speaker_id.segmenter import Segment, Segmenter, SegmenterConfig
@@ -56,6 +64,7 @@ from speech.speaker_id.verifier import (
     build_profile,
     decide,
 )
+from std_msgs.msg import Bool, String
 
 SRC_SPEECH_DIR = "/workspace/src/hri/packages/speech"
 
@@ -101,6 +110,7 @@ class Job:
     cut_by_tts: bool = False
     name: str = ""
     seconds: float = 0.0
+    doa: dict | None = None
 
 
 class SpeakerVerification(Node):
@@ -207,9 +217,32 @@ class SpeakerVerification(Node):
         self.status_pub = self.create_publisher(
             String, p["SPEAKER_ID_STATUS_TOPIC"], latched
         )
-        audio_topic = p["INPUT_AUDIO_TOPIC"] or p["RAW_AUDIO_TOPIC"]
+        self.located_pub = self.create_publisher(
+            String, p["SPEAKER_ID_LOCATED_TOPIC"], 10
+        )
+        self.doa_pub = self.create_publisher(String, p["SOUND_DOA_TOPIC"], 10)
+        self.srp: SrpPhat | None = None
+        self.tracker = SpeakerTracker(
+            TrackerConfig(
+                max_age_sec=p["TRACK_MAX_AGE_SEC"], match_deg=p["TRACK_MATCH_DEG"]
+            )
+        )
+        mc_topic = p["MULTICHANNEL_AUDIO_TOPIC"]
+        if mc_topic:
+            geo = ArrayGeometry(
+                offset_deg=float(p["DOA_OFFSET_DEG"]), mirror=bool(p["DOA_MIRROR"])
+            )
+            self.srp = SrpPhat(
+                DoaConfig(sample_rate=self.sr, geometry=geo),
+                history_sec=p["EMBED_MAX_SEC"] + 2.0,
+            )
+            audio_topic = f"{mc_topic} (ch{p['MONO_CHANNEL']} + DOA ch1-4)"
+            self.create_subscription(AudioData, mc_topic, self._mc_audio_cb, 50)
+            self.create_timer(p["DOA_PERIOD_SEC"], self._publish_live_doa)
+        else:
+            audio_topic = p["INPUT_AUDIO_TOPIC"] or p["RAW_AUDIO_TOPIC"]
+            self.create_subscription(AudioData, audio_topic, self._audio_cb, 50)
         self.audio_topic = audio_topic
-        self.create_subscription(AudioData, audio_topic, self._audio_cb, 50)
         self.create_subscription(Bool, p["SAYING_TOPIC"], self._saying_cb, 10)
         self.create_subscription(
             String, p["SPEAKER_ID_COMMAND_TOPIC"], self._command_cb, 10
@@ -244,6 +277,18 @@ class SpeakerVerification(Node):
             "SPEAKER_ID_METRICS_TOPIC": "/hri/speaker_id/metrics",
             "SPEAKER_ID_COMMAND_TOPIC": "/hri/speaker_id/command",
             "SPEAKER_ID_STATUS_TOPIC": "/hri/speaker_id/status",
+            "SPEAKER_ID_LOCATED_TOPIC": "/hri/speaker_id/located",
+            "SOUND_DOA_TOPIC": "/hri/speech/doa",
+            "MULTICHANNEL_AUDIO_TOPIC": "",
+            "MC_CHANNELS": 6,
+            "MONO_CHANNEL": 0,
+            "DOA_OFFSET_DEG": 0.0,
+            "DOA_MIRROR": False,
+            "DOA_MIN_CONF": 0.15,
+            "DOA_PERIOD_SEC": 0.25,
+            "DOA_LIVE_WIN_SEC": 0.5,
+            "TRACK_MAX_AGE_SEC": 8.0,
+            "TRACK_MATCH_DEG": 25.0,
             "SAMPLE_RATE": 16000,
             "SILERO_MODEL": "",
             "EMBED_MODEL": "",
@@ -295,8 +340,38 @@ class SpeakerVerification(Node):
         return self._saying or time.monotonic() < self._muted_until
 
     def _audio_cb(self, msg: AudioData) -> None:
+        self._process_mono(np.frombuffer(bytes(msg.data), dtype=np.int16))
+
+    def _mc_audio_cb(self, msg: AudioData) -> None:
+        n_ch = self.p["MC_CHANNELS"]
+        x = np.frombuffer(bytes(msg.data), dtype=np.int16)
+        x = x[: x.shape[0] - x.shape[0] % n_ch].reshape(-1, n_ch)
+        # VAD state of the previous chunk labels these frames for the noise model
+        self.srp.set_speech(self._vad_state and not self._is_muted())
+        self.srp.push(x[:, 1:5].astype(np.float32) / 32768.0)
+        self._process_mono(np.ascontiguousarray(x[:, self.p["MONO_CHANNEL"]]))
+
+    def _doa_for(self, n_samples: int) -> dict | None:
+        if self.srp is None:
+            return None
+        est = self.srp.localize(n_samples)
+        if est is None:
+            return None
+        d = est.as_dict()
+        d["direction"] = direction_label(est.azimuth_deg)
+        d["reliable"] = est.confidence >= self.p["DOA_MIN_CONF"]
+        return d
+
+    def _publish_live_doa(self) -> None:
+        if not self._vad_state or self._is_muted():
+            return
+        d = self._doa_for(int(self.p["DOA_LIVE_WIN_SEC"] * self.sr))
+        if d is not None:
+            d["t"] = round(time.time(), 3)
+            self.doa_pub.publish(String(data=json.dumps(d)))
+
+    def _process_mono(self, samples: np.ndarray) -> None:
         self._chunks += 1
-        samples = np.frombuffer(bytes(msg.data), dtype=np.int16)
         audio = samples.astype(np.float32) / 32768.0
         self._pending = np.concatenate([self._pending, audio])
 
@@ -355,6 +430,7 @@ class SpeakerVerification(Node):
                 snr,
                 vad_p,
                 self._seg_wall_start.get(seg.seg_id, time.time()),
+                doa=self._doa_for(wave_.shape[0]),
             )
         )
 
@@ -362,17 +438,19 @@ class SpeakerVerification(Node):
         self._set_vad(False)
         self._segments += 1
         snr, vad_p = self._seg_stats(seg)
+        wave_ = seg.wave()[-int(self.p["EMBED_MAX_SEC"] * self.sr) :]
         self._enqueue(
             Job(
                 "final",
                 seg.seg_id,
-                seg.wave()[-int(self.p["EMBED_MAX_SEC"] * self.sr) :],
+                wave_,
                 seg.duration(self.sr),
                 snr,
                 vad_p,
                 self._seg_wall_start.pop(seg.seg_id, time.time()),
                 time.time(),
                 seg.cut_by_tts,
+                doa=self._doa_for(wave_.shape[0]),
             )
         )
 
@@ -423,6 +501,8 @@ class SpeakerVerification(Node):
             "enrolling": self._enrolling,
             "src": self.audio_topic,
         }
+        if job.doa is not None:
+            result["doa"] = job.doa
         label = "UNKNOWN"
         if job.cut_by_tts and final:
             label = "TTS_CUT"
@@ -480,9 +560,47 @@ class SpeakerVerification(Node):
             self.target_pub.publish(Bool(data=active))
 
         self.result_pub.publish(String(data=json.dumps(result)))
+        if job.doa is not None and "score" in result:
+            self._publish_located(result, job.doa)
         if final:
             self._log_final(result)
             self._dump(job, label, result.get("best", ""), result.get("score", 0.0))
+
+    def _publish_located(self, r: dict, doa: dict) -> None:
+        """Who is speaking and from where, in one message."""
+        known = (
+            r.get("best")
+            and r.get("score", 0.0) >= self.ver_cfg.accept_th
+            and r.get("score", 0.0) - max(r.get("second_score", -1.0), -1.0)
+            >= self.ver_cfg.margin
+        )
+        now = time.time()
+        speaker, via = self.tracker.update(
+            now,
+            r.get("best") if known else None,
+            bool(known),
+            doa["azimuth_deg"],
+            doa["reliable"],
+        )
+        located = {
+            "t": r["t"],
+            "seg_id": r["seg_id"],
+            "final": r["final"],
+            "speaker": speaker,
+            "via": via,  # "voice" | "direction" (unsure voice, known direction) | "none"
+            "best": r.get("best", ""),
+            "score": r.get("score", 0.0),
+            "label": r.get("label", ""),
+            "target": r.get("target", ""),
+            "azimuth_deg": doa["azimuth_deg"],
+            "direction": doa["direction"],
+            "doa_confidence": doa["confidence"],
+            "doa_reliable": doa["reliable"],
+            "sources": doa["sources"],
+            "dur": r["dur"],
+            "tracks": self.tracker.snapshot(now),
+        }
+        self.located_pub.publish(String(data=json.dumps(located)))
 
     def _remember_segment(self, job: Job) -> None:
         if job.wave is None or job.cut_by_tts:
@@ -532,6 +650,12 @@ class SpeakerVerification(Node):
                 f"{r.get('win_n', 0)} max={r.get('win_max', 0):.2f} "
                 f"vad_p={r['vad_p']:.2f} snr={r['snr_db']:.0f}dB "
                 f"infer={r['infer_ms']:.0f}ms lat={r['lat_ms']:.0f}ms"
+                + (
+                    f" | DOA {r['doa']['azimuth_deg']:+.0f}deg {r['doa']['direction']}"
+                    f" conf={r['doa']['confidence']:.2f}"
+                    if r.get("doa")
+                    else ""
+                )
                 + (" [enrolling]" if r["enrolling"] else "")
             )
         else:

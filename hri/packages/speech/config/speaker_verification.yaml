@@ -9,9 +9,31 @@ speaker_verification:
     SPEAKER_ID_METRICS_TOPIC: REPLACE
     SPEAKER_ID_COMMAND_TOPIC: REPLACE
     SPEAKER_ID_STATUS_TOPIC: REPLACE
+    SPEAKER_ID_LOCATED_TOPIC: REPLACE  # who spoke + from where (JSON)
+    SOUND_DOA_TOPIC: REPLACE           # live direction while someone speaks (JSON)
     # Set to the processed topic to A/B against DeepFilterNet output ("" = RAW_AUDIO_TOPIC)
     INPUT_AUDIO_TOPIC: ""
     SAMPLE_RATE: 16000
+
+    # Direction of arrival (speech.spatial.doa). With the multichannel topic the
+    # node reads the 6 ReSpeaker channels: MONO_CHANNEL feeds VAD + embeddings,
+    # ch1-4 feed SRP-PHAT on the same window as each embedding. "" = mono only.
+    MULTICHANNEL_AUDIO_TOPIC: REPLACE
+    MC_CHANNELS: 6
+    MONO_CHANNEL: 0
+    # Robot frame: 0 = front, +90 = left, -90 = right. Calibrated 2026-11-21 on
+    # FRIDA (talker at ~0.8 m): front -> array 10-18 deg, right -> array 260-270 deg,
+    # no mirror. Re-check if the ReSpeaker is remounted/rotated.
+    DOA_OFFSET_DEG: -15.0
+    DOA_MIRROR: false
+    DOA_MIN_CONF: 0.15
+    DOA_PERIOD_SEC: 0.25
+    DOA_LIVE_WIN_SEC: 0.5
+    # Unsure voice (UNKNOWN band) from where a person was confidently identified
+    # in the last TRACK_MAX_AGE_SEC, within TRACK_MATCH_DEG -> that person
+    # (located.via = "direction"). Only confident voice decisions move tracks.
+    TRACK_MAX_AGE_SEC: 8.0
+    TRACK_MATCH_DEG: 25.0
 
     # Models / data ("" = defaults under hri/packages/speech/assets)
     SILERO_MODEL: ""
