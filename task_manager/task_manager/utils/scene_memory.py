@@ -94,6 +94,11 @@ def parse_query(
     query.room = snap(query.room, rooms) if query.room else ""
     if query.anchor:
         query.anchor = snap(query.anchor, list(furniture)) or query.anchor
+    elif query.target:
+        # "cooking table" alone asks what is on that furniture, not for a table object
+        on_furniture = snap(query.target, list(furniture))
+        if on_furniture:
+            query.anchor, query.target = on_furniture, ""
     return query if query.target or query.anchor or query.room else Query(target=text)
 
 
