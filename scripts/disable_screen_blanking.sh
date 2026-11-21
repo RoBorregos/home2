@@ -41,14 +41,25 @@ if command -v gsettings >/dev/null 2>&1; then
 fi
 
 # 2) GDM login screen (shown when nobody is logged in on the monitor).
-#    Written once to the gdm user's dconf db; needs passwordless sudo.
-GDM_MARKER="/var/lib/gdm3/.config/home2-no-blank"
-if id gdm >/dev/null 2>&1 && command -v dbus-launch >/dev/null 2>&1 \
-   && ! sudo -n test -f "$GDM_MARKER" 2>/dev/null \
-   && sudo -n true 2>/dev/null; then
-  apply_gsettings sudo -n -u gdm -H dbus-launch
-  sudo -n -u gdm -H touch "$GDM_MARKER" 2>/dev/null || true
-  echo "[display] Disabled screen blanking on the GDM login screen."
+#    Applied through the running greeter's own session bus, so it takes effect
+#    live (a separate dbus-launch writes dconf but the running greeter never
+#    notices), and its screen shield is dismissed if it already blanked.
+#    Needs passwordless sudo; silently skipped otherwise.
+if id gdm >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+  gdm_uid=$(id -u gdm)
+  gdm_shell=$(pgrep -u gdm -x gnome-shell | head -n 1)
+  gdm_bus=""
+  [ -n "$gdm_shell" ] && gdm_bus=$(sudo -n cat "/proc/$gdm_shell/environ" 2>/dev/null \
+    | tr '\0' '\n' | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' | head -n 1)
+  if [ -n "$gdm_bus" ]; then
+    apply_gsettings sudo -n -u gdm env DBUS_SESSION_BUS_ADDRESS="$gdm_bus" XDG_RUNTIME_DIR="/run/user/$gdm_uid"
+    sudo -n -u gdm env DBUS_SESSION_BUS_ADDRESS="$gdm_bus" gdbus call --session \
+      --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver \
+      --method org.gnome.ScreenSaver.SetActive false >/dev/null 2>&1 || true
+  elif command -v dbus-launch >/dev/null 2>&1; then
+    # Greeter not running right now: store it for its next start.
+    apply_gsettings sudo -n -u gdm -H dbus-launch
+  fi
 fi
 
 # 3) The live X server: turn off X screensaver + DPMS and wake the monitor now.
