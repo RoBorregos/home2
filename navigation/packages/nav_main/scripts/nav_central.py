@@ -7,7 +7,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallb
 from rclpy.qos import qos_profile_sensor_data
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
-from rcl_interfaces.srv import SetParameters
+from rcl_interfaces.srv import GetParameters, SetParameters
 from nav2_msgs.srv import ManageLifecycleNodes, ClearEntireCostmap
 from nav2_msgs.action import NavigateToPose, ComputePathToPose
 from action_msgs.msg import GoalStatus
@@ -202,6 +202,13 @@ class Nav_Central(Node):
             callback_group=self.rtab_service_group)
         self.clear_global_costmap_client = self.create_client(
             ClearEntireCostmap, '/global_costmap/clear_entirely_global_costmap',
+            callback_group=self.rtab_service_group)
+        # Path cache warmup switches off the global costmap's sensor layers
+        self.global_costmap_get_params_client = self.create_client(
+            GetParameters, '/global_costmap/global_costmap/get_parameters',
+            callback_group=self.rtab_service_group)
+        self.global_costmap_set_params_client = self.create_client(
+            SetParameters, '/global_costmap/global_costmap/set_parameters',
             callback_group=self.rtab_service_group)
 
         self.lidar_msg = None
@@ -1308,7 +1315,7 @@ class Nav_Central(Node):
         # Reuse the matrix executor without sending an action to this same node.
         job = SimpleNamespace(request=goal, is_cancel_requested=False, publish_feedback=lambda _: None)
         try:
-            result = self._run_path_matrix(job, refresh_cache=full)
+            result = self._run_path_matrix(job, refresh_cache=full, static_map=True)
             solved = sum(d >= 0.0 for d in result.distances)
             elapsed = t.monotonic() - started
             # A round cut by the budget retries the missing pairs while it still adds some
@@ -1334,7 +1341,60 @@ class Nav_Central(Node):
                    and (src, dst) not in self._location_path_cache
                    for i, src in enumerate(areas) for j, dst in enumerate(areas))
 
-    def _run_path_matrix(self, goal_handle, *, refresh_cache=False):
+    def _live_costmap_layers(self):
+        """Ask the global costmap which layers are on and how often it updates.
+        Returns (names of enabled layers other than static/inflation, update period in s);
+        ([], period) if the costmap doesn't answer."""
+        req = GetParameters.Request()
+        req.names = ['plugins', 'update_frequency']
+        future = self._bounded_call(self.global_costmap_get_params_client, req,
+                                    TIMEOUT_RTAB_SERVICE, "Costmap layers")
+        values = future.result().values if future is not None and future.result() else []
+        if len(values) != 2:
+            return [], 1.0
+        plugins = list(values[0].string_array_value)
+        period = 1.0 / values[1].double_value if values[1].double_value > 0.0 else 1.0
+        req = GetParameters.Request()
+        req.names = [f'{n}.plugin' for n in plugins] + [f'{n}.enabled' for n in plugins]
+        future = self._bounded_call(self.global_costmap_get_params_client, req,
+                                    TIMEOUT_RTAB_SERVICE, "Costmap layers")
+        values = future.result().values if future is not None and future.result() else []
+        if len(values) != 2 * len(plugins):
+            return [], period
+        kinds, enabled = values[:len(plugins)], values[len(plugins):]
+        return [n for n, kind, on in zip(plugins, kinds, enabled)
+                if on.bool_value and not kind.string_value.endswith(('StaticLayer', 'InflationLayer'))], period
+
+    def _set_costmap_layers(self, layers, enabled):
+        """Turn the given global costmap layers on or off via their `enabled` parameter.
+        Returns True only if the costmap accepted every change."""
+        req = SetParameters.Request()
+        req.parameters = [make_param(f'{n}.enabled', enabled) for n in layers]
+        future = self._bounded_call(self.global_costmap_set_params_client, req,
+                                    TIMEOUT_RTAB_SERVICE, "Costmap layers")
+        return (future is not None and future.result() is not None
+                and all(r.successful for r in future.result().results))
+
+    def _use_static_costmap(self):
+        """Make the global costmap show only the static map for the warmup: turn off its
+        sensor layers, clear their marks and wait for it to refill from the map.
+        Returns the layers to turn back on after planning; [] if it kept the live costmap."""
+        layers, period = self._live_costmap_layers()
+        if not layers:
+            return []
+        # A disabled layer keeps its marks in the master grid until a full clear
+        if not (self._set_costmap_layers(layers, False) and self._call_service_with_timeout(
+                self.clear_global_costmap_client, ClearEntireCostmap.Request(),
+                TIMEOUT_RTAB_SERVICE, "Clear global costmap")):
+            self._set_costmap_layers(layers, True)
+            self.nav_logger("warn", "Path cache -> could not plan on the static map; using live costmap")
+            return []
+        # The cleared costmap is empty until it updates again
+        self.get_clock().sleep_for(rclpy.duration.Duration(seconds=2.0 * period))
+        self.nav_logger("info", f"Path cache -> planning on the static map ({', '.join(layers)} off)")
+        return layers
+
+    def _run_path_matrix(self, goal_handle, *, refresh_cache=False, static_map=False):
         request = goal_handle.request
         n = len(request.locations)
         self.nav_logger("info", f"Query_Path_Matrix -> Goal received ({n} areas)")
@@ -1400,6 +1460,7 @@ class Nav_Central(Node):
                 return result
             # Planner needs nav2 active; remember prior state to restore it after
             was_paused = self.nav2_paused
+            sensor_layers = []
             try:
                 self.resume_slam()
                 self.resume_nav2()
@@ -1412,6 +1473,8 @@ class Nav_Central(Node):
                         or not self._path_cache_inputs_ready()):
                     result.error = "Map or planner not ready"
                     return result
+                if static_map:
+                    sensor_layers = self._use_static_costmap()
                 if refresh_cache:
                     self._location_path_cache.clear()
                 robot_start = None
@@ -1425,6 +1488,8 @@ class Nav_Central(Node):
                 result.distances = self._plan_matrix(goal_handle, poses, deadline, robot_start)
                 result.success = True
             finally:
+                if sensor_layers and not self._set_costmap_layers(sensor_layers, True):
+                    self.nav_logger("error", f"Path cache -> could not re-enable {', '.join(sensor_layers)}")
                 if was_paused:
                     self.pause_slam()
                     self.pause_nav2()
@@ -1618,13 +1683,18 @@ class Nav_Central(Node):
     def _call_service_with_timeout(self, client, request, call_timeout, label):
         """Bounded service call — waits up to TIMEOUT_RTAB_SERVICE for readiness and
         call_timeout for the response. Returns True on success, False on timeout."""
+        return self._bounded_call(client, request, call_timeout, label) is not None
+
+    def _bounded_call(self, client, request, call_timeout, label):
+        """Call a service with the same waits as _call_service_with_timeout.
+        Returns the finished future (read the response with .result()), or None on timeout."""
         elapsed = 0.0
         while not client.service_is_ready() and elapsed < TIMEOUT_RTAB_SERVICE:
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
             elapsed += 0.5
         if not client.service_is_ready():
             self.nav_logger("warn", f"{label} -> Service not available after {TIMEOUT_RTAB_SERVICE}s")
-            return False
+            return None
         future = client.call_async(request)
         elapsed = 0.0
         while not future.done() and elapsed < call_timeout:
@@ -1632,8 +1702,8 @@ class Nav_Central(Node):
             elapsed += 0.1
         if not future.done():
             self.nav_logger("error", f"{label} -> Call timed out after {call_timeout}s, no response")
-            return False
-        return True
+            return None
+        return future
 
     def pause_slam(self):
         """Pause Slam function"""
