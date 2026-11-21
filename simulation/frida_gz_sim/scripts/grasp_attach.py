@@ -8,6 +8,7 @@ at once, so it is detached right away while the arm is still); grasps then only 
 attach/detach.
 """
 
+import json
 import re
 import subprocess
 import threading
@@ -34,7 +35,7 @@ from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
 from scipy.spatial.transform import Rotation
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 
 # Finger pads sit this far along the finger link Z from its origin
 PAD_OFFSET = 0.06
@@ -56,6 +57,16 @@ class GraspAttach(Node):
         super().__init__("grasp_attach")
         self.max_gap = self.declare_parameter("max_gap", 0.035).value
         self.close_delay = self.declare_parameter("close_delay", 1.0).value
+        # JSON {"world": name, "objects": {model: [height, radius]}}; empty = the pnp_table set
+        objects_file = self.declare_parameter("objects_file", "").value
+        self.world, self.objects = WORLD_NAME, dict(GRASPABLE_OBJECTS)
+        if objects_file:
+            with open(objects_file) as f:
+                spec = json.load(f)
+            self.world, self.objects = spec["world"], spec["objects"]
+        # base_link in the world frame; identity until the robot pose arrives (static base)
+        self.base_position = np.zeros(3)
+        self.base_rotation = Rotation.identity()
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -68,18 +79,18 @@ class GraspAttach(Node):
 
         self.gz = GzNode()
         self.attach_pubs = {
-            n: self.gz.advertise(attach_topic(n), Empty) for n in GRASPABLE_OBJECTS
+            n: self.gz.advertise(attach_topic(n), Empty) for n in self.objects
         }
         self.detach_pubs = {
-            n: self.gz.advertise(detach_topic(n), Empty) for n in GRASPABLE_OBJECTS
+            n: self.gz.advertise(detach_topic(n), Empty) for n in self.objects
         }
         # pose/info covers every entity; dynamic_pose/info skips objects that have never moved
         pose_options = SubscribeOptions()
         pose_options.msgs_per_sec = 20
         self.gz.subscribe(
-            Pose_V, f"/world/{WORLD_NAME}/pose/info", self._on_poses, pose_options
+            Pose_V, f"/world/{self.world}/pose/info", self._on_poses, pose_options
         )
-        for name in GRASPABLE_OBJECTS:
+        for name in self.objects:
             self.gz.subscribe(
                 StringMsg,
                 state_topic(name),
@@ -89,6 +100,10 @@ class GraspAttach(Node):
         self.create_subscription(Bool, "/sim/gripper_closed", self._on_gripper, 10)
         # Tells the gripper bridge to stop squeezing a welded object
         self.attached_pub = self.create_publisher(Bool, "/sim/grasp_attached", 10)
+        # Name of the welded object ("" when the gripper is empty), for ground-truth scoring
+        self.object_pub = self.create_publisher(
+            String, "/sim/grasp_attached_object", 10
+        )
         self._close_timer: threading.Timer | None = None
         self._lock = threading.Lock()
         threading.Thread(target=self._setup, daemon=True).start()
@@ -101,7 +116,7 @@ class GraspAttach(Node):
             robot_id = int(match.group(1)) if match else None
             time.sleep(1.0)
 
-        for name in GRASPABLE_OBJECTS:
+        for name in self.objects:
             innerxml = (
                 f"<parent_link>{ATTACH_PARENT_LINK}</parent_link>"
                 f"<child_model>{name}</child_model><child_link>link</child_link>"
@@ -119,7 +134,7 @@ class GraspAttach(Node):
             reply = _gz(
                 "service",
                 "-s",
-                f"/world/{WORLD_NAME}/entity/system/add",
+                f"/world/{self.world}/entity/system/add",
                 "--reqtype",
                 "gz.msgs.EntityPlugin_V",
                 "--reptype",
@@ -132,7 +147,7 @@ class GraspAttach(Node):
             if "true" not in reply:
                 self.get_logger().error(f"Could not add a DetachableJoint for {name}")
 
-        for name in GRASPABLE_OBJECTS:
+        for name in self.objects:
             for _ in range(10):
                 _gz("topic", "-t", detach_topic(name), "-m", "gz.msgs.Empty", "-p", "")
                 time.sleep(0.5)
@@ -143,15 +158,21 @@ class GraspAttach(Node):
 
         self.ready = True
         self.get_logger().info(
-            f"Grasp attach ready for {list(GRASPABLE_OBJECTS)} (robot entity {robot_id})"
+            f"Grasp attach ready for {list(self.objects)} (robot entity {robot_id})"
         )
 
     def _on_poses(self, msg: Pose_V):
         poses = {}
         for p in msg.pose:
-            if p.name not in GRASPABLE_OBJECTS:
-                continue
             q = p.orientation
+            if p.name == ROBOT_MODEL:
+                self.base_position = np.array(
+                    [p.position.x, p.position.y, p.position.z]
+                )
+                self.base_rotation = Rotation.from_quat([q.x, q.y, q.z, q.w])
+                continue
+            if p.name not in self.objects:
+                continue
             up = Rotation.from_quat([q.x, q.y, q.z, q.w]).apply([0.0, 0.0, 1.0])
             poses[p.name] = (np.array([p.position.x, p.position.y, p.position.z]), up)
         self.poses.update(poses)
@@ -185,12 +206,13 @@ class GraspAttach(Node):
                 [0.0, 0.0, PAD_OFFSET]
             )
             points.append(np.array([t.x, t.y, t.z]) + axis)
-        return (points[0] + points[1]) / 2.0
+        grasp = (points[0] + points[1]) / 2.0
+        return self.base_position + self.base_rotation.apply(grasp)
 
     def _closest_object(self, grasp: np.ndarray) -> tuple[str | None, float]:
         best, best_dist = None, self.max_gap
         for name, (origin, up) in dict(self.poses).items():
-            height, radius = GRASPABLE_OBJECTS[name]
+            height, radius = self.objects[name]
             # Gap to the object's surface around its axis, so grasps anywhere along it (or on a tipped object) count
             along = float(np.clip(np.dot(grasp - origin, up), 0.0, height))
             dist = float(np.linalg.norm(grasp - (origin + along * up))) - radius
@@ -220,6 +242,7 @@ class GraspAttach(Node):
         self.attach_pubs[name].publish(Empty())
         self.attached = name
         self.attached_pub.publish(Bool(data=True))
+        self.object_pub.publish(String(data=name))
         self.get_logger().info(
             f"Attached {name} ({max(dist, 0.0):.3f} m gap to the fingers)"
         )
@@ -231,6 +254,7 @@ class GraspAttach(Node):
         self.get_logger().info(f"Released {self.attached}")
         self.attached = None
         self.attached_pub.publish(Bool(data=False))
+        self.object_pub.publish(String(data=""))
 
 
 def main(args=None):

@@ -100,7 +100,12 @@ def scan(arm, perception, tuning) -> Optional[ShelfScan]:
     captured, seen = 0, []
     with arm.phase("survey"):
         for pose in SHELF_SURVEY_POSES:
-            if not arm.move_to_named_position(pose, velocity=FAST_VELOCITY):
+            # One retry: an aborted trajectory or a stale start state fails a single attempt
+            reached = any(
+                arm.move_to_named_position(pose, velocity=FAST_VELOCITY)
+                for _ in range(2)
+            )
+            if not reached:
                 log.warn(f"Could not reach {pose}; skipping this view")
                 continue
             time.sleep(SHELF_SURVEY_SETTLE)
