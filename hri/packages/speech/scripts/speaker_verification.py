@@ -51,6 +51,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from speech.spatial.doa import ArrayGeometry, DoaConfig, SrpPhat, direction_label
+from speech.spatial.frontend import FrontEndConfig, SpatialFrontEnd
 from speech.spatial.tracker import SpeakerTracker, TrackerConfig
 from speech.speaker_id.embedder import DEFAULT_MODEL_FILE, SpeakerEmbedder
 from speech.speaker_id.profiles import ProfileStore
@@ -236,7 +237,17 @@ class SpeakerVerification(Node):
                 DoaConfig(sample_rate=self.sr, geometry=geo),
                 history_sec=p["EMBED_MAX_SEC"] + 2.0,
             )
-            audio_topic = f"{mc_topic} (ch{p['MONO_CHANNEL']} + DOA ch1-4)"
+            self.mvdr_fe = None
+            if p["MONO_SOURCE"] == "mvdr":
+                # embeddings from the RTF-MVDR beam of the raw mics (no DFN:
+                # it did not improve speaker separation in the offline eval)
+                self.mvdr_fe = SpatialFrontEnd(
+                    SileroVAD(silero_path, self.sr),
+                    FrontEndConfig(output_gain_db=p["MVDR_OUTPUT_GAIN_DB"]),
+                )
+                audio_topic = f"{mc_topic} (MVDR ch1-4 + DOA ch1-4)"
+            else:
+                audio_topic = f"{mc_topic} (ch{p['MONO_CHANNEL']} + DOA ch1-4)"
             self.create_subscription(AudioData, mc_topic, self._mc_audio_cb, 50)
             self.create_timer(p["DOA_PERIOD_SEC"], self._publish_live_doa)
         else:
@@ -282,6 +293,8 @@ class SpeakerVerification(Node):
             "MULTICHANNEL_AUDIO_TOPIC": "",
             "MC_CHANNELS": 6,
             "MONO_CHANNEL": 0,
+            "MONO_SOURCE": "channel",
+            "MVDR_OUTPUT_GAIN_DB": 10.0,
             "DOA_OFFSET_DEG": 0.0,
             "DOA_MIRROR": False,
             "DOA_MIN_CONF": 0.15,
@@ -349,7 +362,13 @@ class SpeakerVerification(Node):
         # VAD state of the previous chunk labels these frames for the noise model
         self.srp.set_speech(self._vad_state and not self._is_muted())
         self.srp.push(x[:, 1:5].astype(np.float32) / 32768.0)
-        self._process_mono(np.ascontiguousarray(x[:, self.p["MONO_CHANNEL"]]))
+        if self.mvdr_fe is not None:
+            y = self.mvdr_fe.process(x, self._is_muted())
+            mono = (y * 32767).astype(np.int16)
+        else:
+            mono = np.ascontiguousarray(x[:, self.p["MONO_CHANNEL"]])
+        if mono.size:
+            self._process_mono(mono)
 
     def _doa_for(self, n_samples: int) -> dict | None:
         if self.srp is None:
@@ -581,6 +600,7 @@ class SpeakerVerification(Node):
             bool(known),
             doa["azimuth_deg"],
             doa["reliable"],
+            rejected=r.get("score", 0.0) <= self.ver_cfg.reject_th,
         )
         located = {
             "t": r["t"],

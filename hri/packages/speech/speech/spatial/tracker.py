@@ -8,7 +8,9 @@ person (name, azimuth, last confident time) and resolves each decision:
 
     voice confident (TARGET-level score)      -> that name, via "voice";
                                                  the track moves to this DOA
-    voice unsure, DOA near a fresh track      -> track's name, via "direction"
+    voice unsure (between reject and accept),
+    DOA near a fresh track                    -> track's name, via "direction"
+    voice rejected (<= reject threshold)      -> "unknown" even at a track's DOA
     otherwise                                 -> "unknown"
 
 Only confident voice decisions create or move tracks, so a wrong direction
@@ -54,8 +56,13 @@ class SpeakerTracker:
         confident: bool,
         azimuth_deg: float | None,
         doa_reliable: bool = True,
+        rejected: bool = False,
     ) -> tuple[str, str]:
-        """Returns (speaker, via) with via in {"voice", "direction", "none"}."""
+        """Returns (speaker, via) with via in {"voice", "direction", "none"}.
+
+        ``rejected``: the voice scored at/below the reject threshold for every
+        profile, i.e. it is positively *not* a known person -> never attributed
+        by direction (someone else may be standing in the same place)."""
         if confident and name:
             if azimuth_deg is not None and doa_reliable:
                 tr = self.tracks.get(name)
@@ -71,7 +78,7 @@ class SpeakerTracker:
             elif name in self.tracks:
                 self.tracks[name].last_t = now
             return name, "voice"
-        if azimuth_deg is None or not doa_reliable:
+        if rejected or azimuth_deg is None or not doa_reliable:
             return "unknown", "none"
         best, best_d = None, None
         for tr in self._fresh(now):

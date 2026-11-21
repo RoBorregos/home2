@@ -21,6 +21,12 @@ speaker_verification:
     MULTICHANNEL_AUDIO_TOPIC: REPLACE
     MC_CHANNELS: 6
     MONO_CHANNEL: 0
+    # "mvdr": VAD + embeddings on the RTF-MVDR beam of ch1-4 instead of a channel.
+    # Offline eval 2026-11-21 (10 genuine / 47 impostor segments, LOO profiles):
+    # ch0 genuine min 0.46 d'=7.7 -> MVDR genuine min 0.59 d'=9.5 (DFN adds nothing).
+    # Profiles must be enrolled on the same source.
+    MONO_SOURCE: "mvdr"
+    MVDR_OUTPUT_GAIN_DB: 10.0
     # Robot frame: 0 = front, +90 = left, -90 = right. Calibrated 2026-11-21 on
     # FRIDA (talker at ~0.8 m): front -> array 10-18 deg, right -> array 260-270 deg,
     # no mirror. Re-check if the ReSpeaker is remounted/rotated.

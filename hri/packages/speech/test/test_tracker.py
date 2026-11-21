@@ -22,3 +22,9 @@ def test_unreliable_doa_never_attributes_and_wraps():
     tr.update(0.0, "ana", True, 175.0)
     assert tr.update(1.0, None, False, -178.0) == ("ana", "direction")  # wraps
     assert tr.update(1.0, None, False, 175.0, doa_reliable=False) == ("unknown", "none")
+
+
+def test_rejected_voice_is_not_attributed_by_direction():
+    tr = SpeakerTracker()
+    tr.update(0.0, "mario", True, -95.0)
+    assert tr.update(1.0, None, False, -95.0, rejected=True) == ("unknown", "none")
