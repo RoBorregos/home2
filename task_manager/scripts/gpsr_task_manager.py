@@ -14,6 +14,8 @@ from frida_constants.hri_constants import (
     GPSR_TASK_STEP_TOPIC,
     ANSWER_PUBLISHER,
 )
+from frida_constants.navigation_constants import NAV_PATH_CACHE_FILE
+from frida_constants.path_cache_store import load_path_cache
 from frida_constants.vision_constants import IMAGE_ORIENTED_TOPIC
 from rclpy.duration import Duration
 from rclpy.node import Node
@@ -203,8 +205,8 @@ class GPSRTM(Node):
         Reloaded before fetching each batch's named-pair distances.
 
         Prefers the live ``retrieve_areas`` service so poses reflect the
-        current map; falls back to the static ``nav.areas_backup`` (loaded
-        from areas.json) when the service is unavailable or returns junk.
+        current map; falls back to the areas in navigation's saved path cache,
+        then the static ``nav.areas_backup`` (loaded from areas.json).
         Returns ``{}`` when nothing usable is available, so the merger's
         locator degrades to unknown coordinates (LARGE_M) rather than raising.
         """
@@ -217,15 +219,53 @@ class GPSRTM(Node):
                 areas = data
             else:
                 self.get_logger().warning(
-                    f"retrieve_areas returned status={status}; using backup map"
+                    f"retrieve_areas returned status={status}; using saved or backup areas"
                 )
         except Exception as e:  # noqa: BLE001
-            self.get_logger().warning(f"retrieve_areas failed: {e}; using backup map")
+            self.get_logger().warning(f"retrieve_areas failed: {e}; using saved or backup areas")
+        if areas is None:
+            saved, _ = self._saved_paths()
+            if isinstance(saved, dict) and saved:
+                self.get_logger().warning("Using areas from navigation's saved path cache")
+                areas = saved
         if areas is None:
             backup = getattr(self.subtask_manager.nav, "areas_backup", None)
             areas = backup if isinstance(backup, dict) else {}
         self._areas = areas
         return areas
+
+    def _saved_paths(self):
+        """Navigation's last disk copy of named pairs: (areas, pairs) or (None, {})."""
+        saved = load_path_cache(NAV_PATH_CACHE_FILE)
+        if saved is None:
+            return None, {}
+        _, areas, pairs = saved
+        return areas, pairs
+
+    def _saved_batch_pairs(self, areas):
+        """Saved pairs among ``areas`` whose poses still match the current table."""
+        saved_areas, pairs = self._saved_paths()
+        if not pairs:
+            self.get_logger().warning(
+                f"No saved path cache at {NAV_PATH_CACHE_FILE}; using straight-line distances"
+            )
+            return {}
+        current = self._get_areas()
+
+        def pose_of(table, area):
+            subareas = table.get(area[0]) if isinstance(table, dict) else None
+            return subareas.get(area[1]) if isinstance(subareas, dict) else None
+
+        valid = {
+            a
+            for a in areas
+            if pose_of(current, a) is not None and pose_of(current, a) == pose_of(saved_areas, a)
+        }
+        found = {p: d for p, d in pairs.items() if p[0] in valid and p[1] in valid}
+        self.get_logger().info(
+            f"Loaded {len(found)}/{len(areas) ** 2} batch path distances from saved cache"
+        )
+        return found
 
     def _resolve_area(self, location_name: str):
         """Resolve a free-text location to (area, subarea) via query_location.
@@ -276,7 +316,7 @@ class GPSRTM(Node):
         return areas
 
     def _query_paths(self, areas, **kwargs):
-        """Read navigation's named cache or request fresh robot-origin distances."""
+        """Fresh robot-origin distances from navigation; named pairs come from the file."""
         try:
             status, matrix = self.subtask_manager.nav.get_path_matrix(areas, **kwargs)
         except Exception as e:  # noqa: BLE001
@@ -290,10 +330,10 @@ class GPSRTM(Node):
         return status, matrix
 
     def _load_batch_path_costs(self, commands):
-        """Fetch this batch's named pairs from navigation's shared cache.
+        """Read this batch's named pairs from the file navigation saves.
 
-        Missing pairs may be filled by navigation within its normal query budget.
-        GPSR keeps only a planning snapshot, not a process-wide baseline cache.
+        Missing pairs use the scaled straight-line estimate. GPSR keeps only a
+        planning snapshot, not a process-wide baseline cache.
         """
         previous_areas = self._areas
         self._areas = None
@@ -311,11 +351,7 @@ class GPSRTM(Node):
                 if area is not None and area not in areas:
                     areas.append(area)
         if areas:
-            status, matrix = self._query_paths(areas, mode=NavQueryMatrix.Goal.LOCATION_PAIRS)
-            if status == Status.EXECUTION_SUCCESS and isinstance(matrix, dict):
-                self._path_cache.update(
-                    {pair: d for pair, d in matrix.items() if pair[0] is not None}
-                )
+            self._path_cache.update(self._saved_batch_pairs(areas))
 
     def _discard_robot_paths(self):
         self._path_cache = {pair: d for pair, d in self._path_cache.items() if pair[0] is not None}

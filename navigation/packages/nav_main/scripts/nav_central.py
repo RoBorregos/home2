@@ -61,6 +61,8 @@ from frida_constants.navigation_constants import(
         COMPUTE_PATH_ACTION_SERVER,
         TIMEOUT_NAV_QUERY,
         TIMEOUT_NAV_QUERY_MATRIX,
+        NAV_PATH_CACHE_FILE,
+        PATH_CACHE_SAVE_PERIOD,
         UNDOCK_SERVICE,
         DOCK_SERVICE,
         DOCK_TABLE_SERVICE,
@@ -80,6 +82,7 @@ from frida_interfaces.srv import (
         ApproachPoint,
         )
 from frida_interfaces.action import NavQueryMatrix
+from frida_constants.path_cache_store import load_path_cache, path_cache_digest, save_path_cache
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
 import json
@@ -165,6 +168,7 @@ class Nav_Central(Node):
         self.areas_map_name = self.declare_parameter('areas_map_name', 'default_map').value
         self.areas_data = None
         self.declare_parameter('path_cache_warmup_seconds', 180.0)
+        self._path_cache_file = self.declare_parameter('path_cache_file', NAV_PATH_CACHE_FILE).value
         self._location_path_cache = {}
         self._path_cache_context = None
         self._path_cache_warmup_timer = None
@@ -1182,16 +1186,41 @@ class Nav_Central(Node):
         return result
 
     def _sync_path_cache(self):
-        """Invalidate named pairs when the loaded map or location table changes.
+        """Invalidate named pairs when the loaded map or location table changes,
+        then restore the disk copy planned on the same map and areas.
 
-        Planner configuration changes require restarting navigation or explicitly
-        calling _refresh_path_cache() after applying the new configuration.
+        After re-mapping or planner tuning, delete the cache file or call
+        _refresh_path_cache() so stale distances are not restored.
         """
         context = (self.map_name, self.areas_map_name, self.config_path,
                    json.dumps(self.areas_data, sort_keys=True))
         if context != self._path_cache_context:
             self._location_path_cache.clear()
             self._path_cache_context = context
+            self._restore_path_cache()
+
+    def _restore_path_cache(self):
+        if not self._path_cache_file:
+            return
+        saved = load_path_cache(self._path_cache_file)
+        if saved is None:
+            return
+        digest, _, pairs = saved
+        if digest != path_cache_digest(*self._path_cache_context):
+            self.nav_logger("info", "Path cache file is for another map or areas; ignoring it")
+            return
+        self._location_path_cache.update(pairs)
+        self.nav_logger("info", f"Restored {len(pairs)} named pairs from {self._path_cache_file}")
+
+    def _persist_path_cache(self):
+        """Disk copy for GPSR and nav restarts; failure only costs a rewarm."""
+        if not self._path_cache_file or self._path_cache_context is None:
+            return
+        try:
+            save_path_cache(self._path_cache_file, path_cache_digest(*self._path_cache_context),
+                            self.areas_data, self._location_path_cache)
+        except Exception as e:
+            self.nav_logger("warn", f"Could not save path cache to {self._path_cache_file}: {e}")
 
     def _path_cache_inputs_ready(self):
         """Require populated map-frame grids and at least one named pose."""
@@ -1238,14 +1267,15 @@ class Nav_Central(Node):
         """Retry deferred warmup; cancel the timer while work is in progress."""
         timer = self._path_cache_warmup_timer
         timer.cancel()
-        if self._refresh_path_cache():
+        if self._refresh_path_cache(full=False):
             self.destroy_timer(timer)
             self._path_cache_warmup_timer = None
         else:
             timer.reset()
 
-    def _refresh_path_cache(self):
+    def _refresh_path_cache(self, full=True):
         """Warm all named pairs after setup, independently of GPSR's lifetime.
+        full=False keeps restored pairs and plans only the missing ones.
 
         Also usable for a full refresh while idle after reloading map areas or
         changing planner settings. The normal navigation lock protects both
@@ -1276,12 +1306,17 @@ class Nav_Central(Node):
         # Reuse the matrix executor without sending an action to this same node.
         job = SimpleNamespace(request=goal, is_cancel_requested=False, publish_feedback=lambda _: None)
         try:
-            result = self._run_path_matrix(job, refresh_cache=True)
+            result = self._run_path_matrix(job, refresh_cache=full)
             solved = sum(d >= 0.0 for d in result.distances)
-            self.nav_logger("info" if result.success else "warn",
+            elapsed = t.monotonic() - started
+            # A round cut by the budget retries the missing pairs while it still adds some
+            progressed = solved > getattr(self, "_path_cache_warm_solved", -1)
+            self._path_cache_warm_solved = solved
+            complete = result.success and (elapsed < budget or not progressed)
+            self.nav_logger("info" if complete else "warn",
                             f"Path cache warmup: {solved}/{len(areas) ** 2} named pairs "
-                            f"in {t.monotonic() - started:.1f}s; {result.error}")
-            return result.success
+                            f"in {elapsed:.1f}s{'' if complete else ', retrying'}; {result.error}")
+            return complete
         except Exception as e:
             # Path estimation must not prevent navigation from starting.
             self.nav_logger("warn", f"Path cache warmup failed: {e}")
@@ -1347,8 +1382,10 @@ class Nav_Central(Node):
             self.nav_logger("info", "Query_Path_Matrix -> Cancelled while queued, nav2 untouched")
             result.error = "Cancelled before start"
             return result
+        cached_before = None
         try:
             self._sync_path_cache()
+            cached_before = dict(self._location_path_cache)
             # Budget starts before the resume so the whole query stays bounded
             deadline = t.monotonic() + (request.budget_seconds or TIMEOUT_NAV_QUERY_MATRIX)
             if not refresh_cache and not self._matrix_needs_planner(request, poses):
@@ -1390,6 +1427,8 @@ class Nav_Central(Node):
                     self.pause_slam()
                     self.pause_nav2()
         finally:
+            if cached_before is not None and self._location_path_cache != cached_before:
+                self._persist_path_cache()
             self._release_service_group()
 
         solved = sum(1 for d in result.distances if d >= 0.0)
@@ -1416,6 +1455,7 @@ class Nav_Central(Node):
                          (sub or "safe_place" for sub in goal_handle.request.sublocations)))
         feedback.pairs_total = len(starts) * n
         distances = []
+        last_save = t.monotonic()
         for i in starts:
             for j in range(n):
                 if i == j:
@@ -1437,6 +1477,10 @@ class Nav_Central(Node):
                         distance = -1.0 if path is None else self._path_length(path)
                         if pair is not None and math.isfinite(distance) and distance >= 0.0:
                             self._location_path_cache[pair] = distance
+                            # GPSR reads the file, so share long warmups as they progress
+                            if t.monotonic() - last_save >= PATH_CACHE_SAVE_PERIOD:
+                                self._persist_path_cache()
+                                last_save = t.monotonic()
                     distances.append(distance)
                 feedback.pairs_done = len(distances)
                 goal_handle.publish_feedback(feedback)

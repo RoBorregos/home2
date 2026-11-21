@@ -50,6 +50,9 @@ COMPUTE_PATH_ACTION_SERVER = "/compute_path_to_pose"
 TIMEOUT_NAV_QUERY = 10.0  # seconds to wait for ComputePathToPose result
 # Budget for one matrix query, SLAM/nav2 resume included; unplanned pairs return -1.0
 TIMEOUT_NAV_QUERY_MATRIX = 8.0
+# Named-pair cache on disk (/tmp is mounted in nav and integration); empty disables
+NAV_PATH_CACHE_FILE = "/tmp/frida_nav_path_cache.json"
+PATH_CACHE_SAVE_PERIOD = 20.0  # seconds between saves during a long warmup
 
 ### Table/shelf docking (perpendicular approach) — see table_docker.py
 DOCK_SERVICE = "/navigation/dock_to_surface"  # std_srvs/Trigger: align + approach

@@ -253,16 +253,27 @@ planner action, and active planner/global-costmap lifecycle states. It retries
 every two seconds until these checks pass; merely being outside mapping mode or
 setting `nodes_status` does not establish readiness. Map/grid updates are received
 independently of the navigation-operation lock so they can arrive during checks.
-Its `path_cache_warmup_seconds` parameter defaults to 180 s. Warmup logs coverage
-and elapsed time; successful pairs survive GPSR exits/restarts until navigation
-is restarted or its cache is refreshed. Mapping mode does not warm the cache.
+Its `path_cache_warmup_seconds` parameter defaults to 180 s. A round cut by the
+budget retries the missing pairs and stops once a round adds none. Warmup logs
+coverage and elapsed time. Mapping mode does not warm the cache.
+
+Navigation saves the cache with its areas table to `path_cache_file` (default
+`/tmp/frida_nav_path_cache.json`; empty disables) whenever it changes, and every
+20 s during a long warmup. `/tmp` is mounted in the navigation and integration
+containers. On restart, navigation restores the file if it was planned on the
+same map name, areas file, SLAM config and area poses, so warmup plans only the
+missing pairs. `/tmp` is wiped on reboot.
+
+GPSR reads its named pairs only from this file, never through the action, so it
+works the same whether navigation is up or down. It keeps saved pairs whose two
+poses match its current areas table (live from navigation, else the file's own).
 
 Matrix queries reuse successful named pairs and compute only missing pairs within
 the query budget. A fully cached named-pair query does not resume/pause Nav2.
 Unsolved pairs are not cached as permanently unreachable. GPSR reads the subset
-needed by its three commands just before merging and keeps that result only for
-the batch. Missing pairs use its existing scaled straight-line estimate. GPSR
-startup no longer computes the full matrix or waits through the warmup budget.
+needed by its three commands from the file just before merging and keeps it only
+for the batch. Missing pairs use its scaled straight-line estimate. GPSR startup
+never computes the full matrix or waits through the warmup budget.
 
 After reaching `start_location`, GPSR snapshots the robot's complete pose and
 requests its distances to all named locations before collecting commands. Before
@@ -283,7 +294,9 @@ The action definition changed: rebuild `frida_interfaces` and its navigation,
 task-manager, and simulation consumers together.
 
 Restart navigation after changing the map, tags, or planner settings to reload
-them and rebuild the full cache. For an in-process update while idle, apply the
+them. A changed map name, areas file or pose invalidates the saved file; after
+re-mapping under the same name or retuning the planner, delete
+`/tmp/frida_nav_path_cache.json` first so the cache is rebuilt. For an in-process update while idle, apply the
 new configuration, call `load_map_areas()` if the tags changed, then invoke
 navigation's internal `_refresh_path_cache()` helper. It clears and rebuilds all
 named pairs under the navigation lock; this helper is not a public ROS service.

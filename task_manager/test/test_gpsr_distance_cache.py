@@ -6,9 +6,11 @@ hardware imports and node startup. ROS builds and Gazebo remain integration chec
 """
 
 import ast
+import importlib.util
 import json
 import math
 from pathlib import Path
+import tempfile
 import time
 from types import SimpleNamespace as NS
 import unittest
@@ -16,6 +18,11 @@ from unittest.mock import Mock, patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
+_spec = importlib.util.spec_from_file_location(
+    "path_cache_store", ROOT / "frida_constants/frida_constants/path_cache_store.py"
+)
+STORE = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(STORE)
 AREAS = [("living_room", "sofa"), ("kitchen", "table")]
 LIVE = {
     "living_room": {"sofa": [0, 0, 0, 0, 0, 0, 1]},
@@ -67,6 +74,11 @@ def load_methods(path, class_name, names, **extra):
         NavQueryMatrix=NS(Goal=Goal, Result=NS, Feedback=NS),
         TIMEOUT_NAV_QUERY_MATRIX=8.0,
         DETOUR_FACTOR=1.4,
+        NAV_PATH_CACHE_FILE="/nonexistent/frida_nav_path_cache.json",
+        PATH_CACHE_SAVE_PERIOD=20.0,
+        load_path_cache=STORE.load_path_cache,
+        save_path_cache=STORE.save_path_cache,
+        path_cache_digest=STORE.path_cache_digest,
     )
     namespace.update(extra)
     exec(compile(ast.Module(body=[cls], type_ignores=[]), str(ROOT / path), "exec"), namespace)
@@ -80,6 +92,8 @@ GPSR = load_methods(
         "_named_areas",
         "_query_paths",
         "_get_areas",
+        "_saved_paths",
+        "_saved_batch_pairs",
         "_load_batch_path_costs",
         "_discard_robot_paths",
         "_origin_matches",
@@ -113,6 +127,8 @@ SERVER = load_methods(
         "_run_path_matrix",
         "_plan_matrix",
         "_sync_path_cache",
+        "_restore_path_cache",
+        "_persist_path_cache",
         "_refresh_path_cache",
         "_matrix_needs_planner",
         "_setup",
@@ -187,6 +203,7 @@ def server(mode=Goal.FULL, *, paused=True):
     nav.config_path = "localization.yaml"
     nav._location_path_cache = {}
     nav._path_cache_context = None
+    nav._path_cache_file = ""
     nav.use_nav2 = True
     nav._static_grid = grid()
     nav._costmap_grid = grid()
@@ -226,27 +243,32 @@ def server(mode=Goal.FULL, *, paused=True):
 
 
 class CacheTests(unittest.TestCase):
-    def test_batch_reads_only_its_named_pairs_and_keeps_current_origin(self):
-        tm = gpsr()
-        tm._path_cache = {(AREAS[1], AREAS[0]): 99, (None, AREAS[0]): 88}
-        tm._origin_pose = pose()
-        fresh = {(AREAS[0], AREAS[1]): 6, (AREAS[0], AREAS[0]): 0}
-        tm.subtask_manager.nav.get_path_matrix.return_value = (1, fresh)
-        commands = [
-            NS(
-                commands=[
-                    NS(action="go_to", location_to_go=name) for name in ("sofa", "table", "sofa")
-                ]
+    def test_batch_reads_only_its_named_pairs_from_file_and_keeps_current_origin(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tm = gpsr()
+            tm._path_cache = {(AREAS[1], AREAS[0]): 99, (None, AREAS[0]): 88}
+            tm._origin_pose = pose()
+            saved = {(AREAS[0], AREAS[1]): 6, (AREAS[0], AREAS[0]): 0, (AREAS[1], ("x", "y")): 3}
+            path = f"{tmp}/cache.json"
+            STORE.save_path_cache(path, "digest", LIVE, saved)
+            commands = [
+                NS(
+                    commands=[
+                        NS(action="go_to", location_to_go=name)
+                        for name in ("sofa", "table", "sofa")
+                    ]
+                )
+            ]
+            with patch.dict(GPSR._saved_paths.__globals__, {"NAV_PATH_CACHE_FILE": path}):
+                tm._load_batch_path_costs(commands)
+            self.assertEqual(
+                tm._path_cache,
+                {(AREAS[0], AREAS[1]): 6, (AREAS[0], AREAS[0]): 0, (None, AREAS[0]): 88},
             )
-        ]
-        tm._load_batch_path_costs(commands)
-        self.assertEqual(tm._path_cache, {**fresh, (None, AREAS[0]): 88})
-        self.assertEqual(tm._location_cache, {})
-        self.assertEqual(tm._area_cache, {})
-        self.assertIsNotNone(tm._origin_pose)
-        args, kwargs = tm.subtask_manager.nav.get_path_matrix.call_args
-        self.assertEqual(args[0], AREAS)
-        self.assertEqual(kwargs, {"mode": Goal.LOCATION_PAIRS})
+            self.assertEqual(tm._location_cache, {})
+            self.assertEqual(tm._area_cache, {})
+            self.assertIsNotNone(tm._origin_pose)
+            tm.subtask_manager.nav.get_path_matrix.assert_not_called()
 
     def test_changed_live_areas_discard_old_robot_row(self):
         tm = gpsr()
@@ -274,10 +296,9 @@ class CacheTests(unittest.TestCase):
         tm.subtask_manager.nav.get_path_matrix.assert_not_called()
         self.assertEqual(tm._path_cache, {})
 
-    def test_failed_query_drops_obsolete_batch_pairs(self):
+    def test_new_batch_drops_previous_batch_pairs(self):
         tm = gpsr()
         tm._path_cache = {(AREAS[0], AREAS[1]): 99}
-        tm.subtask_manager.nav.get_path_matrix.return_value = (0, "Planner unavailable")
         tm._load_batch_path_costs([NS(commands=[NS(action="go_to", location_to_go="sofa")])])
         self.assertEqual(tm._path_cache, {})
 
@@ -372,6 +393,70 @@ class CacheTests(unittest.TestCase):
         tm.run()
         self.assertEqual(events, ["arrive", "origin", "announce"])
         self.assertEqual(tm.current_state, GPSR.TaskStates.WAIT_BUTTON_COMMAND)
+
+    def saved_cache(self, tmp, areas=LIVE):
+        path = f"{tmp}/cache.json"
+        pairs = {(AREAS[0], AREAS[1]): 6.5, (AREAS[1], AREAS[0]): 7.0, (AREAS[0], AREAS[0]): 0}
+        STORE.save_path_cache(path, "digest", areas, pairs)
+        return path
+
+    def test_navigation_down_uses_saved_areas_and_pairs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tm = gpsr()
+            tm._areas = None
+            tm.subtask_manager.nav.retrieve_areas.return_value = (0, "down")
+            tm.subtask_manager.nav.areas_backup = {"other": {"place": [0] * 7}}
+            tm.subtask_manager.nav.get_path_matrix.return_value = (0, "Action server not started")
+            commands = [
+                NS(commands=[NS(action="go_to", location_to_go=n) for n in ("sofa", "table")])
+            ]
+            with patch.dict(
+                GPSR._saved_paths.__globals__, {"NAV_PATH_CACHE_FILE": self.saved_cache(tmp)}
+            ):
+                tm._load_batch_path_costs(commands)
+            self.assertEqual(tm._areas, LIVE)
+            self.assertEqual(tm._path_cache[(AREAS[0], AREAS[1])], 6.5)
+            self.assertEqual(tm._path_cost("table", "sofa"), 7.0)
+
+    def test_saved_pairs_skip_locations_that_moved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            moved = json.loads(json.dumps(LIVE))
+            moved["kitchen"]["table"][0] = 9
+            tm = gpsr()
+            tm.subtask_manager.nav.get_path_matrix.return_value = (0, "timeout")
+            path = self.saved_cache(tmp, moved)
+            with patch.dict(GPSR._saved_paths.__globals__, {"NAV_PATH_CACHE_FILE": path}):
+                tm._load_batch_path_costs(
+                    [
+                        NS(commands=[NS(action="go_to", location_to_go="sofa")]),
+                        NS(commands=[NS(action="go_to", location_to_go="table")]),
+                    ]
+                )
+            self.assertEqual(tm._path_cache, {(AREAS[0], AREAS[0]): 0})
+
+    def test_missing_file_uses_straight_line_without_querying_navigation(self):
+        tm = gpsr()
+        tm._plan_origin = None
+        tm._resolve_xy = {"sofa": (0, 0), "table": (4, 0)}.get
+        tm._load_batch_path_costs(
+            [NS(commands=[NS(action="go_to", location_to_go=n) for n in ("sofa", "table")])]
+        )
+        self.assertEqual(tm._path_cache, {})
+        self.assertAlmostEqual(tm._path_cost("sofa", "table"), 1.4 * 4)
+        tm.subtask_manager.nav.get_path_matrix.assert_not_called()
+
+    def test_corrupt_or_invalid_cache_file_is_ignored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cache.json"
+            path.write_text("{not json")
+            self.assertIsNone(STORE.load_path_cache(str(path)))
+            rows = [
+                ["a", "b", "c", "d", float("nan")],
+                ["a", "b", "c", "d", -1],
+                ["a", "b", "c", "d", 3],
+            ]
+            path.write_text(json.dumps({"version": 1, "digest": "x", "areas": {}, "pairs": rows}))
+            self.assertEqual(STORE.load_path_cache(str(path))[2], {(("a", "b"), ("c", "d")): 3.0})
 
     def test_batch_cleanup_discards_its_snapshot_not_navigation_cache(self):
         tm = gpsr()
@@ -496,7 +581,7 @@ class MatrixServerTests(unittest.TestCase):
         nav.start_slam = lambda: events.append("slam")
         nav.load_nav2 = lambda: events.append("nav2")
         nav._wait_for_initial_pose = lambda: events.append("pose")
-        nav._refresh_path_cache = Mock(side_effect=lambda: events.append("warm") or True)
+        nav._refresh_path_cache = Mock(side_effect=lambda **_: events.append("warm") or True)
         nav._setup()
         nav._setup()
         nav._refresh_path_cache.assert_not_called()
@@ -522,8 +607,8 @@ class MatrixServerTests(unittest.TestCase):
 
     def test_warmed_queries_reuse_directed_pairs_in_any_request_order(self):
         nav, handle = server(Goal.LOCATION_PAIRS)
-        nav._compute_path.side_effect = (
-            lambda goal, start, *_: 6 if start.pose.position.x == 0 else 9
+        nav._compute_path.side_effect = lambda goal, start, *_: (
+            6 if start.pose.position.x == 0 else 9
         )
         nav._refresh_path_cache()
         nav._compute_path.reset_mock()
@@ -563,6 +648,57 @@ class MatrixServerTests(unittest.TestCase):
         nav.pause_nav2.assert_called_once()
         nav._release_service_group.assert_called_once()
         self.assertTrue(any("warmup failed" in c.args[1] for c in nav.nav_logger.call_args_list))
+
+    def test_warmup_saves_pairs_and_restart_restores_without_planning(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            nav, handle = server(Goal.LOCATION_PAIRS)
+            nav._path_cache_file = f"{tmp}/cache.json"
+            self.assertTrue(nav._refresh_path_cache(full=False))
+            warmed = dict(nav._location_path_cache)
+            restarted, handle = server(Goal.LOCATION_PAIRS)
+            restarted._path_cache_file = nav._path_cache_file
+            self.assertTrue(restarted._refresh_path_cache(full=False))
+            self.assertEqual(restarted._location_path_cache, warmed)
+            restarted._compute_path.assert_not_called()
+            restarted.resume_nav2.assert_not_called()
+            self.assertEqual(restarted._run_path_matrix(handle).distances, [0, 4, 4, 0])
+
+    def test_saved_pairs_for_other_areas_are_not_restored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            nav, _ = server()
+            nav._path_cache_file = f"{tmp}/cache.json"
+            nav._refresh_path_cache(full=False)
+            moved, _ = server()
+            moved._path_cache_file = nav._path_cache_file
+            moved.areas_data = json.loads(json.dumps(LIVE))
+            moved.areas_data["kitchen"]["table"][0] = 8
+            moved._fetch_area_coords = lambda loc, sub: moved.areas_data.get(loc, {}).get(sub)
+            moved._refresh_path_cache(full=False)
+            self.assertEqual(moved._compute_path.call_count, 2)
+            self.assertEqual(moved._location_path_cache[(AREAS[0], AREAS[1])], 8)
+
+    def test_unwritable_cache_file_does_not_fail_warmup(self):
+        nav, _ = server()
+        nav._path_cache_file = "/nonexistent/dir/cache.json"
+        self.assertTrue(nav._refresh_path_cache(full=False))
+        self.assertTrue(any("Could not save" in c.args[1] for c in nav.nav_logger.call_args_list))
+
+    def test_budget_cut_warmup_retries_until_no_new_pairs(self):
+        nav, _ = server()
+        nav.get_parameter = lambda _: NS(value=0.05)
+        # (delay, path): round 1 ends past the budget, round 2 too but adds nothing
+        steps = iter([(0.03, None), (0.03, 4), (0.06, None)])
+
+        def planner(*_):
+            delay, path = next(steps)
+            time.sleep(delay)
+            return path
+
+        nav._compute_path.side_effect = planner
+        self.assertFalse(nav._refresh_path_cache(full=False))
+        self.assertIn((AREAS[1], AREAS[0]), nav._location_path_cache)
+        self.assertTrue(nav._refresh_path_cache(full=False))
+        self.assertNotIn((AREAS[0], AREAS[1]), nav._location_path_cache)
 
     def test_full_refresh_removes_previously_solved_but_now_unsolved_pairs(self):
         nav, _ = server()
