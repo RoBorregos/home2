@@ -13,7 +13,7 @@ uint8 mode
 # Empty frame_id: capture map -> base_link once, after acquiring navigation.
 # Otherwise this must be an explicit pose in the map frame.
 geometry_msgs/PoseStamped robot_start
-# Zero uses the normal eight-second budget; positive values override it.
+# Zero uses the normal 25-second budget; positive values override it.
 float64 budget_seconds
 ---
 # Result

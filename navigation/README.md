@@ -286,7 +286,7 @@ point. Navigation always computes robot-origin rows fresh and never caches them.
 
 `NavQueryMatrix` accepts `mode` (`FULL=0`, `LOCATION_PAIRS=1`, `ROBOT_ORIGIN=2`),
 an optional `robot_start` in the `map` frame, and `budget_seconds`. Zero budget
-keeps the normal 8 s calculation budget; navigation uses its longer startup
+keeps the normal 25 s calculation budget; navigation uses its longer startup
 budget to warm named pairs. An empty start frame snapshots TF once after navigation
 is acquired. Results are row-major `(n+1)×n`, `n×n`, or `1×n` respectively, with
 `-1` for unsolved pairs. The Python wrapper still returns a pair-to-distance dict.

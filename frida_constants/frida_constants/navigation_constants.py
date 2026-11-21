@@ -49,7 +49,7 @@ NAV_QUERY_MATRIX_ACTION_SERVER = "/navigation/query_path_matrix"
 COMPUTE_PATH_ACTION_SERVER = "/compute_path_to_pose"
 TIMEOUT_NAV_QUERY = 10.0  # seconds to wait for ComputePathToPose result
 # Budget for one matrix query, SLAM/nav2 resume included; unplanned pairs return -1.0
-TIMEOUT_NAV_QUERY_MATRIX = 8.0
+TIMEOUT_NAV_QUERY_MATRIX = 25.0
 # Named-pair cache on disk (/tmp is mounted in nav and integration); empty disables
 NAV_PATH_CACHE_FILE = "/tmp/frida_nav_path_cache.json"
 PATH_CACHE_SAVE_PERIOD = 20.0  # seconds between saves during a long warmup
@@ -95,8 +95,8 @@ class SUBTASK_MANAGER(Enum):
     NAV_QUERY_TIMEOUT = 30.0
     # Wait for the matrix result before cancelling: budget plus a normal pause
     NAV_QUERY_MATRIX_TIMEOUT = TIMEOUT_NAV_QUERY_MATRIX + 4.0
-    # After a cancel the server may finish a resume and must still pause nav2
-    NAV_QUERY_MATRIX_CANCEL_TIMEOUT = 2 * TIMEOUT_NAV_TOGGLE_WORST + 5.0
+    # After a cancel nav still runs its closing pause; nav frees its lock on its own timeouts
+    NAV_QUERY_MATRIX_CANCEL_TIMEOUT = TIMEOUT_NAV_TOGGLE_WORST
 
 
 # Follow person node constants
