@@ -62,6 +62,8 @@ public:
     this->sqr_small_rad =  std::pow(small_radius, 2);
     this->sqr_med_rad = std::pow(medium_radius, 2);
     this->simplificator_factor = this->declare_parameter("simplificator_factor", simplificator_factor);
+    // ZED depth reads ~1.4% short
+    this->declare_parameter("depth_scale", ZED_DEPTH_SCALE);
     rclcpp::QoS qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
 
@@ -89,8 +91,13 @@ public:
     large_cloud->points.reserve(in_cloud->points.size() / 3);
     sampled_cloud->points.reserve(in_cloud->points.size());
 
+    const float depth_scale =
+        static_cast<float>(this->get_parameter("depth_scale").as_double());
     for(size_t i = 0; i < in_cloud->points.size(); i += simplificator_factor){
-      const auto& pt = in_cloud->points[i];
+      auto pt = in_cloud->points[i];
+      pt.x *= depth_scale;
+      pt.y *= depth_scale;
+      pt.z *= depth_scale;
       float sq_radius = (pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
       if(sq_radius < sqr_small_rad) small_cloud->points.push_back(pt); 
       else if(sq_radius < sqr_med_rad) medium_cloud->points.push_back(pt);

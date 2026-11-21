@@ -18,6 +18,24 @@ from frida_constants.manipulation_constants import (
 )
 
 PYMOVEIT_FUTURE_TIMEOUT = 3
+RATE_MAX_PERIOD = 0.01
+CARTESIAN_MAX_STEP = 0.005  # m between the IK waypoints of a straight-line plan
+CARTESIAN_MIN_FRACTION = 0.8
+CARTESIAN_REVOLUTE_JUMP = 0.5  # rad between waypoints; more is an IK branch flip
+
+
+class _ThreadRate:
+    """Drop-in for rclpy Rate that sleeps the calling thread instead of adding an executor timer."""
+
+    def __init__(self, frequency: float, clock=None):
+        # Polls at least every 10 ms: pymoveit2's 10 Hz future polling added up to 100 ms per plan/FK/IK
+        self._period = min(1.0 / frequency, RATE_MAX_PERIOD)
+
+    def sleep(self) -> None:
+        time.sleep(self._period)
+
+    def destroy(self) -> None:
+        pass
 
 
 # A class to handle planning with MoveIt
@@ -33,6 +51,8 @@ class MoveItPlanner(Planner):
     ):
         # Create callback group
         self.node = node
+        # pymoveit2 Rates are executor timers (1 kHz at init, a leaked 10 Hz one per plan/FK/IK), so use thread sleeps
+        self.node.create_rate = _ThreadRate
         # Create MoveIt 2 interface
         self.moveit2 = MoveIt2(
             node=node,
@@ -42,6 +62,9 @@ class MoveItPlanner(Planner):
             group_name=xarm6.MOVE_GROUP_ARM,
             callback_group=callback_group,
         )
+        # pymoveit2 checks hasattr(self, "__compute_fk_client") without name mangling, so it made a new FK client per call
+        self.moveit2._MoveIt2__init_compute_fk()
+        setattr(self.moveit2, "__compute_fk_client", True)
         self.joint_states_topic = "/joint_states"
         # create listener
         self.joint_states_sub = self.node.create_subscription(
@@ -72,6 +95,9 @@ class MoveItPlanner(Planner):
         self.moveit2.max_velocity = max_velocity
         self.moveit2.max_acceleration = max_acceleration
         self.moveit2.planner_id = planner_id
+        # KDL restarts from random seeds near a singularity; this cuts the path there.
+        self.moveit2.cartesian_revolute_jump_threshold = CARTESIAN_REVOLUTE_JUMP
+        self.moveit2.cartesian_avoid_collisions = True  # the request defaults to False
 
     def set_velocity(self, velocity: float) -> None:
         self.moveit2.max_velocity = velocity
@@ -203,8 +229,8 @@ class MoveItPlanner(Planner):
         tolerance_orientation: float = 0.05,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
-        cartesian_max_step: float = 0.05,
-        cartesian_fraction_threshold: float = 0.8,
+        cartesian_max_step: float = CARTESIAN_MAX_STEP,
+        cartesian_fraction_threshold: float = CARTESIAN_MIN_FRACTION,
     ) -> Union[bool, Future]:
         return self.moveit2.plan(
             position=[pose.pose.position.x, pose.pose.position.y, pose.pose.position.z],

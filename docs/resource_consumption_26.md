@@ -20,7 +20,7 @@ Approximate CPU, GPU, VRAM, RAM, energy footprint per software area, based on a 
 
 ## Vision
 
-**Packages:** `object_detector_2d`, `vision_general`, `moondream_run`
+**Packages:** `object_detector_2d`, `vision_general`, `vlm_run`
 
 | Component                  | Model                                  | Footprint                                                 | Notes                                                                      |
 | -------------------------- | -------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------- |

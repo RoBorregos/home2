@@ -37,7 +37,6 @@ URL_MODELS = {
 # Custom weights that cannot be downloaded — verify presence, warn if missing.
 CUSTOM_MODELS = [
     "tmr2026.pt",
-    "tmr2025.pt",
     "dishwasher_layout.pt",
     "dishwasher_rack.pt",
     "dishwasher_tablet.pt",

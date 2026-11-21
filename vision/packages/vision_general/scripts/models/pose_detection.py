@@ -147,6 +147,30 @@ class PoseDetection:
             return None, None
         return people[0]["keypoints"], people[0]["kp_conf"]
 
+    def gesture_side(self, image, gesture: str):
+        """Return the person's own side used for a raising or pointing gesture, or None."""
+        points, conf = self._get_keypoints(image)
+        if points is None:
+            return None
+        arms = {
+            side: (shoulder, wrist)
+            for side, shoulder, wrist in (
+                ("left", LEFT_SHOULDER, LEFT_WRIST),
+                ("right", RIGHT_SHOULDER, RIGHT_WRIST),
+            )
+            if conf[shoulder] >= KP_CONF and conf[wrist] >= KP_CONF
+        }
+        if not arms:
+            return None
+        if gesture == "raising":
+            # Image y grows downwards, so the raised wrist is the one highest above its shoulder
+            return min(
+                arms, key=lambda s: points[arms[s][1]][1] - points[arms[s][0]][1]
+            )
+        return max(
+            arms, key=lambda s: abs(points[arms[s][1]][0] - points[arms[s][0]][0])
+        )
+
     # ── Geometry helpers ──
 
     def get_angle(self, p1, p2, p3):

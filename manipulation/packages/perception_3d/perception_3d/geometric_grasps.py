@@ -28,6 +28,7 @@ from frida_constants.manipulation_constants import (
     RIM_NAMES,
     TOP_GRASP_DEPTH,
     TRASH_BIN_NAME,
+    ZED_DEPTH_SCALE,
 )
 
 GRASP_CLASS_OBJECTS = {
@@ -166,6 +167,7 @@ class Scene:
 
     def deproject(self, u, v, z) -> np.ndarray:
         u, v, z = map(np.atleast_1d, (u, v, z))
+        z = z * ZED_DEPTH_SCALE
         k = self.intrinsics
         cam = np.column_stack(
             ((u - k.cx) * z / k.fx, (v - k.cy) * z / k.fy, z, np.ones_like(z))
@@ -511,6 +513,16 @@ def pad_contact(center, normal, extent, bottom, span, tip, rotation) -> np.ndarr
     return section[on_pads]
 
 
+def behind_near_limb(
+    xy: np.ndarray, center: np.ndarray, camera: np.ndarray, radius: float
+) -> np.ndarray:
+    """Sphere centre: one radius behind the near limb (the far limb is trimmed)."""
+    ahead = center - camera[:2]
+    direction = ahead / max(np.linalg.norm(ahead), 1e-6)
+    near = np.percentile((xy - camera[:2]) @ direction, 1)
+    return center + direction * (near + radius - ahead @ direction)
+
+
 def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     """Rank grasps on a segmented solid of the given class; returns (fit, grasps)."""
     support_z, points, obstacles = segmented
@@ -518,6 +530,10 @@ def solid(scene: Scene, grasp_class: str, segmented: tuple) -> tuple:
     top_z = np.percentile(points[:, 2], SOLID_TOP_PERCENTILE)
     center, short_axis, long_axis, short, long = fit_box(points)
     require(np.linalg.norm(center) > 1e-6, "object at the robot origin")
+    if grasp_class == GRASP_CLASS_ROUND:
+        center = behind_near_limb(
+            points[:, :2], center, scene.cam_to_base[:3, 3], (top_z - support_z) / 2
+        )
     away = center / np.linalg.norm(center)
     middle = np.array([*center, (support_z + top_z) / 2])
     top_tip_z = max(top_z - TOP_GRASP_DEPTH, support_z + TABLE_CLEARANCE)
@@ -688,3 +704,70 @@ def grasp_for(scene: Scene, grasp_class: str) -> tuple:
     recipe = RECIPES.get(grasp_class)
     require(recipe is not None, f"no grasp recipe for '{grasp_class}'")
     return recipe(scene)
+
+
+# ======================================================================
+# Shelf
+# ======================================================================
+
+# A shelf object is clustered inside its compartment, this far inside its boards.
+SHELF_BAND_MARGIN = 0.01
+SHELF_BAND_DOWN_TOLERANCE = 0.05  # a detection point may sit this far under its board
+
+
+def compartment_band(z: float, levels) -> tuple | None:
+    """(min_z, max_z) of the compartment at ``z`` from (height, thickness) boards; 0 on top."""
+    ordered = sorted(levels)
+    below = [lv for lv in ordered if lv[0] - SHELF_BAND_DOWN_TOLERANCE <= z]
+    if not below:
+        return None
+    floor = below[-1]
+    above = [lv for lv in ordered if lv[0] > floor[0]]
+    ceiling = (above[0][0] - above[0][1] - SHELF_BAND_MARGIN) if above else 0.0
+    return floor[0] + SHELF_BAND_MARGIN, ceiling
+
+
+def shelf_frontal_grasps(points: np.ndarray, band, tuning) -> list:
+    """(tip, quaternion xyzw) frontal grasps for a z-up cluster in compartment ``band``.
+
+    Tip just past the object's middle at mid height, approach +x tilted down, closing
+    across y; ordered by height then pitch, empty when the object does not fit.
+    ``band``'s max_z is 0 with nothing above; ``tuning`` is pick_profiles.yaml's shelf.
+    """
+    if points is None or len(points) < 10 or band is None:
+        return []
+    x, y, z = points[:, 0], points[:, 1], points[:, 2]
+    width = float(np.percentile(y, 95) - np.percentile(y, 5))
+    if width > GRIPPER_MAX_APERTURE - tuning.width_margin:
+        return []
+    front = float(np.percentile(x, 5))
+    half_depth = float(
+        np.clip((np.percentile(x, 95) - front) / 2, 0.015, tuning.max_half_depth)
+    )
+    board = band[0] - SHELF_BAND_MARGIN
+    top = float(np.percentile(z, 95))
+    lowest = board + tuning.board_clearance
+    highest = top - tuning.top_margin
+    if band[1]:
+        highest = min(highest, band[1] + SHELF_BAND_MARGIN - tuning.ceiling_clearance)
+    if highest < lowest:
+        return []
+    middle = (board + top) / 2
+    heights = []
+    for step in tuning.z_steps:
+        h = float(np.clip(middle + step, lowest, highest))
+        if all(abs(h - other) > 0.01 for other in heights):
+            heights.append(h)
+
+    pitches = tuning.pitches
+    if not band[1]:  # nothing above: steeper approaches cannot hit a ceiling
+        pitches = pitches + tuning.open_top_pitches
+    tip_x = front + half_depth + tuning.past_center
+    return [
+        (
+            np.array([tip_x, float(np.median(y)), h]),
+            Rotation.from_euler("y", 90 + pitch, degrees=True).as_quat(),
+        )
+        for h in heights
+        for pitch in pitches
+    ]

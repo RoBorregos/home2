@@ -54,6 +54,8 @@ XARM_SETSTATE_SERVICE = "/xarm/set_state"
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 
 TIMEOUT = 5.0
+SHELF_PICK_TIMEOUT = 150.0
+SHELF_SCAN_TIMEOUT = 60.0
 
 RAD_TO_DEG = 180 / 3.14159265359
 DEG_TO_RAD = 3.14159265359 / 180
@@ -121,6 +123,8 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
+        # Level of the last shelf pick (1 = lowest), from the action result.
+        self.last_shelf_level = 0
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -298,9 +302,13 @@ class ManipulationTasks:
             Logger.error(self.node, "Joint goal was rejected")
             return False
 
-        # Get result
+        # A move that never finishes leaves the future empty: report a failure, do not raise.
         result_future = goal_handle.get_result_async()
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        if not result_future.done() or result_future.result() is None:
+            Logger.error(self.node, "Joint goal did not finish within 60s")
+            goal_handle.cancel_goal_async()
+            return False
 
         result = result_future.result().result
         if not result.success:
@@ -343,18 +351,29 @@ class ManipulationTasks:
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
     def pick_object(
-        self, object_name: str, in_configuration: bool = False, scan_environment: bool = False
+        self,
+        object_name: str,
+        in_configuration: bool = False,
+        scan_environment: bool = False,
+        from_shelf: bool = False,
+        shelf_level: int = 0,
     ):
         """Pick an object by name
         object_name: name of the object to pick
         in_configuration: True if the object is in the configuration
-        scan_environment: True to scan environment before picking (useful for shelf picks)"""
+        scan_environment: True to keep the octomap
+        from_shelf: pick from the shelf of the last scan_shelf(); manipulation finds the
+            level, faces it and backs out. last_shelf_level is then the level picked from.
+        shelf_level: with from_shelf, the level to look on first (1 = lowest), 0 = find it"""
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
         goal_msg.pick_params.object_name = object_name
         goal_msg.pick_params.in_configuration = in_configuration
+        goal_msg.pick_params.from_shelf = from_shelf
+        goal_msg.pick_params.shelf_level = shelf_level
         goal_msg.scan_environment = scan_environment
+        self.last_shelf_level = 0
 
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
@@ -364,15 +383,17 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
 
         Logger.info(self.node, f"Pick request for {object_name} sent")
-        # wait for result
+        # A successful shelf pick took ~65 s in the sim; 60 s cancelled it holding the object.
+        pick_timeout = SHELF_PICK_TIMEOUT if from_shelf else 60.0
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=pick_timeout)
         if not result_future.done():
-            Logger.error(self.node, "Action timed out after 60s")
+            Logger.error(self.node, f"Action timed out after {pick_timeout:.0f}s")
             future.result().cancel_goal_async()
             return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Pick result: {result}")
+        self.last_shelf_level = result.shelf_level
         if result.success:
             Logger.success(self.node, f"Pick request for {object_name} successful")
         else:
@@ -549,14 +570,13 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
-    def place_on_shelf(self, plane_height: int, tolerance: int):
-        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
-        #     Logger.error(self.node, "Manipulation action server not available")
-        #     return Status.EXECUTION_ERROR
-
+    def place_on_shelf(self, plane_height: float = None, tolerance: float = None, level: int = 0):
+        """Place on a shelf: ``level`` of the last scan_shelf() (1 = lowest), which
+        manipulation faces itself; or, without a level, the plane at ``plane_height``."""
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
         goal_msg.place_params.is_shelf = True
+        goal_msg.place_params.shelf_level = level
         goal_msg.scan_environment = True
         if plane_height is not None and tolerance is not None:
             goal_msg.place_params.table_height = plane_height
@@ -567,11 +587,9 @@ class ManipulationTasks:
             Logger.error(self.node, "Failed to send place request")
             return Status.EXECUTION_ERROR
         Logger.info(self.node, "Place in shelf request sent")
-        # wait for result — place on shelf can take 60-120s because of multiple
-        # pre-place + full + halfway attempts with OMPL planning. A 60s timeout
-        # here was causing the client to give up while the server was still
-        # executing the place, leaving the FSM in a bad state (object already
-        # dropped in shelf but task_manager thought it failed and retried).
+        # Facing the level and the place rungs (each 2 cm higher) can take over 60 s.
+        # Giving up earlier left the object on the shelf while the task manager
+        # thought the place failed and retried.
         SHELF_PLACE_TIMEOUT = 180.0
         result_future = future.result().get_result_async()
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=SHELF_PLACE_TIMEOUT)
@@ -802,6 +820,41 @@ class ManipulationTasks:
             return Status.EXECUTION_SUCCESS
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
+
+    @mockable(
+        return_value=lambda self: (
+            Status.EXECUTION_SUCCESS,
+            [(0.39, []), (0.68, ["cereal_box"]), (1.05, [])],
+        )
+    )
+    @service_check(
+        client="_manipulation_action_client",
+        return_value=(Status.SERVICE_CHECK, []),
+        timeout=TIMEOUT,
+    )
+    def scan_shelf(self) -> tuple[int, list[tuple[float, list[str]]]]:
+        """Manipulation surveys the shelf in front: (status, [(board height, objects seen
+        on it)], lowest first). Picks and places on that shelf use its level numbers."""
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.SCAN_SHELF
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None or not future.result().accepted:
+            Logger.error(self.node, "Failed to send the shelf scan")
+            return Status.EXECUTION_ERROR, []
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=SHELF_SCAN_TIMEOUT)
+        if not result_future.done():
+            Logger.error(self.node, f"Shelf scan timed out after {SHELF_SCAN_TIMEOUT:.0f}s")
+            future.result().cancel_goal_async()
+            return Status.EXECUTION_ERROR, []
+        result = result_future.result().result
+        if not result.success:
+            Logger.error(self.node, "Shelf scan failed")
+            return Status.EXECUTION_ERROR, []
+        levels = [(float(lv.height), list(lv.objects)) for lv in result.shelf_levels]
+        Logger.success(self.node, f"Shelf levels: {[(round(h, 3), o) for h, o in levels]}")
+        return Status.EXECUTION_SUCCESS, levels
 
     @mockable(return_value=lambda self: PoseStamped())
     def get_optimal_pose_for_plane(
