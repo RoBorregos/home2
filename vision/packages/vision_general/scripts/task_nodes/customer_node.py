@@ -89,7 +89,7 @@ class CustomerNode(VisionRuntime):
         self.output_image = []
         self.customer_image = []
 
-        self.pose_detection = PoseDetection()
+        self.pose_detection = PoseDetection(self, self.callback_group)
 
         self.create_timer(0.1, self.publish_image)
         self.get_logger().info("Customer Node Ready")
