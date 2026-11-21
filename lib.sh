@@ -357,7 +357,8 @@ ensure_roudi() {
 # HOME2_X_SESSION_BUS (empty when not known). Returns 1 if none was found.
 #
 # Order:
-#   0. HOME2_DISPLAY env var (manual override, e.g. HOME2_DISPLAY=:10.0 for xrdp)
+#   0. HOME2_DISPLAY env var (manual override, e.g. HOME2_DISPLAY=:10.0)
+#   0b. The xrdp (Remmina/RDP) session the command was launched from
 #   1. Our own GNOME session on the monitor (skips xrdp sessions)
 #   2. GDM login screen's X server, when nobody is logged in on the monitor
 #   3. The shell's DISPLAY, if that X server actually exists (xrdp / ssh -X)
@@ -375,6 +376,22 @@ resolve_physical_display() {
     HOME2_X_DISPLAY="$HOME2_DISPLAY"
     HOME2_X_AUTH="${XAUTHORITY:-$HOME/.Xauthority}"
     return 0
+  fi
+
+  # 0b. Launched from a terminal inside an xrdp (Remmina/RDP) session: show
+  #     GUIs there. DISPLAY can't be trusted (~/.bashrc overrides it), but
+  #     xrdp's own variables carry the display number (..._socket_<N>).
+  if [ -n "${XRDP_SESSION:-}" ]; then
+    local xrdp_num="${XRDP_PULSE_SINK_SOCKET##*_}"
+    case "$xrdp_num" in ''|*[!0-9]*)
+      xrdp_num=$(ps -u "$uid" -o args= | sed -n 's|^[^ ]*Xorg :\([0-9][0-9]*\) .*xrdp.*|\1|p' | head -n 1) ;;
+    esac
+    auth="$HOME/.Xauthority"
+    if [ -n "$xrdp_num" ] && DISPLAY=":$xrdp_num" XAUTHORITY="$auth" xset q >/dev/null 2>&1; then
+      HOME2_X_DISPLAY=":$xrdp_num"
+      HOME2_X_AUTH="$auth"
+      return 0
+    fi
   fi
 
   # 1. Desktop session on the monitor. GDM keeps its Xauthority under
