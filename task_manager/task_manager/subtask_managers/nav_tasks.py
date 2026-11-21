@@ -121,6 +121,15 @@ class NavigationTasks:
                 },
                 "plan_patrol_srv": {"client": self.plan_patrol_srv, "type": "service"},
             },
+            Task.FINALS: {
+                "plan_patrol_srv": {"client": self.plan_patrol_srv, "type": "service"},
+                "get_area_for_point_srv": {
+                    "client": self.get_area_for_point_srv,
+                    "type": "service",
+                },
+                "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
+                "approach_point_srv": {"client": self.approach_point_srv, "type": "service"},
+            },
             Task.RESTAURANT: {
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
                 "get_robot_pose_srv": {"client": self.get_robot_pose_srv, "type": "service"},

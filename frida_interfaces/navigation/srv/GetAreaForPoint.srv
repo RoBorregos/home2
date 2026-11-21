@@ -9,6 +9,6 @@ float32 max_sublocation_distance   # meters; <= 0 uses the default (1.5)
 bool success
 string area                        # "" when the point is in no area polygon
 string[] sublocations              # names in `area`, sorted by XY distance
-float32[] distances                # meters, same order as sublocations
+float32[] distances                # meters to the furniture, same order as sublocations
 bool in_house                      # inside ANY area polygon
 string error

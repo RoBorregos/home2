@@ -18,7 +18,7 @@ services:
       - ./install:/workspace/install
       - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
       - ./log:/workspace/log
-      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
+      - ${XAUTHORITY_HOST:-$HOME/.Xauthority}:/home/ros/.Xauthority:rw
       - /run/jtop.sock:/run/jtop.sock
 
     network_mode: host
@@ -35,6 +35,7 @@ services:
       - dialout
     environment:
       DISPLAY: ${DISPLAY:-:0}
+      XAUTHORITY: /home/ros/.Xauthority
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1

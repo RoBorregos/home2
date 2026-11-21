@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import math
 
+from .viewpoints import DEFAULT_PROBE_DISTANCE
+
 # Not sublocations
 NON_SUBLOCATION_KEYS = ("polygon", "safe_place")
 DEFAULT_SUBLOCATION_DISTANCE = 1.5
@@ -41,6 +43,15 @@ def areas_containing(areas_data: dict, x: float, y: float) -> list[str]:
     return hits
 
 
+def _furniture_position(pose) -> tuple[float, float]:
+    """Where the furniture of a tagged pose is; the pose itself if it has no heading."""
+    x, y = float(pose[0]), float(pose[1])
+    if len(pose) < 7:
+        return x, y
+    yaw = 2.0 * math.atan2(float(pose[5]), float(pose[6]))
+    return x + DEFAULT_PROBE_DISTANCE * math.cos(yaw), y + DEFAULT_PROBE_DISTANCE * math.sin(yaw)
+
+
 def nearest_sublocations(
     areas_data: dict,
     area: str,
@@ -48,7 +59,11 @@ def nearest_sublocations(
     y: float,
     max_distance: float = DEFAULT_SUBLOCATION_DISTANCE,
 ) -> tuple[list[str], list[float]]:
-    """(names, distances) of `area`'s sublocations, nearest first, within range."""
+    """(names, distances) of `area`'s sublocations, nearest first, within range.
+
+    Distances are to the furniture, not to the tagged pose: that pose is where the
+    robot stands, about one standoff in front of it.
+    """
     ranked = []
     for name, pose in (areas_data or {}).get(area, {}).items():
         if name in NON_SUBLOCATION_KEYS:
@@ -56,7 +71,8 @@ def nearest_sublocations(
         if not isinstance(pose, (list, tuple)) or len(pose) < 2:
             continue
         try:
-            distance = math.hypot(float(pose[0]) - x, float(pose[1]) - y)
+            furniture_x, furniture_y = _furniture_position(pose)
+            distance = math.hypot(furniture_x - x, furniture_y - y)
         except (TypeError, ValueError):
             continue
         if distance <= max_distance:
