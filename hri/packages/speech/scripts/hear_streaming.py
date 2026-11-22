@@ -242,11 +242,14 @@ class HearStreaming(Node):
 
         self.record_subscribed(self.hotwords, self.initial_prompt)
 
+        # A long silence_time means a keyword listen: it must not end because the VAD saw a voice
+        # (e.g. the robot's own) stop, or an interrupt said right after would be lost.
+        vad_stop = goal_handle.request.silence_time < 5.0
         try:
             while (
                 not goal_handle.is_cancel_requested
                 and not self.cancel_requested
-                and not self._speaker_stopped
+                and not (self._speaker_stopped and vad_stop)
                 and time.time() - start_time < goal_handle.request.timeout
                 and (
                     (
@@ -278,7 +281,7 @@ class HearStreaming(Node):
         except Exception as e:
             self.get_logger().error(f"Execution interrupted: {e}")
 
-        if self._speaker_stopped:
+        if self._speaker_stopped and vad_stop:
             self.get_logger().info("Speaker stopped talking, stopping transcription.")
             reason = "silence"
         elif time.time() - last_word_time >= goal_handle.request.silence_time:

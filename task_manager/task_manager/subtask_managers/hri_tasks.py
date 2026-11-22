@@ -769,12 +769,17 @@ class HRITasks:
         Returns:
             bool: True to proceed (timeout), False if the user said an interrupt keyword.
         """
-        # Nothing listens while the announcement is spoken: the mic also hears the robot's voice.
-        self.say(f"{intent} Say stop to cancel.")
+        # Transcribe from the moment the announcement starts, so a "stop" during it is caught too.
+        # The cue must not contain an interrupt keyword: the mic also hears the robot's own voice.
+        hotwords = ", ".join(interrupt_keywords)
+        self.current_transcription = ""  # drop text left over from the previous listen
+        accepted = self.hear_streaming(
+            timeout=60.0, silence_time=60.0, play_chime=False, hotwords=hotwords
+        )
+        self.say(f"{intent} Interrupt me if that is wrong.")
 
         # Each number is spoken and shown on its tick (log + display overlay); the timer fires
         # while interpret_keyword spins the node.
-        self.current_transcription = ""  # drop text left over from the previous listen
         ticks = iter(range(seconds, 0, -1))
 
         def tick():
@@ -793,7 +798,8 @@ class HRITasks:
             list(interrupt_keywords),
             timeout=seconds * tick_seconds + 2,
             play_chime=False,
-            hotwords=", ".join(interrupt_keywords),
+            hotwords=hotwords,
+            accepted=accepted,
         )
         self.node.destroy_timer(timer)
         return s != Status.EXECUTION_SUCCESS
@@ -1078,21 +1084,24 @@ class HRITasks:
         timeout: float,
         play_chime: bool = True,
         hotwords: str = "",
+        accepted=None,
     ) -> str:
         """Listen until one of `keywords` is heard or `timeout` passes.
 
         Args:
             hotwords: bias for the STT (e.g. the keywords themselves); empty keeps the default.
+            accepted: goal future of a `hear_streaming` the caller already started, so speech from
+                before this call still counts; None starts a fresh listen.
         """
-        self.cancel_hear_action()
-
-        accepted = self.hear_streaming(
-            timeout=timeout, silence_time=timeout, play_chime=play_chime, hotwords=hotwords
-        )
+        if accepted is None:
+            self.cancel_hear_action()
+            accepted = self.hear_streaming(
+                timeout=timeout, silence_time=timeout, play_chime=play_chime, hotwords=hotwords
+            )
+            self.keyword = ""
         result_future = None
 
         start_time = self.node.get_clock().now()
-        self.keyword = ""
 
         Logger.info(
             self.node,
