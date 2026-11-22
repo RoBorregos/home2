@@ -45,6 +45,7 @@ else
     SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $SOURCE"
 fi
 
+INTERACTIVE=""
 case $TASK in
     "--hric")
         RUN="ros2 run task_manager hric_task_manager.py"
@@ -73,6 +74,11 @@ case $TASK in
     "--demo-becas")
         RUN="ros2 run task_manager demo_becas.py"
         ;;
+    "--demo-roborregosday")
+        RUN="ros2 run task_manager demo_roborregosday.py"
+        # Reads operator commands from the terminal, so it needs an attached stdin
+        INTERACTIVE="true"
+        ;;
     *)
         RUN="bash"
         ;;
@@ -99,7 +105,7 @@ if [ "$UPLOAD_IMAGE" == "true" ]; then
   ensure_and_upload_image "roborregos/home2:integration-${ENV_TYPE}" "docker-compose.yml"
 fi
 
-if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
+if { [ "$RUN" = "bash" ] || [ -n "$INTERACTIVE" ]; } && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="integration")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
         docker compose up -d $BUILD_IMAGE

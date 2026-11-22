@@ -1,7 +1,7 @@
 import copy
 from geometry_msgs.msg import PointStamped, PoseStamped
 from frida_interfaces.srv import GraspDetection
-from frida_constants.manipulation_constants import PICK_VELOCITY
+from frida_constants.manipulation_constants import PICK_ACCELERATION, PICK_VELOCITY
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_motion_planning.utils.service_utils import move_joint_positions
 from frida_pymoveit2.robots.xarm6 import joint_names as xarm6_joint_names
@@ -54,6 +54,7 @@ def move_to_pregrasp_nearest_ik(
     velocity: float = PICK_VELOCITY,
     fallback_move_to_pose=None,
     logger=None,
+    acceleration: float = PICK_ACCELERATION,
 ) -> bool:
     """
     Move to a pre-grasp pose planning in joint space toward the IK solution
@@ -110,6 +111,7 @@ def move_to_pregrasp_nearest_ik(
                     move_joints_action_client,
                     joint_positions={"joints": joints, "degrees": False},
                     velocity=velocity,
+                    acceleration=acceleration,
                     wait=True,
                 )
             )

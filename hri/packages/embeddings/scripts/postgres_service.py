@@ -130,41 +130,6 @@ class PostgresService(Node):
                     for r in results
                 ]
 
-            elif collection == "hand_items":
-                rows_by_name, rows_by_description = self.pg.get_hand_items(query)
-                response.results = [
-                    json.dumps(
-                        [
-                            {
-                                "id": r.id,
-                                "name": r.name,
-                                "description": r.description,
-                                "x_loc": r.x_loc,
-                                "y_loc": r.y_loc,
-                                "m_loc_x": r.m_loc_x,
-                                "m_loc_y": r.m_loc_y,
-                                "color": r.color,
-                            }
-                            for r in rows_by_name
-                        ]
-                    ),
-                    json.dumps(
-                        [
-                            {
-                                "id": r.id,
-                                "name": r.name,
-                                "description": r.description,
-                                "x_loc": r.x_loc,
-                                "y_loc": r.y_loc,
-                                "m_loc_x": r.m_loc_x,
-                                "m_loc_y": r.m_loc_y,
-                                "color": r.color,
-                            }
-                            for r in rows_by_description
-                        ]
-                    ),
-                ]
-
             response.success = True
             response.message = f"Query on '{collection}' successful"
         except Exception as e:

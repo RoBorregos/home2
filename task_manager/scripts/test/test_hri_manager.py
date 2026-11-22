@@ -24,7 +24,7 @@ from _merger_helpers import (
     make_distance,
     make_locator,
 )
-from task_manager.subtask_managers.hri_tasks import HRITasks
+from task_manager.subtask_managers.hri_tasks import HRITasks, format_transcription, match_hotwords
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
@@ -91,10 +91,10 @@ TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
-TEST_MAP = False
 TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
+TEST_CONFIRM = False
 TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
@@ -105,6 +105,10 @@ TEST_MERGER = False
 TEST_FALLBACK_RESUME = False
 TEST_MERGED_PLAN_SPEECH = False
 TEST_DOOR = False
+TEST_EXTRACT_DATA_LIVE = False
+
+EXTRACT_DATA_LIVE_ROUNDS = 3
+HOT_DRINKS = "fanta, water, lipton, coca-cola, soda, lemonade, pepsi, orange juice, milk, sidral mundet, iced tea, coke, red bull, soju"
 
 MERGED_PLAN_SPEECH_CASES = [
     {
@@ -239,9 +243,6 @@ class TestHriManager(Node):
         if TEST_STREAMING:
             self.test_streaming()
 
-        if TEST_MAP:
-            self.test_map()
-
         if TEST_OBJECT_LOCATION:
             self.test_object_location()
 
@@ -250,6 +251,9 @@ class TestHriManager(Node):
 
         if TEST_IS_NEGATIVE:
             self.test_is_negative()
+
+        if TEST_CONFIRM:
+            self.test_confirm()
 
         if TEST_DATA_EXTRACTOR:
             self.test_data_extractor()
@@ -280,6 +284,9 @@ class TestHriManager(Node):
 
         if TEST_DOOR:
             self.test_door()
+
+        if TEST_EXTRACT_DATA_LIVE:
+            self.test_extract_data_live()
 
         exit(0)
 
@@ -379,6 +386,56 @@ class TestHriManager(Node):
         if word_confidences:
             avg_confidence = sum(word_confidences.values()) / len(word_confidences)
             self.get_logger().info(f"Average confidence: {avg_confidence:.4f}")
+
+    def test_extract_data_live(self):
+        """Spoken answers through hear -> hotword match -> extract_data, timed against LLM-only."""
+        cases = [
+            ("What is your name?", "name", self.hri_manager.names_hotwords),
+            ("What is your favorite drink?", "LLM_drink", HOT_DRINKS),
+        ]
+        rows = []
+        for question, query, hotwords in cases:
+            context = f"The question '{question}' was asked, full_text corresponds to the response."
+            for _ in range(EXTRACT_DATA_LIVE_ROUNDS):
+                self.hri_manager.say(question, wait=True)
+                s, text, _ = self.hri_manager.hear(
+                    hotwords=hotwords, initial_prompt=f"The question '{question}' was asked"
+                )
+                if s != Status.EXECUTION_SUCCESS:
+                    self.get_logger().warn("No speech detected.")
+                    continue
+
+                t = time.perf_counter()
+                negated = (self.hri_manager.negation_words | {"dont", "never"}).intersection(
+                    format_transcription(text)
+                )
+                hotword = "" if negated else match_hotwords(text, hotwords)
+                t_hotword = time.perf_counter() - t
+
+                t = time.perf_counter()
+                _, extracted = self.hri_manager.extract_data(query, text, context)
+                t_extract = time.perf_counter() - t
+
+                llm_query = query if query.startswith("LLM_") else f"LLM_{query}"
+                t = time.perf_counter()
+                _, llm = self.hri_manager.extract_data(llm_query, text, context)
+                t_llm = time.perf_counter() - t
+
+                answer, t_used = (hotword, t_hotword) if hotword else (extracted, t_extract)
+                rows.append((t_used, t_llm))
+                self.get_logger().info(
+                    f"[{query}] heard={text!r} hotword={hotword!r} extract={extracted!r} "
+                    f"({1000 * t_extract:.0f} ms) llm={llm!r} ({1000 * t_llm:.0f} ms) "
+                    f"=> {answer!r} via {'hotword' if hotword else 'extract_data'} "
+                    f"in {1000 * t_used:.0f} ms"
+                )
+
+        if rows:
+            avg_used = 1000 * sum(r[0] for r in rows) / len(rows)
+            avg_llm = 1000 * sum(r[1] for r in rows) / len(rows)
+            self.get_logger().info(
+                f"Extract data live: {len(rows)} answers, avg {avg_used:.0f} ms vs {avg_llm:.0f} ms LLM only"
+            )
 
     def test_take_order(self):
         self.get_logger().info("Running take_order test")
@@ -515,24 +572,6 @@ class TestHriManager(Node):
         # Test original functionality
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
-
-    def test_map(self):
-        """
-        Test the map functionality of the HRITasks.
-        """
-        self.get_logger().info("Testing map functionality...")
-
-        # Show the map with a specific item
-        self.hri_manager.show_map(name="Phone")
-        time.sleep(5)
-
-        # Clear the map
-        self.hri_manager.show_map(clear_map=True)
-        time.sleep(2)
-
-        # Show the map again to verify it is cleared
-        self.hri_manager.show_map(name="Mug")
-        time.sleep(5)
 
     def test_object_location(self):
         object_name = "cheese"
@@ -713,6 +752,41 @@ class TestHriManager(Node):
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
         return cases
+
+    def test_confirm(self):
+        """Classify replies to "Did you say <target>?" (yes / no / new_word correction / none)."""
+        test_cases_file = os.path.join(DATA_DIR, "confirm.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"confirm_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        for i, (reply, target, expected, hotwords, *rest) in enumerate(test_cases, 1):
+            query = rest[0] if rest else "drink"
+            try:
+                answer = self.hri_manager._interpret_confirmation(
+                    reply, target, query, hotwords=hotwords
+                )
+                actual = {"yes": "yes", "no": "no", "": "none"}.get(answer, "new_word")
+            except Exception as e:
+                answer = actual = f"EXCEPTION: {e}"
+            success = actual == expected
+            passed_tests += success
+            log = self.get_logger().info if success else self.get_logger().error
+            log(f"Test case {i}: '{reply}' (target={target}) -> {answer}, expected {expected}")
+            results.append([i, reply, target, expected, answer, success])
+
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["test_number", "reply", "target", "expected", "actual", "success"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
 
     def test_data_extractor(self):
         test_cases_file = os.path.join(DATA_DIR, "data_extractor.json")

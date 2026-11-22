@@ -1,28 +1,29 @@
 #!/usr/bin/env python3
 
 """
-Demo RoborrEGOS Day - Joystick-driven waiter demo.
+Demo RoborrEGOS Day - Terminal-driven waiter demo.
 
 Flow (base does NOT move in this demo):
   1. GREET           – Frida introduces herself as the waiter and recites the menu.
   2. TAKE_ORDER      – Take the customer's order via hri.ask_and_confirm.
-  3. TURN_TO_PICK    – Arm turns 180° (table_stare); press X to confirm pick.
-  4. PICK_OBJECT     – Pick ordered item from the turned pose; return to table_stare.
-  5. WAIT_AFTER_PICK – Press Triangle to confirm and continue.
-  6. PLACE_OBJECT    – Place item (retries + deus ex machina fallback).
+  3. TURN_TO_PICK    – Arm moves to table_stare; press Enter to confirm pick.
+  4. PICK_OBJECT     – Pick ordered item from table_stare; return to table_stare.
+  5. WAIT_AFTER_PICK – Press Enter to confirm and continue.
+  6. PLACE_OBJECT    – Hand the item to the customer.
   7. FAREWELL        – "Enjoy your meal!"
 
-Controller button mapping (DualShock / DualSense):
-  Square   (0): Open gripper (manual override, works at any time)
-  Circle   (2): Close gripper (manual override, works at any time)
-  X        (1): Confirm "pick now" (arm already turned to the table)
-  Triangle (3): Confirm "continue" after the pick
-  L1       (4): Re-announce the current waiting instruction
+Terminal commands (type and press Enter):
+  o      : Open gripper (manual override, works at any time)
+  c      : Close gripper (manual override, works at any time)
+  Enter/y: Confirm the current waiting step (pick now / continue after pick)
+  r      : Re-announce the current waiting instruction
 """
+
+import sys
+import threading
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Joy
 
 from task_manager.utils.logger import Logger
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -30,7 +31,17 @@ from task_manager.utils.status import Status
 
 ATTEMPT_LIMIT = 3
 
-MENU_ITEMS = ["apple", "orange", "snack"]
+MENU_ITEMS = ["apple", "banana", "snack"]
+
+TERMINAL_COMMANDS = {
+    "o": "open_gripper",
+    "c": "close_gripper",
+    "": "confirm",
+    "y": "confirm",
+    "r": "re_announce",
+}
+
+HELP_TEXT = "Commands: [Enter/y] confirm  [o] open gripper  [c] close gripper  [r] re-announce"
 
 
 class DemoRoborregosDay(Node):
@@ -57,26 +68,19 @@ class DemoRoborregosDay(Node):
         self.current_state = DemoRoborregosDay.States.GREET
         self._state_announced = False  # track one-time announcement per state
 
-        self.create_subscription(Joy, "/joy", self._joy_callback, 1)
+        threading.Thread(target=self._read_terminal, daemon=True).start()
 
         Logger.info(self, "Demo RoborrEGOS Day ready!")
-        Logger.info(self, "  Square:   Open gripper (manual override)")
-        Logger.info(self, "  Circle:   Close gripper (manual override)")
-        Logger.info(self, "  X:        Confirm pick (arm already turned to table)")
-        Logger.info(self, "  Triangle: Confirm continue after pick")
-        Logger.info(self, "  L1:       Re-announce current waiting instruction")
+        Logger.info(self, HELP_TEXT)
 
-    def _joy_callback(self, msg: Joy):
-        if msg.buttons[0]:  # Square
-            self.last_command = "open_gripper"
-        elif msg.buttons[2]:  # Circle
-            self.last_command = "close_gripper"
-        elif msg.buttons[1]:  # X
-            self.last_command = "confirm_food_table"
-        elif msg.buttons[3]:  # Triangle
-            self.last_command = "confirm_customer_table"
-        elif msg.buttons[4]:  # L1
-            self.last_command = "re_announce"
+    def _read_terminal(self):
+        """Turn each typed line into a command for the FSM."""
+        for line in sys.stdin:
+            command = TERMINAL_COMMANDS.get(line.strip().lower())
+            if command is None:
+                print(HELP_TEXT, flush=True)
+            else:
+                self.last_command = command
 
     def _set_state(self, state: str):
         Logger.state(self, state)
@@ -236,7 +240,7 @@ class DemoRoborregosDay(Node):
             )
             if status == Status.EXECUTION_SUCCESS and item and item in MENU_ITEMS:
                 if item == "snack":
-                    item = "blue_cereal_box"
+                    item = "cornflakes"
                 self.current_item = item
                 Logger.success(self, f"Order received: {item}")
                 self.subtask_manager.hri.say(
@@ -252,16 +256,9 @@ class DemoRoborregosDay(Node):
 
         # ──────────────────── TURN_TO_PICK ─────────────────────────────
         elif self.current_state == DemoRoborregosDay.States.TURN_TO_PICK:
-            if not self._state_announced:
+            Logger.info(self, f"Press Enter to pick. {HELP_TEXT}")
+            if command == "confirm":
                 self.subtask_manager.manipulation.move_to_position("table_stare")
-                self.subtask_manager.hri.say(
-                    "I am scanning the table for your item.",
-                    wait=False,
-                )
-                self._state_announced = True
-                return
-
-            if command == "confirm_food_table":
                 Logger.success(self, "Pick confirmed. Proceeding to pick.")
                 self._set_state(DemoRoborregosDay.States.PICK_OBJECT)
             elif command == "re_announce":
@@ -270,9 +267,7 @@ class DemoRoborregosDay(Node):
         # ─────────────────────── PICK_OBJECT ───────────────────────────
         elif self.current_state == DemoRoborregosDay.States.PICK_OBJECT:
             status = self._pick_with_retry(self.current_item)
-            if status == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say("I have the item!")
-            else:
+            if not status == Status.EXECUTION_SUCCESS:
                 Logger.error(self, "Pick failed even with deus ex machina.")
                 self.subtask_manager.hri.say("I was unable to pick the item. I am sorry.")
             self.subtask_manager.manipulation.move_to_position("table_stare")
@@ -285,10 +280,11 @@ class DemoRoborregosDay(Node):
                     "I am heading to deliver your order.",
                     wait=False,
                 )
+                Logger.info(self, f"Press Enter to deliver. {HELP_TEXT}")
                 self._state_announced = True
                 return
 
-            if command == "confirm_customer_table":
+            if command == "confirm":
                 Logger.success(self, "Continue confirmed. Proceeding to place.")
                 self._set_state(DemoRoborregosDay.States.PLACE_OBJECT)
             elif command == "re_announce":
@@ -296,22 +292,22 @@ class DemoRoborregosDay(Node):
 
         # ──────────────────── PLACE_OBJECT ─────────────────────────────
         elif self.current_state == DemoRoborregosDay.States.PLACE_OBJECT:
-            self.subtask_manager.manipulation.move_to_position("take_object")
-            self.subtask_manager.hri.say(
-                f"Here is your {self.current_item}! Please take it from my hand."
-            )
-            _, confirmation = self.subtask_manager.hri.confirm(
-                "Have you taken the item?",
-                retries=3,
-                wait_between_retries=5,
-            )
-            self.subtask_manager.manipulation.open_gripper()
-            if confirmation == "yes":
-                Logger.success(self, "Item delivered successfully.")
-            else:
-                Logger.warn(self, "No confirmation received, continuing anyway.")
-            self._set_state(DemoRoborregosDay.States.FAREWELL)
+            if self.subtask_manager.manipulation.move_to_position("take_object"):
+                self.subtask_manager.hri.say(
+                    f"Here is your {self.current_item}! Please take it from my hand."
+                )
+                _, confirmation = self.subtask_manager.hri.confirm(
+                    "Have you taken the item?",
+                    retries=3,
+                    wait_between_retries=5,
+                )
 
+                self.subtask_manager.manipulation.open_gripper()
+                if confirmation == "yes":
+                    Logger.success(self, "Item delivered successfully.")
+                else:
+                    Logger.warn(self, "No confirmation received, continuing anyway.")
+                self._set_state(DemoRoborregosDay.States.FAREWELL)
         # ─────────────────────── FAREWELL ──────────────────────────────
         elif self.current_state == DemoRoborregosDay.States.FAREWELL:
             self.subtask_manager.hri.say(

@@ -240,6 +240,14 @@ def server(mode=Goal.FULL, *, paused=True):
     nav.pause_slam = Mock()
     nav.resume_nav2 = Mock(side_effect=lambda: setattr(nav, "nav2_paused", False))
     nav.pause_nav2 = Mock(side_effect=lambda: setattr(nav, "nav2_paused", True))
+    # nav_central's _set_paused(paused) pauses/resumes SLAM, then nav2
+    nav._set_paused = Mock(
+        side_effect=lambda paused: (
+            (nav.pause_slam(), nav.pause_nav2())
+            if paused
+            else (nav.resume_slam(), nav.resume_nav2())
+        )
+    )
     nav.get_robot_pose_callback = Mock(return_value=NS(success=True, pose=pose(10)))
     nav._compute_path = Mock(
         side_effect=lambda goal, start, *_: abs(goal.pose.position.x - start.pose.position.x)
