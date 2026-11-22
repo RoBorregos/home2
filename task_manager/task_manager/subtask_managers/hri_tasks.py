@@ -777,9 +777,6 @@ class HRITasks:
         ticks = iter(range(seconds, 0, -1))
 
         def tick():
-            if self._heard_words():  # user is talking: hold the count until it is read
-                Logger.info(self.node, "Countdown paused: processing what you said")
-                return
             n = next(ticks, None)
             if n is not None:
                 Logger.info(self.node, f"Countdown: {n}")
@@ -790,18 +787,15 @@ class HRITasks:
 
         tick()
         timer = self.node.create_timer(tick_seconds, tick)
-        # Whole count + 2 s, then up to 3 s grace: STT lags ~2 s behind speech
+        # Whole count + 2 s: STT lags ~2 s behind speech
         s, _ = self.interpret_keyword(
             list(interrupt_keywords),
             timeout=seconds * tick_seconds + 2,
             play_chime=False,
             hotwords=", ".join(interrupt_keywords),
-            grace=3.0,
         )
         self.node.destroy_timer(timer)
-        # Speech that is not a keyword (STT often turns "stop" into "up") is also an interrupt:
-        # when unsure, fall back to asking.
-        return s != Status.EXECUTION_SUCCESS and not self._heard_words()
+        return s != Status.EXECUTION_SUCCESS
 
     def _interpret_confirmation(
         self,
@@ -1083,20 +1077,16 @@ class HRITasks:
         timeout: float,
         play_chime: bool = True,
         hotwords: str = "",
-        grace: float = 0.0,
     ) -> str:
         """Listen until one of `keywords` is heard or `timeout` passes.
 
         Args:
             hotwords: bias for the STT (e.g. the keywords themselves); empty keeps the default.
-            grace: extra seconds past `timeout` while the STT is still transcribing something
-                that is not a keyword, so a late transcription is read before giving up.
         """
         self.cancel_hear_action()
 
-        listen_time = timeout + grace
         accepted = self.hear_streaming(
-            timeout=listen_time, silence_time=listen_time, play_chime=play_chime, hotwords=hotwords
+            timeout=timeout, silence_time=timeout, play_chime=play_chime, hotwords=hotwords
         )
         result_future = None
 
@@ -1111,20 +1101,14 @@ class HRITasks:
         while (
             self.keyword not in keywords
             and not contains_any(self._heard_words(), keywords)
-            and (
-                (elapsed := (self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
-                or (elapsed < listen_time and self._heard_words())
-            )
+            and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
         ):
             rclpy.spin_once(self.node, timeout_sec=0.1)
             if result_future is None and accepted.done() and accepted.result().accepted:
                 result_future = accepted.result().get_result_async()
             elif result_future is not None and result_future.done():
                 accepted = self.hear_streaming(
-                    timeout=listen_time,
-                    silence_time=listen_time,
-                    play_chime=False,
-                    hotwords=hotwords,
+                    timeout=timeout, silence_time=timeout, play_chime=False, hotwords=hotwords
                 )
                 result_future = None
 
