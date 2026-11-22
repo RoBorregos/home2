@@ -421,14 +421,26 @@ def footprint_astar(grid, start, goal, yaw, samples, ignore=None, step=None,
     return None
 
 
-def halfplane_ignore(point_on_face, normal, margin):
-    """Ignore cells on/behind a flat face: (p - face) . n > -margin."""
+def halfplane_ignore(point_on_face, normal, margin, p1=None, p2=None, extend=0.0):
+    """Ignore cells on/behind a flat face: (p - face) . n > -margin.
+
+    With the face's segment `p1`-`p2`, only along that segment (+ `extend` past
+    each end): something flush BESIDE the surface (a bin, the next cabinet) is
+    still an obstacle, instead of the whole infinite line being ignored."""
     p0 = np.asarray(point_on_face, dtype=float)
     n = np.asarray(normal, dtype=float)
     n = n / (np.linalg.norm(n) + 1e-12)
+    if p1 is None or p2 is None:
+        def fn(world):
+            return (world - p0) @ n > -margin
+        return fn
+    u = np.array([-n[1], n[0]])
+    t1, t2 = sorted((float((np.asarray(p1, dtype=float) - p0) @ u),
+                     float((np.asarray(p2, dtype=float) - p0) @ u)))
 
     def fn(world):
-        return (world - p0) @ n > -margin
+        t = (world - p0) @ u
+        return ((world - p0) @ n > -margin) & (t >= t1 - extend) & (t <= t2 + extend)
     return fn
 
 
@@ -447,7 +459,7 @@ def load_weights(data, key):
 
 
 def load_profiles(data):
-    """Parse the `profiles` mapping of approach_profiles.yaml."""
+    """Parse a profile mapping of approach_profiles.yaml (`surfaces` or `points`)."""
     out = {}
     for name, p in (data or {}).items():
         out[name] = ReachProfile(float(p["gap"]), float(p["gap_min"]),

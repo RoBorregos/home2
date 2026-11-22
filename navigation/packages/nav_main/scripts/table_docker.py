@@ -339,6 +339,10 @@ class TableDocker(Node):
         self.fuse_min_span = self.declare_parameter("fuse_min_span", 0.40).value
         # Cells within this distance of the docked face belong to the surface itself.
         self.face_ignore_margin = self.declare_parameter("face_ignore_margin", 0.06).value
+        # ...but only along the detected face, plus this much (m) past each end: a
+        # bin flush beside the table still counts. Above the base's half width +
+        # padding, so the surface's own unseen ends never block the docked pose.
+        self.face_ignore_extend = self.declare_parameter("face_ignore_extend", 0.40).value
         # Approach legs that cannot go straight (they skirt obstacles, often ones only
         # the docker remembers) are followed by the docker's own holonomic pursuit
         # instead of MPPI, which optimises against nav2's costmap and cuts corners.
@@ -1133,7 +1137,7 @@ class TableDocker(Node):
             # 2 cm gap steps: the bands are +-2 cm around the old stand-offs.
             cands = ap.line_face_candidates(face["p1"], face["p2"], n, self.front, self.half_width,
                                             profile, aim, gap_step=0.02)
-            ignore = ap.halfplane_ignore(face["centroid"], n, self.face_ignore_margin)
+            ignore = self._face_ignore()
         # Padded footprint: keep a margin from everything but the surface itself.
         valid, all_c = ap.rank(cands, profile, self.weights, grid, self._fp_samples_padded,
                                robot[:2], ignore)
@@ -1411,7 +1415,8 @@ class TableDocker(Node):
             return None
         if "center" in face:
             return ap.disc_ignore(face["center"], face["radius"], margin)
-        return ap.halfplane_ignore(face["centroid"], face["normal"], margin)
+        return ap.halfplane_ignore(face["centroid"], face["normal"], margin,
+                                   face["p1"], face["p2"], self.face_ignore_extend)
 
     def _path_free(self, path, grid, ignore):
         """Every pose of a nav_msgs/Path (any frame) keeps the footprint off lethal
@@ -1452,10 +1457,7 @@ class TableDocker(Node):
         goal = plan["pre"]
         with self._lock:
             face = self._face
-        if "center" in face:
-            ignore = ap.disc_ignore(face["center"], face["radius"], self.face_ignore_margin)
-        else:
-            ignore = ap.halfplane_ignore(face["centroid"], face["normal"], self.face_ignore_margin)
+        ignore = self._face_ignore()
         if self._straight_path_free(start, goal, self._fresh_grid(), ignore, self._fp_samples_path):
             path = Path()
             path.header.frame_id = self.odom_frame
@@ -2204,7 +2206,7 @@ class TableDocker(Node):
                 if math.hypot(x - face["center"][0], y - face["center"][1]) < face["radius"] + self.front:
                     return False, "straight line crosses the round table"
         else:
-            ignore = ap.halfplane_ignore(face["centroid"], face["normal"], self.face_ignore_margin)
+            ignore = self._face_ignore()
         if self._straight_path_free(start, goal, grid, ignore):
             return True, ""
         return False, "swept footprint hits an obstacle" + self._sweep_hits_txt(start, goal, grid, ignore)

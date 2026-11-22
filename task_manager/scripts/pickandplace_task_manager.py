@@ -410,21 +410,6 @@ class PickAndPlaceTM(Node):
             self.timeout(5.0)
             nav.dock_table(surface_type=surface, target=target, check_reach=True)
 
-    def _map_point(self, detection) -> PointStamped | None:
-        """Map-frame point of a detection, fixed now so it stays valid after the
-        robot moves (it is the docking target for that object)."""
-        try:
-            stamped_point = PointStamped()
-            stamped_point.header.frame_id = CAMERA_FRAME
-            stamped_point.header.stamp = rclpy.time.Time().to_msg()
-            stamped_point.point.x = float(detection.px)
-            stamped_point.point.y = float(detection.py)
-            stamped_point.point.z = float(detection.pz)
-            return self.tf_buffer.transform(stamped_point, "map", timeout=Duration(seconds=1.0))
-        except Exception as e:
-            CLog.vision(self, "TF", f"No map point for {detection.classname}: {e}", level="warn")
-            return None
-
     def _far_to_the_side(self, target: PointStamped | None) -> bool:
         """Whether `target` sits more than REDOCK_LATERAL to the side of the base."""
         if target is None:
@@ -441,8 +426,10 @@ class PickAndPlaceTM(Node):
         while (time.time() - start_time) < duration:
             rclpy.spin_once(self, timeout_sec=0.1)
 
-    def _detection_point(self, detection):
-        """base_link (x, y, z) of a detection's 3D point, or None on TF failure.
+    def _detection_point(self, detection, frame="base_link", stamped=False):
+        """(x, y, z) of a detection's 3D point in `frame` (base_link by default), or
+        None on TF failure. With `stamped`, the PointStamped itself: in "map" it
+        stays valid after the robot moves (PPC docks in front of it).
 
         Uses tf2 directly with a bounded timeout so the task manager never hangs
         if a transform is temporarily unavailable.
@@ -457,9 +444,11 @@ class PickAndPlaceTM(Node):
 
             transformed = self.tf_buffer.transform(
                 stamped_point,
-                "base_link",
+                frame,
                 timeout=Duration(seconds=1.0),
             )
+            if stamped:
+                return transformed
             return (transformed.point.x, transformed.point.y, transformed.point.z)
         except TransformException as e:
             CLog.vision(self, "TF", f"Transform failed: {e}", level="warn")
@@ -836,7 +825,7 @@ class PickAndPlaceTM(Node):
                         else self.categorize_object(obj_name)
                     )
                     obj = ObjectInfo(name=obj_name, category=category, bbox=bbox)
-                    obj.map_point = self._map_point(bbox)
+                    obj.map_point = self._detection_point(bbox, "map", stamped=True)
                     self.detected_objects.append(obj)
                 CLog.vision(
                     self,

@@ -289,7 +289,6 @@ class Nav_Central(Node):
             'footprint', '[[0.325, 0.25], [0.325, -0.25], [-0.325, -0.25], [-0.325, 0.25]]').value
         self._footprint = yaml.safe_load(fp_text)
         self._robot_front = ap.footprint_extent(self._footprint)[0]
-        self._fp_samples = ap.footprint_samples(self._footprint, 0.025)
         profiles_file = self.declare_parameter('approach_profiles', os.path.join(
             get_package_share_directory('nav_main'), 'config', 'approach_profiles.yaml')).value
         with open(profiles_file) as f:
@@ -1051,7 +1050,10 @@ class Nav_Central(Node):
             return response
         ok, msg = False, "no approach pose"
         for i, goal in enumerate(goals):
-            ok, msg = self.send_nav_goal(goal, max_attempts=2 if len(goals) > 1 else None)
+            # Fallbacks get 2 attempts each; the last candidate keeps retrying like
+            # every other goal (send_nav_goal's default), as approach_point did before.
+            last = i == len(goals) - 1
+            ok, msg = self.send_nav_goal(goal, max_attempts=None if last else 2)
             if ok:
                 response.goal = goal
                 _after()

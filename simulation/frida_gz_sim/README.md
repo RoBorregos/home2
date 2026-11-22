@@ -240,7 +240,7 @@ Navigation-only pieces:
   - the footprint overlaps nothing,
   - the `DockTable` diagnostics match the scene (blocker, reach verdict).
 
-  Results are written to `logs/dock_test_results.json`. `config/sim_approach.rviz`
+  Results are written to `/workspace/sim_logs/dock_test_results.json`. `config/sim_approach.rviz`
   shows the candidate poses, the chosen pose, the MPPI path and the furniture.
 
 ## Debugging headless

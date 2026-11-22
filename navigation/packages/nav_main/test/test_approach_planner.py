@@ -227,3 +227,11 @@ def test_free_ideal_pose_has_no_hits():
     ignore = ap.halfplane_ignore((1.0, 0.0), (1.0, 0.0), margin=0.03)
     x = 1.0 - FRONT - TABLE.gap
     assert len(ap.footprint_hits(grid, x, 0.0, 0.0, samples, ignore)) == 0
+
+
+def test_halfplane_ignore_limited_to_segment():
+    # Face along y in [-0.5, 0.5] at x = 1, normal +x. A cell on the face line
+    # inside the segment is the surface; one flush beside it (y = 1.2) is not.
+    ign = ap.halfplane_ignore((1.0, 0.0), (1.0, 0.0), 0.06, (1.0, -0.5), (1.0, 0.5), extend=0.4)
+    pts = np.array([[1.0, 0.0], [1.0, 0.85], [1.0, 1.2], [0.8, 0.0]])
+    assert ign(pts).tolist() == [True, True, False, False]
