@@ -749,6 +749,23 @@ class HRITasks:
         )
         return Status.TIMEOUT, ""
 
+    @mockable(return_value=True)
+    def announce_and_count(
+        self, intent: str, seconds: int = 3, interrupt_keywords: tuple = ("stop", "no")
+    ) -> bool:
+        """Say what will happen, count down aloud and listen for an interrupt.
+
+        Alternative to `confirm`: proceeds by default, so the countdown is what tells the
+        user they must speak up now.
+
+        Returns:
+            bool: True to proceed (timeout), False if the user said an interrupt keyword.
+        """
+        self.say(f"{intent} Say stop to cancel.")
+        self.say(", ".join(str(i) for i in range(seconds, 0, -1)), wait=False)
+        s, _ = self.interpret_keyword(list(interrupt_keywords), timeout=seconds, play_chime=False)
+        return s != Status.EXECUTION_SUCCESS
+
     def _interpret_confirmation(
         self,
         text: str,
@@ -858,6 +875,7 @@ class HRITasks:
         skip_extract_data: bool = False,
         skip_confirmation: bool = False,
         always_confirm: bool = False,
+        countdown_text: Union[str, callable, None] = None,
         options: list[str] = None,
         remap: dict = None,
         initial_prompt: str = "",
@@ -872,6 +890,7 @@ class HRITasks:
             query: the data to extract from the interpreted text
             context: the context of the question. It could be used to help the extraction.
             confirm_question: a string or a callable function that returns a string used confirm the answer
+            countdown_text: if set (string or callable like confirm_question), announce it and count down instead of asking; the answer is accepted unless the user interrupts, which falls back to the normal confirmation.
             use_keyword: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
@@ -952,6 +971,15 @@ class HRITasks:
 
                 if not always_confirm and skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info
+
+                if countdown_text is not None and target_info and target_found:
+                    announcement = (
+                        countdown_text(interpreted_text, target_info)
+                        if callable(countdown_text)
+                        else countdown_text
+                    )
+                    if self.announce_and_count(announcement):
+                        return Status.EXECUTION_SUCCESS, target_info
 
                 # Determine the confirmation question
                 if callable(confirm_question):

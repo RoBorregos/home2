@@ -175,6 +175,7 @@ class PickAndPlaceTM(Node):
         # designated for the dishwasher are instead placed (normal top place) at the dishwasher-tab
         # zone (cooking_table). Flip to False once the inside-dishwasher place exists.
         self.place_dishwasher_at_tab = True
+        self.countdown_before_proceed = False  # A/B: chair-removal wait becomes announce + countdown
         self.use_extra_surface = False  # pick the 2 common objects from the counter (−20 pts/obj)
         self.use_grasp_detector = False  # gate picks on the grasp bit; False ignores it
         self.use_vision_confirmation = True  # vision re-look to confirm the pick
@@ -390,6 +391,14 @@ class PickAndPlaceTM(Node):
             CLog.nav(self, "DOCK", f"No dock configured for {location.value}, skipping.")
             return
         self.subtask_manager.nav.dock_table(offset=offset)
+
+    def _wait_for_chairs(self):
+        """Give the referee time to clear the chairs; with the countdown, "stop" buys more time."""
+        if not self.countdown_before_proceed:
+            self.timeout(5.0)
+        elif not self.subtask_manager.hri.announce_and_count("I will start in a moment."):
+            self.subtask_manager.hri.say("Okay, I will wait.")
+            self.timeout(10.0)
 
     def timeout(self, duration: float = 2.0):
         """Non-blocking wait that keeps spinning ROS"""
@@ -741,7 +750,7 @@ class PickAndPlaceTM(Node):
                         f"Please remove the {n} chair{'s' if n > 1 else ''} shown on my screen.",
                         wait=True,
                     )
-                    self.timeout(5.0)
+                    self._wait_for_chairs()
                     self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
             else:
                 CLog.fsm(
@@ -753,7 +762,7 @@ class PickAndPlaceTM(Node):
                 self.subtask_manager.hri.say(
                     "Please remove the chairs from the dining table.", wait=True
                 )
-                self.timeout(5.0)
+                self._wait_for_chairs()
 
             if self.use_extra_surface:
                 CLog.fsm(self, "STATE", "Using extra surface (common objects).")

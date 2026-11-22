@@ -86,6 +86,7 @@ NLP_RESULTS_DIR = os.getenv("NLP_RESULTS_DIR") or OUTPUT_DIR
 
 # Choose which tests to perform (used only when TEST_NLP is unset)
 TEST_ASK_AND_CONFIRM = False
+TEST_COUNTDOWN = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
@@ -225,6 +226,9 @@ class TestHriManager(Node):
 
         if TEST_ASK_AND_CONFIRM:
             self.test_ask_and_confirm()
+
+        if TEST_COUNTDOWN:
+            self.test_countdown()
 
         if TEST_INDIVIDUAL_FUNCTIONS:
             self.individual_functions()
@@ -382,6 +386,14 @@ class TestHriManager(Node):
     def test_take_order(self):
         self.get_logger().info("Running take_order test")
         self.hri_manager.take_order(retries=3)
+
+    def test_countdown(self):
+        """Run twice: stay silent (expect proceed=True), then say "stop" (expect False)."""
+        for expected in (True, False):
+            self.hri_manager.say(f"Test: {'stay silent' if expected else 'say stop'}.", wait=True)
+            proceed = self.hri_manager.announce_and_count("I will bring you the cup.")
+            level = self.get_logger().info if proceed == expected else self.get_logger().error
+            level(f"announce_and_count -> {proceed} (expected {expected})")
 
     def test_ask_and_confirm(self):
         s, name = self.hri_manager.ask_and_confirm(
