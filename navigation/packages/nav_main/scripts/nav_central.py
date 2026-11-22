@@ -287,8 +287,9 @@ class Nav_Central(Node):
             reloc_group = MutuallyExclusiveCallbackGroup()
             self._initial_pose_pub = self.create_publisher(
                 PoseWithCovarianceStamped, INITIAL_POSE_TOPIC, 10)
+            # Nav2 AMCL registers its services in the node's namespace, not ~/.
             self._nomotion_client = self.create_client(
-                Empty, '/amcl/request_nomotion_update', callback_group=reloc_group)
+                Empty, '/request_nomotion_update', callback_group=reloc_group)
             self.create_subscription(
                 EmptyMsg, '/odrive/odom_reanchored', self._odom_reanchored_callback, 10,
                 callback_group=reloc_group)
@@ -581,7 +582,7 @@ class Nav_Central(Node):
         self.nav_logger("warn", f"Relocalize -> odometry re-anchored, re-seeding AMCL at "
                         f"({msg.pose.pose.position.x:.2f}, {msg.pose.pose.position.y:.2f})")
         if not self._nomotion_client.wait_for_service(timeout_sec=1.0):
-            self.nav_logger("warn", "Relocalize -> /amcl/request_nomotion_update not available")
+            self.nav_logger("warn", "Relocalize -> /request_nomotion_update not available")
             return
         for _ in range(self._RELOC_UPDATES):
             self._nomotion_client.call_async(Empty.Request())
