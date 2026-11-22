@@ -1,13 +1,18 @@
 """A recording stand-in for RobotArm and Perception, so the pipelines can be
 tested without a robot or a ROS graph."""
 
+import copy
 from contextlib import contextmanager
+from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
 from frida_interfaces.msg import CollisionObject
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 from pick_and_place.pipelines.errors import PickAborted
+from pick_and_place.pipelines.profiles import load_profiles
+from pick_and_place.pipelines.shelf import ShelfScan
 from pick_and_place.robot.arm import AttachResult, ContactResult
 
 
@@ -83,8 +88,14 @@ class FakeArm:
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
         estop: bool = False,
+        shelf_boxes_ok: bool = True,
+        link_pose: Optional[PoseStamped] = None,
+        tf_fails: bool = False,
     ):
+        self._tf_fails = tf_fails
         self._estop = estop
+        # Whether the planning scene takes the shelf boxes.
+        self._shelf_boxes_ok = shelf_boxes_ok
         self.calls: List[str] = []
         self.phases: List[str] = []
         self.contexts: List[str] = []
@@ -102,6 +113,8 @@ class FakeArm:
         self.published_place_poses: List[PoseStamped] = []
         self.published_points: List[PointStamped] = []
         self.joint_velocities: List[list] = []
+        self._link_pose = link_pose
+        self.accelerations: List[float] = []
         self.joint_velocity_busy = False
         self._logger = FakeLogger()
 
@@ -149,6 +162,30 @@ class FakeArm:
     def move_joints(self, joint_positions, velocity=None):
         self.calls.append("move_joints")
         return True
+
+    @contextmanager
+    def acceleration_scaling(self, acceleration):
+        self.accelerations.append(acceleration)
+        yield
+
+    def to_frame(self, msg, frame):
+        """An identity transform: the fixtures already sit in the frame asked for."""
+        self.calls.append(f"to_frame:{frame}")
+        if self._tf_fails and msg.header.frame_id != frame:
+            return None
+        moved = copy.deepcopy(msg)
+        moved.header.frame_id = frame
+        return moved
+
+    @staticmethod
+    def look_at(source, target):
+        from frida_motion_planning.utils.tf_utils import look_at
+
+        return look_at(source, target)
+
+    def link_pose(self, link, frame="link_base"):
+        self.calls.append(f"link_pose:{link}")
+        return self._link_pose
 
     def get_joints(self, degrees=True):
         self.calls.append("get_joints")
@@ -247,11 +284,12 @@ class FakeArm:
     def add_collision_object(self, obj):
         self.calls.append("add_collision_object")
 
-    def add_shelf_ceiling_guard(self, place_pose, table_height):
-        self.calls.append("add_shelf_ceiling_guard")
+    def set_shelf_boxes(self, boxes):
+        self.calls.append("set_shelf_boxes")
+        return self._shelf_boxes_ok
 
-    def remove_shelf_ceiling_guard(self):
-        self.calls.append("remove_shelf_ceiling_guard")
+    def remove_shelf_scene(self):
+        self.calls.append("remove_shelf_scene")
 
     def object_pick_height(self, obj, grasp_pose):
         self.calls.append("object_pick_height")
@@ -354,8 +392,13 @@ class FakePerception:
         generated_grasps: Optional[Any] = None,
         heatmap_point: Optional[PointStamped] = None,
         surface_cloud: Optional[Any] = None,
+        shelf_result: Optional[Any] = None,
+        detections: Optional[List[Any]] = None,
     ):
         self.calls: List[str] = []
+        self._shelf_result = shelf_result  # the DetectShelf answer to detect=True
+        self._detections = list(detections or [])
+        self.shelf_requests: List[tuple] = []
         self._logger = FakeLogger()
         self._located_point = located_point
         self._cluster = cluster
@@ -364,6 +407,7 @@ class FakePerception:
         self.generate_timeouts: List[float] = []
         self.detect_timeouts: List[float] = []
         self.cluster_timeouts: List[float] = []
+        self.cluster_bands: List[Any] = []
 
         self.heatmap_place_client = ServiceStub(
             reply=type("R", (), {"place_point": heatmap_point})()
@@ -389,10 +433,22 @@ class FakePerception:
     def point_in_range(point, min_distance, max_distance):
         return True
 
-    def cluster_at(self, point, add_collision_objects=True, timeout=60.0):
+    def cluster_at(self, point, add_collision_objects=True, timeout=60.0, band=None):
         self.calls.append("cluster_at")
         self.cluster_timeouts.append(timeout)
+        self.cluster_bands.append(band)
         return self._cluster
+
+    def detect_shelf(self, reset=False, capture=False, detect=False, timeout=30.0):
+        self.calls.append("detect_shelf")
+        self.shelf_requests.append((reset, capture, detect))
+        if detect:
+            return self._shelf_result
+        return SimpleNamespace(success=True, levels=[])
+
+    def detections(self, timeout=2.0):
+        self.calls.append("detections")
+        return list(self._detections)
 
     def detect_grasps(self, cluster, cfg_path):
         self.calls.append("detect_grasps")
@@ -456,3 +512,40 @@ def make_cluster(z_low=0.30, z_high=0.40, frame="base_link"):
         (0.51, 0.0, (z_low + z_high) / 2),
     ]
     return point_cloud2.create_cloud_xyz32(header, points)
+
+
+def make_board(height, thickness=0.02, front=0.5, back=0.85, y=(-0.4, 0.4), objects=()):
+    """A ShelfLevel as the scan returns it, in base_link."""
+    return SimpleNamespace(
+        height=height,
+        thickness=thickness,
+        front_x=front,
+        back_x=back,
+        y_min=y[0],
+        y_max=y[1],
+        clearance=0.3,
+        objects=list(objects),
+    )
+
+
+# The shelf profile's numbers, as the core hands them to the scan.
+SHELF_TUNING = load_profiles(
+    Path(__file__).resolve().parents[1] / "config" / "pick_profiles.yaml"
+)["shelf"].shelf
+
+
+def make_shelf(
+    levels=((0.39, 0.02), (0.68, 0.02)), extent=(-10, 10, -10, 10), base=None
+):
+    """A ShelfScan with boards at ``levels`` [(height, thickness)]; a wide extent by default."""
+    front, back, y_min, y_max = extent
+    return ShelfScan(
+        levels=[make_board(h, t, front, back, (y_min, y_max)) for h, t in levels],
+        boxes=[CollisionObject(id="frida_shelf_board_0")],
+        front_x=front,
+        back_x=back,
+        y_min=y_min,
+        y_max=y_max,
+        tuning=SHELF_TUNING,
+        base=base,
+    )

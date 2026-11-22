@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from typing import Optional
 
 import numpy as np
+import rclpy
 from frida_constants.manipulation_constants import (
     ADD_COLLISION_OBJECT_SERVICE,
     ATTACH_COLLISION_OBJECT_SERVICE,
@@ -34,6 +35,7 @@ from frida_constants.manipulation_constants import (
     SAFETY_HEIGHT,
     SCAN_ANGLE_HORIZONTAL,
     SCAN_ANGLE_VERTICAL,
+    SHELF_COLLISION_NAMESPACE,
     XARM_MOVEVELOCITY_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
 )
@@ -47,6 +49,11 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
 )
 from frida_motion_planning.utils.ros_utils import wait_for_future
+from frida_motion_planning.utils.tf_utils import (
+    look_at,
+    transform_point,
+    transform_pose,
+)
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
     get_joint_positions,
@@ -61,10 +68,9 @@ from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, SetBool, Trigger
-from tf2_ros import Buffer, TransformListener
+from tf2_ros import Buffer, TransformException, TransformListener
 from xarm_msgs.msg import RobotMsg
 from xarm_msgs.srv import MoveVelocity, SetInt16
-from xarm_utils.shelf_levels import get_compartment_height
 
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
@@ -82,6 +88,7 @@ MODE1_READY_STATES = (0, 2)  # robot_states values for an idle arm
 MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 DESCENT_TIMEOUT_FACTOR = 2.5  # closed-loop descent timeout vs. expected duration
 SERVICE_TIMEOUT = 5.0
+TGPIO_RESET_TIMEOUT = 0.5  # s; the robot answers in 3 ms (median), 11 ms (max of 30)
 SET_MODE_RETRIES = 2
 
 
@@ -197,6 +204,7 @@ class RobotArm:
         self._tgpio_reset_client = node.create_client(
             SetInt16, "/xarm/config_tgpio_reset_when_stop", callback_group=group
         )
+        self._tgpio_reset_disabled_logged = False
 
         # --- subscriptions ---------------------------------------------------------------
         node.create_subscription(
@@ -220,6 +228,7 @@ class RobotArm:
             depth=10,
         )
         self.tf_buffer = Buffer(cache_time=Duration(seconds=2.0))
+        self._acceleration = PICK_ACCELERATION  # MoveIt scaling for the moves below
         self.tf_listener = TransformListener(
             self.tf_buffer, node, qos=qos, spin_thread=True
         )
@@ -272,6 +281,37 @@ class RobotArm:
     @property
     def joint_state(self) -> Optional[JointState]:
         return self._latest_joint_state
+
+    def link_pose(self, link: str, frame: str = "link_base") -> Optional[PoseStamped]:
+        """Where ``link`` is now, in ``frame``; None without TF."""
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                frame, link, rclpy.time.Time()
+            ).transform
+        except TransformException as error:
+            self._log.warn(f"No TF {frame} -> {link}: {error}")
+            return None
+        pose = PoseStamped()
+        pose.header.frame_id = frame
+        pose.header.stamp = self.now()
+        pose.pose.position.x = transform.translation.x
+        pose.pose.position.y = transform.translation.y
+        pose.pose.position.z = transform.translation.z
+        pose.pose.orientation = transform.rotation
+        return pose
+
+    def to_frame(self, msg, frame: str):
+        """``msg`` (a PointStamped or PoseStamped) in ``frame``; None without TF."""
+        if msg.header.frame_id == frame:
+            return msg
+        convert = transform_pose if isinstance(msg, PoseStamped) else transform_point
+        ok, moved = convert(msg, frame, self.tf_buffer)
+        return moved if ok else None
+
+    @staticmethod
+    def look_at(source, target) -> PoseStamped:
+        """The pose at ``source`` whose x axis points at ``target``."""
+        return look_at(source, target)
 
     def tcp_xyz(self) -> Optional[np.ndarray]:
         """Current tool-centre-point XYZ in metres, or None if unknown."""
@@ -365,7 +405,7 @@ class RobotArm:
         request.pose = pose
         request.velocity = float(PICK_VELOCITY if velocity is None else velocity)
         request.acceleration = float(
-            PICK_ACCELERATION if acceleration is None else acceleration
+            self._acceleration if acceleration is None else acceleration
         )
         request.planner_id = planner_id
         request.target_link = target_link
@@ -403,6 +443,7 @@ class RobotArm:
             velocity=velocity,
             fallback_move_to_pose=self._move_to_pose_pair if allow_pose_goal else None,
             logger=self._log,
+            acceleration=self._acceleration,
         )
 
     def _move_to_pose_pair(self, pose, velocity=PICK_VELOCITY):
@@ -421,9 +462,18 @@ class RobotArm:
                 move_joints_action_client=self._move_joints_client,
                 named_position=name,
                 velocity=velocity,
-                acceleration=PICK_ACCELERATION,
+                acceleration=self._acceleration,
             )
         )
+
+    @contextmanager
+    def acceleration_scaling(self, acceleration: float):
+        """Use ``acceleration`` for every planned move inside the block."""
+        previous, self._acceleration = self._acceleration, float(acceleration)
+        try:
+            yield
+        finally:
+            self._acceleration = previous
 
     def move_joints(self, joint_positions, velocity: float = 0.2) -> bool:
         return bool(
@@ -578,35 +628,25 @@ class RobotArm:
             return
         self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
 
-    def add_shelf_ceiling_guard(self, place_pose, table_height: float) -> None:
-        """Block the place return from routing up into the compartment ceiling.
-
-        The eye-in-hand octomap never sees it, so a slab is added explicitly.
-        """
-        compartment_h = get_compartment_height()
-        obj = CollisionObject()
-        obj.id = "shelf_ceiling_guard"
-        obj.type = "box"
-        obj.pose.header.frame_id = place_pose.header.frame_id or "base_link"
-        obj.pose.header.stamp = self._node.get_clock().now().to_msg()
-        obj.pose.pose.position.x = float(place_pose.pose.position.x) + 0.10
-        obj.pose.pose.position.y = float(place_pose.pose.position.y)
-        obj.pose.pose.position.z = float(table_height) + compartment_h + 0.10
-        obj.pose.pose.orientation.w = 1.0
-        obj.dimensions.x = 0.40
-        obj.dimensions.y = 0.80
-        obj.dimensions.z = 0.20
-
+    def set_shelf_boxes(self, boxes) -> bool:
+        """Put a shelf scan's boxes in the scene (ids are stable, so this replaces them)."""
         request = AddCollisionObjects.Request()
-        request.collision_objects.append(obj)
+        request.collision_objects = list(boxes)
         if not self._add_objects_client.wait_for_service(timeout_sec=3.0):
-            self._log.warn("add_collision_objects unavailable; no ceiling guard")
-            return
-        self.wait_for_future(self._add_objects_client.call_async(request), timeout=3.0)
-        self._log.info("Added shelf ceiling guard collision")
+            self._log.warn("add_collision_objects unavailable; shelf not in the scene")
+            return False
+        future = self._add_objects_client.call_async(request)
+        if not self.wait_for_future(future, timeout=5.0):
+            self._log.warn("add_collision_objects did not answer")
+            return False
+        self._log.info(f"Shelf boxes in the scene: {len(request.collision_objects)}")
+        return True
 
-    def remove_shelf_ceiling_guard(self) -> None:
-        self.remove_collision_object("shelf_ceiling_guard")
+    def remove_shelf_scene(self) -> None:
+        """Drop the shelf boxes (they are in base_link and must not leave with the robot)."""
+        for obj in self.get_collision_objects():
+            if obj.id.startswith(SHELF_COLLISION_NAMESPACE):
+                self.remove_collision_object(obj.id)
 
     def object_pick_height(self, obj, grasp_pose) -> float:
         """Height of the grasp above the bottom of ``obj``, for placing later."""
@@ -647,6 +687,9 @@ class RobotArm:
         in mode 5 takes the trajectory controller offline, so every subsequent
         MoveIt goal would fail.
         """
+        # Mode switches and xArm stops reset the tool IO, opening the gripper, unless this is off.
+        self.disable_tgpio_reset()
+
         if not self._set_xarm_mode(0):
             raise PickHardwareError(f"[{label}] could not enter mode 0")
 
@@ -904,10 +947,15 @@ class RobotArm:
             req = SetInt16.Request()
             req.data = 0
             future = self._tgpio_reset_client.call_async(req)
-            self.wait_for_future(future)
-            self._log.info(
-                "TGPIO reset on stop disabled (gripper preserved across mode switches)"
-            )
+            answered = self.wait_for_future(future, timeout=TGPIO_RESET_TIMEOUT)
+            if not answered or future.result() is None:
+                self._log.warn("config_tgpio_reset_when_stop(0) got no answer")
+                return
+            if not self._tgpio_reset_disabled_logged:
+                self._log.info(
+                    "TGPIO reset on stop disabled (gripper preserved across mode switches)"
+                )
+                self._tgpio_reset_disabled_logged = True
         else:
             self._log.warn(
                 "config_tgpio_reset_when_stop service not available -- gripper may open during mode switches",

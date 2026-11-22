@@ -11,7 +11,7 @@ nothing else here is public.
 
 | Interface | Type | Used by |
 |---|---|---|
-| `/manipulation/manipulation_action_server` | `ManipulationAction` | `task_manager` (pick / place / pour / place_on_shelf / place_in_point), `keyboard_input.py`, `pick_benchmark.py`, `manipulation_client.py` |
+| `/manipulation/manipulation_action_server` | `ManipulationAction` | `task_manager` (pick / place / pour / scan_shelf / place_on_shelf / place_in_point), `keyboard_input.py`, `pick_benchmark.py`, `manipulation_client.py` |
 | `/manipulation/go_to_hand_action_server` | `GoToHand` | `task_manager` (handover) |
 | `/manipulation/fixed_distance_move` | `FixedDistanceMove` | `task_manager` (`move_arm_vertical`) |
 | `/follow_face`, `/follow_person` | `FollowFace` | `task_manager` (`follow_face`, `follow_person`) |
@@ -59,6 +59,7 @@ flowchart TD
         pick["pick.py"]
         place["place.py"]
         pour["pour.py"]
+        shelf["shelf.py<br/><i>survey, scan cache, face a level</i>"]
         strat["strategies.py<br/><i>how the gripper closes</i>"]
         cls["classification.py<br/><i>object -> strategy</i>"]
         prof["profiles.py<br/><i>YAML tuning</i>"]
@@ -66,14 +67,14 @@ flowchart TD
 
     subgraph robot[Robot -- knows the hardware]
         arm["arm.py<br/><i>RobotArm: move, grip, scene, xArm modes</i>"]
-        perc["perception.py<br/><i>Perception: detect, cluster, grasps</i>"]
+        perc["perception.py<br/><i>Perception: detect, cluster, grasps, shelf</i>"]
     end
 
-    core --> pick & place & pour
+    core --> pick & place & pour & shelf
     pick --> strat --> prof
     pick --> cls
-    pick & place & pour --> arm
-    pick & place & pour --> perc
+    pick & place & pour & shelf --> arm
+    pick & place & pour & shelf --> perc
 ```
 
 | Layer | May know | Must not |
@@ -96,6 +97,7 @@ pick_and_place/
 │   │   ├── pick.py              stare -> perceive -> strategy -> return
 │   │   ├── place.py             choose a pose -> reach it -> release -> return
 │   │   ├── pour.py              find container -> grasp source -> tilt -> return
+│   │   ├── shelf.py             SCAN_SHELF survey, the scan the core keeps, face a level
 │   │   ├── strategies.py        the 4 grasp motions + the STRATEGIES table
 │   │   ├── follow.py            face / person tracking velocity commands
 │   │   ├── classification.py    object_name -> strategy key
@@ -134,7 +136,7 @@ pick_and_place/
    shape, its one pose and the flip for a flat object, or one batch per GPD config so an
    unreachable config falls back to the next. `_run_strategy` applies the tip offset along the
    gripper's approach axis, then hands each candidate to the strategy until one succeeds.
-4. **Return** — `_return_to_carry_pose`. Shelf picks retract to `front_stare` first; rim picks hold
+4. **Return** — `_return_to_carry_pose`. Shelf picks first lift and back out of the compartment along straight MoveIt paths (`_shelf_exit`); rim picks hold
    position (a basket is carried where it was grasped); everything else returns to a stare pose.
 
 The gripper opens *after* perceiving and *before* grasping — the fingers are in the camera's view
@@ -146,7 +148,7 @@ The pipeline never asks *which* strategy is running to decide these things; the 
 |---|---|
 | Add the fitted shape to the planning scene, and report its heights to `place` | the generator's response carries a fitted object |
 | Retry with GPD when perception or every candidate fails | `fallback_to_gpd` in the strategy's profile |
-| Shelf and pour picks use GPD instead of the geometric generator | `resolve_pick_strategy(name, force_gpd=...)` |
+| Shelf picks use the `shelf` strategy, pour picks GPD | `resolve_pick_strategy(name, force_gpd=..., shelf=...)` |
 
 ### Where the flow goes
 
@@ -174,10 +176,10 @@ flowchart TD
 
 ## Pick strategies
 
-Which strategy runs is decided by `classification.resolve_pick_strategy(object_name, force_gpd)`.
-Order matters there: `bowl` is a member of `RIM_NAMES`, so it is tested first. A name that is not
-listed is a solid and goes to `geometric`; shelf and pour picks (`force_gpd`) send it to `gpd`
-instead.
+Which strategy runs is decided by `classification.resolve_pick_strategy(object_name, force_gpd, shelf)`.
+Every shelf pick is `shelf`. Order matters for the rest: `bowl` is a member of `RIM_NAMES`, so it is
+tested first. A name that is not listed is a solid and goes to `geometric`; pour picks (`force_gpd`)
+send it to `gpd` instead.
 
 | Profile | Objects | Class | How it grasps |
 |---|---|---|---|
@@ -186,7 +188,8 @@ instead.
 | `bowl` | bowl | `FixedDistanceDescentPick` | Same motion, much shorter descent. |
 | `peak` | clothes | `FixedDistanceDescentPick` | Descends onto the highest content in a cavity. |
 | `geometric` | any other name: cans, boxes, fruit | `CartesianApproachPick` | Backs off along the generator's approach axis, drives straight in under cartesian velocity, closes, then attaches the fitted shape and reports object heights to `place`. Falls back to `gpd` when it fails. |
-| `gpd` | no name, shelf and pour picks, the geometric fallback | `DirectGraspPick` | Plans straight to a GPD grasp. Attaches the object in the planning scene and reports object heights to `place`. |
+| `shelf` | any shelf pick | `CartesianApproachPick` | Frontal grasps from the cluster inside the compartment (`geometric_grasps.shelf_frontal_grasps`), straight in, then two straight MoveIt paths out. Falls back to `gpd`. See [`SHELF.md`](SHELF.md). |
+| `gpd` | no name, pour picks, the geometric and shelf fallback | `DirectGraspPick` | Plans straight to a GPD grasp. Attaches the object in the planning scene and reports object heights to `place`. |
 
 Rim, bowl and peak are one algorithm with three parameter sets. The descent distance is always
 `pre_grasp_height - grasp_z_tweak`:
