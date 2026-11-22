@@ -72,6 +72,7 @@ class HearStreaming(Node):
         self.transcript_thread = None
         self.cancel_requested = False
         self._speaker_stopped = False
+        self._speech_started = False
 
         # gRPC Stub
         channel = grpc.insecure_channel(server_ip)
@@ -126,9 +127,12 @@ class HearStreaming(Node):
         transcription, flag it so execute_callback can exit cleanly.
         """
         if msg.data:
+            self._speech_started = True
             if self.debug_audio_logs:
                 self.get_logger().info("Voice activity: speaker started talking")
-        elif not self.stop_flag.is_set():
+        # Only a stop that follows a start during this listen counts: the VAD also reports the end of
+        # speech that began before it (e.g. the robot's own voice) and that would cut the listen short.
+        elif not self.stop_flag.is_set() and self._speech_started:
             if self.debug_audio_logs:
                 self.get_logger().info(
                     "Voice activity: speaker stopped — stopping transcription"
@@ -219,6 +223,7 @@ class HearStreaming(Node):
         self.prev_transcription = ""
         self.cancel_requested = False
         self._speaker_stopped = False
+        self._speech_started = False
 
         start_time = time.time()
         last_word_time = start_time
