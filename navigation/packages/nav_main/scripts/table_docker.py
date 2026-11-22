@@ -294,7 +294,8 @@ class TableDocker(Node):
         self.footprint = self._parse_footprint(self.declare_parameter(
             "footprint", "[[0.325, 0.25], [0.325, -0.25], [-0.325, -0.25], [-0.325, 0.25]]").value)
 
-        # --- Per-call request (nav_central sets these before each dock) ---
+        # --- Per-call request: set by the typed DockTable call (DOCKER_DOCK_TABLE_SERVICE);
+        # as parameters they only serve the Trigger dock/preview and manual tests ---
         # surface_type selects the reach band in approach_profiles.yaml; target_gap
         # >= 0 overrides its preferred gap; target_point [x, y] in target_frame is
         # the object to stand in front of (empty = centre of the detected face).
@@ -305,7 +306,8 @@ class TableDocker(Node):
         self.target_frame = self.declare_parameter("target_frame", "map").value
         # Verify candidates with the arm's IK against the 3D target_point.
         self.check_reach = self.declare_parameter("check_reach", False).value
-        # Outcome of the last dock (JSON), read back by nav_central for DockTable.
+        # Outcome of the last dock (JSON), for benchmarks/debugging (the typed
+        # DockTable returns it in its response).
         self.last_result = self.declare_parameter("last_result", "{}").value
         self._last_result = {}
         # Append every dock outcome as one JSON line to this file ("" = off), to
@@ -504,7 +506,7 @@ class TableDocker(Node):
         self.create_service(Trigger, UNDOCK_SERVICE, self._undock_cb, callback_group=srv_cb)
         self.create_service(Trigger, DOCK_PREVIEW_SERVICE, self._preview_cb, callback_group=srv_cb)
 
-        # Apply runtime parameter changes live (nav_central sets the per-call
+        # Apply runtime parameter changes live (the Trigger dock/preview read the per-call
         # request before approaching; also makes `ros2 param set` effective).
         self.add_on_set_parameters_callback(self._on_set_params)
 
@@ -2196,9 +2198,9 @@ class TableDocker(Node):
         return response
 
     def _record_result(self, response):
-        """Outcome of this dock as JSON: the `last_result` parameter (nav_central
-        reads it back for the DockTable response) and, if set, one line of
-        `result_log` to tune the reach bands from real runs."""
+        """Outcome of this dock: `self._last_result` (the typed DockTable response is
+        built from it), the `last_result` parameter as JSON (benchmarks, debugging)
+        and, if set, one line of `result_log` to tune the reach bands from real runs."""
         with self._lock:
             plan, blocked = self._plan, self._blocked
         result = {
