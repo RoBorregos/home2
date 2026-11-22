@@ -1939,10 +1939,17 @@ class TableDocker(Node):
             self._blocked = None
         self._dock_deadline = self._now() + self.dock_timeout
         self._near_surface = False
+        start_pose = self._robot_pose(self.odom_frame)
         try:
             response = self._dock(profile, response)
             if not response.success:
-                front = self._live_front_clearance()
+                # Only a dock that actually drove can have left the robot inside the
+                # surface's inflation; one that failed while planning is where nav2
+                # put it, and the obstacle ahead may be anything (a bin).
+                end_pose = self._robot_pose(self.odom_frame)
+                moved = (start_pose is None or end_pose is None or math.hypot(
+                    end_pose[0] - start_pose[0], end_pose[1] - start_pose[1]) > 0.05)
+                front = self._live_front_clearance() if moved else None
                 self._near_surface = front is not None and front < self.failed_retreat_gap
                 if self._near_surface:
                     self.log("warn", f"Dock failed {front:.2f}m from the surface; the next "
