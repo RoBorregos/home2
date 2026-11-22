@@ -334,6 +334,9 @@ class TableDocker(Node):
         self.refine_shift = self.declare_parameter("refine_shift", 0.03).value
         # Close-range re-detection only looks at the strip the arm will work on.
         self.refine_fov_deg = self.declare_parameter("refine_fov_deg", 50.0).value
+        # A close-range face fit at least this long (m) keeps its own orientation;
+        # shorter ones borrow the orientation of the longer, farther fit.
+        self.fuse_min_span = self.declare_parameter("fuse_min_span", 0.40).value
         # Cells within this distance of the docked face belong to the surface itself.
         self.face_ignore_margin = self.declare_parameter("face_ignore_margin", 0.06).value
         # Approach legs that cannot go straight (they skirt obstacles, often ones only
@@ -392,6 +395,9 @@ class TableDocker(Node):
         # straight ahead still backs off on the next undock, so nav2 does not plan the
         # next goal from inside the surface's inflation.
         self.failed_retreat_gap = self.declare_parameter("failed_retreat_gap", 0.30).value
+        # No free dock pose at the start: keep re-planning this long (s) before
+        # failing, in case a person is standing in the way. 0 = fail at once.
+        self.blocked_wait = self.declare_parameter("blocked_wait", 8.0).value
 
         # --- Visualization (RViz) ---
         self.polygon_depth = self.declare_parameter("polygon_depth", 0.40).value
@@ -1279,7 +1285,9 @@ class TableDocker(Node):
             return
         len_old = old.get("span", float(np.linalg.norm(old["p2"] - old["p1"])))
         len_new = float(np.linalg.norm(new["p2"] - new["p1"]))
-        if len_new >= len_old:
+        if len_new >= len_old or len_new >= self.fuse_min_span:
+            # Up close a long enough stretch is the better orientation: the far fit
+            # can be skewed by what stands next to the surface (a bin, a board).
             return
         n = old["normal"] / (np.linalg.norm(old["normal"]) + 1e-12)
         if n @ new["normal"] < 0:
@@ -1989,6 +1997,23 @@ class TableDocker(Node):
 
         # (a) base placement
         plan = self._plan_dock(profile)
+        if plan is None and self.blocked_wait > 0.0:
+            # Usually a person standing where the base should go (an operator, a
+            # referee): they move. Re-plan on fresh data for a few seconds before
+            # giving up. The robot has not moved yet, so the obstacle memory is
+            # rebuilt from scratch each time (chair legs are seen again from here).
+            self.log("warn", f"No free dock pose; waiting up to {self.blocked_wait:.0f}s "
+                             f"for the spot to clear (someone standing there?)")
+            end = self._deadline(self.blocked_wait)
+            while plan is None and self._now() < end:
+                time.sleep(1.0)
+                with self._lock:
+                    self._memory = set()
+                    self._scan_memory = set()
+                self._wait_costmap(self.get_clock().now(), 2.0)
+                plan = self._plan_dock(profile)
+            if plan is not None:
+                self.log("info", "Dock spot cleared; continuing")
         if plan is None:
             self._stop()
             response.success = False
