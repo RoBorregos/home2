@@ -392,8 +392,11 @@ class TestHriManager(Node):
         for expected in (True, False):
             self.hri_manager.say(f"Test: {'stay silent' if expected else 'say stop'}.", wait=True)
             proceed = self.hri_manager.announce_and_count("I will bring you the cup.")
-            level = self.get_logger().info if proceed == expected else self.get_logger().error
-            level(f"announce_and_count -> {proceed} (expected {expected})")
+            msg = f"announce_and_count -> {proceed} (expected {expected})"
+            if proceed == expected:
+                self.get_logger().info(msg)
+            else:
+                self.get_logger().error(msg)
 
     def test_ask_and_confirm(self):
         s, name = self.hri_manager.ask_and_confirm(
