@@ -261,9 +261,31 @@ Three safeguards keep the approach from trusting a single snapshot:
   strip straight ahead is free up to it, for example the back of a cabinet niche
   once the side panels are out of view. Close-range re-detections of flat faces
   look only at the ±25° strip the arm will work on.
-- **Face fusion.** The orientation comes from the longest stretch of face seen.
-  The distance comes from the closest view, plus the nearest lidar point straight
-  ahead.
+- **Face fusion.** Up close the lidar sees only a short piece of a flat face.
+  A close-range fit shorter than `fuse_min_span` (40 cm) borrows the
+  orientation of the longest stretch seen; a longer one keeps its own, since the
+  far fit can be skewed by what stands next to the surface. The distance comes
+  from the closest view, plus the nearest lidar point straight ahead.
+
+The dock also guards against a few situations seen on the robot:
+
+- **Someone standing in the way.** When no dock pose is free at the start, the
+  docker keeps re-planning for `blocked_wait` (8 s) before failing, e.g. while
+  an operator or a referee steps aside. Remembered obstacles are never wiped:
+  after a full `memory_window` (4 s) only those not seen again in that window
+  are forgotten. Something seen only now and then (a bin's rim, which only the
+  camera sees) must not vanish and make the spot look free.
+- **Contact.** If the live lidar sees something more than `contact_tolerance`
+  (5 mm) inside the footprint during the straight-in, the robot stops and the
+  dock fails instead of reporting docked; the next undock backs off.
+- **Overall timeout.** `dock_timeout` (100 s) caps the whole request, below
+  `nav_central`'s 120 s wait, so the robot never keeps driving after the caller
+  gave up.
+- **Failed dock next to the surface.** A dock that drove and then failed with the
+  front closer than `failed_retreat_gap` (30 cm) to something still backs off on
+  the next undock, so nav2 does not plan from inside the inflation.
+- **The robot itself.** Points inside the footprint (the arm or the body seen by
+  the camera) are dropped before fitting the face.
 
 The planning code is `nav_main/approach_planner.py` (pure Python, unit tested in
 `nav_main/test/test_approach_planner.py`).
@@ -290,7 +312,9 @@ The same file holds four more settings:
 You can activate docking in three ways:
 
 - **From the `nav_ui` panel**: pick the surface type and press
-  **Approach Table**.
+  **Approach Table**. **Preview Dock** detects and plans without moving (press
+  **Resume Nav** first, or the preview has no costmap and does not check
+  obstacles), and **Undock** backs off.
 - **From a service call** (see below), or `nav_tasks.dock_table(surface_type=...,
   target=PointStamped)` in a task manager.
 - **Automatically for undocking**: `nav_central` calls the undock service before
@@ -344,7 +368,7 @@ Besides `success`, the `DockTable` response reports:
 | `lateral_error` | Target position relative to the docked base, in m (+ = left) |
 | `reach` | `ok`, `unreachable` or `unchecked` |
 | `target_blocked` | The pose straight in front of the target (or of the staging pose) was blocked |
-| `blocker`, `blocker_side` | Centre of what blocks it (map frame) and where it sits: `left`, `center` or `right` |
+| `blocker`, `blocker_side` | Centre of what blocks it (map frame) and where it sits: `left`, `center`, `right` or `both` (obstacles on each side) |
 
 `nav_tasks.dock_table` keeps these in `nav.last_dock_result`. Use them to decide
 which chairs must be moved for the robot to fit.
@@ -352,7 +376,10 @@ which chairs must be moved for the robot to fit.
 To collect data across runs, set `table_docker`'s `result_log` parameter to a
 file path. Every dock then appends one JSON line with the surface, the target,
 the planned and measured gap, the lateral error, the reach verdict and the
-blocker. Use this data to tune the bands in `approach_profiles.yaml`.
+blocker. Use this data to tune the bands in `approach_profiles.yaml`. The
+measured gap is the nearest lidar point straight ahead, and the lidar sits about
+14 cm above the floor. It is right for fronts that reach the floor (cabinets,
+counters); under a table top it sees the legs, so measure tables with a tape.
 
 ```bash
 ros2 param set /table_docker result_log /workspace/log/dock_results.jsonl

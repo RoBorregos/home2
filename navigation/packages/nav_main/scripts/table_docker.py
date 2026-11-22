@@ -361,6 +361,9 @@ class TableDocker(Node):
 
         # --- Safety: live lidar points must stay this far outside the footprint ---
         self.safety_clearance = self.declare_parameter("safety_clearance", 0.01).value
+        # Live lidar points deeper than this (m) inside the footprint = contact:
+        # the straight-in stops and the dock fails instead of reporting docked.
+        self.contact_tolerance = self.declare_parameter("contact_tolerance", 0.005).value
         self.yaw_tol = self.declare_parameter("yaw_tol", 0.03).value
         self.y_tol = self.declare_parameter("y_tol", 0.03).value
         self.dist_tol = self.declare_parameter("dist_tol", 0.015).value
@@ -398,6 +401,9 @@ class TableDocker(Node):
         # No free dock pose at the start: keep re-planning this long (s) before
         # failing, in case a person is standing in the way. 0 = fail at once.
         self.blocked_wait = self.declare_parameter("blocked_wait", 8.0).value
+        # While waiting, an obstacle counts only if seen again within this window
+        # (s). Longer than nav2's voxel decay (2 s) so flickering marks persist.
+        self.memory_window = self.declare_parameter("memory_window", 4.0).value
 
         # --- Visualization (RViz) ---
         self.polygon_depth = self.declare_parameter("polygon_depth", 0.40).value
@@ -419,11 +425,15 @@ class TableDocker(Node):
         # Lethal cells seen since the current request started (odom cell keys).
         # Thin obstacles (chair legs) get raytraced out of nav2's costmap as soon
         # as they fall between rays or into the lidar's near blind zone.
-        self._memory = set()
-        self._scan_memory = set()  # lidar hits, kept apart (see _fresh_grid)
+        # Each maps cell -> node-clock time it was last seen (see _fresh_grid).
+        self._memory = {}
+        self._scan_memory = {}  # lidar hits, kept apart (see _fresh_grid)
+        # Plans only use memory seen at/after this time (None = whole request).
+        self._memory_since = None
         self._remember = False
         self.docked = False
         self._near_surface = False  # failed dock left the robot close to the surface
+        self._contact = False  # the straight-in stopped touching something
 
         sensor_cb = ReentrantCallbackGroup()
         srv_cb = MutuallyExclusiveCallbackGroup()
@@ -584,7 +594,7 @@ class TableDocker(Node):
         res = info.resolution
         kx = np.floor((info.origin.position.x + (cols + 0.5) * res) / res).astype(int)
         ky = np.floor((info.origin.position.y + (rows + 0.5) * res) / res).astype(int)
-        self._memory.update(zip(kx.tolist(), ky.tolist()))
+        self._memory.update(dict.fromkeys(zip(kx.tolist(), ky.tolist()), self._now()))
 
     def _costmap_update_cb(self, msg):
         """Patch the stored costmap with an OccupancyGridUpdate."""
@@ -671,7 +681,7 @@ class TableDocker(Node):
         keys = np.floor(world[:, :2] / res).astype(int)
         with self._lock:
             if self._remember:
-                self._scan_memory.update(map(tuple, keys.tolist()))
+                self._scan_memory.update(dict.fromkeys(map(tuple, keys.tolist()), self._now()))
 
     def _cloud_cb(self, msg):
         with self._lock:
@@ -1058,8 +1068,13 @@ class TableDocker(Node):
             return None
         info = cm["info"]
         with self._lock:
-            memory = list(self._memory)
-            scan_memory = list(self._scan_memory)
+            since = self._memory_since
+            if since is None:
+                memory = list(self._memory)
+                scan_memory = list(self._scan_memory)
+            else:
+                memory = [k for k, t in self._memory.items() if t >= since]
+                scan_memory = [k for k, t in self._scan_memory.items() if t >= since]
         if scan_memory:
             # Lidar hits on the surface's own front scatter a few cm around the
             # fitted face over a dock (odometry drift, a blocky outline): near the
@@ -1940,13 +1955,15 @@ class TableDocker(Node):
                          f"target={self.target_point or '-'} [{self.target_frame}]")
         self._fix_target()
         with self._lock:
-            self._memory = set()
-            self._scan_memory = set()
+            self._memory = {}
+            self._scan_memory = {}
+            self._memory_since = None
             self._remember = True
             self._plan = None
             self._blocked = None
         self._dock_deadline = self._now() + self.dock_timeout
         self._near_surface = False
+        self._contact = False
         start_pose = self._robot_pose(self.odom_frame)
         try:
             response = self._dock(profile, response)
@@ -1958,18 +1975,20 @@ class TableDocker(Node):
                 moved = (start_pose is None or end_pose is None or math.hypot(
                     end_pose[0] - start_pose[0], end_pose[1] - start_pose[1]) > 0.05)
                 front = self._live_front_clearance() if moved else None
-                self._near_surface = front is not None and front < self.failed_retreat_gap
+                self._near_surface = self._contact or (
+                    front is not None and front < self.failed_retreat_gap)
                 if self._near_surface:
-                    self.log("warn", f"Dock failed {front:.2f}m from the surface; the next "
-                                     f"undock backs off")
+                    self.log("warn", "Dock failed touching/next to something; the next "
+                                     "undock backs off")
             self._record_result(response)
             return response
         finally:
             self._dock_deadline = math.inf
             with self._lock:
                 self._remember = False
-                self._memory = set()
-                self._scan_memory = set()
+                self._memory = {}
+                self._scan_memory = {}
+                self._memory_since = None
             self._reset_request()
 
     def _dock(self, profile, response):
@@ -1999,17 +2018,21 @@ class TableDocker(Node):
         plan = self._plan_dock(profile)
         if plan is None and self.blocked_wait > 0.0:
             # Usually a person standing where the base should go (an operator, a
-            # referee): they move. Re-plan on fresh data for a few seconds before
-            # giving up. The robot has not moved yet, so the obstacle memory is
-            # rebuilt from scratch each time (chair legs are seen again from here).
+            # referee): they move. Re-plan for a few seconds before giving up,
+            # forgetting only the obstacles NOT seen again in the last
+            # memory_window seconds. Never wipe the memory: obstacles seen only
+            # intermittently (a bin's rim, which only the camera sees and nav2's
+            # voxel layer decays) would vanish and the spot would look free.
             self.log("warn", f"No free dock pose; waiting up to {self.blocked_wait:.0f}s "
                              f"for the spot to clear (someone standing there?)")
             end = self._deadline(self.blocked_wait)
+            waited_from = self._now()
             while plan is None and self._now() < end:
                 time.sleep(1.0)
+                if self._now() - waited_from < self.memory_window:
+                    continue  # forget nothing until a full window has been seen
                 with self._lock:
-                    self._memory = set()
-                    self._scan_memory = set()
+                    self._memory_since = self._now() - self.memory_window
                 self._wait_costmap(self.get_clock().now(), 2.0)
                 plan = self._plan_dock(profile)
             if plan is not None:
@@ -2131,7 +2154,8 @@ class TableDocker(Node):
             frame, point = self._odom_point_to_map(blocked["point"])
             result.update(blocker=[round(float(v), 3) for v in point], blocker_frame=frame,
                           blocker_side=blocked["side"])
-            self.log("warn", f"Ideal dock pose blocked by something on the {blocked['side']} "
+            self.log("warn", f"Ideal dock pose blocked by something "
+                             f"{'on both sides' if blocked['side'] == 'both' else 'on the ' + blocked['side']} "
                              f"at {result['blocker']} [{frame}]")
         text = json.dumps(result)
         self.set_parameters([rclpy.parameter.Parameter("last_result", value=text)])
@@ -2239,6 +2263,13 @@ class TableDocker(Node):
 
             # Live lidar safety (whole footprint, independent of the locked face).
             live, near = self._live_clearance(with_point=True)
+            if live is not None and live < -self.contact_tolerance:
+                # Something is already INSIDE the footprint (3rd-closest ray, so not
+                # one noisy return): the base is touching it. Never call that docked.
+                self._stop()
+                self._contact = True
+                return False, (f"Contact: obstacle {-live * 100:.1f} cm inside the footprint at "
+                               f"base_link ({near[0]:.2f}, {near[1]:.2f}); stopped")
             safety_stop = live is not None and live <= self.safety_clearance
 
             wz = self._clamp(self.k_yaw * e_yaw, self.max_wz)

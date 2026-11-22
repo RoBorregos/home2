@@ -488,7 +488,12 @@ class NavigationTasks:
                 CLog.nav(
                     self.node,
                     "DOCK",
-                    f"Spot in front of the target blocked on the {result.blocker_side}",
+                    "Spot in front of the target blocked "
+                    + (
+                        "on both sides"
+                        if result.blocker_side == "both"
+                        else f"on the {result.blocker_side}"
+                    ),
                     level="warn",
                 )
             if result.success:

@@ -851,7 +851,8 @@ class Nav_Central(Node):
             self.nav_logger("info", f"Dock_Table -> reach={response.reach} "
                                     f"lateral_err={response.lateral_error:.2f}m "
                                     f"gap planned={result.get('planned_gap')} measured={result.get('measured_gap')}"
-                                    + (f" blocked on the {response.blocker_side}" if response.target_blocked else ""))
+                                    + (f" blocked {'on both sides' if response.blocker_side == 'both' else 'on the ' + response.blocker_side}"
+                                       if response.target_blocked else ""))
         if success:
             self.nav_logger("info", "Dock_Table -> Docked")
         else:
