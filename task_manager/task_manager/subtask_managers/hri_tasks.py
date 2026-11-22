@@ -755,7 +755,11 @@ class HRITasks:
 
     @mockable(return_value=True)
     def announce_and_count(
-        self, intent: str, seconds: int = 3, interrupt_keywords: tuple = ("stop", "no")
+        self,
+        intent: str,
+        seconds: int = 3,
+        interrupt_keywords: tuple = ("stop", "no"),
+        tick_seconds: float = 1.5,
     ) -> bool:
         """Say what will happen, count down aloud and listen for an interrupt.
 
@@ -766,10 +770,10 @@ class HRITasks:
             bool: True to proceed (timeout), False if the user said an interrupt keyword.
         """
         self.say(f"{intent} Say stop to cancel.")
-        self.say(", ".join(str(i) for i in range(seconds, 0, -1)), wait=False)
 
-        # Show the counter in the log and on the display overlay; the timer fires while
-        # interpret_keyword spins the node.
+        # Each number is spoken and shown on its tick (log + display overlay); the timer fires
+        # while interpret_keyword spins the node.
+        self.current_transcription = ""  # drop text left over from the previous listen
         ticks = iter(range(seconds, 0, -1))
 
         def tick():
@@ -779,22 +783,25 @@ class HRITasks:
             n = next(ticks, None)
             if n is not None:
                 Logger.info(self.node, f"Countdown: {n}")
+                self.say(str(n), wait=False)
                 self.display_keyword_publisher.publish(
                     String(data=json.dumps({"keyword": str(n), "source": "countdown"}))
                 )
 
         tick()
-        timer = self.node.create_timer(1.0, tick)
-        # +2 s window and up to 3 s grace: STT lags ~2 s behind speech
+        timer = self.node.create_timer(tick_seconds, tick)
+        # Whole count + 2 s, then up to 3 s grace: STT lags ~2 s behind speech
         s, _ = self.interpret_keyword(
             list(interrupt_keywords),
-            timeout=seconds + 2,
+            timeout=seconds * tick_seconds + 2,
             play_chime=False,
             hotwords=", ".join(interrupt_keywords),
             grace=3.0,
         )
         self.node.destroy_timer(timer)
-        return s != Status.EXECUTION_SUCCESS
+        # Speech that is not a keyword (STT often turns "stop" into "up") is also an interrupt:
+        # when unsure, fall back to asking.
+        return s != Status.EXECUTION_SUCCESS and not self._heard_words()
 
     def _interpret_confirmation(
         self,
