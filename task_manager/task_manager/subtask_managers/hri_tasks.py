@@ -1040,7 +1040,8 @@ class HRITasks:
     ) -> str:
         self.cancel_hear_action()
 
-        self.hear_streaming(timeout=timeout, silence_time=timeout, play_chime=play_chime)
+        accepted = self.hear_streaming(timeout=timeout, silence_time=timeout, play_chime=play_chime)
+        result_future = None
 
         start_time = self.node.get_clock().now()
         self.keyword = ""
@@ -1056,6 +1057,15 @@ class HRITasks:
             and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
         ):
             rclpy.spin_once(self.node, timeout_sec=0.1)
+            # The STT action can end early (e.g. a stale VAD "speaker stopped" from the robot's own
+            # voice) and would leave us deaf until the timeout, so listen again.
+            if result_future is None and accepted.done() and accepted.result().accepted:
+                result_future = accepted.result().get_result_async()
+            elif result_future is not None and result_future.done():
+                accepted = self.hear_streaming(
+                    timeout=timeout, silence_time=timeout, play_chime=False
+                )
+                result_future = None
 
         keyword_listened = contains_any(format_transcription(self.current_transcription), keywords)
 
