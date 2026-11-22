@@ -47,6 +47,7 @@ class GPSRSingleTask(GenericTask):
         self._shelf_objects: dict[int, list[str]] = {}  # the scan's labels per level
         self.shelf_level_heights: dict[int, float] = {}  # measured, 1 = lowest
         self._shelf_measured = False  # the scan boxes are only valid until the base moves
+        self._docked_here = False  # docked at last_location since arriving there
 
     ## Nav
     def go_to(self, command: GoTo):
@@ -83,6 +84,7 @@ class GPSRSingleTask(GenericTask):
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
         self.last_location = target
         self._shelf_measured = False
+        self._docked_here = False
         return result, "arrived to:" + command.location_to_go
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
@@ -97,6 +99,7 @@ class GPSRSingleTask(GenericTask):
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
         self.last_location = sublocation if sublocation else location
         self._shelf_measured = False
+        self._docked_here = False
         return result
 
     ## Manipulation
@@ -126,6 +129,26 @@ class GPSRSingleTask(GenericTask):
         """True when the last navigated furniture is shelf-like (levels, not a table)."""
         loc = (self.last_location or "").lower()
         return any(hint in loc for hint in SHELF_FURNITURE_HINTS)
+
+    def _surface_type(self) -> str:
+        """approach_profiles.yaml surface type of the furniture the robot is at."""
+        if self._at_shelf_furniture():
+            return "shelf"
+        loc = (self.last_location or "").lower()
+        for hint in ("dishwasher", "counter"):
+            if hint in loc:
+                return hint
+        return "table"
+
+    def _dock_here(self) -> None:
+        """Planned dock at the furniture in front, once per stop: pick and place at
+        the same stop reuse it. The arm must be tucked (nav_pose) while docking."""
+        if self._docked_here:
+            return
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        self.subtask_manager.nav.dock_table(surface_type=self._surface_type())
+        self._docked_here = True
+        self._shelf_measured = False  # the base moved: rescan the shelf
 
     def _measure_shelf(self) -> None:
         """Scan the shelf in front of the robot, once per stop."""
@@ -201,9 +224,7 @@ class GPSRSingleTask(GenericTask):
         if isinstance(command, dict):
             command = PickObject(**command)
         # Shelves need room for the arm to reach in; tables are docked close.
-        self.subtask_manager.nav.dock_table(
-            surface_type="shelf" if self._at_shelf_furniture() else "table"
-        )
+        self._dock_here()
         self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
 
         if self._at_shelf_furniture():
@@ -326,6 +347,7 @@ class GPSRSingleTask(GenericTask):
 
         place_retries = 0
         self.subtask_manager.hri.say("I will place the object.", wait=False)
+        self._dock_here()
 
         if self._at_shelf_furniture():
             self._measure_shelf()
