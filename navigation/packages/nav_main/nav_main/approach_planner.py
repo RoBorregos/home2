@@ -197,12 +197,19 @@ def to_base_frame(point, x, y, yaw):
 
 
 def side_of(points, x, y, yaw, center_band=0.10):
-    """'left' | 'right' | 'center' of `points` (Nx2 world) seen from a base at
-    (x, y, yaw), by their mean lateral offset."""
+    """'left' | 'right' | 'center' | 'both' of `points` (Nx2 world) seen from a
+    base at (x, y, yaw): 'both' when there are points on each side, otherwise by
+    their mean lateral offset."""
     pts = np.asarray(points, dtype=float).reshape(-1, 2)
     if len(pts) == 0:
         return ""
-    lateral = float(np.mean([to_base_frame(p, x, y, yaw)[1] for p in pts]))
+    lat = np.array([to_base_frame(p, x, y, yaw)[1] for p in pts])
+    left, right = bool((lat > center_band).any()), bool((lat < -center_band).any())
+    if left and right:
+        # e.g. a bin on one side and a person on the other: the mean would say
+        # "center" although nothing is in front.
+        return "both"
+    lateral = float(np.mean(lat))
     if abs(lateral) <= center_band:
         return "center"
     return "left" if lateral > 0 else "right"

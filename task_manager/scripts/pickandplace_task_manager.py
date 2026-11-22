@@ -401,7 +401,9 @@ class PickAndPlaceTM(Node):
         result = nav.last_dock_result
         if target is not None and result.get("target_blocked") and self.ask_to_clear_blockers:
             side = result.get("blocker_side") or "front"
-            where = "in front of me" if side == "center" else f"on my {side}"
+            where = {"center": "in front of me", "both": "on both sides of me"}.get(
+                side, f"on my {side}"
+            )
             self.subtask_manager.hri.say(
                 f"Something {where} keeps me from reaching the object. Could you please move it?"
             )

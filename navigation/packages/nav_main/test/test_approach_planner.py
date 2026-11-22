@@ -198,6 +198,8 @@ def test_side_of():
     assert ap.side_of([(1.0, -0.5)], 0.0, 0.0, 0.0) == "right"
     assert ap.side_of([(1.0, 0.05)], 0.0, 0.0, 0.0) == "center"
     assert ap.side_of([], 0.0, 0.0, 0.0) == ""
+    # A bin on one side and a person on the other: not "center".
+    assert ap.side_of([(1.0, 0.5), (1.0, -0.5)], 0.0, 0.0, 0.0) == "both"
 
 
 def test_chair_in_front_of_target_is_reported_as_blocker():
