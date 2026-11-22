@@ -17,6 +17,7 @@ from enum import Enum
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
+from frida_constants.hri_constants import FINALS_HOTWORDS
 from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC
 from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
@@ -35,9 +36,6 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 ARM_TRAVEL_POSE = "nav_pose"
 # Words that end the command phase before the time limit
 STOP_WORDS = ("stop", "finish", "that's all", "that is all", "terminar")
-HOTWORDS = "where is bring find look stop"
-# Replies that answer a yes/no question, not "what are you looking for"
-YES_NO = {"yes", "yeah", "yep", "no", "nope", "si", "sí", "ok", "okay", "sure"}
 # Keys of an area in areas.json that are not furniture
 NOT_FURNITURE = {"polygon", "safe_place", "description"}
 # Minimum HRI embedding similarity to replace a spoken place with a map name
@@ -365,10 +363,12 @@ class FinalsTaskManager(Node):
             Logger.error(self, f"Could not reach the {label}: {error}")
             self.subtask_manager.hri.say(f"Sorry, I cannot get to the {label} from here.")
 
-    @staticmethod
-    def _is_yes_no(text: str) -> bool:
+    def _is_yes_no(self, text: str) -> bool:
+        """A bare yes/no reply (frida_constants positive/negative words), not a request."""
+        hri = self.subtask_manager.hri
+        yes_no = hri.affirmation_words | hri.negation_words
         words = "".join(c if c.isalnum() or c.isspace() else " " for c in text.lower()).split()
-        return bool(words) and all(word in YES_NO for word in words)
+        return bool(words) and all(word in yes_no for word in words)
 
     @staticmethod
     def _is_stop(text: str) -> bool:
@@ -389,7 +389,9 @@ class FinalsTaskManager(Node):
         for attempt in range(1, self.listen_retries + 1):
             self._step(f"Listening ({attempt}/{self.listen_retries}): {question}")
             hri.say(question)
-            status, text, _ = hri.hear(hotwords=HOTWORDS, start_silence_time=self.listen_start_s)
+            status, text, _ = hri.hear(
+                hotwords=FINALS_HOTWORDS, start_silence_time=self.listen_start_s
+            )
             text = (text or "").strip()
             if status != Status.EXECUTION_SUCCESS or not text:
                 self._step("No answer heard")
