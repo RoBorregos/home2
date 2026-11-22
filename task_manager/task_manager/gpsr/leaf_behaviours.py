@@ -198,7 +198,7 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
             if self._resolved:
                 cmd_idx = self._resolved[0][0].source_cmd
                 self.logger.info(
-                    f"fallback running cmd_idx={cmd_idx}, " f"{len(self._resolved)} actions"
+                    f"fallback running cmd_idx={cmd_idx}, {len(self._resolved)} actions"
                 )
         skip = self._resume_skip_mask()
         for idx, (pa, method) in enumerate(self._resolved):

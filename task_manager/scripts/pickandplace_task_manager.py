@@ -175,7 +175,9 @@ class PickAndPlaceTM(Node):
         # designated for the dishwasher are instead placed (normal top place) at the dishwasher-tab
         # zone (cooking_table). Flip to False once the inside-dishwasher place exists.
         self.place_dishwasher_at_tab = True
-        self.countdown_before_proceed = False  # A/B: chair-removal wait becomes announce + countdown
+        self.countdown_before_proceed = (
+            False  # A/B: chair-removal wait becomes announce + countdown
+        )
         self.use_extra_surface = False  # pick the 2 common objects from the counter (−20 pts/obj)
         self.use_grasp_detector = False  # gate picks on the grasp bit; False ignores it
         self.use_vision_confirmation = True  # vision re-look to confirm the pick

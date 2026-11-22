@@ -250,7 +250,7 @@ class NavigationTasks:
         CLog.nav(
             self.node,
             "INFO",
-            f"Point is in '{payload['area'] or 'unknown'}' " f"near {payload['sublocations'][:1]}",
+            f"Point is in '{payload['area'] or 'unknown'}' near {payload['sublocations'][:1]}",
         )
         return (Status.EXECUTION_SUCCESS, payload)
 
@@ -307,8 +307,7 @@ class NavigationTasks:
         CLog.nav(
             self.node,
             "SUCCESS",
-            f"Patrol '{mode or 'full'}': {len(route)} viewpoints, "
-            f"{result.total_distance:.1f} m",
+            f"Patrol '{mode or 'full'}': {len(route)} viewpoints, {result.total_distance:.1f} m",
         )
         return (Status.EXECUTION_SUCCESS, route)
 
