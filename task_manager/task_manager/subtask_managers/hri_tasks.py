@@ -763,9 +763,25 @@ class HRITasks:
         """
         self.say(f"{intent} Say stop to cancel.")
         self.say(", ".join(str(i) for i in range(seconds, 0, -1)), wait=False)
+
+        # Show the counter in the log and on the display overlay; the timer fires while
+        # interpret_keyword spins the node.
+        ticks = iter(range(seconds, 0, -1))
+
+        def tick():
+            n = next(ticks, None)
+            if n is not None:
+                Logger.info(self.node, f"Countdown: {n}")
+                self.display_keyword_publisher.publish(
+                    String(data=json.dumps({"keyword": str(n), "source": "countdown"}))
+                )
+
+        tick()
+        timer = self.node.create_timer(1.0, tick)
         s, _ = self.interpret_keyword(
             list(interrupt_keywords), timeout=seconds + 2, play_chime=False
         )
+        self.node.destroy_timer(timer)
         return s != Status.EXECUTION_SUCCESS
 
     def _interpret_confirmation(
@@ -1057,8 +1073,6 @@ class HRITasks:
             and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
         ):
             rclpy.spin_once(self.node, timeout_sec=0.1)
-            # The STT action can end early (e.g. a stale VAD "speaker stopped" from the robot's own
-            # voice) and would leave us deaf until the timeout, so listen again.
             if result_future is None and accepted.done() and accepted.result().accepted:
                 result_future = accepted.result().get_result_async()
             elif result_future is not None and result_future.done():
