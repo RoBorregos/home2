@@ -31,12 +31,14 @@ Usage:
 
 import math
 import os
+import time
 
 import numpy as np
 import yaml
 import rclpy
 from rclpy.node import Node
-from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy
 from ament_index_python.packages import get_package_share_directory
 
@@ -54,6 +56,7 @@ from frida_constants.navigation_constants import (
     MAP_TOPIC, GLOBAL_COSTMAP_TOPIC, GOAL_UPDATE_TOPIC, FOLLOW_MODE_SERVICE,
     FOLLOW_STATUS_TOPIC, FOLLOW_STATUS_IDLE, FOLLOW_STATUS_FOLLOWING,
     FOLLOW_STATUS_LOST, FOLLOW_STATUS_SEARCHING, FOLLOW_STATUS_GAVE_UP,
+    FOLLOW_LOST_GOTO_TIMEOUT, FOLLOW_SEARCH_TIMEOUT,
 )
 from nav_main import approach_planner as ap
 from nav_main import follow_planner as fp
@@ -151,7 +154,11 @@ def _make_param(name, value):
 class PersonGoalSmoother(Node):
     def __init__(self):
         super().__init__("person_goal_smoother")
-        cb = ReentrantCallbackGroup()
+        # All state callbacks stay serialized in one group; only the SetParameters
+        # responses run in their own group, so _follow_mode_cb can block until the
+        # Nav2 params are applied (main() uses a MultiThreadedExecutor).
+        cb = MutuallyExclusiveCallbackGroup()
+        param_cb = ReentrantCallbackGroup()
 
         # --- Parameters ---
         self.declare_parameter("alpha", 0.5)            # EMA smoothing (0=full smooth, 1=no smooth)
@@ -170,11 +177,11 @@ class PersonGoalSmoother(Node):
         self.declare_parameter("max_person_speed", 2.0)  # m/s clamp on the velocity estimate
         self.declare_parameter("heartbeat_rate", 2.0)    # Hz re-publish of the current goal
         # Lost-person recovery (see module docstring)
-        self.declare_parameter("lost_goto_timeout", 8.0)
+        self.declare_parameter("lost_goto_timeout", FOLLOW_LOST_GOTO_TIMEOUT)
         self.declare_parameter("lost_arrive_radius", 0.5)
         self.declare_parameter("search_dwell", 2.5)
         self.declare_parameter("search_step_deg", 60.0)
-        self.declare_parameter("search_timeout", 15.0)
+        self.declare_parameter("search_timeout", FOLLOW_SEARCH_TIMEOUT)
         # "last_position" (default) runs the recovery above; "halt" freezes at the
         # robot's own pose on loss (legacy behavior) and reports gave_up at once.
         self.declare_parameter("lost_behavior", "last_position")
@@ -213,7 +220,9 @@ class PersonGoalSmoother(Node):
 
         # --- TF ---
         self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+        # Own spin thread: _tracker_cb waits on lookup_transform, and TF updates
+        # must keep arriving while it does.
+        self.tf_listener = TransformListener(self.tf_buffer, self, spin_thread=True)
 
         # --- Subscribers ---
         self.create_subscription(PointStamped, RESULTS_TOPIC, self._tracker_cb, 10, callback_group=cb)
@@ -252,13 +261,13 @@ class PersonGoalSmoother(Node):
         # --- Nav2 param switching clients ---
         self.param_clients = {
             "controller_server": self.create_client(
-                SetParameters, "/controller_server/set_parameters", callback_group=cb),
+                SetParameters, "/controller_server/set_parameters", callback_group=param_cb),
             "local_costmap": self.create_client(
-                SetParameters, "/local_costmap/local_costmap/set_parameters", callback_group=cb),
+                SetParameters, "/local_costmap/local_costmap/set_parameters", callback_group=param_cb),
             "global_costmap": self.create_client(
-                SetParameters, "/global_costmap/global_costmap/set_parameters", callback_group=cb),
+                SetParameters, "/global_costmap/global_costmap/set_parameters", callback_group=param_cb),
             "velocity_smoother": self.create_client(
-                SetParameters, "/velocity_smoother/set_parameters", callback_group=cb),
+                SetParameters, "/velocity_smoother/set_parameters", callback_group=param_cb),
         }
         self.follow_mode_active = False
 
@@ -277,21 +286,25 @@ class PersonGoalSmoother(Node):
     def _follow_mode_cb(self, request, response):
         """Service to switch between follow and standard nav params."""
         self._reset_person()
+        failed = self._apply_nav_params(follow=request.data)
         if request.data:
-            self._apply_nav_params(follow=True)
             self.follow_mode_active = True
             # Don't let a stale timestamp trip the watchdog before the tracker warms up.
             self.last_tracker_time = self.get_clock().now()
             self._set_status(FOLLOW_STATUS_FOLLOWING)
             response.message = "Follow mode activated"
         else:
-            self._apply_nav_params(follow=False)
             self.follow_mode_active = False
             self.last_tracker_time = None
             self._set_status(FOLLOW_STATUS_IDLE)
             response.message = "Standard mode restored"
-        response.success = True
-        self.get_logger().info(response.message)
+        # Only report success once every Nav2 node confirmed its params.
+        response.success = not failed
+        if failed:
+            response.message += f" (params NOT applied on: {', '.join(failed)})"
+            self.get_logger().warn(response.message)
+        else:
+            self.get_logger().info(response.message)
         return response
 
     def _reset_person(self):
@@ -307,11 +320,14 @@ class PersonGoalSmoother(Node):
         self.search_yaws = []
         self.search_index = -1
 
-    def _apply_nav_params(self, follow: bool):
-        """Set Nav2 params for follow or standard mode, loaded from YAMLs."""
+    def _apply_nav_params(self, follow: bool, timeout: float = 1.0):
+        """Set Nav2 params for follow or standard mode, loaded from YAMLs, and wait
+        (up to `timeout` s) for every node to confirm. Returns the names of the
+        nodes whose params were not applied (empty list = all applied)."""
         src = self.follow_yaml if follow else self.standard_yaml
         fallback = self.standard_yaml if follow else self.follow_yaml
-        self._set_params("controller_server", self._extract_params(
+        pending = {}
+        pending["controller_server"] = self._set_params("controller_server", self._extract_params(
             src, fallback, "controller_server.ros__parameters", CONTROLLER_KEYS))
         for name, section in (("local_costmap", "local_costmap.local_costmap.ros__parameters"),
                               ("global_costmap", "global_costmap.global_costmap.ros__parameters")):
@@ -320,9 +336,10 @@ class PersonGoalSmoother(Node):
                 params.append(_make_param(f"{layer}.enabled", not follow))
             for layer in LAYERS_ALWAYS_ENABLED:
                 params.append(_make_param(f"{layer}.enabled", True))
-            self._set_params(name, params)
-        self._set_params("velocity_smoother", self._extract_params(
+            pending[name] = self._set_params(name, params)
+        pending["velocity_smoother"] = self._set_params("velocity_smoother", self._extract_params(
             src, fallback, "velocity_smoother.ros__parameters", SMOOTHER_KEYS))
+        return self._wait_params(pending, timeout)
 
     def _extract_params(self, primary, fallback, section, keys):
         params = []
@@ -335,26 +352,46 @@ class PersonGoalSmoother(Node):
         return params
 
     def _set_params(self, node_name, params):
+        """Send params to `node_name`. Returns the call future, True when there is
+        nothing to set, or None when the service is not available."""
         if not params:
-            return
+            return True
         client = self.param_clients.get(node_name)
-        if client is None or not client.service_is_ready():
+        if client is None or not client.wait_for_service(timeout_sec=0.25):
             self.get_logger().warn(f"SetParameters not ready for {node_name}")
-            return
+            return None
         req = SetParameters.Request()
         req.parameters = params
-        client.call_async(req).add_done_callback(
-            lambda f, n=node_name: self._param_result_cb(f, n))
+        return client.call_async(req)
 
-    def _param_result_cb(self, future, node_name):
-        try:
-            failed = [r for r in future.result().results if not r.successful]
-            if failed:
-                self.get_logger().warn(f"Some params failed on {node_name}: {[r.reason for r in failed]}")
+    def _wait_params(self, pending, timeout):
+        """Wait for the SetParameters futures in `pending` ({node: future|True|None});
+        returns the nodes that did not confirm every param."""
+        deadline = time.monotonic() + timeout
+        futures = [f for f in pending.values() if f not in (True, None)]
+        while any(not f.done() for f in futures) and time.monotonic() < deadline:
+            time.sleep(0.01)
+        failed = []
+        for node_name, future in pending.items():
+            if future is True:
+                continue
+            if future is None or not future.done():
+                if future is not None:
+                    self.get_logger().error(f"SetParameters timed out on {node_name}")
+                failed.append(node_name)
+                continue
+            try:
+                bad = [r.reason for r in future.result().results if not r.successful]
+            except Exception as e:
+                self.get_logger().error(f"SetParameters failed on {node_name}: {e}")
+                failed.append(node_name)
+                continue
+            if bad:
+                self.get_logger().warn(f"Some params failed on {node_name}: {bad}")
+                failed.append(node_name)
             else:
                 self.get_logger().info(f"Params set on {node_name}")
-        except Exception as e:
-            self.get_logger().error(f"SetParameters failed on {node_name}: {e}")
+        return failed
 
     # ── Status ─────────────────────────────────────────────────
 
@@ -378,13 +415,15 @@ class PersonGoalSmoother(Node):
             return
         map_frame = self.get_parameter("map_frame").value
         # Transform at the point's own stamp: the camera rides on the arm, which
-        # pans while following. Fall back to latest if TF lacks that stamp.
+        # pans while following. Fall back to latest if TF lacks that stamp. The
+        # exact-stamp try never waits, so a missing stamp costs no time.
         point_map, err = None, None
-        for stamp in (rclpy.time.Time.from_msg(msg.header.stamp), rclpy.time.Time()):
+        for stamp, wait in ((rclpy.time.Time.from_msg(msg.header.stamp), 0.0),
+                            (rclpy.time.Time(), 0.1)):
             try:
                 transform = self.tf_buffer.lookup_transform(
                     map_frame, msg.header.frame_id, stamp,
-                    timeout=rclpy.duration.Duration(seconds=0.1))
+                    timeout=rclpy.duration.Duration(seconds=wait))
                 point_map = do_transform_point(msg, transform)
                 break
             except Exception as e:
@@ -606,8 +645,11 @@ class PersonGoalSmoother(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = PersonGoalSmoother()
+    # Multi-threaded so SetParameters responses arrive while _follow_mode_cb waits.
+    executor = MultiThreadedExecutor(num_threads=2)
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:

@@ -470,13 +470,12 @@ class Nav_Central(Node):
 
         # 1. Tell person_goal_smoother to switch Nav2 params to follow mode, and
         # wait for it: the goal must start under the follow-mode controller limits.
-        req = SetBool.Request()
-        req.data = True
-        if self._call_service_with_timeout(
-                self.follow_mode_client, req, FOLLOW_MODE_SERVICE_TIMEOUT, "Follow Person set_follow_mode"):
+        applied, message = self._set_smoother_follow_mode(True)
+        if applied:
             self.nav_logger("info", "Follow Person -> smoother set to follow mode")
         else:
-            self.nav_logger("warn", "Follow Person -> smoother service not available")
+            self.nav_logger("warn", f"Follow Person -> follow-mode params NOT applied ({message}); "
+                                    "following under the standard Nav2 limits")
 
         # 2. Wait briefly for the goal smoother to publish the first goal
         wait_start = self.get_clock().now()
@@ -617,15 +616,26 @@ class Nav_Central(Node):
         self._latest_goal_update = None
 
         # 2. Restore standard Nav2 params
-        req = SetBool.Request()
-        req.data = False
-        if self._call_service_with_timeout(
-                self.follow_mode_client, req, FOLLOW_MODE_SERVICE_TIMEOUT, "Follow Person set_follow_mode"):
+        applied, message = self._set_smoother_follow_mode(False)
+        if applied:
             self.nav_logger("info", f"Follow Person -> smoother restored to standard mode "
                                     f"({self._follow_resends} BT re-send(s) this session)")
             return True
-        self.nav_logger("warn", "Follow Person -> smoother service not available, params NOT restored")
+        self.nav_logger("warn", f"Follow Person -> standard params NOT restored ({message})")
         return False
+
+    def _set_smoother_follow_mode(self, enable):
+        """Switch person_goal_smoother's Nav2 params. Returns (applied, message):
+        applied is True only when the smoother confirmed every node took them."""
+        req = SetBool.Request()
+        req.data = enable
+        if not self.follow_mode_client.wait_for_service(timeout_sec=TIMEOUT_RTAB_SERVICE):
+            return False, "smoother service not available"
+        future = self.follow_mode_client.call_async(req)
+        if not self._wait(future, FOLLOW_MODE_SERVICE_TIMEOUT) or future.result() is None:
+            return False, f"no response after {FOLLOW_MODE_SERVICE_TIMEOUT}s"
+        result = future.result()
+        return result.success, result.message
 
     def _initialpose_callback(self, msg):
         if not self._initial_pose_set:

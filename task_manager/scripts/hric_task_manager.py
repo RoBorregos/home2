@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 
 import rclpy
+from frida_constants.navigation_constants import FOLLOW_RECOVERY_MAX_S
 from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
     IMAGE_TOPIC_HRIC,
@@ -33,8 +34,10 @@ FOLLOW_MAX_DURATION = 180.0
 # Navigation reports the follow state on /navigation/follow_status (nav.follow_status()).
 # On its own it drives to the person's last-known position and sweeps for them
 # ("lost" -> "searching"); only when that fails ("gave_up") or drags on longer than
-# FOLLOW_RELOCK_AFTER_S does the task manager step in and re-lock the tracker.
-FOLLOW_RELOCK_AFTER_S = 12.0
+# FOLLOW_RELOCK_AFTER_S does the task manager step in and re-lock the tracker. The
+# safety net sits past the smoother's full recovery (lost + search) so the sweep is
+# never cut short.
+FOLLOW_RELOCK_AFTER_S = FOLLOW_RECOVERY_MAX_S + 5.0
 FOLLOW_RELOCK_TRIES = 2
 DOOR_WAIT_TIMEOUT = 15.0
 

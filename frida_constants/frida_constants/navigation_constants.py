@@ -120,11 +120,18 @@ FOLLOW_STATUS_GAVE_UP = (
 )
 
 # Timeouts for the follow-person orchestration
-FOLLOW_MODE_SERVICE_TIMEOUT = 2.0  # Wait for /navigation/set_follow_mode
+FOLLOW_MODE_SERVICE_TIMEOUT = 3.0  # Wait for /navigation/set_follow_mode
 FOLLOW_GOAL_UPDATE_TIMEOUT = (
     2.0  # Wait for first /goal_update before seeding initial goal
 )
 FOLLOW_ACTION_SERVER_TIMEOUT = 3.0  # Wait for NavigateToPose action server
+
+# Lost-person recovery timings (person_goal_smoother parameter defaults). The task
+# managers wait for the whole recovery before re-locking, so keep them in sync here.
+FOLLOW_LOST_GOTO_TIMEOUT = 8.0  # s driving to the last-known position ("lost")
+FOLLOW_SEARCH_TIMEOUT = 15.0  # s sweeping in place there ("searching") before "gave_up"
+# Longest time navigation can stay out of "following" before reporting "gave_up".
+FOLLOW_RECOVERY_MAX_S = FOLLOW_LOST_GOTO_TIMEOUT + FOLLOW_SEARCH_TIMEOUT
 
 # Default docking offset (table_docker front_offset).
 DEFAULT_DOCK_OFFSET = 0.16
