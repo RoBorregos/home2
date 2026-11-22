@@ -763,7 +763,9 @@ class HRITasks:
         """
         self.say(f"{intent} Say stop to cancel.")
         self.say(", ".join(str(i) for i in range(seconds, 0, -1)), wait=False)
-        s, _ = self.interpret_keyword(list(interrupt_keywords), timeout=seconds, play_chime=False)
+        s, _ = self.interpret_keyword(
+            list(interrupt_keywords), timeout=seconds + 2, play_chime=False
+        )
         return s != Status.EXECUTION_SUCCESS
 
     def _interpret_confirmation(
