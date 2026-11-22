@@ -783,7 +783,13 @@ class TableDocker(Node):
             for c in clouds:
                 parts.append(self._cloud_points(c))
         parts = [p for p in parts if len(p)]
-        return np.vstack(parts) if parts else np.empty((0, 2))
+        if not parts:
+            return np.empty((0, 2))
+        pts = np.vstack(parts)
+        # Points inside (or touching) the footprint are the robot itself (the arm
+        # or the body seen by the camera, the lidar mounts), never a surface: a
+        # face fit on them lands inside the base, at a random angle.
+        return pts[ap.footprint_clearance(pts, self.footprint) > 0.02]
 
     def _wait_for_samples(self):
         """Block briefly until enough recent frames are buffered (robot stationary)."""
