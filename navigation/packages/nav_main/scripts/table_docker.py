@@ -1913,7 +1913,11 @@ class TableDocker(Node):
             response.message = (f"Detected ({shape_txt.strip()}): yaw_err={math.degrees(e_yaw):.1f}deg "
                                 f"dist={distance:.3f}m points={len(fit['pts'])}; "
                                 + (f"plan gap={plan['gap']:.2f}m lateral={plan['lateral']:.2f}m "
-                                   f"({plan['n_valid']}/{plan['n_total']} free) reach={plan['reach']}" if plan
+                                   f"({plan['n_valid']}/{plan['n_total']} free) reach={plan['reach']}"
+                                   + ("" if plan["checked"] else
+                                      " — NO COSTMAP (nav2 paused): obstacles NOT checked, "
+                                      "the real dock may find fewer free poses")
+                                   if plan
                                    else "no collision-free dock pose"))
             self.log("info", response.message)
             return response
