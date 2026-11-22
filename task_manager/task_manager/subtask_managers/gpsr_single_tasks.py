@@ -131,7 +131,8 @@ class GPSRSingleTask(GenericTask):
         return any(hint in loc for hint in SHELF_FURNITURE_HINTS)
 
     def _surface_type(self) -> str:
-        """approach_profiles.yaml surface type of the furniture the robot is at."""
+        """approach_profiles.yaml surface type of the furniture the robot is at,
+        so GPSR docks at the same per-surface distances as PPC."""
         if self._at_shelf_furniture():
             return "shelf"
         loc = (self.last_location or "").lower()

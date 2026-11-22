@@ -537,7 +537,7 @@ class TableDocker(Node):
         # tripping the guard.
         self._fp_samples_sweep = ap.footprint_samples(self.footprint, 0.025, self.footprint_padding / 2)
         if "default" not in self.profiles:
-            self.profiles["default"] = ap.ReachProfile(0.03, 0.02, 0.15, "auto")
+            self.profiles["default"] = ap.ReachProfile(0.025, 0.02, 0.045, "auto")
         rc = data.get("reach_check") or {}
         self.reach_cfg = {
             "enabled": bool(rc.get("enabled", False)),
@@ -560,8 +560,8 @@ class TableDocker(Node):
         if self.target_gap is not None and self.target_gap >= 0.0:
             # Explicit gap (e.g. a legacy offset): a band centred on it.
             prof.gap = float(self.target_gap)
-            prof.gap_min = max(0.01, prof.gap - 0.05)
-            prof.gap_max = prof.gap + 0.05
+            prof.gap_min = max(0.02, prof.gap - 0.02)
+            prof.gap_max = prof.gap + 0.02
         return prof
 
     def _reset_request(self):
@@ -1121,7 +1121,8 @@ class TableDocker(Node):
             center, radius = face["center"], face["radius"]
             ref = math.atan2(robot[1] - center[1], robot[0] - center[0])
             cands = ap.circle_face_candidates(center, radius, self.front, profile, ref, target,
-                                              angle_step_deg=5.0, max_angle_deg=120.0)
+                                              angle_step_deg=5.0, max_angle_deg=120.0,
+                                              gap_step=0.02)
             ignore = ap.disc_ignore(center, radius, self.face_ignore_margin)
         else:
             n = face["normal"]
@@ -1129,8 +1130,9 @@ class TableDocker(Node):
             # staging pose an operator placed in front of this furniture), not at the
             # centre of whatever stretch of face the lidar happened to see.
             aim = target if target is not None else np.array(robot[:2])
+            # 2 cm gap steps: the bands are +-2 cm around the old stand-offs.
             cands = ap.line_face_candidates(face["p1"], face["p2"], n, self.front, self.half_width,
-                                            profile, aim)
+                                            profile, aim, gap_step=0.02)
             ignore = ap.halfplane_ignore(face["centroid"], n, self.face_ignore_margin)
         # Padded footprint: keep a margin from everything but the surface itself.
         valid, all_c = ap.rank(cands, profile, self.weights, grid, self._fp_samples_padded,

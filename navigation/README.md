@@ -293,12 +293,18 @@ The planning code is `nav_main/approach_planner.py` (pure Python, unit tested in
 Distances live **per surface type** in
 [`config/approach_profiles.yaml`](packages/nav_main/config/approach_profiles.yaml):
 
-| Type | Preferred gap (robot front → surface) | Band |
-| --- | --- | --- |
-| `table`, `counter`, `round_table` | 0.03 m | 0.02 to 0.15 m |
-| `cabinet`, `shelf` | 0.17 m | 0.10 to 0.25 m |
-| `dishwasher` | 0.19 m | 0.12 to 0.25 m |
-| `serving_table` | 0.19 m | 0.12 to 0.25 m |
+| Type | Preferred gap (robot front → surface) | Band | Used by |
+| --- | --- | --- | --- |
+| `table`, `counter`, `round_table` | 0.025 m | 0.02 to 0.045 m | PPC and GPSR tables / counters |
+| `cabinet`, `shelf` | 0.165 m | 0.145 to 0.185 m | PPC cabinet, GPSR shelf-like furniture |
+| `dishwasher` | 0.185 m | 0.165 to 0.205 m | PPC and GPSR dishwasher, PPC cooking table |
+| `serving_table` | 0.185 m | 0.165 to 0.205 m | Restaurant |
+
+The preferred gaps are exactly the stand-offs PPC and Restaurant used before
+(`old offset + 0.19 − 0.325`), and the bands are only ±2 cm, so manipulation
+sees the same distances it was calibrated at. GPSR used to dock at 2.5 cm
+everywhere; it now uses these per-surface distances too. Widen a band only after
+manipulation confirms the arm still reaches there.
 
 The same file holds four more settings:
 
