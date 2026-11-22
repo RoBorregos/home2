@@ -769,6 +769,7 @@ class HRITasks:
         Returns:
             bool: True to proceed (timeout), False if the user said an interrupt keyword.
         """
+        # Nothing listens while the announcement is spoken: the mic also hears the robot's voice.
         self.say(f"{intent} Say stop to cancel.")
 
         # Each number is spoken and shown on its tick (log + display overlay); the timer fires
