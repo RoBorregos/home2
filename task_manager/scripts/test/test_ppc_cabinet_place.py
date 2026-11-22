@@ -99,8 +99,11 @@ class PPCTestCabinetPlace(PickAndPlaceTM):
         }
         self.yolo_to_logical = {v: k for k, v in self.yolo_names.items()}
 
-        self.shelf_level_heights = {1: 0.475, 2: 0.827, 3: 1.201}
-        self.default_shelf_height = 0.475
+        # Measured by the live shelf scan when the FSM reaches the cabinet.
+        self.shelf_level_heights: dict[int, float] = {}
+        self.default_shelf_height = 0.0
+        self._shelf_heights_detected = False
+        self._shelf_objects: dict[int, list[str]] = {}
 
         try:
             from ament_index_python.packages import get_package_share_directory
@@ -136,11 +139,8 @@ class PPCTestCabinetPlace(PickAndPlaceTM):
         self.shelves = {}
         self.object_to_placing_shelf = defaultdict(list)
         self.shelf_scanned = False
-        self._cabinet_scan_fresh = False
         self._shelf_fallback_heights: list[float] = []
         self._shelf_fallback_idx: int = 0
-        self.shelf_level_threshold = 0.20
-        self.shelf_level_down_threshold = 0.05
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -193,8 +193,7 @@ def main(args=None):
         type=int,
         choices=[1, 2, 3],
         default=None,
-        help="Force placement on this shelf level (skip categorization). "
-        "1=0.475m, 2=0.827m, 3=1.201m",
+        help="Force placement on this measured shelf level (1 = lowest).",
     )
     parser.add_argument("--object", type=str, default="coca_cola", help="Object name to place")
     parsed, remaining = parser.parse_known_args()
@@ -202,22 +201,10 @@ def main(args=None):
     rclpy.init(args=remaining)
     node = PPCTestCabinetPlace(object_name=parsed.object)
 
-    # If --shelf is given, override shelf assignment.  The scan still runs
-    # (populates octomap) but when categorization fails (FindClosest not
-    # available), the FSM falls back to default_shelf_height — so we just
-    # set that to the forced value.  We also pre-populate
-    # object_to_placing_shelf so that even if categorization succeeds, it
-    # returns the forced shelf.
+    # --shelf: categorization returns this level of the live scan.
     if parsed.shelf is not None:
-        forced_height = node.shelf_level_heights[parsed.shelf]
-        node.default_shelf_height = forced_height
         node.object_to_placing_shelf[parsed.object] = [parsed.shelf - 1]
-        CLog.fsm(
-            node,
-            "TEST",
-            f"Forced shelf {parsed.shelf} at {forced_height}m (default overridden).",
-            level="success",
-        )
+        CLog.fsm(node, "TEST", f"Forced shelf {parsed.shelf}.", level="success")
 
     # Stop conditions specific to this test: we only care about the cabinet
     # place flow, so we exit as soon as the FSM transitions OUT of the

@@ -54,6 +54,7 @@ def move_to_pregrasp_nearest_ik(
     velocity: float = PICK_VELOCITY,
     fallback_move_to_pose=None,
     logger=None,
+    acceleration: float = PICK_ACCELERATION,
 ) -> bool:
     """
     Move to a pre-grasp pose planning in joint space toward the IK solution
@@ -110,7 +111,7 @@ def move_to_pregrasp_nearest_ik(
                     move_joints_action_client,
                     joint_positions={"joints": joints, "degrees": False},
                     velocity=velocity,
-                    acceleration=PICK_ACCELERATION,
+                    acceleration=acceleration,
                     wait=True,
                 )
             )
