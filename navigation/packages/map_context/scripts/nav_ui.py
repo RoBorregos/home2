@@ -620,6 +620,12 @@ class NavRosNode(Node):
         msg.pose.pose.position.y = y
         msg.pose.pose.orientation.z = math.sin(yaw / 2.0)
         msg.pose.pose.orientation.w = math.cos(yaw / 2.0)
+        # RViz's default spread (0.5 m, ~15 deg). AMCL seeds its particles from
+        # it, so a zero covariance would leave no room to correct the click.
+        cov = [0.0] * 36
+        cov[0] = cov[7] = 0.25
+        cov[35] = 0.068
+        msg.pose.covariance = cov
         self.initialpose_pub.publish(msg)
 
 

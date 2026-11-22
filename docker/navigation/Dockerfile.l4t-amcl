@@ -1,0 +1,21 @@
+# FAST PATH: add nav2_amcl to an existing roborregos/home2:navigation-l4t image
+# whose Nav2 overlay was built before AMCL was part of Dockerfile.l4t. Builds
+# only nav2_amcl (a few minutes on the Orin) from the navigation2 checkout that
+# is already in the image, so it matches the rest of the Nav2 build exactly.
+# From the repo root on the Orin:
+#   docker build -f docker/navigation/Dockerfile.l4t-amcl \
+#     -t roborregos/home2:navigation-l4t .
+ARG BASE_IMAGE=roborregos/home2:navigation-l4t
+FROM ${BASE_IMAGE}
+ARG ROS_DISTRO=jazzy
+USER ros
+SHELL ["/bin/bash", "-c"]
+WORKDIR /home/ros/nav2_ws
+RUN cd src/navigation2 && \
+    (git checkout HEAD -- nav2_amcl || \
+     (git fetch --depth 1 origin "$(git rev-parse HEAD)" && git checkout FETCH_HEAD -- nav2_amcl)) && \
+    cd /home/ros/nav2_ws && source /opt/ros/${ROS_DISTRO}/setup.bash && source install/setup.bash && \
+    MAKEFLAGS="-j6" colcon build --packages-select nav2_amcl \
+      --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && \
+    rm -rf build log
+WORKDIR /workspace

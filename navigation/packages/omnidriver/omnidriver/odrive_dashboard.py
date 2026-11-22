@@ -71,7 +71,7 @@ import rclpy
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, TwistStamped, Quaternion, TransformStamped
-from std_msgs.msg import Float32MultiArray, Int32MultiArray, String, Float64
+from std_msgs.msg import Empty, Float32MultiArray, Int32MultiArray, String, Float64
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster
@@ -401,6 +401,9 @@ class ODriveDashboardNode(Node):
         self.pub_ik          = self.create_publisher(Float32MultiArray, 'odrive/ik_wheel_speeds',   10)
         # Standard ROS 2 Odometry message built from STM32 ODOM_* fields.
         self.pub_odom        = self.create_publisher(Odometry,          'odrive/odom',              10)
+        # Fired when the odometry was re-anchored (reconnect, firmware boot, raw
+        # jump): the robot may have moved unseen, so the localizer should look again.
+        self.pub_reanchored  = self.create_publisher(Empty,             'odrive/odom_reanchored',   10)
         self.pub_body_twist  = self.create_publisher(Float32MultiArray, 'odrive/body_twist',        10)
         self.pub_node_ids    = self.create_publisher(Int32MultiArray,   'odrive/node_ids',          10)
         self.pub_axis_errors = self.create_publisher(Int32MultiArray,   'odrive/axis_errors',       10)
@@ -894,12 +897,14 @@ class ODriveDashboardNode(Node):
             self.get_logger().warn(
                 "Odometry re-anchored on a raw jump: "
                 f"last raw={_fmt_pose(last)} raw={_fmt_pose(raw)}")
+            self.pub_reanchored.publish(Empty())
         self._odom_off, self._odom_raw = off, raw
         if holding:
             self._odom_hold -= 1
             if self._odom_hold == 0:
                 self.get_logger().warn(
                     f"Odometry released: raw={_fmt_pose(raw)} offset={_fmt_pose(off)}")
+                self.pub_reanchored.publish(Empty())
         odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y, _ = \
             _se2_mul(self._odom_off, raw)
         cz, sz = math.cos(0.5 * self._odom_off[2]), math.sin(0.5 * self._odom_off[2])

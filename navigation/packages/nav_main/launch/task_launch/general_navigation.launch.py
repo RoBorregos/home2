@@ -52,6 +52,21 @@ def launch_function(context, *args, **kwargs):
     print(f"[general_navigation] static map '{omni_map_yaml_value}' "
           f"exists={os.path.exists(omni_map_yaml_value)} -> use_static_map_server={use_static_map_default}")
 
+    # map->odom: AMCL on the static grid (default) or slam_toolbox localization
+    # on the pose-graph. Switch with NAV_LOCALIZER=slam_toolbox or localizer:=.
+    localizer = LaunchConfiguration(
+        'localizer', default=os.getenv('NAV_LOCALIZER') or 'amcl').perform(context).lower()
+    if localizer not in ('amcl', 'slam_toolbox'):
+        raise RuntimeError(f"localizer must be 'amcl' or 'slam_toolbox', got '{localizer}'")
+    use_amcl = localizer == 'amcl'
+    if use_amcl:
+        if not os.path.exists(omni_map_yaml_value):
+            raise RuntimeError(
+                f"AMCL needs the occupancy grid '{omni_map_yaml_value}'. Save the map from "
+                f"nav_ui or run with NAV_LOCALIZER=slam_toolbox.")
+        use_static_map, static_on = 'true', True
+    print(f"[general_navigation] localizer -> {localizer}")
+
     # Keepout (virtual obstacle) filter — AUTO-enabled when a mask named
     # "<MAP_NAME>_keepout_mask.yaml" exists next to the map (draw it in the map
     # tagger UI). Override with use_keepout:=true|false or keepout_mask:=/path.yaml.
@@ -86,6 +101,7 @@ def launch_function(context, *args, **kwargs):
             'rtab_mapping_config': rtab_params,
             'default_base': default_base,
             'nav_type': nav_type,
+            'localizer': localizer,
         }],
     )
 
@@ -129,6 +145,7 @@ def launch_function(context, *args, **kwargs):
             'keepout_mask': keepout_mask,
             'use_static_map_server': use_static_map,
             'map_yaml': omni_map_yaml,
+            'use_amcl': str(use_amcl).lower(),
         }.items(),
     )
 
@@ -197,7 +214,8 @@ def launch_function(context, *args, **kwargs):
         omni_basics,
     ]
 
-    if nav_type_value == '2d':
+    # Only one map->odom publisher: slam_toolbox stays out when AMCL runs.
+    if nav_type_value == '2d' and not use_amcl:
         launch_actions.append(omni_localization)
     print(f"[general_navigation] omnibase Nav2 config -> "
           f"{nav2_omni_params.perform(context)}")

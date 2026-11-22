@@ -53,6 +53,14 @@ def launch_setup(context, *args, **kwargs):
     # off /map by localization.launch.py when this is on.
     use_static_map = LaunchConfiguration('use_static_map_server', default='false').perform(context).lower() in ('true', '1')
     map_yaml = LaunchConfiguration('map_yaml', default='').perform(context)
+    # AMCL (map->odom) rides along with map_server, in the same container for the
+    # same latched-/map reason. Needs the static map server.
+    use_amcl = LaunchConfiguration('use_amcl', default='false').perform(context).lower() in ('true', '1')
+    if use_amcl and not (use_static_map and map_yaml):
+        raise RuntimeError('use_amcl:=true needs use_static_map_server:=true and map_yaml')
+    amcl_params_file = LaunchConfiguration(
+        'amcl_config_file',
+        default=os.path.join(pkg_file_route, 'config', 'omni_config', 'amcl.yaml')).perform(context)
 
     # Build the nav2 param file. When keepout is on, deep-merge the keepout overlay
     # into the nav2 params and write ONE merged file. Passing a single file is the
@@ -192,24 +200,35 @@ def launch_setup(context, *args, **kwargs):
     # reaches the costmap static_layer in-process (reliable, unlike cross-process).
     map_lifecycle = None
     if use_static_map and map_yaml:
+        map_nodes = [
+            ComposableNode(
+                package='nav2_map_server',
+                plugin='nav2_map_server::MapServer',
+                name='map_server',
+                parameters=[nav2_params, {
+                    'yaml_filename': map_yaml,
+                    'topic_name': 'map',
+                    'frame_id': 'map',
+                }],
+            ),
+        ]
+        map_node_names = ['map_server']
+        if use_amcl:
+            map_nodes.append(ComposableNode(
+                package='nav2_amcl',
+                plugin='nav2_amcl::AmclNode',
+                name='amcl',
+                parameters=[ParameterFile(amcl_params_file, allow_substs=True)],
+            ))
+            map_node_names.append('amcl')
+        print(f"[nav2_omni] map lifecycle nodes -> {map_node_names}")
         map_server_nodes = LoadComposableNodes(
             target_container='nav2_container',
-            composable_node_descriptions=[
-                ComposableNode(
-                    package='nav2_map_server',
-                    plugin='nav2_map_server::MapServer',
-                    name='map_server',
-                    parameters=[nav2_params, {
-                        'yaml_filename': map_yaml,
-                        'topic_name': 'map',
-                        'frame_id': 'map',
-                    }],
-                ),
-            ],
+            composable_node_descriptions=map_nodes,
         )
         on_start_actions.append(TimerAction(period=2.0, actions=[map_server_nodes]))
-        # Dedicated lifecycle manager (autostart) brings map_server up so the latched
-        # /map is published before nav_central activates the costmaps.
+        # Dedicated lifecycle manager (autostart) brings map_server (and AMCL) up so
+        # the latched /map and map->odom exist before nav_central activates the costmaps.
         map_lifecycle = Node(
             package='nav2_lifecycle_manager',
             executable='lifecycle_manager',
@@ -218,7 +237,7 @@ def launch_setup(context, *args, **kwargs):
             parameters=[{
                 'use_sim_time': False,
                 'autostart': True,
-                'node_names': ['map_server'],
+                'node_names': map_node_names,
             }],
         )
 

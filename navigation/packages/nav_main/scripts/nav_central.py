@@ -16,6 +16,7 @@ from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger, SetBool
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped, TwistStamped
 from nav_msgs.msg import OccupancyGrid
+from std_msgs.msg import Empty as EmptyMsg
 from tf2_geometry_msgs import do_transform_point
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
@@ -149,6 +150,8 @@ class Nav_Central(Node):
         #   nav_type:     '2d' (slam_toolbox / lidar) or '3d' (RTABMap)
         self.default_base = self.declare_parameter('default_base', 'omnibase').value
         self.nav_type = self.declare_parameter('nav_type', '2d').value
+        # map->odom provider on the 2d omnibase: 'amcl' or 'slam_toolbox'.
+        self.localizer = self.declare_parameter('localizer', 'slam_toolbox').value
         self.use_slam_toolbox = (self.default_base == 'omnibase' and self.nav_type == '2d')
         # Topic that proves the active SLAM backend is alive (setup + monitor use it).
         self.slam_check_topic = '/map' if self.use_slam_toolbox else RTAB_CHECK_TOPIC
@@ -276,6 +279,19 @@ class Nav_Central(Node):
             self._initialpose_callback,
             10
         )
+
+        # After an STM32 reconnect the dashboard re-anchors the odometry, but the
+        # robot may have moved while the link was down. Re-seed AMCL around the
+        # current pose. Own group: the relocalization sleeps ~2 s.
+        if self.localizer == 'amcl':
+            reloc_group = MutuallyExclusiveCallbackGroup()
+            self._initial_pose_pub = self.create_publisher(
+                PoseWithCovarianceStamped, INITIAL_POSE_TOPIC, 10)
+            self._nomotion_client = self.create_client(
+                Empty, '/amcl/request_nomotion_update', callback_group=reloc_group)
+            self.create_subscription(
+                EmptyMsg, '/odrive/odom_reanchored', self._odom_reanchored_callback, 10,
+                callback_group=reloc_group)
 
         #Setup and Configuration
         self._setup_done = False
@@ -540,6 +556,36 @@ class Nav_Central(Node):
             x = msg.pose.pose.position.x
             y = msg.pose.pose.position.y
             self.nav_logger("info", f"Initial pose received at ({x:.2f}, {y:.2f})")
+
+    # Spread to re-seed AMCL with after a reconnect (sigma 0.5 m / 0.5 rad), and
+    # the stationary filter updates that let it converge without driving.
+    _RELOC_VAR = 0.25
+    _RELOC_UPDATES = 10
+
+    def _odom_reanchored_callback(self, _msg):
+        if not self._initial_pose_set:
+            return  # the operator has not placed the robot yet
+        tf = self._robot_tf()
+        if tf is None:
+            return
+        msg = PoseWithCovarianceStamped()
+        msg.header.frame_id = 'map'
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose.pose.position.x = tf.transform.translation.x
+        msg.pose.pose.position.y = tf.transform.translation.y
+        msg.pose.pose.orientation = tf.transform.rotation
+        cov = [0.0] * 36
+        cov[0] = cov[7] = cov[35] = self._RELOC_VAR
+        msg.pose.covariance = cov
+        self._initial_pose_pub.publish(msg)
+        self.nav_logger("warn", f"Relocalize -> odometry re-anchored, re-seeding AMCL at "
+                        f"({msg.pose.pose.position.x:.2f}, {msg.pose.pose.position.y:.2f})")
+        if not self._nomotion_client.wait_for_service(timeout_sec=1.0):
+            self.nav_logger("warn", "Relocalize -> /amcl/request_nomotion_update not available")
+            return
+        for _ in range(self._RELOC_UPDATES):
+            self._nomotion_client.call_async(Empty.Request())
+            self.get_clock().sleep_for(Duration(seconds=0.2))
 
     def _wait_for_initial_pose(self):
         self.nav_logger("info", "Setup -> Waiting for initial pose to be set via nav_ui ...")

@@ -43,6 +43,7 @@ services:
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
       CYCLONE_SHM: "${CYCLONE_SHM:-0}"
       MAP_NAME: ${MAP_NAME:-}
+      NAV_LOCALIZER: ${NAV_LOCALIZER:-}
       RCUTILS_COLORIZED_OUTPUT: "1"
     tty: true
     stdin_open: true
