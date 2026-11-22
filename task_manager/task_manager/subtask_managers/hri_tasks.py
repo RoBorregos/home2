@@ -116,6 +116,10 @@ def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}? Yes or no?"
 
 
+# What the mic hears back from our own "3, 2, 1"; must not count as the user speaking.
+COUNTDOWN_WORDS = {"one", "two", "three", "four", "five", "1", "2", "3", "4", "5"}
+
+
 def contains_any(text: List[str], keywords: List[str]) -> bool:
     """
     Check if any of the keywords are present in the text.
@@ -769,6 +773,9 @@ class HRITasks:
         ticks = iter(range(seconds, 0, -1))
 
         def tick():
+            if self._heard_words():  # user is talking: hold the count until it is read
+                Logger.info(self.node, "Countdown paused: processing what you said")
+                return
             n = next(ticks, None)
             if n is not None:
                 Logger.info(self.node, f"Countdown: {n}")
@@ -778,8 +785,13 @@ class HRITasks:
 
         tick()
         timer = self.node.create_timer(1.0, tick)
+        # +2 s window and up to 3 s grace: STT lags ~2 s behind speech
         s, _ = self.interpret_keyword(
-            list(interrupt_keywords), timeout=seconds + 2, play_chime=False
+            list(interrupt_keywords),
+            timeout=seconds + 2,
+            play_chime=False,
+            hotwords=", ".join(interrupt_keywords),
+            grace=3.0,
         )
         self.node.destroy_timer(timer)
         return s != Status.EXECUTION_SUCCESS
@@ -1045,6 +1057,13 @@ class HRITasks:
         )
         return Status.TIMEOUT, None
 
+    def _heard_words(self) -> List[str]:
+        """Words of the live transcription, minus STT hotword echo and our own countdown."""
+        text = self.current_transcription.strip()
+        if not text or text == self.last_hotwords.strip():
+            return []
+        return [w for w in format_transcription(text) if w and w not in COUNTDOWN_WORDS]
+
     @mockable(
         _mock_callback=lambda self, keywords, *args, **kwargs: (
             Status.EXECUTION_SUCCESS,
@@ -1052,11 +1071,26 @@ class HRITasks:
         )
     )
     def interpret_keyword(
-        self, keywords: list[str], timeout: float, play_chime: bool = True
+        self,
+        keywords: list[str],
+        timeout: float,
+        play_chime: bool = True,
+        hotwords: str = "",
+        grace: float = 0.0,
     ) -> str:
+        """Listen until one of `keywords` is heard or `timeout` passes.
+
+        Args:
+            hotwords: bias for the STT (e.g. the keywords themselves); empty keeps the default.
+            grace: extra seconds past `timeout` while the STT is still transcribing something
+                that is not a keyword, so a late transcription is read before giving up.
+        """
         self.cancel_hear_action()
 
-        accepted = self.hear_streaming(timeout=timeout, silence_time=timeout, play_chime=play_chime)
+        listen_time = timeout + grace
+        accepted = self.hear_streaming(
+            timeout=listen_time, silence_time=listen_time, play_chime=play_chime, hotwords=hotwords
+        )
         result_future = None
 
         start_time = self.node.get_clock().now()
@@ -1069,19 +1103,25 @@ class HRITasks:
 
         while (
             self.keyword not in keywords
-            and not contains_any(format_transcription(self.current_transcription), keywords)
-            and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
+            and not contains_any(self._heard_words(), keywords)
+            and (
+                (elapsed := (self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
+                or (elapsed < listen_time and self._heard_words())
+            )
         ):
             rclpy.spin_once(self.node, timeout_sec=0.1)
             if result_future is None and accepted.done() and accepted.result().accepted:
                 result_future = accepted.result().get_result_async()
             elif result_future is not None and result_future.done():
                 accepted = self.hear_streaming(
-                    timeout=timeout, silence_time=timeout, play_chime=False
+                    timeout=listen_time,
+                    silence_time=listen_time,
+                    play_chime=False,
+                    hotwords=hotwords,
                 )
                 result_future = None
 
-        keyword_listened = contains_any(format_transcription(self.current_transcription), keywords)
+        keyword_listened = contains_any(self._heard_words(), keywords)
 
         if keyword_listened in keywords:
             self.display_keyword_publisher.publish(
