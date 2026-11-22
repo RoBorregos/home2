@@ -31,7 +31,7 @@ from frida_constants.navigation_constants import (
     RESUME_NAV_SERVICE,
     AREAS_SERVICE,
     MOVE_LOCATION_SERVICE,
-    DOCK_SERVICE,
+    DOCKER_DOCK_TABLE_SERVICE,
     DOCK_TABLE_SERVICE,
     DOCK_PREVIEW_SERVICE,
     UNDOCK_SERVICE,
@@ -201,10 +201,9 @@ class NavRosNode(Node):
             from frida_interfaces.srv import DockTable, MapAreas, MoveLocation
             self._areas_client = self.create_client(MapAreas, AREAS_SERVICE)
             self._move_client = self.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
-            self._dock_client = self.create_client(Trigger, DOCK_SERVICE)
-            # nav_central's DockTable wrapper: passes the surface type to
-            # table_docker before triggering the planned approach. Falls back to
-            # the raw Trigger dock if absent.
+            self._dock_client = self.create_client(DockTable, DOCKER_DOCK_TABLE_SERVICE)
+            # nav_central's DockTable (resumes nav2, then forwards to table_docker);
+            # table_docker's own typed DockTable above is the fallback if absent.
             self._dock_table_client = self.create_client(DockTable, DOCK_TABLE_SERVICE)
             # Testing the planned dock: preview (detect + plan, no motion) and undock.
             from rcl_interfaces.srv import SetParameters
@@ -548,9 +547,9 @@ class NavRosNode(Node):
     def dock_async(self, on_done, surface_type: str = "default"):
         """Approach the table in a background thread.
 
-        Prefers nav_central's DockTable service so `surface_type` selects the
-        reach band table_docker plans in. Falls back to the raw Trigger
-        DOCK_SERVICE (last-set request on the docker) when nav_central is not running.
+        Prefers nav_central's DockTable service (it resumes nav2 for the dock) so
+        `surface_type` selects the reach band table_docker plans in. Falls back to
+        table_docker's own typed DockTable when nav_central is not running.
         """
         import time
         from frida_interfaces.srv import DockTable
@@ -574,16 +573,18 @@ class NavRosNode(Node):
                     res = future.result()
                     on_done(res.success, res.error)
                     return
-                # nav_central not up — raw table_docker trigger (default surface).
+                # nav_central not up — table_docker's typed dock, same request.
                 if not self._dock_client.wait_for_service(timeout_sec=5.0):
                     on_done(False, "Dock service not available")
                     return
-                future = self._dock_client.call_async(Trigger.Request())
+                req = DockTable.Request()
+                req.surface_type = surface_type
+                future = self._dock_client.call_async(req)
                 if not _wait(future, 170.0):
                     on_done(False, "Dock timed out")
                     return
                 res = future.result()
-                on_done(res.success, res.message)
+                on_done(res.success, res.error)
             except Exception as e:
                 on_done(False, str(e))
         threading.Thread(target=_worker, daemon=True).start()

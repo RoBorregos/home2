@@ -100,14 +100,21 @@ try:
 except Exception:
     _HAVE_MOVEIT = False
 
+from frida_interfaces.srv import DockTable
 from frida_constants.navigation_constants import (
     DOCK_SERVICE,
     UNDOCK_SERVICE,
     DOCK_PREVIEW_SERVICE,
+    DOCKER_DOCK_TABLE_SERVICE,
+    LOCAL_COSTMAP_PARAMS,
     DOCKED_TOPIC,
     SCAN_TOPIC,
     POINT_CLOUD_TOPIC,
 )
+
+# Old DockTable `offset` callers: the base used to stop `offset + 0.19` m (the old
+# docker's min_safe) from the face; converted to the robot-front gap they produced.
+LEGACY_DOCK_MIN_SAFE = 0.19
 
 
 def quat_to_rot(x, y, z, w):
@@ -300,6 +307,7 @@ class TableDocker(Node):
         self.check_reach = self.declare_parameter("check_reach", False).value
         # Outcome of the last dock (JSON), read back by nav_central for DockTable.
         self.last_result = self.declare_parameter("last_result", "{}").value
+        self._last_result = {}
         # Append every dock outcome as one JSON line to this file ("" = off), to
         # tune the reach bands from real runs.
         self.result_log = self.declare_parameter("result_log", "").value
@@ -463,6 +471,8 @@ class TableDocker(Node):
                                                     callback_group=client_cb)
         self.ctrl_get_client = self.create_client(GetParameters, "/controller_server/get_parameters",
                                                   callback_group=client_cb)
+        self.costmap_param_client = self.create_client(
+            GetParameters, f"{LOCAL_COSTMAP_PARAMS}/get_parameters", callback_group=client_cb)
         self.ik_client = None
         if self.reach_cfg["enabled"] and _HAVE_MOVEIT:
             self.ik_client = self.create_client(GetPositionIK, self.reach_cfg["service"],
@@ -486,6 +496,11 @@ class TableDocker(Node):
         self.create_timer(0.5, self._publish_footprint)
 
         self.create_service(Trigger, DOCK_SERVICE, self._dock_cb, callback_group=srv_cb)
+        # Typed dock: the request travels in the call (no SetParameters before it,
+        # no last_result read after it), so two callers cannot overwrite each other's
+        # request. Same callback group as the Trigger: docks run one at a time.
+        self.create_service(DockTable, DOCKER_DOCK_TABLE_SERVICE, self._dock_table_cb,
+                            callback_group=srv_cb)
         self.create_service(Trigger, UNDOCK_SERVICE, self._undock_cb, callback_group=srv_cb)
         self.create_service(Trigger, DOCK_PREVIEW_SERVICE, self._preview_cb, callback_group=srv_cb)
 
@@ -504,12 +519,7 @@ class TableDocker(Node):
             if p.name == "frontal_fov_deg":
                 self.frontal_fov = math.radians(float(p.value))
             elif p.name == "footprint":
-                self.footprint = self._parse_footprint(p.value)
-                self._fp_samples_padded = ap.footprint_samples(
-                    self.footprint, 0.025, self.footprint_padding)
-                self._fp_samples_path = self._fp_samples_padded
-                self._fp_samples_sweep = ap.footprint_samples(
-                    self.footprint, 0.025, self.footprint_padding / 2)
+                self._set_footprint(p.value)
             elif p.name == "target_point":
                 self.target_point = list(p.value or [])
             elif p.name == "profiles_file":
@@ -520,6 +530,34 @@ class TableDocker(Node):
         return SetParametersResult(successful=True)
 
     # ------------------------------------------------------- planning config
+    def _set_footprint(self, text):
+        """Use a new footprint polygon (text or list) everywhere it is sampled."""
+        self.footprint = self._parse_footprint(text)
+        self._fp_samples_padded = ap.footprint_samples(self.footprint, 0.025, self.footprint_padding)
+        self._fp_samples_path = self._fp_samples_padded
+        self._fp_samples_sweep = ap.footprint_samples(self.footprint, 0.025, self.footprint_padding / 2)
+
+    def _sync_footprint(self):
+        """Take the footprint from nav2's local costmap, the single source of the
+        robot outline (nav2_omni*.yaml). The `footprint` parameter is only the
+        fallback while nav2 is not up. Checked before every dock (cheap): a nav2
+        restart with another config is picked up too."""
+        if not self.costmap_param_client.wait_for_service(timeout_sec=0.5):
+            return
+        fut = self.costmap_param_client.call_async(GetParameters.Request(names=["footprint"]))
+        if not self._wait(fut, 1.0) or fut.result() is None or not fut.result().values:
+            return
+        text = fut.result().values[0].string_value
+        try:
+            fp = np.asarray(yaml.safe_load(text) if text else [], dtype=float)
+        except (yaml.YAMLError, ValueError):
+            return
+        if fp.ndim != 2 or fp.shape[0] < 3 or fp.shape[1] != 2:
+            return  # nav2 using robot_radius, or an unparsable value: keep ours
+        if not np.allclose(fp, self.footprint, atol=1e-3):
+            self.log("info", f"Footprint from {LOCAL_COSTMAP_PARAMS}: {fp.tolist()}")
+            self._set_footprint(fp.tolist())
+
     def _parse_footprint(self, text):
         fp = np.asarray(yaml.safe_load(text) if isinstance(text, str) else text, dtype=float)
         self.front, _, self.half_width = ap.footprint_extent(fp)
@@ -1455,8 +1493,6 @@ class TableDocker(Node):
         swept footprint is collision-free, otherwise nav2's planner (global costmap)."""
         start = self._robot_pose(self.odom_frame)
         goal = plan["pre"]
-        with self._lock:
-            face = self._face
         ignore = self._face_ignore()
         if self._straight_path_free(start, goal, self._fresh_grid(), ignore, self._fp_samples_path):
             path = Path()
@@ -1920,6 +1956,7 @@ class TableDocker(Node):
     # ----------------------------------------------------------------- preview
     def _preview_cb(self, request, response):
         self.log("info", "Preview requested — detecting + planning (no motion)")
+        self._sync_footprint()
         profile = self._profile()
         self._fix_target()
         try:
@@ -1952,7 +1989,39 @@ class TableDocker(Node):
             self._reset_request()
 
     # ----------------------------------------------------------------- dock
+    def _dock_table_cb(self, request, response):
+        """Typed dock (frida_interfaces/DockTable): set this call's request, run the
+        dock, and return its diagnostics in the response."""
+        self._reset_request()
+        self._sync_footprint()  # the legacy offset conversion below uses self.front
+        if request.surface_type:
+            self.surface_type = request.surface_type
+        elif request.offset > 0.0:
+            # Legacy caller: keep the stop distance its offset used to give.
+            self.target_gap = max(0.0, float(request.offset) + LEGACY_DOCK_MIN_SAFE - self.front)
+        t = request.target
+        if t.header.frame_id:
+            # z too: the reach check needs the object's height.
+            self.target_point = [t.point.x, t.point.y, t.point.z]
+            self.target_frame = t.header.frame_id
+        self.check_reach = bool(request.check_reach and self.target_point)
+        trig = self._dock_cb(Trigger.Request(), Trigger.Response())
+        result = self._last_result
+        response.success = trig.success
+        response.error = "" if trig.success else trig.message
+        response.lateral_error = float(result.get("lateral_error") or 0.0)
+        response.reach = result.get("reach") or "unchecked"
+        response.target_blocked = bool(result.get("target_blocked"))
+        if result.get("blocker"):
+            response.blocker.header.frame_id = result.get("blocker_frame") or "map"
+            response.blocker.header.stamp = self.get_clock().now().to_msg()
+            response.blocker.point.x, response.blocker.point.y = (float(v) for v in result["blocker"][:2])
+            response.blocker_side = result.get("blocker_side") or ""
+        return response
+
     def _dock_cb(self, request, response):
+        self._last_result = {}
+        self._sync_footprint()
         profile = self._profile()
         self.log("info", f"Dock requested — surface={self.surface_type or 'default'} "
                          f"gap={profile.gap:.2f}m band=[{profile.gap_min:.2f}, {profile.gap_max:.2f}] "
@@ -2161,6 +2230,7 @@ class TableDocker(Node):
             self.log("warn", f"Ideal dock pose blocked by something "
                              f"{'on both sides' if blocked['side'] == 'both' else 'on the ' + blocked['side']} "
                              f"at {result['blocker']} [{frame}]")
+        self._last_result = result
         text = json.dumps(result)
         self.set_parameters([rclpy.parameter.Parameter("last_result", value=text)])
         if self.result_log:

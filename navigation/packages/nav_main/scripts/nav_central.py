@@ -7,7 +7,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallb
 from rclpy.qos import qos_profile_sensor_data, QoSProfile, DurabilityPolicy
 from composition_interfaces.srv import LoadNode
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
-from rcl_interfaces.srv import GetParameters, SetParameters
+from rcl_interfaces.srv import GetParameters
 from nav2_msgs.srv import ManageLifecycleNodes, ClearEntireCostmap
 from nav2_msgs.action import NavigateToPose, ComputePathToPose
 from action_msgs.msg import GoalStatus
@@ -60,7 +60,8 @@ from frida_constants.navigation_constants import(
         COMPUTE_PATH_ACTION_SERVER,
         TIMEOUT_NAV_QUERY,
         UNDOCK_SERVICE,
-        DOCK_SERVICE,
+        DOCKER_DOCK_TABLE_SERVICE,
+        GLOBAL_COSTMAP_PARAMS,
         DOCK_TABLE_SERVICE,
         )
 from ament_index_python.packages import get_package_share_directory
@@ -91,9 +92,6 @@ from nav_main import approach_planner as ap
 # aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
 # the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
 NAV_GOAL_RETRY_DELAY = 2.0
-# Old DockTable `offset` callers: the base used to stop `offset + 0.19` m (table_docker's
-# min_safe) from the face. Converted to the new robot-front gap so they dock unchanged.
-LEGACY_DOCK_MIN_SAFE = 0.19
 APPROACH_DIRECT_ALIGN_RANGE = 2.0
 # Max time to wait for the arm pointer to home back to its normal pose before
 # returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
@@ -112,9 +110,6 @@ def make_param(name, value):
         p.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=value)
     elif isinstance(value, str):
         p.value = ParameterValue(type=ParameterType.PARAMETER_STRING, string_value=value)
-    elif isinstance(value, (list, tuple)):
-        p.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE_ARRAY,
-                                 double_array_value=[float(v) for v in value])
     return p
 
 
@@ -191,15 +186,14 @@ class Nav_Central(Node):
         # planning a new goal. No-op if the table_docker node isn't running.
         self.undock_client = self.create_client(
             Trigger, UNDOCK_SERVICE, callback_group=self.rtab_service_group)
-        # Dock (planned perpendicular approach) client + a parameter client to pass
-        # the per-call request (surface type, target) to table_docker.
+        # Dock (planned perpendicular approach): table_docker's typed DockTable, the
+        # request and its diagnostics travel in the call itself.
         self.dock_client = self.create_client(
-            Trigger, DOCK_SERVICE, callback_group=self.rtab_service_group)
-        self.dock_param_client = self.create_client(
-            SetParameters, '/table_docker/set_parameters', callback_group=self.rtab_service_group)
-        # ...and one to read back its outcome (reach check, what blocked the dock).
-        self.dock_get_param_client = self.create_client(
-            GetParameters, '/table_docker/get_parameters', callback_group=self.rtab_service_group)
+            DockTable, DOCKER_DOCK_TABLE_SERVICE, callback_group=self.rtab_service_group)
+        # nav2's global costmap: its `footprint` is the robot outline approach_point uses.
+        self.costmap_param_client = self.create_client(
+            GetParameters, f"{GLOBAL_COSTMAP_PARAMS}/get_parameters",
+            callback_group=self.rtab_service_group)
         # Costmap clear clients — wipe stale obstacle marks (e.g. from the parked/docked
         # pose) before a new goal so the planner/MPPI start from a clean slate.
         self.clear_local_costmap_client = self.create_client(
@@ -288,15 +282,14 @@ class Nav_Central(Node):
         fp_text = self.declare_parameter(
             'footprint', '[[0.325, 0.25], [0.325, -0.25], [-0.325, -0.25], [-0.325, 0.25]]').value
         self._footprint = yaml.safe_load(fp_text)
-        self._robot_front = ap.footprint_extent(self._footprint)[0]
         profiles_file = self.declare_parameter('approach_profiles', os.path.join(
             get_package_share_directory('nav_main'), 'config', 'approach_profiles.yaml')).value
         with open(profiles_file) as f:
             profiles = yaml.safe_load(f) or {}
         self._point_profiles = ap.load_profiles(profiles.get('points'))
         self._approach_weights = ap.load_weights(profiles.get('weights'), 'point')
-        self._fp_samples = ap.footprint_samples(
-            self._footprint, 0.025, float(profiles.get('footprint_padding', 0.0)))
+        self._footprint_padding = float(profiles.get('footprint_padding', 0.0))
+        self._fp_samples = ap.footprint_samples(self._footprint, 0.025, self._footprint_padding)
 
         # Initial pose tracking
         self._initial_pose_set = False
@@ -764,63 +757,27 @@ class Nav_Central(Node):
         if not ok:
             self.nav_logger("warn", "Go_To_Area -> Undock failed/timed out, continuing anyway")
 
-    def _approach_table(self, surface_type="", target=None, offset=0.0, check_reach=False):
-        """Pass the per-call request (surface type + optional target object) to
-        table_docker, then trigger its planned approach. Returns (success, message,
-        result), `result` being table_docker's outcome dict ({} if unavailable).
-
-        Old callers that only send `offset` keep their previous stop distance: it is
-        converted to the equivalent robot-front gap."""
-        if not self.dock_client.service_is_ready():
+    def _approach_table(self, request):
+        """Forward a DockTable request to table_docker's typed dock and return its
+        response (None if the docker is not up or did not answer). The whole
+        request travels in the call and the diagnostics come back in the response,
+        so a second caller cannot overwrite this one's request."""
+        if not self.dock_client.wait_for_service(timeout_sec=1.0):
             self.nav_logger("warn", "Approach -> table_docker not available")
-            return (False, "table_docker not available", {})
-        target_gap = -1.0
-        if not surface_type:
-            surface_type = "default"
-            if offset is not None and offset > 0.0:
-                target_gap = max(0.0, offset + LEGACY_DOCK_MIN_SAFE - self._robot_front)
-        point, frame = [], "map"
-        if target is not None and target.header.frame_id:
-            # z too: the docker's reach check needs the object's height.
-            point = [target.point.x, target.point.y, target.point.z]
-            frame = target.header.frame_id
-        if self.dock_param_client.service_is_ready():
-            req = SetParameters.Request()
-            req.parameters = [make_param('surface_type', surface_type),
-                              make_param('target_gap', float(target_gap)),
-                              make_param('target_point', point),
-                              make_param('target_frame', frame),
-                              make_param('check_reach', bool(check_reach and point))]
-            self._call_service_with_timeout(
-                self.dock_param_client, req, TIMEOUT_RTAB_SERVICE, "Approach SetParam")
-        self.nav_logger("info", f"Approach -> docking to {surface_type}"
-                        + (f" (legacy offset {offset} -> gap {target_gap:.2f})" if target_gap >= 0 else "")
-                        + (f" at target {point} [{frame}]" if point else ""))
-        # Bounded dock call, capturing the actual approach result. table_docker caps
-        # the whole request at its `dock_timeout` (100 s), below this wait.
-        future = self.dock_client.call_async(Trigger.Request())
+            return None
+        target = request.target
+        self.nav_logger("info", f"Approach -> docking to {request.surface_type or 'default'}"
+                        + (f" (legacy offset {request.offset:.2f})"
+                           if not request.surface_type and request.offset > 0.0 else "")
+                        + (f" at target ({target.point.x:.2f}, {target.point.y:.2f}, "
+                           f"{target.point.z:.2f}) [{target.header.frame_id}]"
+                           if target.header.frame_id else ""))
+        # Bounded dock call. table_docker caps the whole request at its
+        # `dock_timeout` (100 s), below this wait.
+        future = self.dock_client.call_async(request)
         if not self._wait(future, 120.0):
-            return (False, "dock timed out", {})
-        res = future.result()
-        return (res.success, res.message, self._dock_result())
-
-    def _dock_result(self):
-        """table_docker's `last_result` (JSON) as a dict, {} if it cannot be read."""
-        if not self.dock_get_param_client.service_is_ready():
-            return {}
-        req = GetParameters.Request()
-        req.names = ['last_result']
-        future = self.dock_get_param_client.call_async(req)
-        elapsed = 0.0
-        while not future.done() and elapsed < 2.0:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.05))
-            elapsed += 0.05
-        if not future.done() or future.result() is None or not future.result().values:
-            return {}
-        try:
-            return json.loads(future.result().values[0].string_value or "{}")
-        except ValueError:
-            return {}
+            return None
+        return future.result()
 
     def dock_table_callback(self, request, response):
         """Service: plan + dock at the surface in front of the robot."""
@@ -831,31 +788,26 @@ class Nav_Central(Node):
         was_paused = self.nav2_paused
         self._set_paused(False)
         try:
-            success, message, result = self._approach_table(
-                request.surface_type, request.target, request.offset, request.check_reach)
+            res = self._approach_table(request)
         finally:
             if was_paused:
                 self._set_paused(True)
-        response.success = success
-        response.error = message
-        response.lateral_error = float(result.get('lateral_error') or 0.0)
-        response.reach = result.get('reach') or 'unchecked'
-        response.target_blocked = bool(result.get('target_blocked'))
-        if result.get('blocker'):
-            response.blocker.header.frame_id = result.get('blocker_frame') or 'map'
-            response.blocker.header.stamp = self.get_clock().now().to_msg()
-            response.blocker.point.x, response.blocker.point.y = result['blocker'][:2]
-            response.blocker_side = result.get('blocker_side') or ''
-        if result:
-            self.nav_logger("info", f"Dock_Table -> reach={response.reach} "
-                                    f"lateral_err={response.lateral_error:.2f}m "
-                                    f"gap planned={result.get('planned_gap')} measured={result.get('measured_gap')}"
-                                    + (f" blocked {'on both sides' if response.blocker_side == 'both' else 'on the ' + response.blocker_side}"
-                                       if response.target_blocked else ""))
-        if success:
+        if res is None:
+            response.success = False
+            response.error = "table_docker not available or dock timed out"
+            response.reach = "unchecked"
+            self.nav_logger("error", f"Dock_Table -> Failed: {response.error}")
+            return response
+        response = res
+        side = response.blocker_side
+        self.nav_logger("info", f"Dock_Table -> reach={response.reach} "
+                                f"lateral_err={response.lateral_error:.2f}m"
+                                + (f" blocked {'on both sides' if side == 'both' else 'on the ' + side}"
+                                   if response.target_blocked else ""))
+        if response.success:
             self.nav_logger("info", "Dock_Table -> Docked")
         else:
-            self.nav_logger("error", f"Dock_Table -> Failed: {message}")
+            self.nav_logger("error", f"Dock_Table -> Failed: {response.error}")
         return response
 
     def _clear_costmaps(self, settle_s=0.3):
@@ -1175,11 +1127,34 @@ class Nav_Central(Node):
             start = (msg.y + row) * w + msg.x
             grid.data[start:start + msg.width] = msg.data[row * msg.width:(row + 1) * msg.width]
 
+    def _sync_footprint(self):
+        """Take the footprint from nav2's global costmap, the single source of the
+        robot outline; the `footprint` parameter is only the fallback while nav2 is
+        not up (or uses robot_radius)."""
+        if not self.costmap_param_client.service_is_ready():
+            return
+        future = self.costmap_param_client.call_async(GetParameters.Request(names=['footprint']))
+        if not self._wait(future, 1.0) or future.result() is None or not future.result().values:
+            return
+        text = future.result().values[0].string_value
+        try:
+            fp = yaml.safe_load(text) if text else None
+        except yaml.YAMLError:
+            return
+        if not (isinstance(fp, list) and len(fp) >= 3
+                and all(isinstance(p, list) and len(p) == 2 for p in fp)):
+            return
+        if fp != self._footprint:
+            self.nav_logger("info", f"Approach_Point -> footprint from {GLOBAL_COSTMAP_PARAMS}: {fp}")
+            self._footprint = fp
+            self._fp_samples = ap.footprint_samples(fp, 0.025, self._footprint_padding)
+
     def _plan_approach_point(self, tx, ty, rx, ry, prof, max_goals=3):
         """Ranked approach poses around (tx, ty), facing it: rings inside the reach
         band, full footprint checked on the global costmap (or the SLAM map),
         scored by distance from the preferred standoff and travel from the robot.
         Returns up to `max_goals` PoseStampeds at least 0.3 m apart (fallbacks)."""
+        self._sync_footprint()
         msg = self._costmap_grid or self._static_grid
         grid = ap.Grid.from_occupancy_grid(msg) if msg is not None else None
         if grid is None:
