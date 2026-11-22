@@ -797,7 +797,8 @@ class Nav_Central(Node):
         self.nav_logger("info", f"Approach -> docking to {surface_type}"
                         + (f" (legacy offset {offset} -> gap {target_gap:.2f})" if target_gap >= 0 else "")
                         + (f" at target {point} [{frame}]" if point else ""))
-        # Bounded dock call, capturing the actual approach result.
+        # Bounded dock call, capturing the actual approach result. table_docker caps
+        # the whole request at its `dock_timeout` (100 s), below this wait.
         future = self.dock_client.call_async(Trigger.Request())
         if not self._wait(future, 120.0):
             return (False, "dock timed out", {})

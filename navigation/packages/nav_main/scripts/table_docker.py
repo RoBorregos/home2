@@ -315,6 +315,10 @@ class TableDocker(Node):
         # Skip MPPI when already this close to the pre-dock pose.
         self.predock_skip = self.declare_parameter("predock_skip", 0.06).value
         self.motion_timeout = self.declare_parameter("motion_timeout", 45.0).value
+        # Whole dock request (detect + every motion leg + straight-in + refinements).
+        # Keep it below nav_central's wait on the dock service (120 s) so the robot
+        # never keeps driving after the caller gave up on it.
+        self.dock_timeout = self.declare_parameter("dock_timeout", 100.0).value
         self.goal_checker = self.declare_parameter("goal_checker", "general_goal_checker").value
         # MPPI only has to reach the pre-dock neighbourhood; the straight-in
         # controller corrects the rest against the re-detected face.
@@ -384,6 +388,10 @@ class TableDocker(Node):
         self.retreat_distance = self.declare_parameter("retreat_distance", 0.5).value
         self.retreat_speed = self.declare_parameter("retreat_speed", 0.12).value
         self.retreat_timeout = self.declare_parameter("retreat_timeout", 20.0).value
+        # A dock that fails with the robot's front closer than this (m) to something
+        # straight ahead still backs off on the next undock, so nav2 does not plan the
+        # next goal from inside the surface's inflation.
+        self.failed_retreat_gap = self.declare_parameter("failed_retreat_gap", 0.30).value
 
         # --- Visualization (RViz) ---
         self.polygon_depth = self.declare_parameter("polygon_depth", 0.40).value
@@ -400,6 +408,7 @@ class TableDocker(Node):
         self._target_odom = None
         self._target_z = None   # target height above base_link (m), for the reach check
         self._blocked = None    # what blocks the ideal dock pose (see _diagnose_block)
+        self._dock_deadline = math.inf  # node-clock s; set for the duration of a dock
         self._costmap = None
         # Lethal cells seen since the current request started (odom cell keys).
         # Thin obstacles (chair legs) get raytraced out of nav2's costmap as soon
@@ -408,6 +417,7 @@ class TableDocker(Node):
         self._scan_memory = set()  # lidar hits, kept apart (see _fresh_grid)
         self._remember = False
         self.docked = False
+        self._near_surface = False  # failed dock left the robot close to the surface
 
         sensor_cb = ReentrantCallbackGroup()
         srv_cb = MutuallyExclusiveCallbackGroup()
@@ -669,6 +679,13 @@ class TableDocker(Node):
         """Node clock in seconds: sim time in simulation, wall time on the robot.
         Motion deadlines use it so a slow simulation does not time them out."""
         return self.get_clock().now().nanoseconds * 1e-9
+
+    def _deadline(self, timeout):
+        """now + timeout, capped by the running dock's overall deadline."""
+        return min(self._now() + timeout, self._dock_deadline)
+
+    def _out_of_time(self):
+        return self._now() > self._dock_deadline
 
     def _publish_docked(self):
         self.docked_pub.publish(Bool(data=self.docked))
@@ -1430,15 +1447,17 @@ class TableDocker(Node):
                 s_cost = ap.footprint_cost(grid, start[0], start[1], goal[2], self._fp_samples_path, ignore)
                 self.log("warn", f"Local A* found no path (pre-dock cost {g_cost}, start cost {s_cost})")
             if pts is not None:
-                path = Path()
-                path.header.frame_id = self.odom_frame
-                path.header.stamp = self.get_clock().now().to_msg()
-                dyaw = (goal[2] - start[2] + math.pi) % (2 * math.pi) - math.pi
-                turn = max(1, int(len(pts) * 0.3))  # settle the heading early on
-                for i, (x, y) in enumerate(pts):
-                    path.poses.append(self._pose_msg(self.odom_frame, x, y,
-                                                     start[2] + dyaw * min(1.0, i / turn)))
-                return path, "local A*"
+                yaws = self._astar_yaws(pts, start[2], goal[2], grid, ignore)
+                if yaws is None:
+                    self.log("warn", "Local A* path has no collision-free heading schedule "
+                                     "(the base would clip something while turning)")
+                else:
+                    path = Path()
+                    path.header.frame_id = self.odom_frame
+                    path.header.stamp = self.get_clock().now().to_msg()
+                    for (x, y), yaw in zip(pts, yaws):
+                        path.poses.append(self._pose_msg(self.odom_frame, x, y, yaw))
+                    return path, "local A*"
         # Still nothing: let the global planner route around (goal given in odom;
         # the planner transforms it into the map frame).
         if not self.plan_client.wait_for_server(timeout_sec=2.0):
@@ -1464,6 +1483,43 @@ class TableDocker(Node):
         if grid is not None and not self._path_free(path, grid, ignore):
             return None, "planner path crosses a remembered obstacle"
         return path, "planner"
+
+    def _astar_yaws(self, pts, start_yaw, goal_yaw, grid, ignore, fracs=(0.3, 0.6, 1.0)):
+        """Heading per A* waypoint, turning from start_yaw to goal_yaw over the first
+        `frac` of the path. The A* only checked the footprint at goal_yaw, and the
+        rectangular base sweeps its corners while it turns, so every pose is checked
+        at its own heading. Tries a short turn first, then spreads it over more of
+        the path. Returns the yaws or None if no schedule is collision-free."""
+        dyaw = (goal_yaw - start_yaw + math.pi) % (2 * math.pi) - math.pi
+        n = len(pts)
+        if abs(dyaw) < 0.05 or n < 2:
+            return [goal_yaw] * n
+        # Starting already inside the padding (next to a chair): the first few cm
+        # can only get better, like the A* itself allows a lethal start.
+        x0, y0 = pts[0]
+        start_blocked = ap.footprint_cost(grid, x0, y0, start_yaw, self._fp_samples_path,
+                                          ignore) >= ap.LETHAL
+        for frac in fracs:
+            turn = max(1, int(n * frac))
+            yaws = [start_yaw + dyaw * min(1.0, i / turn) for i in range(n)]
+            ok = True
+            for i in range(1, n):
+                if start_blocked and math.hypot(pts[i][0] - x0, pts[i][1] - y0) < 0.10:
+                    continue
+                # Sub-steps of <= 0.1 rad between waypoints so a fast turn is covered.
+                k = max(1, int(math.ceil(abs(yaws[i] - yaws[i - 1]) / 0.1)))
+                for s in np.linspace(1.0 / k, 1.0, k):
+                    x = pts[i - 1][0] + s * (pts[i][0] - pts[i - 1][0])
+                    y = pts[i - 1][1] + s * (pts[i][1] - pts[i - 1][1])
+                    yaw = yaws[i - 1] + s * (yaws[i] - yaws[i - 1])
+                    if ap.footprint_cost(grid, x, y, yaw, self._fp_samples_path, ignore) >= ap.LETHAL:
+                        ok = False
+                        break
+                if not ok:
+                    break
+            if ok:
+                return yaws
+        return None
 
     def _to_frame(self, pose_odom, frame):
         frame = (frame or "map").lstrip("/")
@@ -1511,7 +1567,7 @@ class TableDocker(Node):
                 return False, "FollowPath rejected (nav2 paused?)"
             handle = send.result()
             res = handle.get_result_async()
-            end = self._now() + self.motion_timeout
+            end = self._deadline(self.motion_timeout)
             ignore = self._face_ignore()
             guard = self._fp_samples
             tick = 0
@@ -1558,7 +1614,7 @@ class TableDocker(Node):
         pts = np.asarray(pts, dtype=float)
         n = len(pts)
         dt = 1.0 / self.control_rate
-        deadline = self._now() + self.motion_timeout
+        deadline = self._deadline(self.motion_timeout)
         ignore = self._face_ignore()
         idx = tick = tf_fail = 0
         while rclpy.ok():
@@ -1871,11 +1927,20 @@ class TableDocker(Node):
             self._remember = True
             self._plan = None
             self._blocked = None
+        self._dock_deadline = self._now() + self.dock_timeout
+        self._near_surface = False
         try:
             response = self._dock(profile, response)
+            if not response.success:
+                front = self._live_front_clearance()
+                self._near_surface = front is not None and front < self.failed_retreat_gap
+                if self._near_surface:
+                    self.log("warn", f"Dock failed {front:.2f}m from the surface; the next "
+                                     f"undock backs off")
             self._record_result(response)
             return response
         finally:
+            self._dock_deadline = math.inf
             with self._lock:
                 self._remember = False
                 self._memory = set()
@@ -1920,6 +1985,9 @@ class TableDocker(Node):
         # (b) MPPI to the pre-dock pose, re-detecting + re-planning on arrival
         if self.use_planned_motion:
             for leg in range(1, self.max_motion_legs + 1):
+                if self._out_of_time():
+                    self.log("warn", f"Dock timeout ({self.dock_timeout:.0f}s) before motion leg {leg}")
+                    break
                 ok, msg = self._drive_to_predock(plan)
                 if not ok and leg < self.max_motion_legs:
                     # The memory keeps growing as the robot moves (a chair leg seen
@@ -1945,7 +2013,7 @@ class TableDocker(Node):
         # The servo moves in a straight line, so it only runs when that sweep is
         # clear (e.g. never cuts across a round table after MPPI stopped short).
         safe, why = self._servo_path_safe(plan)
-        if not safe and self.use_planned_motion:
+        if not safe and self.use_planned_motion and not self._out_of_time():
             # MPPI stopped inside its loose tolerance where the straight sweep grazes
             # something (tight spot): one more, tighter MPPI leg before giving up.
             self.log("warn", f"Straight-in blocked ({why}); tighter MPPI leg to the pre-dock")
@@ -1958,8 +2026,16 @@ class TableDocker(Node):
             response.message = f"No safe straight-in to the planned dock pose ({why})"
             self.log("error", response.message)
             return response
+        if self._out_of_time():
+            self._stop()
+            response.success = False
+            response.message = f"Dock timed out ({self.dock_timeout:.0f}s) before the straight-in"
+            self.log("error", response.message)
+            return response
         ok, msg = self._servo(plan)
         for _ in range(self.refine_passes if ok else 0):
+            if self._out_of_time():
+                break
             # Flat faces: look only at the strip ahead (a round table needs its arc).
             new, shift = self._replan(profile, plan, narrow=profile.shape == "line")
             if shift <= self.refine_shift:
@@ -2087,7 +2163,7 @@ class TableDocker(Node):
         Returns (ok, message)."""
         gap = plan["gap"]
         dt = 1.0 / self.control_rate
-        deadline = self._now() + self.approach_timeout
+        deadline = self._deadline(self.approach_timeout)
         settled = 0
         tf_fail = 0
         tick = 0
@@ -2171,7 +2247,7 @@ class TableDocker(Node):
 
     # --------------------------------------------------------------- undock
     def _undock_cb(self, request, response):
-        if not self.docked:
+        if not self.docked and not self._near_surface:
             response.success = True
             response.message = "Not docked — nothing to undock"
             return response
@@ -2204,6 +2280,7 @@ class TableDocker(Node):
         with self._lock:
             self._face = None
         self.docked = False
+        self._near_surface = False
         self._publish_docked()
         self._publish_markers(None, None)
         response.success = True

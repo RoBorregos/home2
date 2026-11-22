@@ -389,6 +389,9 @@ class PickAndPlaceTM(Node):
 
         With `target` (the object to pick, map frame) the base stands in front of
         it and the candidate poses are checked against the arm's reach."""
+        if location == Location.CABINET:
+            # The shelf boxes are in base_link: a new stop needs a new scan.
+            self._shelf_heights_detected = False
         surface = DOCK_SURFACES.get(location)
         if surface is None:
             CLog.nav(self, "DOCK", f"No dock configured for {location.value}, skipping.")
