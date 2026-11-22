@@ -22,6 +22,8 @@ conststr PLACE_PERCEPTION_SERVICE =
 conststr PLACE_CLOUD_TOPIC_PUBLISHER = "/manipulation/place_cloud_publisher";
 conststr GET_PLANE_BBOX_SERVICE = "/manipulation/get_plane_bbox";
 conststr ZED_CAMERA_FRAME = "zed_left_camera_frame";
+// ZED depth reads ~1.4% short (keep in sync with manipulation_constants.py)
+const double ZED_DEPTH_SCALE = 1.014;
 
 // New constants
 conststr EEF_LINK_NAME = "link_eef";

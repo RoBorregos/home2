@@ -40,10 +40,15 @@ def get_object_cluster(
     perception_3d_client,
     add_collision_objects=True,
     timeout: float = 60.0,
+    min_height: float = 0.0,
+    max_height: float = 0.0,
 ):
     request = PickPerceptionService.Request()
     request.point = point
     request.add_collision_objects = add_collision_objects
+    # 0 = the service's default band around the point (see ClusterObjectFromPoint)
+    request.min_height = float(min_height)
+    request.max_height = float(max_height)
     perception_3d_client.wait_for_service()
     future = perception_3d_client.call_async(request)
     future = wait_for_future(future, timeout=timeout)

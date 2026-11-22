@@ -15,11 +15,13 @@ import yaml
 STRATEGY_FORCE_GUARDED = "force_guarded"
 STRATEGY_FIXED_DISTANCE = "fixed_distance"
 STRATEGY_DIRECT = "direct"
+STRATEGY_CARTESIAN = "cartesian"
 
 KNOWN_STRATEGY_KINDS = (
     STRATEGY_FORCE_GUARDED,
     STRATEGY_FIXED_DISTANCE,
     STRATEGY_DIRECT,
+    STRATEGY_CARTESIAN,
 )
 
 PROFILES_FILE_ENV_VAR = "FRIDA_PICK_PROFILES_FILE"
@@ -76,6 +78,50 @@ class ForceGuardProfile:
 
 
 @dataclass(frozen=True)
+class ShelfProfile:
+    """Shelf numbers, in m and deg: the frontal grasp into a compartment and the way
+    out, facing a level, the place inside the board and how far the base may move.
+
+    Fingertip heights are in the base frame: GPD's tilted grasps do not fit a compartment.
+    """
+
+    board_clearance: float  # fingertips this far above the board
+    ceiling_clearance: float  # ...and this far under the ceiling
+    top_margin: float  # never above the object's top minus this
+    z_steps: Tuple[float, ...]  # heights tried around the object's middle
+    width_margin: float  # the object must fit the open gripper with this to spare
+    max_half_depth: float
+    past_center: float  # the finger pads sit behind the fingertip point
+    pitches: Tuple[float, ...]  # tilt down from horizontal, in order
+    open_top_pitches: Tuple[float, ...]  # also tried with nothing above
+    exit_lift: float  # straight MoveIt path up off the board...
+    exit_retreat: float  # ...then back out along the way in
+    view_distance: float  # facing a level for a pick: camera past the board front...
+    view_height: float  # ...this high above the board, looking at its centre...
+    view_max_reach: float  # ...this far from the centre when farther from the base
+    place_view_height: float  # facing a level for a place: camera above the board
+    place_front_margin: float  # the released object's centre this far inside the board
+    place_back_margin: float
+    place_side_margin: float
+    max_base_shift: float  # the base may move this far before the scan is stale...
+    max_base_turn: float  # ...or turn this much (deg)
+
+    def validate(self, profile_name: str) -> None:
+        for key in (
+            "board_clearance",
+            "ceiling_clearance",
+            "exit_lift",
+            "exit_retreat",
+            "view_distance",
+            "max_base_shift",
+            "max_base_turn",
+        ):
+            _require_positive(getattr(self, key), f"{profile_name}.shelf.{key}")
+        if not self.pitches:
+            raise ProfileError(f"{profile_name}.shelf.pitches must not be empty")
+
+
+@dataclass(frozen=True)
 class PickProfile:
     """Everything that varies between pick behaviors."""
 
@@ -85,6 +131,7 @@ class PickProfile:
     num_alternatives: int
     alternative_step: float
     pre_grasp_height: float
+    post_grasp_height: float
     pre_grasp_velocity: float
     close_settle: float
     validate_endpoint: bool
@@ -95,6 +142,8 @@ class PickProfile:
     descent_distance: Optional[float] = None
     post_contact_retract: float = 0.0
     force_guard: Optional[ForceGuardProfile] = None
+    fallback_to_gpd: bool = False
+    shelf: Optional[ShelfProfile] = None
 
     @property
     def effective_descent_distance(self) -> float:
@@ -133,7 +182,7 @@ class PickProfile:
                 f"got {self.post_contact_retract}"
             )
 
-        if self.strategy == STRATEGY_FIXED_DISTANCE:
+        if self.strategy in (STRATEGY_FIXED_DISTANCE, STRATEGY_CARTESIAN):
             # A non-positive descent would drive the arm upward into the plan,
             # or not move at all -- both are configuration mistakes.
             if self.effective_descent_distance <= 0.0:
@@ -144,6 +193,9 @@ class PickProfile:
                     "it must be positive"
                 )
             _require_positive(self.descent_speed, f"{self.name}.descent_speed")
+
+        if self.shelf is not None:
+            self.shelf.validate(self.name)
 
         if self.strategy == STRATEGY_FORCE_GUARDED:
             if self.force_guard is None:

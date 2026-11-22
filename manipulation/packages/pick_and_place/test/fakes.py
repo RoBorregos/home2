@@ -1,12 +1,18 @@
 """A recording stand-in for RobotArm and Perception, so the pipelines can be
 tested without a robot or a ROS graph."""
 
+import copy
 from contextlib import contextmanager
+from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
+from frida_interfaces.msg import CollisionObject
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 from pick_and_place.pipelines.errors import PickAborted
+from pick_and_place.pipelines.profiles import load_profiles
+from pick_and_place.pipelines.shelf import ShelfScan
 from pick_and_place.robot.arm import AttachResult, ContactResult
 
 
@@ -16,13 +22,13 @@ class FakeLogger:
         self.warn_messages: List[str] = []
         self.error_messages: List[str] = []
 
-    def info(self, message):
+    def info(self, message, **kwargs):
         self.info_messages.append(str(message))
 
-    def warn(self, message):
+    def warn(self, message, **kwargs):
         self.warn_messages.append(str(message))
 
-    def warning(self, message):
+    def warning(self, message, **kwargs):
         self.warn_messages.append(str(message))
 
     def error(self, message, *args, **kwargs):
@@ -82,8 +88,14 @@ class FakeArm:
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
         estop: bool = False,
+        shelf_boxes_ok: bool = True,
+        link_pose: Optional[PoseStamped] = None,
+        tf_fails: bool = False,
     ):
+        self._tf_fails = tf_fails
         self._estop = estop
+        # Whether the planning scene takes the shelf boxes.
+        self._shelf_boxes_ok = shelf_boxes_ok
         self.calls: List[str] = []
         self.phases: List[str] = []
         self.contexts: List[str] = []
@@ -94,11 +106,16 @@ class FakeArm:
             "endpoint_self_collides": [],
         }
         self.descents: List[tuple] = []
+        self.approaches: List[tuple] = []
         self.move_kwargs: List[dict] = []
         self.close_settles: List[float] = []
         self.guards: List[Any] = []
         self.published_place_poses: List[PoseStamped] = []
         self.published_points: List[PointStamped] = []
+        self.joint_velocities: List[list] = []
+        self._link_pose = link_pose
+        self.accelerations: List[float] = []
+        self.joint_velocity_busy = False
         self._logger = FakeLogger()
 
         self.tf_buffer = FakeTFBuffer()
@@ -106,6 +123,7 @@ class FakeArm:
             "ee_link_offset": -0.09,
             "rim_tip_offset": -0.18,
             "bowl_tip_offset": -0.12,
+            "geometric_tip_offset": -0.17,
         }
         self._move_to_pose_results = list(move_to_pose_results or [])
         self._pregrasp_results = list(pregrasp_results or [])
@@ -131,7 +149,7 @@ class FakeArm:
         self.move_kwargs.append(kwargs)
         return self._next(self._move_to_pose_results, True)
 
-    def move_to_pregrasp(self, pose, velocity=None):
+    def move_to_pregrasp(self, pose, velocity=None, allow_pose_goal=True):
         self.calls.append("move_to_pregrasp")
         self.poses["move_to_pregrasp"].append(pose)
         return self._next(self._pregrasp_results, True)
@@ -145,6 +163,30 @@ class FakeArm:
         self.calls.append("move_joints")
         return True
 
+    @contextmanager
+    def acceleration_scaling(self, acceleration):
+        self.accelerations.append(acceleration)
+        yield
+
+    def to_frame(self, msg, frame):
+        """An identity transform: the fixtures already sit in the frame asked for."""
+        self.calls.append(f"to_frame:{frame}")
+        if self._tf_fails and msg.header.frame_id != frame:
+            return None
+        moved = copy.deepcopy(msg)
+        moved.header.frame_id = frame
+        return moved
+
+    @staticmethod
+    def look_at(source, target):
+        from frida_motion_planning.utils.tf_utils import look_at
+
+        return look_at(source, target)
+
+    def link_pose(self, link, frame="link_base"):
+        self.calls.append(f"link_pose:{link}")
+        return self._link_pose
+
     def get_joints(self, degrees=True):
         self.calls.append("get_joints")
         return {"joints": {f"joint{i}": 0.0 for i in range(1, 7)}}
@@ -157,6 +199,16 @@ class FakeArm:
         self.descents.append((distance_m, speed_mm_s))
         return self._next(self._descent_results, True)
 
+    def cartesian_approach(
+        self, direction, distance_m, speed_mm_s, close_on_reach=False
+    ):
+        self.calls.append("cartesian_approach")
+        self.approaches.append((direction, distance_m, speed_mm_s))
+        reached = self._next(self._descent_results, True)
+        if reached and close_on_reach:
+            self.close_gripper(settle_s=0.0)
+        return reached
+
     def force_guarded_descent(self, guard):
         self.calls.append("force_guarded_descent")
         self.guards.append(guard)
@@ -168,9 +220,25 @@ class FakeArm:
         self.calls.append("wait_until_ready")
 
     @contextmanager
-    def cartesian_velocity_mode(self, label):
+    def cartesian_velocity_mode(self, label, on_mode1=None):
         self.calls.append("cartesian_velocity_mode")
         yield
+
+    def disable_tgpio_reset(self):
+        self.calls.append("disable_tgpio_reset")
+
+    def enter_joint_velocity_mode(self):
+        self.calls.append("enter_joint_velocity_mode")
+        return True
+
+    def leave_joint_velocity_mode(self):
+        self.calls.append("leave_joint_velocity_mode")
+        return True
+
+    def send_joint_velocity(self, speeds):
+        self.calls.append("send_joint_velocity")
+        self.joint_velocities.append(speeds)
+        self.joint_velocity_busy = False
 
     def endpoint_self_collides(self, pose):
         self.calls.append("endpoint_self_collides")
@@ -186,7 +254,7 @@ class FakeArm:
         self.calls.append("close_gripper")
         self.close_settles.append(settle_s)
 
-    def clear_octomap(self, settle_s=0.3):
+    def clear_octomap(self, settle_s=0.0):
         self.calls.append("clear_octomap")
 
     def get_collision_objects(self):
@@ -213,11 +281,15 @@ class FakeArm:
         self.calls.append("detach_pick_objects")
         return True
 
-    def add_shelf_ceiling_guard(self, place_pose, table_height):
-        self.calls.append("add_shelf_ceiling_guard")
+    def add_collision_object(self, obj):
+        self.calls.append("add_collision_object")
 
-    def remove_shelf_ceiling_guard(self):
-        self.calls.append("remove_shelf_ceiling_guard")
+    def set_shelf_boxes(self, boxes):
+        self.calls.append("set_shelf_boxes")
+        return self._shelf_boxes_ok
+
+    def remove_shelf_scene(self):
+        self.calls.append("remove_shelf_scene")
 
     def object_pick_height(self, obj, grasp_pose):
         self.calls.append("object_pick_height")
@@ -229,8 +301,8 @@ class FakeArm:
 
     # --- state and observability --------------------------------------------
 
-    def tcp_z(self):
-        return 0.5
+    def tcp_xyz(self):
+        return (0.5, 0.0, 0.5)
 
     def now(self):
         # A real Time: message fields reject None on assignment.
@@ -317,19 +389,25 @@ class FakePerception:
         located_point: Optional[PointStamped] = None,
         cluster=None,
         grasps: Optional[List[tuple]] = None,
-        flat_response: Optional[Any] = None,
+        generated_grasps: Optional[Any] = None,
         heatmap_point: Optional[PointStamped] = None,
         surface_cloud: Optional[Any] = None,
+        shelf_result: Optional[Any] = None,
+        detections: Optional[List[Any]] = None,
     ):
         self.calls: List[str] = []
+        self._shelf_result = shelf_result  # the DetectShelf answer to detect=True
+        self._detections = list(detections or [])
+        self.shelf_requests: List[tuple] = []
         self._logger = FakeLogger()
         self._located_point = located_point
         self._cluster = cluster
         self._grasps = list(grasps or [])
-        self._flat_response = flat_response
-        self.flat_timeouts: List[float] = []
+        self._generated_grasps = generated_grasps
+        self.generate_timeouts: List[float] = []
         self.detect_timeouts: List[float] = []
         self.cluster_timeouts: List[float] = []
+        self.cluster_bands: List[Any] = []
 
         self.heatmap_place_client = ServiceStub(
             reply=type("R", (), {"place_point": heatmap_point})()
@@ -355,26 +433,43 @@ class FakePerception:
     def point_in_range(point, min_distance, max_distance):
         return True
 
-    def cluster_at(self, point, add_collision_objects=True, timeout=60.0):
+    def cluster_at(self, point, add_collision_objects=True, timeout=60.0, band=None):
         self.calls.append("cluster_at")
         self.cluster_timeouts.append(timeout)
+        self.cluster_bands.append(band)
         return self._cluster
+
+    def detect_shelf(self, reset=False, capture=False, detect=False, timeout=30.0):
+        self.calls.append("detect_shelf")
+        self.shelf_requests.append((reset, capture, detect))
+        if detect:
+            return self._shelf_result
+        return SimpleNamespace(success=True, levels=[])
+
+    def detections(self, timeout=2.0):
+        self.calls.append("detections")
+        return list(self._detections)
 
     def detect_grasps(self, cluster, cfg_path):
         self.calls.append("detect_grasps")
         return self._grasps.pop(0) if self._grasps else ([], [])
 
-    def estimate_flat_grasp(self, object_name, timeout=8.0):
-        self.calls.append("estimate_flat_grasp")
-        self.flat_timeouts.append(timeout)
-        return self._flat_response
+    def generate_grasps(self, object_name, timeout=8.0):
+        self.calls.append("generate_grasps")
+        self.generate_timeouts.append(timeout)
+        return self._generated_grasps
 
 
-class FakeFlatResponse:
-    """Stand-in for the flat-grasp estimator's reply."""
+class FakeGenerateGraspsResponse:
+    """Stand-in for the grasp generator's reply."""
 
-    def __init__(self, pose, samples_collected: int = 5):
+    def __init__(
+        self, pose, samples_collected: int = 5, grasps=None, object_type: str = ""
+    ):
         self.pose = pose
+        self.grasps = grasps or [pose]
+        self.scores = [1.0] * len(self.grasps)
+        self.object = CollisionObject(type=object_type)
         self.samples_collected = samples_collected
         self.success = True
         self.message = ""
@@ -417,3 +512,40 @@ def make_cluster(z_low=0.30, z_high=0.40, frame="base_link"):
         (0.51, 0.0, (z_low + z_high) / 2),
     ]
     return point_cloud2.create_cloud_xyz32(header, points)
+
+
+def make_board(height, thickness=0.02, front=0.5, back=0.85, y=(-0.4, 0.4), objects=()):
+    """A ShelfLevel as the scan returns it, in base_link."""
+    return SimpleNamespace(
+        height=height,
+        thickness=thickness,
+        front_x=front,
+        back_x=back,
+        y_min=y[0],
+        y_max=y[1],
+        clearance=0.3,
+        objects=list(objects),
+    )
+
+
+# The shelf profile's numbers, as the core hands them to the scan.
+SHELF_TUNING = load_profiles(
+    Path(__file__).resolve().parents[1] / "config" / "pick_profiles.yaml"
+)["shelf"].shelf
+
+
+def make_shelf(
+    levels=((0.39, 0.02), (0.68, 0.02)), extent=(-10, 10, -10, 10), base=None
+):
+    """A ShelfScan with boards at ``levels`` [(height, thickness)]; a wide extent by default."""
+    front, back, y_min, y_max = extent
+    return ShelfScan(
+        levels=[make_board(h, t, front, back, (y_min, y_max)) for h, t in levels],
+        boxes=[CollisionObject(id="frida_shelf_board_0")],
+        front_x=front,
+        back_x=back,
+        y_min=y_min,
+        y_max=y_max,
+        tuning=SHELF_TUNING,
+        base=base,
+    )

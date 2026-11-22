@@ -175,6 +175,7 @@ def _grasp_source_object(arm, perception, request: PourRequest, strategies):
     """Pick the source object using the normal pick pipeline."""
     pick_request = pick_pipeline.PickRequest(
         object_name=request.object_name,
+        use_gpd=True,
         in_configuration=True,  # already at table_stare
         # The pour lifts from wherever the grasp ended. Returning to a carry
         # pose first would send the arm to table_stare and make the lift plan

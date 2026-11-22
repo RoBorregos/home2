@@ -17,11 +17,10 @@ set(SCRIPTS_DIR xarm_utils)
 
 install(PROGRAMS
     ${SCRIPTS_DIR}/grasp_detector.py
-    ${SCRIPTS_DIR}/shelf_height_calibrator.py
     DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch config
+install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
 
 ament_package()

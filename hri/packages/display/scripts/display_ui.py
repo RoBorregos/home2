@@ -36,7 +36,7 @@ from frida_constants.vision_constants import (
 )
 
 from PyQt5.QtCore import Qt, QObject, QTimer, pyqtSignal
-from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPixmap
+from PyQt5.QtGui import QFont, QImage, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QDialog,
@@ -132,6 +132,9 @@ MESSAGE_ICONS = {
 AUDIO_STATE_TIMEOUT_MS = 10_000
 LISTENING_STATES = ("listening", "listening_silent")
 HEARD_WATCHDOG_S = 5.0
+
+# KWS keywords worth showing ("frida" and "stop" are no longer used by tasks).
+DISPLAY_KEYWORDS = {"yes", "no"}
 
 # Display modes shared by the GPSR/HRIC step machines.
 MODE_BUTTON = "button"
@@ -294,13 +297,13 @@ class DisplaySignals(QObject):
     message_received = pyqtSignal(str, str)  # type, content
     question_received = pyqtSignal(str)  # empty string closes the modal
     task_status_changed = pyqtSignal(bool)
-    map_received = pyqtSignal(dict)
     video_topic_changed = pyqtSignal(str)
     frame_received = pyqtSignal(QImage)
     task_step_changed = pyqtSignal(str)
     command_index_changed = pyqtSignal(int)
     heard_buffered = pyqtSignal(str)  # "heard" text held back while listening
     capture_added = pyqtSignal(str, QImage)  # label, snapshot
+    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
 
 
 class EvidenceRecorder:
@@ -371,8 +374,6 @@ class EvidenceRecorder:
         for f in files.values():
             f.close()
 
-    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
-
 
 class DisplayRosNode(Node):
     def __init__(self, signals: DisplaySignals):
@@ -388,6 +389,9 @@ class DisplayRosNode(Node):
         self._audio_state = "idle"
         self._pending_heard = None
         self._heard_watchdog = None
+        # Keywords already shown in the current listening window (dedupes KWS
+        # false positives that fire the same keyword over and over).
+        self._shown_keywords = set()
         self._last_qimg = None
         self._ignored_video = None
         self.evidence = EvidenceRecorder(self.task, self.get_logger())
@@ -416,7 +420,6 @@ class DisplayRosNode(Node):
         self.create_subscription(
             String, "/hri/display/task_status", self._on_task_status, 10
         )
-        self.create_subscription(String, "/hri/display/map", self._on_map, 10)
         self.create_subscription(
             String, "/hri/display/change_video", self._on_change_video, 10
         )
@@ -459,6 +462,8 @@ class DisplayRosNode(Node):
         self.signals.video_topic_changed.emit(topic)
 
     def _on_audio_state(self, msg: String):
+        if msg.data in LISTENING_STATES and self._audio_state not in LISTENING_STATES:
+            self._shown_keywords.clear()
         self._audio_state = msg.data
         self.signals.audio_state_changed.emit(msg.data)
         if msg.data not in LISTENING_STATES:
@@ -506,11 +511,16 @@ class DisplayRosNode(Node):
     def _on_kws(self, msg: String):
         try:
             data = json.loads(msg.data)
-            keyword = data.get("keyword")
-            if keyword:
-                self._emit_message("keyword", str(keyword))
-                self.signals.message_received.emit("keyword", str(keyword))
-                self.signals.keyword_detected.emit(str(keyword))
+            keyword = str(data.get("keyword") or "").strip().lower()
+            # Only show yes/no while a task is listening for them, once per window.
+            if (
+                keyword in DISPLAY_KEYWORDS
+                and self._audio_state in LISTENING_STATES
+                and keyword not in self._shown_keywords
+            ):
+                self._shown_keywords.add(keyword)
+                self._emit_message("keyword", keyword)
+                self.signals.keyword_detected.emit(keyword)
         except (json.JSONDecodeError, AttributeError) as e:
             self.get_logger().warn(f"Error parsing KWS message: {e}")
 
@@ -529,14 +539,6 @@ class DisplayRosNode(Node):
 
     def _on_command_index(self, msg: Int32):
         self.signals.command_index_changed.emit(msg.data)
-
-    def _on_map(self, msg: String):
-        try:
-            data = json.loads(msg.data)
-            if data.get("image_path", "").strip():
-                self.signals.map_received.emit(data)
-        except json.JSONDecodeError as e:
-            self.get_logger().warn(f"Error parsing map message: {e}")
 
     def _on_change_video(self, msg: String):
         if msg.data == self.video_topic:
@@ -637,77 +639,6 @@ class DisplayRosNode(Node):
 
     def publish_answer(self, text: str):
         self.answer_pub.publish(String(data=text))
-
-
-# Bases tried, in order, to resolve a relative `image_path` from /hri/display/map
-# (the old web app resolved these as URLs against its own public/ dir; there's no
-# equivalent web root here, so we look in the likely asset locations instead).
-MAP_IMAGE_SEARCH_DIRS = [
-    Path("/workspace/src/frida_constants/data"),
-    Path.home() / ".frida",
-]
-
-
-def resolve_map_image(image_path: str) -> str:
-    path = Path(image_path)
-    if path.is_absolute() or path.is_file():
-        return str(path)
-    for base in MAP_IMAGE_SEARCH_DIRS:
-        candidate = base / path
-        if candidate.is_file():
-            return str(candidate)
-    return image_path
-
-
-class MapDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Map View")
-        self.resize(700, 700)
-        self.markers = []
-        self.image_label = QLabel()
-        self.image_label.setAlignment(Qt.AlignCenter)
-
-        self.legend_layout = QVBoxLayout()
-
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.image_label)
-        layout.addLayout(self.legend_layout)
-
-    def show_map(self, data: dict):
-        self.markers = data.get("markers", [])
-        image_path = resolve_map_image(data["image_path"])
-        pixmap = QPixmap(image_path)
-        if pixmap.isNull():
-            print(
-                f"[display_ui] MapDialog: could not load image '{image_path}'",
-                file=sys.stderr,
-            )
-        else:
-            painted = QPixmap(pixmap)
-            painter = QPainter(painted)
-            for marker in self.markers:
-                x = marker["x"] / 100.0 * pixmap.width()
-                y = marker["y"] / 100.0 * pixmap.height()
-                painter.setPen(QColor("white"))
-                painter.setBrush(QColor(marker.get("color", "#ffffff")))
-                painter.drawEllipse(int(x) - 8, int(y) - 8, 16, 16)
-            painter.end()
-            self.image_label.setPixmap(painted)
-
-        while self.legend_layout.count():
-            self.legend_layout.takeAt(0).widget().deleteLater()
-        for marker in self.markers:
-            color = marker.get("color", "#ffffff")
-            color_name = marker.get("color_name", color)
-            row = QLabel(
-                f"<span style='color:{color}'>⬤</span> {color_name} — "
-                f"{marker['x']:.1f}%, {marker['y']:.1f}%"
-            )
-            self.legend_layout.addWidget(row)
-
-        self.show()
-        self.raise_()
 
 
 class QuestionDialog(QDialog):
@@ -1254,10 +1185,8 @@ class BaseWindow(QMainWindow):
         )
 
         if with_dialogs:
-            self.map_dialog = MapDialog(self)
             self.question_dialog = QuestionDialog(self)
             self.question_dialog.answered.connect(ros_node.publish_answer)
-            ros_node.signals.map_received.connect(self.map_dialog.show_map)
             ros_node.signals.question_received.connect(self._on_question)
 
     def make_header(self, title: str, extra_left=(), extra_right=()):
