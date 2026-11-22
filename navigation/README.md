@@ -342,6 +342,15 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 The old `offset` field still works when `surface_type` is empty: it is converted
 to the gap it used to produce.
 
+`nav_central` resumes nav2 and forwards the `DockTable` request unchanged to
+table_docker's own typed service, `/table_docker/dock_table`, which returns the
+diagnostics in its response. The request never goes through parameters, so two
+callers (e.g. `nav_ui` and a task) cannot overwrite each other's request; docks
+run one at a time. Both table_docker and `nav_central` take the robot
+**footprint from nav2's costmaps** (`/local_costmap/local_costmap` and
+`/global_costmap/global_costmap`), so `nav2_omni*.yaml` is its single source;
+their own `footprint` parameter is only a fallback while nav2 is not up.
+
 #### Reach check (the arm can actually reach the object)
 
 The reach band says how far the robot stands from the surface. It does not
