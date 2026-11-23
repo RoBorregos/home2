@@ -179,3 +179,5 @@ SHELF_ACCELERATION = 0.5  # planned shelf moves (PICK_ACCELERATION is 0.3), robo
 SHELF_SURVEY_SETTLE = 0.3  # s after reaching a survey pose, before the capture
 SHELF_LEVEL_SETTLE = 1.5  # s for the octomap and detections at a level's pose
 DETECT_DOOR_HANDLE_SERVICE = "/manipulation/detect_door_handle"
+DOOR_HANDLE_STARE_POSE = "door_handle_stare"
+DOOR_HANDLE_LABEL = "door_handle"

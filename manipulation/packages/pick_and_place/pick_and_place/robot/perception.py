@@ -4,9 +4,11 @@ The counterpart to :class:`RobotArm`. Splitting "see" from "do" keeps either
 facade from becoming a god object, and keeps the pipelines free of ROS clients.
 """
 
+import time
 from typing import List, Optional, Tuple
 
 from frida_constants.manipulation_constants import (
+    DETECT_DOOR_HANDLE_SERVICE,
     DETECT_SHELF_SERVICE,
     GENERATE_GRASPS_SERVICE,
     GRASP_DETECTION_SERVICE,
@@ -14,9 +16,14 @@ from frida_constants.manipulation_constants import (
     PICK_PERCEPTION_SERVICE,
     PLACE_PERCEPTION_SERVICE,
 )
-from frida_constants.vision_constants import DETECTION_HANDLER_TOPIC_SRV
+from frida_constants.vision_constants import (
+    DETECTION_HANDLER_TOPIC_SRV,
+    GALLERY_DETECTIONS_TOPIC,
+)
 from frida_motion_planning.utils.ros_utils import wait_for_future
+from frida_interfaces.msg import ObjectDetectionArray
 from frida_interfaces.srv import (
+    DetectDoorHandle,
     DetectionHandler,
     DetectShelf,
     GenerateGrasps,
@@ -39,6 +46,7 @@ GENERATE_GRASPS_TIMEOUT = 5.0
 DETECT_TIMEOUT = 2.0
 CLUSTER_TIMEOUT = 60.0
 DETECT_SHELF_TIMEOUT = 30.0
+DETECT_DOOR_HANDLE_TIMEOUT = 15.0  # a few fresh frames of up to 2 s each
 SERVICE_WAIT = 5.0  # longest wait for a service to appear
 
 
@@ -71,6 +79,35 @@ class Perception:
         self.detect_shelf_client = node.create_client(
             DetectShelf, DETECT_SHELF_SERVICE, callback_group=group
         )
+        self.detect_door_handle_client = node.create_client(
+            DetectDoorHandle, DETECT_DOOR_HANDLE_SERVICE, callback_group=group
+        )
+        # Newest gallery point per label (door_handle), straight from its topic.
+        self._gallery_points = {}
+        node.create_subscription(
+            ObjectDetectionArray,
+            GALLERY_DETECTIONS_TOPIC,
+            self._on_gallery_detections,
+            5,
+            callback_group=group,
+        )
+
+    def _on_gallery_detections(self, msg) -> None:
+        for detection in msg.detections:
+            self._gallery_points[detection.label_text] = (
+                time.time(),
+                detection.point3d,
+            )
+
+    def gallery_point(self, label: str, wait: float = 3.0) -> Optional[PointStamped]:
+        """The next gallery ``label`` point within ``wait`` s, or None."""
+        start = time.time()
+        while time.time() - start < wait:
+            seen = self._gallery_points.get(label)
+            if seen is not None and seen[0] >= start:
+                return seen[1]
+            time.sleep(0.05)
+        return None
 
     @property
     def logger(self):
@@ -101,6 +138,23 @@ class Perception:
         if response is None or not response.success:
             reason = response.message if response is not None else "no answer"
             self._log.warn(f"detect_shelf: {reason}")
+            return None
+        return response
+
+    def detect_door_handle(
+        self,
+        frames: int = 0,
+        seed: Optional[PointStamped] = None,
+        timeout: float = DETECT_DOOR_HANDLE_TIMEOUT,
+    ):
+        """DetectDoorHandle at ``seed`` (else the whole view); None on failure (logged)."""
+        request = DetectDoorHandle.Request(frames=frames)
+        if seed is not None:
+            request.seed = seed
+        response = self._call(self.detect_door_handle_client, request, timeout)
+        if response is None or not response.success:
+            reason = response.message if response is not None else "no answer"
+            self._log.warn(f"detect_door_handle: {reason}")
             return None
         return response
 

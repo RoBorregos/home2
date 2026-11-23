@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 from frida_interfaces.msg import CollisionObject
 from geometry_msgs.msg import PointStamped, PoseStamped
 
@@ -85,6 +86,7 @@ class FakeArm:
         contact_results: Optional[List[ContactResult]] = None,
         self_collides: Optional[List[bool]] = None,
         drive_rates: Optional[List[Optional[float]]] = None,
+        ik_changes: Optional[List[Optional[List[float]]]] = None,
         attach_result: Optional[AttachResult] = None,
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
@@ -133,6 +135,8 @@ class FakeArm:
         self._contact_results = list(contact_results or [])
         self._self_collides = list(self_collides or [])
         self._drive_rates = list(drive_rates or [])
+        # Per nearest_ik call: the joint changes in degrees, None = unreachable.
+        self._ik_changes = list(ik_changes or [])
         self._named_position_results = list(named_position_results or [])
         self._attach_result = attach_result or AttachResult(
             attached=True, lowest_object=FakeObject(), highest_object=FakeObject()
@@ -203,7 +207,12 @@ class FakeArm:
         return self._next(self._descent_results, True)
 
     def cartesian_approach(
-        self, direction, distance_m, speed_mm_s, close_on_reach=False
+        self,
+        direction,
+        distance_m,
+        speed_mm_s,
+        close_on_reach=False,
+        angular=(0.0, 0.0, 0.0),
     ):
         self.calls.append("cartesian_approach")
         self.approaches.append((direction, distance_m, speed_mm_s))
@@ -252,6 +261,13 @@ class FakeArm:
     def drive_joint_rate(self, pose, direction, distance, seed=None):
         self.calls.append("drive_joint_rate")
         return self._next(self._drive_rates, 0.0)
+
+    def nearest_ik(self, pose, attempts=8):
+        self.calls.append("nearest_ik")
+        change = self._next(self._ik_changes, [0.0] * 6)
+        if change is None:
+            return None
+        return {"joints": {}, "degrees": False}, np.array(change), None
 
     # --- gripper and scene --------------------------------------------------
 
@@ -402,8 +418,13 @@ class FakePerception:
         surface_cloud: Optional[Any] = None,
         shelf_result: Optional[Any] = None,
         detections: Optional[List[Any]] = None,
+        door_handle: Optional[Any] = None,
+        gallery_point: Optional[PointStamped] = None,
     ):
         self.calls: List[str] = []
+        self._door_handle = door_handle  # the DetectDoorHandle answer, None = not found
+        self._gallery_point = gallery_point  # None = not seen
+        self.door_seeds: List[Any] = []
         self._shelf_result = shelf_result  # the DetectShelf answer to detect=True
         self._detections = list(detections or [])
         self.shelf_requests: List[tuple] = []
@@ -453,6 +474,15 @@ class FakePerception:
         if detect:
             return self._shelf_result
         return SimpleNamespace(success=True, levels=[])
+
+    def gallery_point(self, label, wait=3.0):
+        self.calls.append("gallery_point")
+        return self._gallery_point
+
+    def detect_door_handle(self, frames=0, seed=None, timeout=15.0):
+        self.calls.append("detect_door_handle")
+        self.door_seeds.append(seed)
+        return self._door_handle
 
     def detections(self, timeout=2.0):
         self.calls.append("detections")

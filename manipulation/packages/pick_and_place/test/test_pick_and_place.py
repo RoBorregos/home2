@@ -47,6 +47,7 @@ from frida_pymoveit2.robots import xarm6
 from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import shelf as shelf_pipeline
 from pick_and_place.pipelines import (
+    door as door_pipeline,
     follow as follow_pipeline,
     pick as pick_pipeline,
     place as place_pipeline,
@@ -1563,3 +1564,112 @@ def test_a_missing_service_is_never_called():
     client = _FakeClient(available=False)
     assert _bare_perception()._call(client, object(), 1.0) is None
     assert client.calls == 0
+
+
+def _door_handle():
+    """A DetectDoorHandle answer."""
+    return SimpleNamespace(
+        center=make_point(0.45, 0.25, 0.974),
+        door_normal=SimpleNamespace(x=-0.996, y=-0.087, z=0.0),
+        length=0.108,
+        thickness=0.020,
+        standoff=0.055,
+        residual=0.003,
+        frames_found=3,
+        frames_used=3,
+    )
+
+
+def test_open_door_segments_at_the_vision_point_then_the_whole_view():
+    point = make_point(0.45, 0.25, 0.97)
+    arm, perception = FakeArm(), FakePerception(gallery_point=point)
+    assert door_pipeline.execute(arm, perception) is False
+    assert perception.calls == [
+        "gallery_point",
+        "detect_door_handle",
+        "detect_door_handle",
+    ]
+    assert perception.door_seeds == [point, None]
+
+
+def test_door_grasp_takes_the_first_candidate_that_passes_and_never_swings_the_base():
+    # Unreachable, a joint-1 swing round the robot, a big wrist turn, a natural one.
+    arm = FakeArm(
+        ik_changes=[
+            None,
+            [-121.0, -37.0, 5.0, -59.0, -121.0, 91.0],
+            [63.0, 88.0, 8.0, 73.0, -100.0, 39.0],
+            [49.0, 61.0, 13.0, -76.0, 15.0, 1.0],
+        ]
+    )
+    poses = [(f"c{i}", make_pose()) for i in range(4)]
+    label, _ = door_pipeline.choose_grasp(arm, poses)
+    assert label == "c2"
+
+
+def test_door_grasps_keep_the_deepest_finger_off_the_door():
+    front = np.array([0.58, 0.23, 0.97])
+    handle = SimpleNamespace(center=make_point(*front), standoff=0.042)
+    poses = door_pipeline.grasp_poses(FakeArm(), handle)
+    for i, (label, pose) in enumerate(poses):
+        pitch = np.radians(door_pipeline.PITCHES[i // 2])
+        tip = door_pipeline._position(pose) + door_pipeline._rotation(pose).apply(
+            [0.0, 0.0, 0.17]
+        )
+        past = (tip - front) @ door_pipeline.APPROACH
+        deepest = past + door_pipeline.FINGER_SPAN * np.sin(pitch)
+        assert handle.standoff - deepest >= door_pipeline.FINGER_CLEARANCE - 1e-6, label
+
+
+def test_door_backs_off_a_tripped_push_before_the_guarded_pull():
+    arm = FakeArm(
+        link_pose=make_pose(),
+        contact_results=[
+            ContactResult(contact=False, descended_m=0.08),  # approach
+            ContactResult(contact=True, descended_m=0.016),  # push meets the door
+            ContactResult(contact=False, descended_m=0.03),  # pull unlatches
+            ContactResult(contact=False, descended_m=0.42),  # rest of the pull
+        ],
+    )
+    arm.tcp_xyz = lambda: (0.05, -0.60, 0.95)  # a 0.45 m pull
+    handle = SimpleNamespace(center=make_point(0.58, 0.23, 0.97), standoff=0.043)
+    assert door_pipeline.pick_handle(arm, handle) is True
+    directions = [list(d) for d in arm.guard_directions]
+    assert directions == [
+        [0.0, -1.0, 0.0],
+        [0.0, -1.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 1.0, 0.0],
+    ]
+    back = [a for a in arm.approaches if list(a[0]) == [0.0, 1.0, 0.0]]
+    assert back[0][1] == pytest.approx(0.016)  # the push undone before the pull
+    up = [a for a in arm.approaches if list(a[0]) == [0.0, 0.0, 1.0]]
+    assert len(up) == 1 and up[0][1] == door_pipeline.LEVER_DROP  # back up once
+    assert arm.guards[-1].max_descent == pytest.approx(
+        0.60 - door_pipeline.PULL_BASE_CLEARANCE - 0.03
+    )
+    assert arm.named_positions[-1] == "table_stare"
+
+
+def test_lever_is_pressed_straight_down_when_joint5_cannot():
+    # Every link at one pose: joint 5 cannot move the fingertips.
+    arm = FakeArm(link_pose=make_pose())
+    assert door_pipeline.press_lever(arm) is not None
+    direction, distance, _ = arm.approaches[-1]
+    assert list(direction) == [0.0, 0.0, -1.0]
+    assert distance == door_pipeline.LEVER_DROP
+    assert "force_guarded_descent" not in arm.calls
+
+
+def test_open_door_measures_the_handle_then_hands_it_to_the_pick(monkeypatch):
+    picked = []
+    monkeypatch.setattr(
+        door_pipeline,
+        "pick_handle",
+        lambda arm, handle: picked.append(handle) or False,
+    )
+    arm, perception = FakeArm(), FakePerception(door_handle=_door_handle())
+    assert door_pipeline.execute(arm, perception) is False
+    assert arm.named_positions == ["door_handle_stare"]
+    assert picked and picked[0].length == 0.108
+    assert "door yaw 5.0 deg" in door_pipeline.describe(picked[0])

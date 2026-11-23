@@ -60,6 +60,7 @@ from frida_motion_planning.utils.service_utils import (
     move_joint_positions,
     open_gripper,
 )
+from frida_pymoveit2.robots.xarm6 import joint_names as xarm6_joint_names
 from geometry_msgs.msg import PointStamped, PoseStamped
 from moveit_msgs.srv import GetPositionIK, GetStateValidity
 from rclpy.action import ActionClient
@@ -76,6 +77,7 @@ from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
 from pick_and_place.utils.self_collision_utils import (
+    compute_ik,
     drive_joint_rate,
     endpoint_self_collides,
 )
@@ -529,6 +531,38 @@ class RobotArm:
             self._latest_joint_state if seed is None else seed,
         )
 
+    def nearest_ik(self, pose, attempts: int = 8):
+        """Nearest collision-aware IK of ``pose``: (joints, change in deg, JointState), or None."""
+        if self._latest_joint_state is None:
+            return None
+        names = xarm6_joint_names()
+        now = dict(
+            zip(self._latest_joint_state.name, self._latest_joint_state.position)
+        )
+        best = None
+        for _ in range(attempts):
+            response = compute_ik(
+                self._compute_ik_client,
+                pose,
+                avoid_collisions=True,
+                seed_joint_state=self._latest_joint_state,
+            )
+            if (
+                response is None
+                or response.error_code.val != response.error_code.SUCCESS
+            ):
+                continue
+            solution = response.solution.joint_state
+            found = dict(zip(solution.name, solution.position))
+            change = np.degrees([found[n] - now[n] for n in names])
+            if best is None or np.abs(change).max() < np.abs(best[1]).max():
+                joints = {
+                    "joints": {n: float(found[n]) for n in names},
+                    "degrees": False,
+                }
+                best = (joints, change, solution)
+        return best
+
     # ==================================================================
     # Gripper
     # ==================================================================
@@ -721,13 +755,18 @@ class RobotArm:
             self._restore_mode1(on_mode1)
 
     def _send_cartesian_velocity(
-        self, speed_mm_s: float, label: str, direction=(0.0, 0.0, 1.0)
+        self,
+        speed_mm_s: float,
+        label: str,
+        direction=(0.0, 0.0, 1.0),
+        angular=(0.0, 0.0, 0.0),
     ) -> None:
         if not self._cartesian_velocity_client.wait_for_service(timeout_sec=2.0):
             raise PickHardwareError(f"[{label}] vc_set_cartesian_velocity unavailable")
 
         request = MoveVelocity.Request()
-        request.speeds = [*(speed_mm_s * np.asarray(direction)), 0.0, 0.0, 0.0]
+        # angular: rad/s about the base axes, at the TCP.
+        request.speeds = [*(speed_mm_s * np.asarray(direction)), *map(float, angular)]
         request.is_tool_coord = False
         request.duration = 0.0
 
@@ -899,8 +938,9 @@ class RobotArm:
         distance_m: float,
         speed_mm_s: float,
         close_on_reach: bool = False,
+        angular=(0.0, 0.0, 0.0),
     ) -> bool:
-        """Drive distance_m along a unit direction, closed on the TCP position."""
+        """Drive distance_m along a unit direction, closed on the TCP position (``angular`` rad/s)."""
         label = "CartesianApproach"
         direction = np.asarray(direction)
         self._log.info(
@@ -936,7 +976,7 @@ class RobotArm:
                 gripper_closed = True
 
         with self.cartesian_velocity_mode(label, on_mode1=close_now):
-            self._send_cartesian_velocity(speed_mm_s, label, direction)
+            self._send_cartesian_velocity(speed_mm_s, label, direction, angular)
 
             timeout = (distance_m * 1000.0 / speed_mm_s) * DESCENT_TIMEOUT_FACTOR
             loop_start = time.time()

@@ -232,6 +232,18 @@ SHELF_SURVEY_LOW = {
     "degrees": True,
 }
 
+DOOR_HANDLE_STARE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -80.0,
+        "joint3": -70.0,
+        "joint4": 0.0,
+        "joint5": 33.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
@@ -252,4 +264,5 @@ XARM_CONFIGURATIONS = {
     "look_side_low_stare": LOOK_SIDE_LOW_STARE,
     "shelf_survey_high": SHELF_SURVEY_HIGH,
     "shelf_survey_low": SHELF_SURVEY_LOW,
+    "door_handle_stare": DOOR_HANDLE_STARE,
 }

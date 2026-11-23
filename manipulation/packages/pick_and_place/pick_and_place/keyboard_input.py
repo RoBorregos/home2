@@ -336,6 +336,7 @@ def main(args=None):
             print("-11. Pick from shelf (after -12)")
             print("-12. Scan the shelf in front (MOVES THE ARM)")
             print("-13. Preview grasp candidates (no motion)")
+            print("-14. Open door")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -452,6 +453,15 @@ def main(args=None):
                     node.preview_grasps(node.objects[int(number) - 1])
                 else:
                     print("Invalid choice. Please try again.")
+
+            elif choice == "-14":
+                result = node._run_task(ManipulationTask.OPEN_DOOR)
+                done = result is not None and result.success
+                print(
+                    "Open door done"
+                    if done
+                    else "Open door stopped; see the manipulation_core log"
+                )
 
             elif choice.isdigit():
                 try:

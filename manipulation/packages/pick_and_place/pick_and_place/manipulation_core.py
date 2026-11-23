@@ -4,7 +4,7 @@
 One node owns the whole manipulation task: it serves ManipulationAction,
 GoToHand and the face / person follow services, and dispatches each task type
 to a pipeline. The pipelines (``pipelines/pick.py``, ``place.py``, ``pour.py``,
-``shelf.py``, ``follow.py``) hold the logic and talk to the robot through
+``shelf.py``, ``door.py``, ``follow.py``) hold the logic and talk to the robot through
 ``robot/arm.py`` and ``robot/perception.py``.
 
 """
@@ -40,6 +40,7 @@ from std_msgs.msg import Float64
 from tf_transformations import quaternion_from_euler
 from transforms3d.quaternions import quat2mat
 
+from pick_and_place.pipelines import door as door_pipeline
 from pick_and_place.pipelines import follow as follow_pipeline
 from pick_and_place.pipelines import pick as pick_pipeline
 from pick_and_place.pipelines import place as place_pipeline
@@ -111,6 +112,7 @@ class ManipulationCore(Node):
             ManipulationTask.PLACE: self._run_place,
             ManipulationTask.POUR: self._run_pour,
             ManipulationTask.SCAN_SHELF: self._run_scan_shelf,
+            ManipulationTask.OPEN_DOOR: self._run_open_door,
         }
 
         self._manipulation_server = ActionServer(
@@ -254,6 +256,10 @@ class ManipulationCore(Node):
             return False
         self._shelf = shelf
         return self.arm.set_shelf_boxes(shelf.boxes)
+
+    def _run_open_door(self, request) -> bool:
+        """Face the door handle, find it, grasp it, press the lever, push, else pull."""
+        return door_pipeline.execute(self.arm, self.perception)
 
     def _current_shelf(self):
         """The last scan while the base has not moved since, else None (and no boxes)."""
