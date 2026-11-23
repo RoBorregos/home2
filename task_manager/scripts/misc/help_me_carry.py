@@ -7,6 +7,7 @@ Task Manager for Carry my luggage task of Robocup @Home 2025
 import time as t
 
 import rclpy
+from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
 from rclpy.duration import Duration
 from rclpy.node import Node
 from task_manager.subtask_managers.generic_tasks import GenericTask
@@ -17,6 +18,9 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 ATTEMPT_LIMIT = 3
 
 FOLLOWING_TIMEOUT = 7
+
+# Seconds the take_bag.mp4 instructions stay on the display before detecting the hand
+TAKE_BAG_VIDEO_TIME = 6
 
 
 class HelpMeCarryTM(Node):
@@ -66,6 +70,61 @@ class HelpMeCarryTM(Node):
     #     self.subtask_manager.manipulation.move_to_position("navigation")
     #     future = self.subtask_manager.nav.move_to_location(location, sublocation)
     #     rclpy.spin_until_future_complete(self, future)
+
+    def take_bag_from_hand(self) -> bool:
+        """Take the bag by its handle from the person's hand. True if the arm holds it.
+
+        On failure the gripper is open and the arm at nav_pose, ready for the hook.
+        """
+        hri = self.subtask_manager.hri
+        manipulation = self.subtask_manager.manipulation
+
+        hri.publish_display_topic("take_bag.mp4")
+        hri.say(
+            "Please look at my display to see how to hand me the bag.",
+            wait=True,
+        )
+        t.sleep(TAKE_BAG_VIDEO_TIME)
+        # Show the hand detection (annotated by hric_commands) on the display
+        hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        manipulation.move_to_position("hand_bag_pose")
+
+        for attempt in range(ATTEMPT_LIMIT):
+            hri.say(
+                "Hold the bag by its handle with one hand and extend your arm towards me. "
+                "Please keep your hand still.",
+                wait=True,
+            )
+            status, hand_point = self.subtask_manager.vision.detect_hand_stable()
+            if status != Status.EXECUTION_SUCCESS:
+                Logger.warn(self, f"Stable hand detection attempt {attempt + 1} failed")
+                hri.say("I could not see your hand clearly.")
+                continue
+
+            hri.say("When my gripper closes, let go of the bag.", wait=True)
+            status, payload = manipulation.take_from_hand(hand_point)
+            if status != Status.EXECUTION_SUCCESS:
+                Logger.warn(self, f"take_from_hand attempt {attempt + 1} failed")
+                hri.say("I could not reach the handle. Let's try again.")
+                continue
+
+            if payload:
+                return True
+
+            _, confirmation = hri.confirm(
+                "Have you let go of the bag? Say yes when the speaker turns blue",
+                False,
+                retries=3,
+                wait_between_retries=5,
+            )
+            if confirmation == "yes":
+                return True
+            manipulation.open_gripper()
+            hri.say("Ok, I opened my gripper. Let's try again.")
+
+        manipulation.open_gripper()
+        manipulation.move_to_position("nav_pose")
+        return False
 
     def run(self):
         """State machine"""
@@ -225,7 +284,9 @@ class HelpMeCarryTM(Node):
             # TODO: self.subtask_manager.manipulation.move_joint_positions(dict,"bag_recieving_pose")
             # self.subtask_manager.manipulation.open_gripper()
 
-            while True:
+            # The hook stays as the fallback when the hand-over fails.
+            taken = self.take_bag_from_hand()
+            while not taken:
                 self.subtask_manager.hri.say(
                     "Please hang the bag in the white hook that is in the back of my gripper"
                 )

@@ -2,9 +2,9 @@
 """The manipulation node.
 
 One node owns the whole manipulation task: it serves ManipulationAction,
-GoToHand and the face / person follow services, and dispatches each task type
-to a pipeline. The pipelines (``pipelines/pick.py``, ``place.py``, ``pour.py``,
-``shelf.py``, ``follow.py``) hold the logic and talk to the robot through
+GoToHand, TakeFromHand and the face / person follow services, and dispatches
+each task type to a pipeline. The pipelines (``pipelines/pick.py``, ``place.py``,
+``pour.py``, ``shelf.py``, ``follow.py``, ``handover.py``) hold the logic and talk to the robot through
 ``robot/arm.py`` and ``robot/perception.py``.
 
 """
@@ -24,12 +24,13 @@ from frida_constants.manipulation_constants import (
     GRIPPER_REACH,
     MANIPULATION_ACTION_SERVER,
     PICK_ACCELERATION,
+    TAKE_FROM_HAND_ACTION_SERVER,
     SHELF_ACCELERATION,
     SHELF_SCAN_TOLERANCE,
     RIM_DESCENT_SPEED,
 )
 from frida_constants.vision_constants import CENTROID_TOPIC, FOLLOW_TOPIC
-from frida_interfaces.action import GoToHand, ManipulationAction
+from frida_interfaces.action import GoToHand, ManipulationAction, TakeFromHand
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import FixedDistanceMove, FollowFace
 from geometry_msgs.msg import Point, PoseStamped, Twist
@@ -41,6 +42,7 @@ from tf_transformations import quaternion_from_euler
 from transforms3d.quaternions import quat2mat
 
 from pick_and_place.pipelines import follow as follow_pipeline
+from pick_and_place.pipelines import handover as handover_pipeline
 from pick_and_place.pipelines import pick as pick_pipeline
 from pick_and_place.pipelines import place as place_pipeline
 from pick_and_place.pipelines import pour as pour_pipeline
@@ -127,6 +129,15 @@ class ManipulationCore(Node):
             GoToHand,
             GO_TO_HAND_ACTION_SERVER,
             execute_callback=self.go_to_hand_callback,
+            callback_group=self.callback_group,
+            goal_callback=self.goal_callback,
+        )
+        self._take_from_hand_server = ActionServer(
+            self,
+            TakeFromHand,
+            TAKE_FROM_HAND_ACTION_SERVER,
+            execute_callback=self.take_from_hand_callback,
+            cancel_callback=self._cancel_callback,
             callback_group=self.callback_group,
             goal_callback=self.goal_callback,
         )
@@ -467,6 +478,71 @@ class ManipulationCore(Node):
             goal_handle.succeed()
             result.success = False
             return result
+
+    # ==================================================================
+    # TakeFromHand
+    # ==================================================================
+
+    async def take_from_hand_callback(self, goal_handle):
+        try:
+            return self._take_from_hand(goal_handle)
+        finally:
+            self._task_lock.release()
+
+    def _take_from_hand(self, goal_handle):
+        """Take a bag from a person's hand, gripping its handle below the wrist."""
+        result = TakeFromHand.Result()
+        result.success = False
+        result.payload_detected = False
+
+        if self.arm.estop_active:
+            self.get_logger().warn("E-stop active, aborting take from hand")
+            result.message = "e-stop active"
+            goal_handle.abort()
+            return result
+
+        self._preempt_follow()
+        request = goal_handle.request
+        self.arm.bind_goal(goal_handle, TakeFromHand.Feedback)
+        try:
+            outcome = handover_pipeline.execute(
+                self.arm,
+                handover_pipeline.TakeFromHandRequest(
+                    hand_point=request.hand_point,
+                    grasp_below_hand=request.grasp_below_hand,
+                    release_timeout=request.release_timeout,
+                ),
+            )
+            result.success = outcome.success
+            result.payload_detected = outcome.payload_detected
+            result.message = outcome.message
+            if outcome.success:
+                goal_handle.succeed()
+            else:
+                goal_handle.abort()
+        except PickAborted as exc:
+            self.get_logger().warn(f"Take from hand aborted: {exc}")
+            result.message = f"aborted: {exc}"
+            if goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+            else:
+                goal_handle.abort()
+        except PickHardwareError as exc:
+            self.get_logger().error(f"Take from hand stopped, hardware fault: {exc}")
+            result.message = f"hardware fault: {exc}"
+            goal_handle.abort()
+        except Exception as exc:
+            self.get_logger().error(f"Take from hand failed: {exc}")
+            result.message = f"failed: {exc}"
+            goal_handle.abort()
+        finally:
+            self.arm.release_goal()
+
+        self.get_logger().info(
+            f"[DONE] take from hand -> success={result.success} "
+            f"payload={result.payload_detected}"
+        )
+        return result
 
     # ==================================================================
     # FixedDistanceMove

@@ -1,0 +1,15 @@
+# Take a bag a person holds by its handle, gripping the handle below their wrist.
+# Wrist keypoint of the hand holding the handle
+geometry_msgs/PointStamped hand_point
+# Metres below the wrist to grip the handle; <= 0 uses the default
+float32 grasp_below_hand 0.0
+# Seconds to wait for the person to let go; <= 0 uses the default
+float32 release_timeout 0.0
+---
+# The gripper closed on the handle
+bool success
+# The person let go: the arm carries the bag's weight
+bool payload_detected
+string message
+---
+string execution_state

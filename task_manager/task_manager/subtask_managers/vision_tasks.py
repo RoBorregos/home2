@@ -69,6 +69,7 @@ from std_msgs.msg import Bool as BoolMsg
 from std_msgs.msg import Int16
 from std_srvs.srv import SetBool, Trigger
 from task_manager.utils.decorators import mockable, service_check
+from task_manager.utils.hand_point import fuse_points
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
@@ -77,6 +78,8 @@ TIMEOUT = 8.0
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
 IS_TRACKING_TOPIC = "/vision/is_tracking"
 CAPTURE_THROTTLE_S = 2.0
+# Pause between hand detections in detect_hand_stable, so each sees a new frame (s)
+HAND_SAMPLE_PERIOD = 0.1
 
 
 class VisionTasks:
@@ -826,6 +829,49 @@ class VisionTasks:
             f"Hand detected at ({result.point.point.x:.3f}, {result.point.point.y:.3f}, {result.point.point.z:.3f})",
         )
         return Status.EXECUTION_SUCCESS, result.point
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, PointStamped()))
+    @service_check("detect_hand_client", (Status.EXECUTION_ERROR, None), TIMEOUT)
+    def detect_hand_stable(
+        self, samples: int = 5, max_spread: float = 0.05, min_valid: int = 3
+    ) -> tuple[Status, PointStamped]:
+        """Detect the hand several times and return the fused 3D position.
+
+        A single YOLO pose keypoint can jump; the median of the detections that
+        agree within max_spread (metres) is steadier for a grasp.
+        """
+        Logger.info(self.node, f"Detecting hand ({samples} samples)")
+        detections = []
+        for _ in range(samples):
+            status, point = self.detect_hand()
+            if status == Status.EXECUTION_SUCCESS and point is not None:
+                detections.append(point)
+            time.sleep(HAND_SAMPLE_PERIOD)
+
+        if len(detections) < min_valid:
+            Logger.warn(self.node, f"Hand seen in {len(detections)}/{samples} samples")
+            return Status.TARGET_NOT_FOUND, None
+        frames = {point.header.frame_id for point in detections}
+        if len(frames) > 1:
+            Logger.error(self.node, f"Hand detections in different frames: {frames}")
+            return Status.EXECUTION_ERROR, None
+
+        fused = fuse_points(
+            [(p.point.x, p.point.y, p.point.z) for p in detections], max_spread, min_valid
+        )
+        if fused is None:
+            Logger.warn(self.node, "Hand detections do not agree, the hand is moving")
+            return Status.TARGET_NOT_FOUND, None
+
+        point = PointStamped()
+        point.header = detections[-1].header
+        point.point.x, point.point.y, point.point.z = fused
+        Logger.success(
+            self.node,
+            f"Stable hand at ({fused[0]:.3f}, {fused[1]:.3f}, {fused[2]:.3f}) "
+            f"from {len(detections)} detections",
+        )
+        return Status.EXECUTION_SUCCESS, point
 
     def visual_info(self, description, object="object"):
         """Return the object matching the description"""

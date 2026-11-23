@@ -29,7 +29,7 @@ from rclpy.action import ActionClient
 from typing import List, Union
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.status import Status
-from frida_interfaces.action import ManipulationAction, GoToHand
+from frida_interfaces.action import ManipulationAction, GoToHand, TakeFromHand
 from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
@@ -39,6 +39,7 @@ from std_srvs.srv import Empty, SetBool
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
+    TAKE_FROM_HAND_ACTION_SERVER,
     FIXED_DISTANCE_MOVE_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
     FOLLOW_FACE_ARM_SERVICE,
@@ -123,6 +124,9 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
+        self._take_from_hand_action_client = ActionClient(
+            self.node, TakeFromHand, TAKE_FROM_HAND_ACTION_SERVER
+        )
         # Level of the last shelf pick (1 = lowest), from the action result.
         self.last_shelf_level = 0
 
@@ -787,6 +791,60 @@ class ManipulationTasks:
 
         Logger.error(self.node, "GoToHand failed to reach target pose")
         return Status.EXECUTION_ERROR
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, True))
+    @service_check(
+        client="_take_from_hand_action_client",
+        return_value=(Status.EXECUTION_ERROR, False),
+        timeout=TIMEOUT,
+    )
+    def take_from_hand(
+        self,
+        point: PointStamped,
+        grasp_below_hand: float = 0.0,
+        release_timeout: float = 0.0,
+        timeout: float = 60.0,
+    ) -> tuple[Status, bool]:
+        """Grip the handle of a bag the person holds out, below their wrist.
+
+        Args:
+            point: the wrist of the hand holding the handle (PointStamped)
+            grasp_below_hand: metres below the wrist to grip; <= 0 uses the default
+            release_timeout: seconds to wait for the person to let go; <= 0 uses the default
+            timeout: seconds to wait for the result before cancelling the goal
+
+        Returns:
+            Status: EXECUTION_SUCCESS if the gripper closed on the handle
+            bool: True if the person let go (the arm carries the bag)
+        """
+        goal_msg = TakeFromHand.Goal()
+        goal_msg.hand_point = point
+        goal_msg.grasp_below_hand = float(grasp_below_hand)
+        goal_msg.release_timeout = float(release_timeout)
+
+        future = self._take_from_hand_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None or not future.result().accepted:
+            Logger.error(self.node, "TakeFromHand goal was rejected")
+            return Status.EXECUTION_ERROR, False
+
+        Logger.info(self.node, "TakeFromHand goal accepted, waiting for result...")
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=timeout)
+        if not result_future.done():
+            Logger.error(self.node, f"TakeFromHand timed out after {timeout:.0f}s")
+            future.result().cancel_goal_async()
+            return Status.EXECUTION_ERROR, False
+
+        result = result_future.result().result
+        if not result.success:
+            Logger.error(self.node, f"TakeFromHand failed: {result.message}")
+            return Status.EXECUTION_ERROR, False
+        if result.payload_detected:
+            Logger.success(self.node, "TakeFromHand: bag taken")
+        else:
+            Logger.warn(self.node, f"TakeFromHand: {result.message}")
+        return Status.EXECUTION_SUCCESS, result.payload_detected
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(

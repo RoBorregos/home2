@@ -770,6 +770,51 @@ class RobotArm:
         self._log.info(f"[{label}] effort baseline: {[f'{e:.2f}' for e in baseline]}")
         return baseline
 
+    def wait_for_payload(
+        self,
+        min_effort_delta: float,
+        timeout_s: float,
+        joints,
+        consecutive: int = 10,
+    ) -> bool:
+        """Wait for the arm to take a held load, from joint effort at 50 Hz.
+
+        True once the largest effort change on ``joints`` (looked up by name in
+        /joint_states) against a baseline taken now stays >= ``min_effort_delta``
+        for ``consecutive`` readings in a row, so a brief tug does not count.
+        False on timeout or without joint states.
+        """
+        label = "Payload"
+        baseline = self._sample_effort_baseline(label)
+        if baseline is None:
+            return False
+        names = list(self._latest_joint_state.name)
+        missing = [joint for joint in joints if joint not in names]
+        if missing:
+            self._log.error(f"[{label}] joints {missing} not in joint_states")
+            return False
+        indices = [names.index(joint) for joint in joints]
+
+        streak = 0
+        start_time = time.time()
+        while time.time() - start_time < timeout_s:
+            self.check_abort()
+            time.sleep(0.02)
+            state = self._latest_joint_state
+            if state is None or len(state.effort) <= max(indices):
+                continue
+            delta = max(abs(state.effort[i] - baseline[i]) for i in indices)
+            streak = streak + 1 if delta >= min_effort_delta else 0
+            if streak >= consecutive:
+                self._log.info(
+                    f"[{label}] payload detected: delta {delta:.2f} >= "
+                    f"{min_effort_delta:.2f} after {time.time() - start_time:.1f}s"
+                )
+                return True
+
+        self._log.warn(f"[{label}] no payload after {timeout_s:.1f}s")
+        return False
+
     def _monitor_for_contact(self, guard: ForceGuardProfile, baseline, label: str):
         """Watch joint effort at 50 Hz. Returns (contact, metres descended)."""
         history = deque()  # (timestamp, effort) inside the jump window
