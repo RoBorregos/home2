@@ -27,6 +27,7 @@ from frida_interfaces.srv import (
 )
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
+from action_msgs.msg import GoalStatus
 from typing import List, Union
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.status import Status
@@ -361,6 +362,9 @@ class ManipulationTasks:
         goal_handle.cancel_goal_async()
         # The server rejects new goals until the cancelled one has stopped
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=CANCEL_WAIT)
+        # The goal can finish before the cancel lands
+        if result_future.done() and result_future.result().status == GoalStatus.STATUS_SUCCEEDED:
+            return result_future.result().result
         return None
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
