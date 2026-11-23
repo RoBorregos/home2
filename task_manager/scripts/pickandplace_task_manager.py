@@ -277,7 +277,8 @@ class PickAndPlaceTM(Node):
 
     def run(self):
         ppc = self.ppc
-        if self.start_at != "start" and ppc.state.started_at is None:
+        if self.start_at != "start":
+            # A snapshot's stamp comes from another run's clock
             ppc.state.started_at = ppc.clock()
         log = RunLog(
             self.log_dir,
