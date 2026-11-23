@@ -214,8 +214,8 @@ class PickAndPlace:
         anchor = self.find(self.state.breakfast, rule.get("next_to", ""))
         next_to = anchor.name if anchor and anchor.status == "placed" else ""
         steps = [
-            Action("navigate_to_item_source", lambda: self.go(rule["from"])),
             Action("ensure_gripper_empty", self.free_gripper),
+            Action("navigate_to_item_source", lambda: self.go(rule["from"])),
             Action("pick_breakfast_item", lambda: self.pick(item, rule["from"])),
             Action("navigate_to_dining", lambda: self.go(table)),
         ]
