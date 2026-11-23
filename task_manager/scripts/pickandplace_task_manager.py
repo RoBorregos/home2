@@ -177,9 +177,9 @@ class PickAndPlace:
         return next((b for b in self.state.breakfast if b.status == "pending"), None)
 
     def next_retry(self):
-        return next(
-            (i for i in self.state.objects + self.state.breakfast if i.status == "skipped"), None
-        )
+        items = self.state.objects + self.state.breakfast
+        untried = next((i for i in items if i.status == "pending"), None)
+        return untried or next((i for i in items if i.status == "skipped"), None)
 
     @staticmethod
     def done(item: Item, ok: bool):
