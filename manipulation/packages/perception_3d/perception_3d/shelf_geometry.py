@@ -38,9 +38,27 @@ class ShelfParams:
 
     wall_bin: float = 0.02
     min_wall_points: int = 40
-    wall_min_height: float = 0.25
+    wall_min_height: float = 0.25  # back wall
+    # Side walls are seen at a grazing angle: often only one compartment of them.
+    side_wall_min_height: float = 0.15
     wall_search: float = 0.20  # a wall must sit within this of the boards' extent
+    # Vertical points further than this in front of the boards are not walls (plinth,
+    # floor clutter, the robot's own side).
+    wall_front_margin: float = 0.10
+    # A side wall is at or outside the boards' edge: a plane further inside is an
+    # object's side (on the robot, a cereal box 10 cm in from the wall).
+    wall_inside_tolerance: float = 0.04
     wall_thickness: float = 0.02
+    # A wall that was not seen is still there: box it at the boards' edge. The scan
+    # misses side walls far more often than a shelf really has none.
+    assume_walls: bool = True
+    # The boards' edge falls short of the real wall (5 cm on the robot): an assumed
+    # wall grows this far outward, never into the compartment.
+    assumed_wall_thickness: float = 0.10
+    # Walls run from the floor, not from the lowest board: the side panels reach it.
+    walls_to_floor: bool = True
+    # Walls rise this far past the highest structure seen: the camera may miss the top.
+    wall_top_margin: float = 0.05
 
     board_sink: float = 0.01  # collision box top sits this far below the surface
     padding: float = 0.02  # every other box face grown this far into the free space
@@ -77,6 +95,9 @@ class ShelfGeometry:
     front_x: float
     back_x: float
     top_z: float = 0.0  # underside of the top board when only seen from below, else 0
+    # Top of the wall boxes: the highest wall or structure seen plus a margin, so an
+    # open-top shelf's walls rise past its top board. 0 when nothing was seen.
+    wall_top: float = 0.0
     has_left_wall: bool = False
     has_right_wall: bool = False
     has_back_wall: bool = False
@@ -235,34 +256,59 @@ def _surface_candidates(up: np.ndarray, p: ShelfParams):
 
 
 def _walls(
-    vertical: np.ndarray, normals: np.ndarray, boards_y, boards_back_x, p: ShelfParams
-):
-    """Side walls near the boards' lateral extent, back wall near their far edge."""
+    vertical: np.ndarray,
+    normals: np.ndarray,
+    boards_y: tuple,
+    boards_back_x: float,
+    boards_front_x: float,
+    lowest_board_z: float,
+    p: ShelfParams,
+) -> tuple[dict, float]:
+    """Side walls near the boards' lateral extent, back wall near their far edge.
+
+    Only vertical points inside the shelf's own volume count: from just under the
+    lowest board up, and from the boards' front back. A plinth, the floor or clutter
+    beside the shelf otherwise wins over a wall that is only partly in view.
+
+    Returns ({"left"|"right"|"back": plane position or None}, top of the walls
+    found, 0.0 when none).
+    """
     found = {"left": None, "right": None, "back": None}
+    tops = {}
+    inside = (vertical[:, 2] >= lowest_board_z - p.max_board_thickness) & (
+        vertical[:, 0] >= boards_front_x - p.wall_front_margin
+    )
+    vertical, normals = vertical[inside], normals[inside]
     if len(vertical) == 0:
-        return found
+        return found, 0.0
     side = vertical[np.abs(normals[:, 1]) > 0.8]
     for y_peak, _ in _histogram_peaks(
         side[:, 1], -p.y_half, p.y_half, p.wall_bin, p.min_wall_points
     ):
         strip = side[np.abs(side[:, 1] - y_peak) <= 1.5 * p.wall_bin]
         z_lo, z_hi = _extent(strip[:, 2])
-        if z_hi - z_lo < p.wall_min_height:
+        if z_hi - z_lo < p.side_wall_min_height:
             continue
-        for name, edge in (("left", boards_y[0]), ("right", boards_y[1])):
+        for name, edge, inward in (
+            ("left", boards_y[0], 1.0),
+            ("right", boards_y[1], -1.0),
+        ):
+            if (y_peak - edge) * inward > p.wall_inside_tolerance:
+                continue  # inside the boards: an object's side, not a wall
             gap = abs(y_peak - edge)
             if gap <= p.wall_search and (
                 found[name] is None or gap < abs(found[name] - edge)
             ):
                 found[name] = y_peak  # the plane nearest the boards' edge
+                tops[name] = z_hi
     # Back wall: a plane behind the boards that is tall or spans most of the width.
     width = boards_y[1] - boards_y[0]
     back = vertical[np.abs(normals[:, 0]) > 0.8]
     for x_peak, _ in _histogram_peaks(
         back[:, 0], p.x_min, p.x_max, p.wall_bin, p.min_wall_points
     ):
-        if x_peak < boards_back_x - p.wall_search:
-            continue
+        if not -p.wall_search <= x_peak - boards_back_x <= p.wall_search:
+            continue  # inside the compartment, or a room wall far behind the shelf
         strip = back[np.abs(back[:, 0] - x_peak) <= 1.5 * p.wall_bin]
         z_lo, z_hi = _extent(strip[:, 2])
         y_lo, y_hi = _extent(strip[:, 1])
@@ -272,7 +318,23 @@ def _walls(
             continue
         if found["back"] is None or x_peak < found["back"]:
             found["back"] = x_peak  # the nearest tall plane behind the boards
-    return found
+            tops["back"] = z_hi
+    return found, float(max(tops.values(), default=0.0))
+
+
+def _structure_top(
+    points: np.ndarray, y_span: tuple, x_span: tuple, p: ShelfParams
+) -> float:
+    """Highest point (robust percentile) inside the shelf's footprint, 0.0 if none."""
+    inside = (
+        (points[:, 1] >= y_span[0] - p.wall_bin)
+        & (points[:, 1] <= y_span[1] + p.wall_bin)
+        & (points[:, 0] >= x_span[0])
+        & (points[:, 0] <= x_span[1] + p.wall_thickness)
+    )
+    if np.count_nonzero(inside) < p.min_wall_points:
+        return 0.0
+    return float(np.percentile(points[inside, 2], 99.5))
 
 
 def _boards_seen_from_below(
@@ -330,7 +392,22 @@ def detect_shelf(
     widest = max(c["y"][1] - c["y"][0] for c in candidates)
     y_all = (min(c["y"][0] for c in candidates), max(c["y"][1] for c in candidates))
     back_all = max(c["x"][1] for c in candidates)
-    walls = _walls(points[vertical_mask], normals[vertical_mask], y_all, back_all, p)
+    # Where the shelf starts, from the surfaces wide enough to be boards (not objects).
+    board_like = [
+        c
+        for c in candidates
+        if c["y"][1] - c["y"][0] >= p.min_width_fraction * widest
+        and c["fill"] >= p.min_fill_fraction
+    ] or candidates
+    walls, wall_top = _walls(
+        points[vertical_mask],
+        normals[vertical_mask],
+        y_all,
+        back_all,
+        min(c["x"][0] for c in board_like),
+        min(c["z"] for c in board_like),
+        p,
+    )
     if walls["left"] is not None and walls["right"] is not None:
         reference = walls["right"] - walls["left"]
     else:
@@ -392,13 +469,24 @@ def detect_shelf(
         for level, above in zip(levels, levels[1:])
     ] + [levels[-1]]
 
+    y_min = float(walls["left"] if walls["left"] is not None else y_all[0])
+    y_max = float(walls["right"] if walls["right"] is not None else y_all[1])
+    front_x = float(min(level.front_x for level in with_clearance))
+    back_x = float(walls["back"] if walls["back"] is not None else back_all)
+    # The walls are as tall as the shelf, not as the part of them in view: take the
+    # highest structure inside the shelf's footprint (back panel, wall edges, a lid).
+    structure = _structure_top(points, (y_min, y_max), (front_x, back_x), p)
+    wall_top = max(wall_top, structure)
+    if wall_top > 0.0:
+        wall_top += p.wall_top_margin
     geometry = ShelfGeometry(
         levels=tuple(with_clearance),
-        y_min=float(walls["left"] if walls["left"] is not None else y_all[0]),
-        y_max=float(walls["right"] if walls["right"] is not None else y_all[1]),
-        front_x=float(min(level.front_x for level in with_clearance)),
-        back_x=float(walls["back"] if walls["back"] is not None else back_all),
+        y_min=y_min,
+        y_max=y_max,
+        front_x=front_x,
+        back_x=back_x,
         top_z=float(top_z),
+        wall_top=float(wall_top),
         has_left_wall=walls["left"] is not None,
         has_right_wall=walls["right"] is not None,
         has_back_wall=walls["back"] is not None,
@@ -418,6 +506,8 @@ def collision_boxes(
 
     Board tops sink ``board_sink`` so fingertips at an object's base do not collide;
     every other face grows ``padding`` into the free space for scan and hand-eye error.
+    With ``assume_walls`` a wall that was not seen is boxed at the boards' edge: a
+    missing box lets MoveIt plan straight through a real wall.
     """
     boxes = []
     pad = p.padding
@@ -441,26 +531,32 @@ def collision_boxes(
             (front, g.y_min, top - level.thickness - pad),
             (back, g.y_max, top),
         )
-    # Walls run from the lowest board to the highest one.
-    bottom = g.levels[0].height - g.levels[0].thickness
-    top = g.levels[-1].height
-    if g.has_left_wall:
+    # Walls run from the floor (or the lowest board) up to the highest board, or
+    # higher when the seen walls rise past it (an open-top shelf).
+    lowest = g.levels[0].height - g.levels[0].thickness
+    bottom = min(p.z_min, lowest) if p.walls_to_floor else lowest
+    top = max(g.levels[-1].height, g.wall_top)
+
+    def outward(seen: bool) -> float:
+        return p.wall_thickness if seen else p.assumed_wall_thickness
+
+    if g.has_left_wall or p.assume_walls:
         box(
             "wall_left",
-            (front, g.y_min - p.wall_thickness, bottom),
+            (front, g.y_min - outward(g.has_left_wall), bottom),
             (back, g.y_min + pad, top),
         )
-    if g.has_right_wall:
+    if g.has_right_wall or p.assume_walls:
         box(
             "wall_right",
             (front, g.y_max - pad, bottom),
-            (back, g.y_max + p.wall_thickness, top),
+            (back, g.y_max + outward(g.has_right_wall), top),
         )
-    if g.has_back_wall:
+    if g.has_back_wall or p.assume_walls:
         box(
             "wall_back",
             (g.back_x - pad, g.y_min, bottom),
-            (g.back_x + p.wall_thickness, g.y_max, top),
+            (g.back_x + outward(g.has_back_wall), g.y_max, top),
         )
     return boxes
 

@@ -95,7 +95,10 @@ class ShelfProfile:
     pitches: Tuple[float, ...]  # tilt down from horizontal, in order
     open_top_pitches: Tuple[float, ...]  # also tried with nothing above
     exit_lift: float  # straight MoveIt path up off the board...
-    exit_retreat: float  # ...then back out along the way in
+    exit_retreat: float  # ...then back out along the way in, at least this far...
+    exit_clearance: float  # ...until the fingertips are this far out of the board front
+    exit_max_retreat: float  # ...but never more than this
+    exit_step: float  # a blocked straight retreat is retried in steps this long
     view_distance: float  # facing a level for a pick: camera past the board front...
     view_height: float  # ...this high above the board, looking at its centre...
     view_max_reach: float  # ...this far from the centre when farther from the base
@@ -112,6 +115,9 @@ class ShelfProfile:
             "ceiling_clearance",
             "exit_lift",
             "exit_retreat",
+            "exit_clearance",
+            "exit_max_retreat",
+            "exit_step",
             "view_distance",
             "max_base_shift",
             "max_base_turn",

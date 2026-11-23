@@ -202,7 +202,15 @@ def _pick(
             outcome.place_top_down = True
             outcome.object_pick_height = _top_down_pick_height(outcome.object_height)
     if request.is_shelf:
-        _shelf_exit(arm, strategies[PICK_STRATEGY_SHELF].profile.shelf)
+        front_x = getattr(request.shelf, "front_x", None)
+        if not _shelf_exit(arm, strategies[PICK_STRATEGY_SHELF].profile.shelf, front_x):
+            # A planned return from inside the compartment swings the arm into the
+            # shelf: stop here, holding the object, and let the caller recover.
+            log.error(
+                f"[{strategy_key}] pick got '{request.object_name}' but could not "
+                "back out of the shelf; not planning the return from inside it"
+            )
+            return False, outcome
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
@@ -637,34 +645,96 @@ def _top_down_pick_height(object_height: float) -> float:
 # ======================================================================
 
 
-def _shelf_exit(arm, shelf) -> bool:
-    """Lift off the board, then back out along the way in, as straight MoveIt paths."""
+def _shelf_exit(arm, shelf, front_x: Optional[float] = None) -> bool:
+    """Lift off the board, then back out along the way in, as straight MoveIt paths.
+
+    With the scan's ``front_x`` the retreat lasts until the fingertips are out of the
+    shelf: ``link_eef`` is the flange, GRIPPER_REACH behind them, so a fixed 15 cm
+    left the hand and the object in the compartment. A blocked straight retreat is
+    retried in ``exit_step`` pieces. False while the hand may still be inside: the
+    caller must not plan a free move from there (RRTConnect swings the wrist into
+    the walls).
+    """
     target = arm.link_pose(EEF_LINK_NAME)  # straight-line plans always move link_eef
     if target is None:
         return False
     back = -approach_axis(target)
     back[2] = 0.0
     norm = float(np.linalg.norm(back))
-    steps = [np.array([0.0, 0.0, shelf.exit_lift])]
-    if norm >= 0.5:  # a steep grasp has no meaningful "straight back"
-        steps.append(back / norm * shelf.exit_retreat)
     with arm.phase("shelf_exit"):
-        for step in steps:
-            target = copy.deepcopy(target)
-            target.pose.position.x += float(step[0])
-            target.pose.position.y += float(step[1])
-            target.pose.position.z += float(step[2])
-            if not arm.move_to_pose(
-                target,
-                velocity=SLOW_VELOCITY,
-                planner_id=CARTESIAN_PLANNER,
-                target_link=EEF_LINK_NAME,
-            ):
-                arm.logger.warn(
-                    "Shelf exit: no straight path; the return plans around the boxes"
+        target = _straight_move(arm, target, np.array([0.0, 0.0, shelf.exit_lift]))
+        if target is None:
+            arm.logger.warn("Shelf exit: could not lift off the board")
+            return False
+        if norm < 0.5:  # a steep grasp has no meaningful "straight back"
+            return True
+        back /= norm
+        retreat, clears = _exit_retreat(arm, shelf, front_x)
+        if not clears:
+            arm.logger.error(
+                f"Shelf exit: even {retreat * 100:.0f} cm (exit_max_retreat) leaves "
+                "the fingertips inside the shelf"
+            )
+        moved = _straight_move(arm, target, back * retreat)
+        if moved is not None:
+            return clears
+        # Blocked in one go (an IK flip, a box grazed): back out in short pieces.
+        arm.logger.warn(
+            f"Shelf exit: no straight {retreat * 100:.0f} cm retreat; "
+            f"retrying in {shelf.exit_step * 100:.0f} cm steps"
+        )
+        done = 0.0
+        while done < retreat - 1e-6:
+            step = min(shelf.exit_step, retreat - done)
+            moved = _straight_move(arm, target, back * step)
+            if moved is None:
+                arm.logger.error(
+                    f"Shelf exit: stuck {done * 100:.0f} of {retreat * 100:.0f} cm "
+                    "out; the hand may still be inside the shelf"
                 )
                 return False
-    return True
+            target, done = moved, done + step
+    return clears
+
+
+def _straight_move(arm, start, offset: np.ndarray):
+    """``start`` moved by ``offset`` along a straight MoveIt path; the pose or None."""
+    target = copy.deepcopy(start)
+    target.pose.position.x += float(offset[0])
+    target.pose.position.y += float(offset[1])
+    target.pose.position.z += float(offset[2])
+    ok = arm.move_to_pose(
+        target,
+        velocity=SLOW_VELOCITY,
+        planner_id=CARTESIAN_PLANNER,
+        target_link=EEF_LINK_NAME,
+    )
+    return target if ok else None
+
+
+def _exit_retreat(arm, shelf, front_x: Optional[float]) -> Tuple[float, bool]:
+    """How far to back out so the fingertips clear the shelf front by exit_clearance.
+
+    Returns (distance, whether that distance gets the fingertips out). Without the
+    scan's front, or backing out sideways, it is the fixed exit_retreat, trusted as
+    before.
+    """
+    if front_x is None:
+        return shelf.exit_retreat, True
+    eef = arm.link_pose(EEF_LINK_NAME, "base_link")  # front_x is in base_link
+    if eef is None:
+        return shelf.exit_retreat, True
+    approach = approach_axis(eef)
+    tip_x = eef.pose.position.x + GRIPPER_REACH * float(approach[0])
+    back = -approach
+    back[2] = 0.0
+    back /= max(float(np.linalg.norm(back)), 1e-9)
+    if back[0] > -0.3:  # not backing away from the shelf front: keep the default
+        return shelf.exit_retreat, True
+    needed = (tip_x - (front_x - shelf.exit_clearance)) / -float(back[0])
+    if needed > shelf.exit_max_retreat:
+        return shelf.exit_max_retreat, False
+    return max(needed, shelf.exit_retreat), True
 
 
 def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:

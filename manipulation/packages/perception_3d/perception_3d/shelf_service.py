@@ -38,6 +38,9 @@ TUNED_SHELF_PARAMS = (
     "min_width_fraction",
     "min_level_spacing",
     "min_level_points",
+    "side_wall_min_height",
+    "assume_walls",
+    "walls_to_floor",
 )
 # Not ShelfParams: how the frames are captured.
 NODE_PARAMS = {

@@ -32,6 +32,7 @@ from fakes import (
 )
 from frida_constants.manipulation_constants import (
     CARTESIAN_PLANNER,
+    GRIPPER_REACH,
     PICK_ACCELERATION,
     BOWL_NAME,
     PRE_GRASP_DISTANCE,
@@ -1563,3 +1564,85 @@ def test_a_missing_service_is_never_called():
     client = _FakeClient(available=False)
     assert _bare_perception()._call(client, object(), 1.0) is None
     assert client.calls == 0
+
+
+def _frontal_exit_pose(x=0.55):
+    """link_eef holding a frontal grasp: approach along +x (into the shelf)."""
+    pose = make_pose(x=x, y=0.0, z=0.70)
+    pose.header.frame_id = "base_link"
+    q = Rotation.from_euler("y", 90, degrees=True).as_quat()
+    pose.pose.orientation.x, pose.pose.orientation.y = q[0], q[1]
+    pose.pose.orientation.z, pose.pose.orientation.w = q[2], q[3]
+    return pose
+
+
+def _retreat_of(arm, start):
+    """How far the last straight move took link_eef back from ``start`` (in x)."""
+    return start.pose.position.x - arm.poses["move_to_pose"][-1].pose.position.x
+
+
+def test_shelf_exit_backs_out_until_the_fingertips_clear_the_front():
+    # link_eef is the flange: a fixed 15 cm left fingers and object in the compartment.
+    start = _frontal_exit_pose(x=0.55)
+    arm = FakeArm(link_pose=copy.deepcopy(start))
+    front = 0.48
+    assert pick_pipeline._shelf_exit(arm, SHELF_TUNING, front_x=front)
+    tips_out = start.pose.position.x + GRIPPER_REACH - _retreat_of(arm, start)
+    assert tips_out == pytest.approx(front - SHELF_TUNING.exit_clearance)
+    assert len(arm.poses["move_to_pose"]) == 2  # lift, then one straight retreat
+
+
+@pytest.mark.parametrize(
+    "x,expected,out",
+    [
+        (0.20, SHELF_TUNING.exit_retreat, True),  # near the front: at least the default
+        (0.95, SHELF_TUNING.exit_max_retreat, False),  # capped: the tips are still in
+    ],
+)
+def test_shelf_exit_retreat_stays_within_its_bounds(x, expected, out):
+    start = _frontal_exit_pose(x=x)
+    arm = FakeArm(link_pose=copy.deepcopy(start))
+    assert pick_pipeline._shelf_exit(arm, SHELF_TUNING, front_x=0.48) is out
+    assert _retreat_of(arm, start) == pytest.approx(expected)
+
+
+def test_a_blocked_shelf_exit_backs_out_in_steps():
+    start = _frontal_exit_pose(x=0.55)
+    # lift ok, the one-go retreat blocked, then every short step works
+    arm = FakeArm(link_pose=copy.deepcopy(start), move_to_pose_results=[True, False])
+    assert pick_pipeline._shelf_exit(arm, SHELF_TUNING, front_x=0.48)
+    steps = arm.poses["move_to_pose"][2:]
+    needed = (
+        start.pose.position.x + GRIPPER_REACH - (0.48 - SHELF_TUNING.exit_clearance)
+    )
+    assert len(steps) == int(np.ceil(needed / SHELF_TUNING.exit_step - 1e-9))
+    assert _retreat_of(arm, start) == pytest.approx(needed)
+    assert all(k["planner_id"] == CARTESIAN_PLANNER for k in arm.move_kwargs)
+
+
+def test_a_stuck_shelf_exit_reports_the_hand_may_be_inside():
+    arm = FakeArm(
+        link_pose=_frontal_exit_pose(), move_to_pose_results=[True, False, True, False]
+    )
+    assert not pick_pipeline._shelf_exit(arm, SHELF_TUNING, front_x=0.48)
+
+
+def test_a_shelf_pick_that_cannot_back_out_never_plans_the_return(strategies):
+    # RRTConnect from inside the compartment swung the wrist into the shelf walls.
+    perception = FakePerception(
+        located_point=make_point(z=0.50),
+        cluster=bottle_cluster(),
+        grasps=[([make_pose()], [0.9])],
+    )
+    arm = FakeArm(link_pose=_shelf_exit_pose(), move_to_pose_results=[False] * 10)
+    success, _ = run_pick(
+        arm,
+        perception,
+        strategies,
+        object_name="bottle",
+        is_shelf=True,
+        shelf=make_shelf(SHELF),
+        in_configuration=True,
+    )
+    assert not success
+    assert arm.named_positions == []  # no table_stare from inside the shelf
