@@ -183,12 +183,12 @@ class PickAndPlace:
 
     @staticmethod
     def done(item: Item, ok: bool):
-        if item.status == "pending":
+        if item.status != "placed":
             item.status = "skipped"
 
     @staticmethod
     def done_retry(item: Item, ok: bool):
-        if item.status == "skipped":
+        if item.status != "placed":
             item.status = "failed"
 
     def retry(self, item: Item):
