@@ -51,6 +51,7 @@ from perception_3d.geometric_grasps import (
     grasp_for,
     parse_bbox,
 )
+from perception_3d.door_service import DoorService
 from perception_3d.shelf_service import ShelfService
 
 BASE_FRAME = "link_base"  # every grasp pose is expressed here (z up)
@@ -115,6 +116,10 @@ class GraspGenerator(Node):
         )
         # The shelf scan needs the same depth image, intrinsics and TF: no own node.
         self._shelf = ShelfService(
+            self, self._tf_buffer, group, self.fresh_depth, lambda: self._intrinsics
+        )
+        # The door handle too: same depth image, intrinsics and TF as the shelf.
+        self._door = DoorService(
             self, self._tf_buffer, group, self.fresh_depth, lambda: self._intrinsics
         )
         self.get_logger().info("Grasp generator ready")

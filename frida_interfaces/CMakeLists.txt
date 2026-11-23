@@ -116,6 +116,7 @@ set(srv_files
   "manipulation/srv/AddPickPrimitives.srv"
   "manipulation/srv/AttachCollisionObject.srv"
   "manipulation/srv/ClusterObjectFromPoint.srv"
+  "manipulation/srv/DetectDoorHandle.srv"
   "manipulation/srv/DetectShelf.srv"
   "manipulation/srv/GetCollisionObjects.srv"
   "manipulation/srv/GetJoints.srv"

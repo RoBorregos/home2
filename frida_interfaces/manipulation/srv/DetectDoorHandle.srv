@@ -1,0 +1,15 @@
+# Find the door's lever handle in front of the eye-in-hand ZED from depth: door planes, then lever-sized blobs standing off them; optionally at a detector's point.
+int32 frames                              # fresh depth frames to try (0 = the door.frames parameter)
+geometry_msgs/PointStamped seed           # the vision model's handle point (any frame with TF to base_link); empty frame_id searches the whole view
+---
+bool success
+string message
+geometry_msgs/PointStamped center         # the grasp point: the bar's middle on its front face, base_link
+geometry_msgs/Vector3 door_normal         # unit, horizontal, pointing at the robot
+geometry_msgs/PointStamped door_point     # a point on the door face behind the handle
+float32 length
+float32 thickness                         # vertical extent of the bar
+float32 standoff                          # front of the bar from the door face
+float32 residual                          # door plane fit std, m
+int32 frames_found
+int32 frames_used
