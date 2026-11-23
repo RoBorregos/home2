@@ -239,13 +239,17 @@ class CompositeTasks:
         if idx is not None and idx < len(shelf):
             self.hri.say(f"The {name} goes on shelf {idx + 1}.", wait=False)
             order.sort(key=lambda i: abs(shelf[i][0] - shelf[idx][0]))
+        targets = [shelf[i][0] for i in order]
         rescanned = False
-        for i in order:
+        for height in targets:
             for attempt in range(1, attempts + 1):
-                if self.manipulation.place_on_shelf(level=i + 1) == Status.EXECUTION_SUCCESS:
-                    shelf[i][1].append(name)
+                # Match by height: a rescan can renumber the boards
+                cur = self._shelf or shelf
+                level = min(range(len(cur)), key=lambda j: abs(cur[j][0] - height))
+                if self.manipulation.place_on_shelf(level=level + 1) == Status.EXECUTION_SUCCESS:
+                    cur[level][1].append(name)
                     return Status.EXECUTION_SUCCESS
-                CLog.manip(self.node, "PLACE", f"Shelf {i + 1} failed {attempt}/{attempts}.")
+                CLog.manip(self.node, "PLACE", f"Shelf {level + 1} failed {attempt}/{attempts}.")
                 # Manipulation drops its scan once the base shifts; one fresh scan per place
                 if not rescanned:
                     rescanned = True
