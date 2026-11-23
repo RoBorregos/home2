@@ -104,14 +104,14 @@ PROFILES=()
 
 case $TASK in
     "--hric")
-        PACKAGES="vision_general object_detector_2d moondream_run"
+        PACKAGES="vision_general object_detector_2d vlm_run"
         RUN="ros2 launch vision_general hric_launch.py"
-        PROFILES=("vision" "moondream")
+        PROFILES=("vision" "vlm")
         ;;
     "--ppc")
-        PACKAGES="vision_general object_detector_2d moondream_run"
+        PACKAGES="vision_general object_detector_2d vlm_run"
         RUN="ros2 launch vision_general ppc_launch.py"
-        PROFILES=("vision" "moondream")
+        PROFILES=("vision" "vlm")
         ;;
     "--dlc")
         PACKAGES="vision_general object_detector_2d"
@@ -121,12 +121,12 @@ case $TASK in
     "--restaurant")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
         RUN="ros2 launch vision_general restaurant_launch.py"
-        PROFILES=("vision" "moondream")
+        PROFILES=("vision" "vlm")
         ;;
     "--carry")
         PACKAGES="vision_general object_detector_2d"
         RUN="ros2 launch vision_general help_me_carry_launch.py"
-        PROFILES=("vision" "moondream")
+        PROFILES=("vision" "vlm")
         ;;
     "--storing-groceries")
         PACKAGES="object_detector_2d"
@@ -134,27 +134,27 @@ case $TASK in
         PROFILES=("vision")
         ;;
     "--gpsr")
-        PACKAGES="vision_general object_detector_2d moondream_run"
+        PACKAGES="vision_general object_detector_2d vlm_run"
         RUN="ros2 launch vision_general gpsr_launch.py"
-        PROFILES=("vision" "moondream")
+        PROFILES=("vision" "vlm")
         ;;
     "--finals")
         PACKAGES="vision_general object_detector_2d"
         RUN="ros2 launch vision_general finals_launch.py"
         PROFILES=("vision")
         ;;
-    "--moondream")
-        PROFILES=("moondream")
+    "--vlm")
+        PROFILES=("vlm")
         ;;
     "--warmup")
         # Fetch all model weights + pre-build TRT engines for this device so
         # competition runs need no internet and pay no first-call export.
-        PACKAGES="vision_general object_detector_2d moondream_run"
+        PACKAGES="vision_general object_detector_2d vlm_run"
         RUN="python3 /workspace/src/vision/scripts/fetch_models.py --warmup"
         PROFILES=("vision")
         ;;
     *)
-        PACKAGES="vision_general object_detector_2d moondream_run"
+        PACKAGES="vision_general object_detector_2d vlm_run"
         RUN="bash"
         PROFILES=("vision")
         ;;
