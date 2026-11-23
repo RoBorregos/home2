@@ -75,10 +75,11 @@ case $TASK in
   -h|--help|help) usage; exit 0 ;;
 esac
 
-# Everything but the environment type goes to the task harness untouched
+# The environment type and run.sh's own flags stay here; the rest goes to the task harness
 HARNESS_ARGS=()
 for arg in "${ARGS[@]}"; do
-  [[ "$arg" =~ ^(cpu|cuda|l4t)$ ]] || HARNESS_ARGS+=("$arg")
+  [[ "$arg" =~ ^(cpu|cuda|l4t|-d|--build|--build-image|--upload-image|--clean|--recreate|--headless|--no-rviz|--moveit-rviz)$ ]] \
+    || HARNESS_ARGS+=("$arg")
 done
 
 #_________________________SETUP_________________________
