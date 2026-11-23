@@ -199,6 +199,7 @@ class CompositeTasks:
         if say_name:
             self.hri.say(f"I will pick the {say_name}.", wait=False)
         for attempt in range(1, attempts + 1):
+            before = self._shelf or shelf
             status = self.manipulation.pick_object(name, from_shelf=True, shelf_level=hint)
             level = self.manipulation.last_shelf_level
             if status == Status.EXECUTION_SUCCESS and not self._grasp_holds(use_grasp_detector):
@@ -206,13 +207,13 @@ class CompositeTasks:
             if status == Status.EXECUTION_SUCCESS and vision_confirm and level:
                 # A held object is closer than the camera's minimum depth, so a rescan skips it
                 rescan = self.shelf_scan(rescan=True)
-                if (
-                    rescan
-                    and level <= len(rescan)
-                    and target in map(str.lower, rescan[level - 1][1])
-                ):
-                    CLog.manip(self.node, "PICK", f"{name} still on the shelf.", level="warn")
-                    status = Status.EXECUTION_ERROR
+                if rescan and level <= len(rescan) and level <= len(before):
+                    was = count_by_class(before[level - 1][1])
+                    now = count_by_class(rescan[level - 1][1])
+                    if not picked_ok(was, now, target):
+                        # Retrying opens the gripper, which would drop an object that may be held
+                        CLog.manip(self.node, "PICK", f"{name} grasp unconfirmed.", level="warn")
+                        return Status.EXECUTION_ERROR
             if status == Status.EXECUTION_SUCCESS:
                 return status
             CLog.manip(self.node, "PICK", f"Shelf pick {name} failed {attempt}/{attempts}.")
