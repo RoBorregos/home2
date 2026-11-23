@@ -84,6 +84,7 @@ class FakeArm:
         descent_results: Optional[List[bool]] = None,
         contact_results: Optional[List[ContactResult]] = None,
         self_collides: Optional[List[bool]] = None,
+        drive_rates: Optional[List[Optional[float]]] = None,
         attach_result: Optional[AttachResult] = None,
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
@@ -110,6 +111,7 @@ class FakeArm:
         self.move_kwargs: List[dict] = []
         self.close_settles: List[float] = []
         self.guards: List[Any] = []
+        self.guard_directions: List[Any] = []
         self.published_place_poses: List[PoseStamped] = []
         self.published_points: List[PointStamped] = []
         self.joint_velocities: List[list] = []
@@ -130,6 +132,7 @@ class FakeArm:
         self._descent_results = list(descent_results or [])
         self._contact_results = list(contact_results or [])
         self._self_collides = list(self_collides or [])
+        self._drive_rates = list(drive_rates or [])
         self._named_position_results = list(named_position_results or [])
         self._attach_result = attach_result or AttachResult(
             attached=True, lowest_object=FakeObject(), highest_object=FakeObject()
@@ -209,9 +212,10 @@ class FakeArm:
             self.close_gripper(settle_s=0.0)
         return reached
 
-    def force_guarded_descent(self, guard):
+    def force_guarded_descent(self, guard, direction=(0.0, 0.0, -1.0)):
         self.calls.append("force_guarded_descent")
         self.guards.append(guard)
+        self.guard_directions.append(direction)
         return self._next(
             self._contact_results, ContactResult(contact=True, descended_m=0.12)
         )
@@ -244,6 +248,10 @@ class FakeArm:
         self.calls.append("endpoint_self_collides")
         self.poses["endpoint_self_collides"].append(pose)
         return self._next(self._self_collides, False)
+
+    def drive_joint_rate(self, pose, direction, distance, seed=None):
+        self.calls.append("drive_joint_rate")
+        return self._next(self._drive_rates, 0.0)
 
     # --- gripper and scene --------------------------------------------------
 

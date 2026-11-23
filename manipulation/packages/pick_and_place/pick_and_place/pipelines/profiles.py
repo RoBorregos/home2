@@ -52,6 +52,8 @@ class ForceGuardProfile:
     jump_trip: float  # N
     jump_sustain: int  # consecutive samples
     hard_ceiling: float  # N
+    # m along the drive (on the TCP) where it ends without contact; None measures elapsed x speed
+    max_descent: Optional[float] = None
 
     def validate(self, profile_name: str) -> None:
         _require_positive(
@@ -74,6 +76,23 @@ class ForceGuardProfile:
             if joint < 0:
                 raise ProfileError(
                     f"{profile_name}.force_guard.ignore_joints has a negative index: {joint}"
+                )
+        if self.max_descent is not None:
+            _require_positive(
+                self.max_descent, f"{profile_name}.force_guard.max_descent"
+            )
+            if self.min_contact_descent >= self.max_descent:
+                raise ProfileError(
+                    f"{profile_name}.force_guard.min_contact_descent "
+                    f"({self.min_contact_descent} m) must be below max_descent "
+                    f"({self.max_descent} m), or contact is never honored"
+                )
+            reachable = self.timeout * self.descent_speed / 1000.0
+            if reachable < self.max_descent:
+                raise ProfileError(
+                    f"{profile_name}.force_guard.timeout ({self.timeout} s) at "
+                    f"{self.descent_speed} mm/s only covers {reachable:.3f} m, "
+                    f"less than max_descent {self.max_descent} m"
                 )
 
 

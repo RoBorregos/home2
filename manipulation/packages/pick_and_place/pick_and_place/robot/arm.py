@@ -75,7 +75,10 @@ from xarm_msgs.srv import MoveVelocity, SetInt16
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
-from pick_and_place.utils.self_collision_utils import endpoint_self_collides
+from pick_and_place.utils.self_collision_utils import (
+    drive_joint_rate,
+    endpoint_self_collides,
+)
 
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
@@ -514,6 +517,18 @@ class RobotArm:
             logger=self._log,
         )
 
+    def drive_joint_rate(
+        self, pose, direction, distance: float, seed=None
+    ) -> Optional[float]:
+        """Largest rad/m any joint needs on the drive from ``pose``; None without IK."""
+        return drive_joint_rate(
+            self._compute_ik_client,
+            pose,
+            direction,
+            distance,
+            self._latest_joint_state if seed is None else seed,
+        )
+
     # ==================================================================
     # Gripper
     # ==================================================================
@@ -720,8 +735,10 @@ class RobotArm:
         if not self.wait_for_future(future, timeout=5) or future.result() is None:
             raise PickHardwareError(f"[{label}] velocity command failed")
 
-    def force_guarded_descent(self, guard: ForceGuardProfile) -> ContactResult:
-        """Descend in -Z until joint effort reports contact.
+    def force_guarded_descent(
+        self, guard: ForceGuardProfile, direction=(0.0, 0.0, -1.0)
+    ) -> ContactResult:
+        """Drive along ``direction`` (default down) until joint effort reports contact.
 
         Contact is detected from a sudden effort *jump* against a trailing
         reference rather than an absolute threshold: effort drifts several N
@@ -734,6 +751,14 @@ class RobotArm:
         if baseline is None:
             return ContactResult(contact=False, descended_m=0.0)
 
+        # max_descent: measure on the TCP (read before the mode switch), else on the clock
+        direction = np.asarray(direction, dtype=float)
+        start = self.tcp_xyz() if guard.max_descent is not None else None
+        if guard.max_descent is not None and start is None:
+            self._log.warn(
+                f"[{label}] no robot_states: measuring the drive on the clock"
+            )
+
         with self.cartesian_velocity_mode(label):
             # Re-sample after the mode switch: the transition itself offsets the
             # readings, and the pre-switch baseline would bias every comparison.
@@ -741,12 +766,14 @@ class RobotArm:
             if post_switch is not None:
                 baseline = post_switch
 
-            self._send_cartesian_velocity(-guard.descent_speed, label)
+            self._send_cartesian_velocity(guard.descent_speed, label, direction)
             self._log.info(
                 f"[{label}] descending at {guard.descent_speed:.1f} mm/s "
                 f"(jump_trip={guard.jump_trip}N, ceiling={guard.hard_ceiling}N)"
             )
-            contact, descended = self._monitor_for_contact(guard, baseline, label)
+            contact, descended = self._monitor_for_contact(
+                guard, baseline, label, start, direction
+            )
 
         return ContactResult(contact=contact, descended_m=descended)
 
@@ -770,7 +797,16 @@ class RobotArm:
         self._log.info(f"[{label}] effort baseline: {[f'{e:.2f}' for e in baseline]}")
         return baseline
 
-    def _monitor_for_contact(self, guard: ForceGuardProfile, baseline, label: str):
+    def _descended(self, guard: ForceGuardProfile, elapsed: float, start, direction):
+        """Metres driven: on the TCP when there is a start reading, else on the clock."""
+        tcp = self.tcp_xyz() if start is not None else None
+        if tcp is not None:
+            return float(np.dot(tcp - start, direction))
+        return elapsed * guard.descent_speed / 1000.0
+
+    def _monitor_for_contact(
+        self, guard: ForceGuardProfile, baseline, label: str, start=None, direction=None
+    ):
         """Watch joint effort at 50 Hz. Returns (contact, metres descended)."""
         history = deque()  # (timestamp, effort) inside the jump window
         consecutive = 0
@@ -787,6 +823,14 @@ class RobotArm:
                 self._log.warn(f"[{label}] e-stop during descent")
                 raise PickAborted("e-stop during force-guarded descent")
 
+            descended = self._descended(guard, elapsed, start, direction)
+            if start is not None and descended >= guard.max_descent:
+                self._log.info(
+                    f"[{label}] no contact by max_descent "
+                    f"(~{descended * 1000:.1f}mm after {elapsed:.2f}s)"
+                )
+                return False, descended
+
             if self._latest_joint_state is None:
                 continue
 
@@ -801,7 +845,6 @@ class RobotArm:
             while len(history) > 1 and now - history[0][0] > guard.jump_window:
                 history.popleft()
 
-            descended = elapsed * guard.descent_speed / 1000.0
             abs_delta = np.abs(current - baseline)
             jump = np.abs(current - history[0][1])
             for joint in guard.ignore_joints:
@@ -835,7 +878,7 @@ class RobotArm:
                 return True, descended
 
         elapsed = time.time() - start_time
-        descended = elapsed * guard.descent_speed / 1000.0
+        descended = self._descended(guard, elapsed, start, direction)
         self._log.warn(
             f"[{label}] timeout after {elapsed:.1f}s "
             f"(~{descended * 1000:.1f}mm descended)"
