@@ -98,7 +98,11 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    bridge_configs = [os.path.join(share, "config", "bridge.yaml")]
+    # /clock first and alone: see config/bridge_clock.yaml
+    bridge_configs = [
+        os.path.join(share, "config", "bridge_clock.yaml"),
+        os.path.join(share, "config", "bridge.yaml"),
+    ]
     if mobile_base:
         bridge_configs.append(os.path.join(share, "config", "bridge_nav.yaml"))
 

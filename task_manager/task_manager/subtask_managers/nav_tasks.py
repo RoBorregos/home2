@@ -8,6 +8,7 @@ Navigation Area SubTask Manager
 import json
 import math
 import copy
+import time
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped, Quaternion, PointStamped, Point
@@ -18,6 +19,9 @@ from frida_constants.navigation_constants import (
     CHECK_DOOR_SERVICE,
     MOVE_LOCATION_SERVICE,
     FOLLOW_PERSON_NAV_SERVICE,
+    FOLLOW_STATUS_TOPIC,
+    FOLLOW_STATUS_FOLLOWING,
+    FOLLOW_STATUS_IDLE,
     NAV_QUERY_SERVICE,
     DOCK_TABLE_SERVICE,
     GO_TO_POSE_SERVICE,
@@ -39,6 +43,8 @@ from frida_interfaces.srv import (
     GetAreaForPoint,
     PlanPatrol,
 )
+from rclpy.qos import DurabilityPolicy, QoSProfile
+from std_msgs.msg import String
 from std_srvs.srv import SetBool
 
 from task_manager.utils.decorators import mockable, service_check
@@ -103,6 +109,15 @@ class NavigationTasks:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self.node)
         # Origin pose captured the first time get_current_pose() succeeds (return_to_origin)
         self._origin_pose = None
+        # Follow state from person_goal_smoother: idle|following|lost|searching|gave_up.
+        self._follow_status = FOLLOW_STATUS_IDLE
+        self._follow_not_following_since = None
+        self.node.create_subscription(
+            String,
+            FOLLOW_STATUS_TOPIC,
+            self._follow_status_cb,
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+        )
 
         # Task Actions and Services check
         self.services = {
@@ -398,6 +413,31 @@ class NavigationTasks:
             return (Status.EXECUTION_SUCCESS, result.message)
         CLog.nav(self.node, "ERROR", "Follow person service failed")
         return (Status.EXECUTION_ERROR, "Follow person failed")
+
+    def _follow_status_cb(self, msg: String):
+        self._follow_status = msg.data
+        if msg.data in (FOLLOW_STATUS_FOLLOWING, FOLLOW_STATUS_IDLE):
+            self._follow_not_following_since = None
+        elif self._follow_not_following_since is None:
+            self._follow_not_following_since = time.time()
+
+    @mockable(return_value=FOLLOW_STATUS_FOLLOWING)
+    def follow_status(self) -> str:
+        """Latest follow-person state from navigation (no service call; the
+        caller must be spinning the node, e.g. between hri.interpret_keyword
+        windows): "idle", "following", "lost" (driving to the last-known
+        position), "searching" (sweeping for the person there) or "gave_up"
+        (search timed out, base halted). The task manager re-locks the tracker
+        on "gave_up" or a long "lost"/"searching" (see follow_lost_for)."""
+        return self._follow_status
+
+    @mockable(return_value=0.0)
+    def follow_lost_for(self) -> float:
+        """Seconds the follow has been continuously out of "following" (0 while
+        following or idle)."""
+        if self._follow_not_following_since is None:
+            return 0.0
+        return time.time() - self._follow_not_following_since
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, {"distance": 5.0}), delay=1)
     @service_check(

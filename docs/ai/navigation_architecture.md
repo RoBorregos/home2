@@ -496,3 +496,12 @@ glued to the robot, boxing the planner in. Task side:
 try/finally). Changing `ApproachPoint.srv` fields requires rebuilding the
 interface cache: `./run.sh frida_interfaces`, then restart the nav + integration
 containers.
+
+## Follow person (2026-11-15)
+
+`tracker_node` → `person_goal_smoother.py` → `/goal_update` → `bt/follow_dynamic_point.xml` (4 Hz replan, costmap-clear recoveries). `nav_central` starts it via `/navigation/follow_person` and re-sends the BT if Nav2 ends it.
+
+- Status on `/navigation/follow_status`: `following → lost` (drive to last-known pose) `→ searching` (yaw sweep) `→ gave_up`; tracker data returns to `following`.
+- Ownership: vision locks the person, nav drives the base, manipulation pans the camera, task manager re-locks only on `gave_up` or a long loss.
+- Order: start `track → nav → arm`, stop `nav → arm → track`. Don't run `adaptive_goal_publisher.py` at the same time.
+- Test: `./run.sh simulation --follow-test` (sim) or `ros2 run task_manager test_follow_person.py` (robot).

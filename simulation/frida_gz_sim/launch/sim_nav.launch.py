@@ -144,6 +144,30 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # Person-follow bridge (same as robot); restore pair matches the launched nav2 profile.
+    standard_cfg = nav2_config_file or os.path.join(
+        nav_main, "config", "omni_config", "nav2_omni_limp.yaml"
+    )
+    follow_cfg = standard_cfg.replace(".yaml", "_following.yaml")
+    if not os.path.exists(follow_cfg):
+        follow_cfg = os.path.join(
+            nav_main, "config", "omni_config", "nav2_omni_following.yaml"
+        )
+    person_goal_smoother = Node(
+        package="nav_main",
+        executable="person_goal_smoother.py",
+        name="person_goal_smoother",
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            {
+                "default_base": "omnibase",
+                "standard_config_file": standard_cfg,
+                "follow_config_file": follow_cfg,
+            }
+        ],
+    )
+
     # nav_central blocks until someone sets the start pose; in sim we already know it
     initial_pose = Node(
         package="frida_gz_sim",
@@ -159,6 +183,7 @@ def launch_setup(context, *args, **kwargs):
         nav2,
         nav2_sim_time,
         table_docker,
+        person_goal_smoother,
         # nav_central sends the nav2 STARTUP; give the lifecycle manager time first
         TimerAction(period=10.0, actions=[nav_central]),
         # After nav_central, so the pose is not delivered before the node that waits for it

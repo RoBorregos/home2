@@ -43,6 +43,10 @@ controller_server:
       # ---- Critic weights tuned for chasing a moving goal ----
       GoalCritic:
         cost_weight: 3.0        # limp std 5.0 — moving target, don't over-commit
+      # Keep the base facing the person while chasing.
+      GoalAngleCritic:
+        cost_weight: 5.0        # std 3.0
+        threshold_to_consider: 3.0   # std 0.5 m
       PathFollowCritic:
         cost_weight: 8.0        # limp std 6.0 — hug the replanned path
       PathAlignCritic:
@@ -51,6 +55,10 @@ controller_server:
         cost_weight: 2.0        # limp std 2.0 (unchanged; kept for completeness)
       CostCritic:
         cost_weight: 4.0        # limp std 4.0 — obstacle avoidance at full strength
+    # Tight tolerance: the goal already sits follow_distance short of the person.
+    general_goal_checker:
+      xy_goal_tolerance: 0.25   # std 0.35
+      yaw_goal_tolerance: 0.25  # std 0.25
 
 local_costmap:
   local_costmap:

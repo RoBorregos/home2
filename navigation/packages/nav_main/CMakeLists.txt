@@ -45,6 +45,7 @@ if(BUILD_TESTING)
 
   find_package(ament_cmake_pytest REQUIRED)
   ament_add_pytest_test(test_door_window test/test_door_window.py)
+  ament_add_pytest_test(test_follow_planner test/test_follow_planner.py)
   ament_add_pytest_test(test_semantic_nav test/test_semantic_nav.py)
 
 endif()

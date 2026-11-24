@@ -43,6 +43,7 @@ Tasks:
   --all            Start both stacks in the arena world (no objects to pick there)
   --tm             Run the pick-and-place task manager (foreground)
   --nav-tm         Run the navigation task manager (foreground)
+  --follow-test    Person-following scenarios on a running --nav sim (foreground)
   --rviz           Open RViz on the running sim
   --status         Show the running sim processes and their memory
   --kill           Kill the sim processes, keep the container
@@ -61,6 +62,7 @@ Examples:
   ./run.sh simulation --build --build-image
   ./run.sh simulation --nav
   ./run.sh simulation --nav-tm
+  ./run.sh simulation --follow-test
   ./run.sh simulation --manip --headless --no-rviz
 USAGE
 }
@@ -180,6 +182,17 @@ start_rviz() {
   in_background rviz "ros2 launch frida_gz_sim sim_rviz.launch.py config:=$config"
 }
 
+# Person-follow sim test: fake walker + tracker stand-in (needs a running --nav sim).
+follow_test() {
+  docker exec home2-simulation bash -c "pkill -f '[s]im_person'; true" >/dev/null 2>&1 || true
+  rm -f logs/sim_person.log logs/sim_person_tracker.log
+  in_background sim_person "ros2 run frida_gz_sim sim_person.py"
+  in_background sim_person_tracker "ros2 run frida_gz_sim sim_person_tracker.py"
+  sleep 4
+  in_container "ros2 run frida_gz_sim sim_follow_test.py $FOLLOW_ARGS"
+  docker exec home2-simulation bash -c "pkill -INT -f '[s]im_person'; true" >/dev/null 2>&1 || true
+}
+
 kill_sim() {
   # Bracketed patterns keep pkill from matching (and killing) this very shell
   docker exec home2-simulation bash -c "pkill -INT -f '[r]os2 launch'; sleep 3; pkill -9 -f '[g]z sim'; pkill -9 -f '[/]workspace/install/'; pkill -9 -f '[/]opt/ros/jazzy/lib/'; true" >/dev/null 2>&1 || true
@@ -209,6 +222,7 @@ case $TASK in
   --manip|--nav|--all) start_all ;;
   --tm) in_container "ros2 run frida_gz_sim sim_pnp_task_manager.py" ;;
   --nav-tm) in_container "ros2 run frida_gz_sim sim_nav_task_manager.py" ;;
+  --follow-test) follow_test ;;
   --rviz) start_rviz ;;
   --status) docker exec home2-simulation bash -c "ps -eo pid,etime,rss,args --sort=-rss | grep -E 'gz sim|move_group|ros2|python3' | grep -v grep | cut -c1-160" ;;
   --kill) kill_sim ;;

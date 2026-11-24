@@ -25,6 +25,9 @@ Usage:
     ros2 run task_manager test_follow_person.py --ros-args -p track:=false
     # offline dry-run (mocks every service call):
     ros2 run task_manager test_follow_person.py --ros-args -p mocked:=true
+    # pose: arm pose while following, end_pose: pose after stop ('' skips):
+    ros2 run task_manager test_follow_person.py --ros-args -p pose:=front_stare_carry_bag \
+        -p end_pose:=nav_carry_bag_pose
 """
 
 import rclpy
@@ -62,9 +65,13 @@ class TestFollowPerson(Node):
         # When True, drive the base/nav follow (nav_central). Set False to test
         # the arm/tracker in isolation (no base motion; nav stack not needed).
         self.nav_follow = self.declare_parameter("nav", True).value
+        # Arm pose while following and after; '' skips the move.
+        self.pose = self.declare_parameter("pose", "front_low_stare").value
+        self.end_pose = self.declare_parameter("end_pose", "nav_pose").value
 
         print(f"\n{Logger.BOLD}=== Follow-Person interactive test ==={Logger.RESET}")
         print(f"  mocked={self.mocked}  track={self.track}  arm={self.arm}  nav={self.nav_follow}")
+        print(f"  pose={self.pose or '(keep)'}  end_pose={self.end_pose or '(keep)'}")
         print("  -> type 'stop' (or 'q') + Enter to stop, or press Ctrl-C\n")
 
         self.nav = (
@@ -79,7 +86,7 @@ class TestFollowPerson(Node):
         )
         self.manip = (
             ManipulationTasks(self, task=Task.HELP_ME_CARRY, mock_data=self.mocked)
-            if self.arm
+            if self.arm or self.pose or self.end_pose
             else None
         )
 
@@ -90,6 +97,13 @@ class TestFollowPerson(Node):
         tracking = False
         arm_following = False
         try:
+            # 0. Point the camera at the person (follow arm pose)
+            if self.manip is not None and self.pose:
+                print(f"{Logger.BOLD}-> Moving arm to {self.pose}...{Logger.RESET}")
+                if not _ok(self.manip.move_to_position(self.pose)):
+                    print(f"{Logger.RED}Could not move arm to {self.pose}.{Logger.RESET}")
+                    return
+
             # 1. Start the vision tracker on the person in view (optional)
             if self.vision is not None:
                 print(f"{Logger.BOLD}-> Starting person tracking...{Logger.RESET}")
@@ -117,7 +131,7 @@ class TestFollowPerson(Node):
                 )
 
             # 2b. Start the arm follow (xArm joint1 keeps the person centered)
-            if self.manip is not None:
+            if self.manip is not None and self.arm:
                 print(f"{Logger.BOLD}-> Starting arm follow...{Logger.RESET}")
                 res = self.manip.follow_person(True)
                 if _ok(res):
@@ -151,6 +165,9 @@ class TestFollowPerson(Node):
             if tracking and self.vision is not None:
                 print(f"{Logger.BOLD}-> Stopping tracking...{Logger.RESET}")
                 self.vision.track_person(False)
+            if self.manip is not None and self.end_pose:
+                print(f"{Logger.BOLD}-> Moving arm to {self.end_pose}...{Logger.RESET}")
+                self.manip.move_to_position(self.end_pose)
             print(f"{Logger.GREEN}Done. Robot idle.{Logger.RESET}\n")
 
 
