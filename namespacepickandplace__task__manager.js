@@ -1,13 +1,10 @@
 var namespacepickandplace__task__manager =
 [
-    [ "Location", "classpickandplace__task__manager_1_1Location.html", null ],
-    [ "ObjectCategory", "classpickandplace__task__manager_1_1ObjectCategory.html", null ],
-    [ "ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", "classpickandplace__task__manager_1_1ObjectInfo" ],
+    [ "Item", "classpickandplace__task__manager_1_1Item.html", null ],
+    [ "PickAndPlace", "classpickandplace__task__manager_1_1PickAndPlace.html", "classpickandplace__task__manager_1_1PickAndPlace" ],
     [ "PickAndPlaceTM", "classpickandplace__task__manager_1_1PickAndPlaceTM.html", "classpickandplace__task__manager_1_1PickAndPlaceTM" ],
+    [ "PPCState", "classpickandplace__task__manager_1_1PPCState.html", "classpickandplace__task__manager_1_1PPCState" ],
+    [ "load_spec", "namespacepickandplace__task__manager.html#ac0718d61fc09716a0a4ebae2f4bc3a8a", null ],
     [ "main", "namespacepickandplace__task__manager.html#a726ecc0a8d993c4881bcc4287b54bbdd", null ],
-    [ "ATTEMPT_LIMIT", "namespacepickandplace__task__manager.html#a55f38380759b27b2b7d05391b1cab1aa", null ],
-    [ "MIN_REACHABLE_SHELF_Z", "namespacepickandplace__task__manager.html#a6cbbaa769c416a8c47a97f589506d4d8", null ],
-    [ "SHELF_LEVEL_NAMES", "namespacepickandplace__task__manager.html#a45dea6735a5add12a179a99ef076dbde", null ],
-    [ "STACK_XY_MAX", "namespacepickandplace__task__manager.html#a241f0c9534c486125020deb651c27af6", null ],
-    [ "STACK_Z_MIN", "namespacepickandplace__task__manager.html#a03e0fba6b5784ad7aeb39508c79437ce", null ]
+    [ "OK", "namespacepickandplace__task__manager.html#a02d58ce4aeb5cf461bbb13be1c544128", null ]
 ];

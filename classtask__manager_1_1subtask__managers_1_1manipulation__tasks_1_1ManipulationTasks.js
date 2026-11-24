@@ -7,6 +7,7 @@ var classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1Manipulati
     [ "_send_joint_goal", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a79b6afeee37ef3d8043aefe54ff445bd", null ],
     [ "_set_gripper_state", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a65c647bfe8633e0f5a49890c44efc903", null ],
     [ "_wait_for_future", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#af59390d335917354830c1acc0f1da9c7", null ],
+    [ "_wait_result", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a7f527fb7a93c43dad107731ff0caff3e", null ],
     [ "check_lower", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a80de114128e8ed59e651bac7e70749bc", null ],
     [ "check_upper", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a73d3497efdf673b35d26c85faa78f1d6", null ],
     [ "clear_collision_objects", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a62ddf96c70e22e422fba1bf781cb58a0", null ],

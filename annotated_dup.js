@@ -391,10 +391,10 @@ var annotated_dup =
       ] ]
     ] ],
     [ "pickandplace_task_manager", "namespacepickandplace__task__manager.html", [
-      [ "Location", "classpickandplace__task__manager_1_1Location.html", null ],
-      [ "ObjectCategory", "classpickandplace__task__manager_1_1ObjectCategory.html", null ],
-      [ "ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", "classpickandplace__task__manager_1_1ObjectInfo" ],
-      [ "PickAndPlaceTM", "classpickandplace__task__manager_1_1PickAndPlaceTM.html", "classpickandplace__task__manager_1_1PickAndPlaceTM" ]
+      [ "Item", "classpickandplace__task__manager_1_1Item.html", null ],
+      [ "PickAndPlace", "classpickandplace__task__manager_1_1PickAndPlace.html", "classpickandplace__task__manager_1_1PickAndPlace" ],
+      [ "PickAndPlaceTM", "classpickandplace__task__manager_1_1PickAndPlaceTM.html", "classpickandplace__task__manager_1_1PickAndPlaceTM" ],
+      [ "PPCState", "classpickandplace__task__manager_1_1PPCState.html", "classpickandplace__task__manager_1_1PPCState" ]
     ] ],
     [ "Planner", "namespacePlanner.html", [
       [ "Planner", "classPlanner_1_1Planner.html", "classPlanner_1_1Planner" ]
@@ -461,6 +461,9 @@ var annotated_dup =
         ] ]
       ] ],
       [ "subtask_managers", "namespacetask__manager_1_1subtask__managers.html", [
+        [ "composite_tasks", "namespacetask__manager_1_1subtask__managers_1_1composite__tasks.html", [
+          [ "CompositeTasks", "classtask__manager_1_1subtask__managers_1_1composite__tasks_1_1CompositeTasks.html", "classtask__manager_1_1subtask__managers_1_1composite__tasks_1_1CompositeTasks" ]
+        ] ],
         [ "generic_tasks", "namespacetask__manager_1_1subtask__managers_1_1generic__tasks.html", [
           [ "GenericTask", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask.html", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask" ]
         ] ],
@@ -490,6 +493,12 @@ var annotated_dup =
         ] ]
       ] ],
       [ "utils", "namespacetask__manager_1_1utils.html", [
+        [ "bt", "namespacetask__manager_1_1utils_1_1bt.html", [
+          [ "Action", "classtask__manager_1_1utils_1_1bt_1_1Action.html", "classtask__manager_1_1utils_1_1bt_1_1Action" ],
+          [ "ForEach", "classtask__manager_1_1utils_1_1bt_1_1ForEach.html", "classtask__manager_1_1utils_1_1bt_1_1ForEach" ],
+          [ "RunLog", "classtask__manager_1_1utils_1_1bt_1_1RunLog.html", "classtask__manager_1_1utils_1_1bt_1_1RunLog" ],
+          [ "TreeRunner", "classtask__manager_1_1utils_1_1bt_1_1TreeRunner.html", "classtask__manager_1_1utils_1_1bt_1_1TreeRunner" ]
+        ] ],
         [ "colored_logger", "namespacetask__manager_1_1utils_1_1colored__logger.html", [
           [ "CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ]
         ] ],
@@ -566,9 +575,6 @@ var annotated_dup =
     ] ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", [
       [ "TestPlanParser", "classtest__plan__parser_1_1TestPlanParser.html", "classtest__plan__parser_1_1TestPlanParser" ]
-    ] ],
-    [ "test_ppc_cabinet_place", "namespacetest__ppc__cabinet__place.html", [
-      [ "PPCTestCabinetPlace", "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html", "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace" ]
     ] ],
     [ "test_start_button", "namespacetest__start__button.html", [
       [ "TestHriManager", "classtest__start__button_1_1TestHriManager.html", "classtest__start__button_1_1TestHriManager" ]

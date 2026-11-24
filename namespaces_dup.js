@@ -472,7 +472,6 @@ var namespaces_dup =
     ] ],
     [ "test_pick_and_place", "namespacetest__pick__and__place.html", "namespacetest__pick__and__place" ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", "namespacetest__plan__parser" ],
-    [ "test_ppc_cabinet_place", "namespacetest__ppc__cabinet__place.html", "namespacetest__ppc__cabinet__place" ],
     [ "test_semantic_nav", "namespacetest__semantic__nav.html", [
       [ "furniture_map", "namespacetest__semantic__nav.html#af50e37be0382cf5c01bb3d2e9e17859e", null ],
       [ "grid_with_block", "namespacetest__semantic__nav.html#ad153c50c5b1be2bdd910e5aaee99d901", null ],

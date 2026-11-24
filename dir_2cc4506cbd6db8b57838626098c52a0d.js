@@ -1,6 +1,7 @@
 var dir_2cc4506cbd6db8b57838626098c52a0d =
 [
     [ "__init__.py", "task__manager_2task__manager_2subtask__managers_2____init_____8py.html", null ],
+    [ "composite_tasks.py", "composite__tasks_8py.html", "composite__tasks_8py" ],
     [ "generic_tasks.py", "generic__tasks_8py.html", "generic__tasks_8py" ],
     [ "gpsr_single_tasks.py", "gpsr__single__tasks_8py.html", "gpsr__single__tasks_8py" ],
     [ "gpsr_tasks.py", "gpsr__tasks_8py.html", "gpsr__tasks_8py" ],

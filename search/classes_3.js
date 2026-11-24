@@ -9,11 +9,12 @@ var searchData=
   ['clientnode_6',['ClientNode',['../classClientNode.html',1,'']]],
   ['clog_7',['CLog',['../classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html',1,'task_manager::utils::colored_logger']]],
   ['commandhistory_8',['CommandHistory',['../classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html',1,'task_manager::subtask_managers::hri_dataclasses']]],
-  ['configurationbuffer_9',['ConfigurationBuffer',['../structvamp_1_1robots_1_1Baxter_1_1ConfigurationBuffer.html',1,'vamp::robots::Baxter::ConfigurationBuffer'],['../structvamp_1_1robots_1_1Fetch_1_1ConfigurationBuffer.html',1,'vamp::robots::Fetch::ConfigurationBuffer'],['../structvamp_1_1robots_1_1FRIDA__Real_1_1ConfigurationBuffer.html',1,'vamp::robots::FRIDA_Real::ConfigurationBuffer'],['../structvamp_1_1robots_1_1Panda_1_1ConfigurationBuffer.html',1,'vamp::robots::Panda::ConfigurationBuffer'],['../structvamp_1_1robots_1_1Sphere_1_1ConfigurationBuffer.html',1,'vamp::robots::Sphere::ConfigurationBuffer'],['../structvamp_1_1robots_1_1UR5_1_1ConfigurationBuffer.html',1,'vamp::robots::UR5::ConfigurationBuffer']]],
-  ['connectedcomponent_10',['ConnectedComponent',['../structvamp_1_1planning_1_1utils_1_1ConnectedComponent.html',1,'vamp::planning::utils']]],
-  ['constantneighborparams_11',['ConstantNeighborParams',['../structvamp_1_1planning_1_1ConstantNeighborParams.html',1,'vamp::planning']]],
-  ['contactresult_12',['ContactResult',['../classpick__and__place_1_1robot_1_1arm_1_1ContactResult.html',1,'pick_and_place::robot::arm']]],
-  ['cuboid_13',['Cuboid',['../structvamp_1_1collision_1_1Cuboid.html',1,'vamp::collision']]],
-  ['customernode_14',['CustomerNode',['../classcustomer__node_1_1CustomerNode.html',1,'customer_node']]],
-  ['cylinder_15',['Cylinder',['../structvamp_1_1collision_1_1Cylinder.html',1,'vamp::collision']]]
+  ['compositetasks_9',['CompositeTasks',['../classtask__manager_1_1subtask__managers_1_1composite__tasks_1_1CompositeTasks.html',1,'task_manager::subtask_managers::composite_tasks']]],
+  ['configurationbuffer_10',['ConfigurationBuffer',['../structvamp_1_1robots_1_1Baxter_1_1ConfigurationBuffer.html',1,'vamp::robots::Baxter::ConfigurationBuffer'],['../structvamp_1_1robots_1_1Fetch_1_1ConfigurationBuffer.html',1,'vamp::robots::Fetch::ConfigurationBuffer'],['../structvamp_1_1robots_1_1FRIDA__Real_1_1ConfigurationBuffer.html',1,'vamp::robots::FRIDA_Real::ConfigurationBuffer'],['../structvamp_1_1robots_1_1Panda_1_1ConfigurationBuffer.html',1,'vamp::robots::Panda::ConfigurationBuffer'],['../structvamp_1_1robots_1_1Sphere_1_1ConfigurationBuffer.html',1,'vamp::robots::Sphere::ConfigurationBuffer'],['../structvamp_1_1robots_1_1UR5_1_1ConfigurationBuffer.html',1,'vamp::robots::UR5::ConfigurationBuffer']]],
+  ['connectedcomponent_11',['ConnectedComponent',['../structvamp_1_1planning_1_1utils_1_1ConnectedComponent.html',1,'vamp::planning::utils']]],
+  ['constantneighborparams_12',['ConstantNeighborParams',['../structvamp_1_1planning_1_1ConstantNeighborParams.html',1,'vamp::planning']]],
+  ['contactresult_13',['ContactResult',['../classpick__and__place_1_1robot_1_1arm_1_1ContactResult.html',1,'pick_and_place::robot::arm']]],
+  ['cuboid_14',['Cuboid',['../structvamp_1_1collision_1_1Cuboid.html',1,'vamp::collision']]],
+  ['customernode_15',['CustomerNode',['../classcustomer__node_1_1CustomerNode.html',1,'customer_node']]],
+  ['cylinder_16',['Cylinder',['../structvamp_1_1collision_1_1Cylinder.html',1,'vamp::collision']]]
 ];

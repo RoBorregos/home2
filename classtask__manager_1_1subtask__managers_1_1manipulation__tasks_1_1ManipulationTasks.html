@@ -200,6 +200,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a79b6afeee37ef3d8043aefe54ff445bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af59390d335917354830c1acc0f1da9c7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#af59390d335917354830c1acc0f1da9c7">_wait_for_future</a> (self, future)</td></tr>
 <tr class="separator:af59390d335917354830c1acc0f1da9c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f527fb7a93c43dad107731ff0caff3e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a7f527fb7a93c43dad107731ff0caff3e">_wait_result</a> (self, goal_handle, float <a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a9df0ebd8533aecac7caaabb2d462fb22">timeout</a>)</td></tr>
+<tr class="separator:a7f527fb7a93c43dad107731ff0caff3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac881101a4f026d164c1bec7ddf287c4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#aac881101a4f026d164c1bec7ddf287c4">_attempt_place_on_side</a> (self, <a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html">Direction</a> direction)</td></tr>
 <tr class="separator:aac881101a4f026d164c1bec7ddf287c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4665282a14e0bd731c2f01ca165876ac"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a4665282a14e0bd731c2f01ca165876ac">_check_side_blocked</a> (self, <a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html">Direction</a> direction)</td></tr>
@@ -483,6 +485,48 @@ State: 'open' or 'close'
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a7f527fb7a93c43dad107731ff0caff3e" name="a7f527fb7a93c43dad107731ff0caff3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f527fb7a93c43dad107731ff0caff3e">&#9670;&#160;</a></span>_wait_result()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.manipulation_tasks.ManipulationTasks._wait_result </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>goal_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>timeout</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Action result, or None after cancelling a goal that outlives timeout (node clock).</pre> 
 </div>
 </div>
 <a id="a80de114128e8ed59e651bac7e70749bc" name="a80de114128e8ed59e651bac7e70749bc"></a>

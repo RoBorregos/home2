@@ -29,7 +29,9 @@ var hierarchy =
     [ "py_trees.behaviour.Behaviour", null, [
       [ "task_manager.gpsr.leaf_behaviours.ActionLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1ActionLeaf.html", null ],
       [ "task_manager.gpsr.leaf_behaviours.OneShotCallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1OneShotCallbackLeaf.html", null ],
-      [ "task_manager.gpsr.leaf_behaviours.SequentialFallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1SequentialFallbackLeaf.html", null ]
+      [ "task_manager.gpsr.leaf_behaviours.SequentialFallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1SequentialFallbackLeaf.html", null ],
+      [ "task_manager.utils.bt.Action", "classtask__manager_1_1utils_1_1bt_1_1Action.html", null ],
+      [ "task_manager.utils.bt.ForEach", "classtask__manager_1_1utils_1_1bt_1_1ForEach.html", null ]
     ] ],
     [ "perception_3d.shelf_geometry.Box", "classperception__3d_1_1shelf__geometry_1_1Box.html", null ],
     [ "core.tasks.BoxesTask", "classcore_1_1tasks_1_1BoxesTask.html", null ],
@@ -40,6 +42,7 @@ var hierarchy =
     [ "CheckValue< T >", "structCheckValue.html", null ],
     [ "task_manager.utils.colored_logger.CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.CommandHistory", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
+    [ "task_manager.subtask_managers.composite_tasks.CompositeTasks", "classtask__manager_1_1subtask__managers_1_1composite__tasks_1_1CompositeTasks.html", null ],
     [ "vamp::planning::utils::ConnectedComponent", "structvamp_1_1planning_1_1utils_1_1ConnectedComponent.html", null ],
     [ "vamp::planning::ConstantNeighborParams", "structvamp_1_1planning_1_1ConstantNeighborParams.html", null ],
     [ "pick_and_place.robot.arm.ContactResult", "classpick__and__place_1_1robot_1_1arm_1_1ContactResult.html", null ],
@@ -104,6 +107,7 @@ var hierarchy =
     [ "utils.models.image_embedder.ImageEmbedder", "classutils_1_1models_1_1image__embedder_1_1ImageEmbedder.html", null ],
     [ "task_manager.gpsr.merger.InterleavedPlan", "classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html", null ],
     [ "perception_3d.geometric_grasps.Intrinsics", "classperception__3d_1_1geometric__grasps_1_1Intrinsics.html", null ],
+    [ "pickandplace_task_manager.Item", "classpickandplace__task__manager_1_1Item.html", null ],
     [ "kinematics::KinematicsBase", null, [
       [ "xarm6_ikfast_plugin::IKFastKinematicsPlugin", "classxarm6__ikfast__plugin_1_1IKFastKinematicsPlugin.html", null ]
     ] ],
@@ -180,16 +184,13 @@ var hierarchy =
       ] ],
       [ "vlm_pb2_grpc.VLMServiceStub", "classvlm__pb2__grpc_1_1VLMServiceStub.html", null ]
     ] ],
-    [ "pickandplace_task_manager.ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", null ],
     [ "vamp::robots::Panda", "structvamp_1_1robots_1_1Panda.html", null ],
     [ "pick_and_place.pipelines.pick.Perceived", "classpick__and__place_1_1pipelines_1_1pick_1_1Perceived.html", null ],
     [ "vamp::planning::Percents< n >", "structvamp_1_1planning_1_1Percents.html", null ],
     [ "pick_and_place.robot.perception.Perception", "classpick__and__place_1_1robot_1_1perception_1_1Perception.html", null ],
     [ "pick_and_place.pipelines.follow.PersonState", "classpick__and__place_1_1pipelines_1_1follow_1_1PersonState.html", null ],
     [ "vamp::planning::PerturbSettings", "structvamp_1_1planning_1_1PerturbSettings.html", null ],
-    [ "PickAndPlaceTM", null, [
-      [ "test_ppc_cabinet_place.PPCTestCabinetPlace", "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html", null ]
-    ] ],
+    [ "pickandplace_task_manager.PickAndPlace", "classpickandplace__task__manager_1_1PickAndPlace.html", null ],
     [ "pick_and_place.pipelines.strategies.PickOutcome", "classpick__and__place_1_1pipelines_1_1strategies_1_1PickOutcome.html", null ],
     [ "pick_and_place.pipelines.profiles.PickProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html", null ],
     [ "pick_and_place.pipelines.pick.PickRequest", "classpick__and__place_1_1pipelines_1_1pick_1_1PickRequest.html", null ],
@@ -210,6 +211,7 @@ var hierarchy =
     [ "vamp::planning::PlanningResult< Robot >", "structvamp_1_1planning_1_1PlanningResult.html", null ],
     [ "models.pose_detection.PoseDetection", "classmodels_1_1pose__detection_1_1PoseDetection.html", null ],
     [ "pick_and_place.pipelines.pour.PourRequest", "classpick__and__place_1_1pipelines_1_1pour_1_1PourRequest.html", null ],
+    [ "pickandplace_task_manager.PPCState", "classpickandplace__task__manager_1_1PPCState.html", null ],
     [ "vamp::planning::PRM< Robot, rake, resolution, NeighborParamsT >", "structvamp_1_1planning_1_1PRM.html", null ],
     [ "vamp::planning::PRMStarNeighborParams", "structvamp_1_1planning_1_1PRMStarNeighborParams.html", null ],
     [ "vamp::planning::ProlateHyperspheroid< Robot >", "classvamp_1_1planning_1_1ProlateHyperspheroid.html", null ],
@@ -232,6 +234,7 @@ var hierarchy =
     [ "pick_and_place.robot.arm.RobotArm", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html", null ],
     [ "vamp::planning::RRTC< Robot, rake, resolution >", "structvamp_1_1planning_1_1RRTC.html", null ],
     [ "vamp::planning::RRTCSettings", "structvamp_1_1planning_1_1RRTCSettings.html", null ],
+    [ "task_manager.utils.bt.RunLog", "classtask__manager_1_1utils_1_1bt_1_1RunLog.html", null ],
     [ "vamp::same_num_scalars< S1, S2 >", "structvamp_1_1same__num__scalars.html", null ],
     [ "grasp_generator.Sample", "classgrasp__generator_1_1Sample.html", null ],
     [ "nav_main.semantic.staleness.ScanLog", "classnav__main_1_1semantic_1_1staleness_1_1ScanLog.html", null ],
@@ -277,12 +280,12 @@ var hierarchy =
     [ "doing_laundry_task_manager.DoingLaundryTM.TaskStates", "classdoing__laundry__task__manager_1_1DoingLaundryTM_1_1TaskStates.html", null ],
     [ "gpsr_task_manager.GPSRTM.TaskStates", "classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html", null ],
     [ "hric_task_manager.HRIC_TM.TaskStates", "classhric__task__manager_1_1HRIC__TM_1_1TaskStates.html", null ],
-    [ "pickandplace_task_manager.PickAndPlaceTM.TaskStates", "classpickandplace__task__manager_1_1PickAndPlaceTM_1_1TaskStates.html", null ],
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "restaurant_task_manager.RestaurantTaskManager.TaskStates", "classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html", null ],
     [ "test_clean_table_task_manager.CleanTableTM.TaskStates", "classtest__clean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
     [ "vamp_server.VampServer.Timer", "classvamp__server_1_1VampServer_1_1Timer.html", null ],
     [ "models.tracker.TrackerModel", "classmodels_1_1tracker_1_1TrackerModel.html", null ],
+    [ "task_manager.utils.bt.TreeRunner", "classtask__manager_1_1utils_1_1bt_1_1TreeRunner.html", null ],
     [ "vamp::robots::UR5", "structvamp_1_1robots_1_1UR5.html", null ],
     [ "nav_main.semantic.viewpoints.ValidationReport", "classnav__main_1_1semantic_1_1viewpoints_1_1ValidationReport.html", null ],
     [ "ValueError", null, [
@@ -332,8 +335,6 @@ var hierarchy =
       [ "frida_constants.vision_enums.DetectBy", "classfrida__constants_1_1vision__enums_1_1DetectBy.html", null ],
       [ "frida_constants.vision_enums.Gestures", "classfrida__constants_1_1vision__enums_1_1Gestures.html", null ],
       [ "frida_constants.vision_enums.Poses", "classfrida__constants_1_1vision__enums_1_1Poses.html", null ],
-      [ "pickandplace_task_manager.Location", "classpickandplace__task__manager_1_1Location.html", null ],
-      [ "pickandplace_task_manager.ObjectCategory", "classpickandplace__task__manager_1_1ObjectCategory.html", null ],
       [ "safety_task_manager.ExecutionStates", "classsafety__task__manager_1_1ExecutionStates.html", null ],
       [ "safety_task_manager.Retries", "classsafety__task__manager_1_1Retries.html", null ],
       [ "storing_groceries_manager.ExecutionStates", "classstoring__groceries__manager_1_1ExecutionStates.html", null ],

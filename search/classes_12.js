@@ -15,5 +15,6 @@ var searchData=
   ['robotarm_12',['RobotArm',['../classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html',1,'pick_and_place::robot::arm']]],
   ['rossignals_13',['RosSignals',['../classnav__ui_1_1RosSignals.html',1,'nav_ui']]],
   ['rrtc_14',['RRTC',['../structvamp_1_1planning_1_1RRTC.html',1,'vamp::planning']]],
-  ['rrtcsettings_15',['RRTCSettings',['../structvamp_1_1planning_1_1RRTCSettings.html',1,'vamp::planning']]]
+  ['rrtcsettings_15',['RRTCSettings',['../structvamp_1_1planning_1_1RRTCSettings.html',1,'vamp::planning']]],
+  ['runlog_16',['RunLog',['../classtask__manager_1_1utils_1_1bt_1_1RunLog.html',1,'task_manager::utils::bt']]]
 ];

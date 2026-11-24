@@ -1,5 +1,6 @@
 var namespacetask__manager_1_1subtask__managers =
 [
+    [ "composite_tasks", "namespacetask__manager_1_1subtask__managers_1_1composite__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1composite__tasks" ],
     [ "generic_tasks", "namespacetask__manager_1_1subtask__managers_1_1generic__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1generic__tasks" ],
     [ "gpsr_single_tasks", "namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks" ],
     [ "gpsr_tasks", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks" ],

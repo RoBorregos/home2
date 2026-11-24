@@ -1,6 +1,7 @@
 var namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks =
 [
     [ "ManipulationTasks", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks" ],
+    [ "CANCEL_WAIT", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a07a6c4d03de63c4ef79a5fdec48a0a85", null ],
     [ "DEG_TO_RAD", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a3e320762798f18c6f2596796454fb52f", null ],
     [ "FORWARD_JOINT1_DEG", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a4e9caa3a914e5c290ca214e9c55d099a", null ],
     [ "Manipulation_tasks", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#ad2c48d09d4fd7a7a4470eab00d2a31fa", null ],
