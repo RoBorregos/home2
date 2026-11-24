@@ -7,7 +7,7 @@ var searchData=
   ['validate_5fendpoint_4',['validate_endpoint',['../classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html#a297cdbdceff69d473b8cb8eb86fbe71d',1,'pick_and_place::pipelines::profiles::PickProfile']]],
   ['validate_5fwith_5fcostmap_5',['validate_with_costmap',['../classsemantic__nav__node_1_1SemanticNav.html#af51df807711e64d79dd8ae41d39f5c86',1,'semantic_nav_node::SemanticNav']]],
   ['validation_5fstep_6',['validation_step',['../classvamp__server_1_1VampServer.html#a0e78afeb33ea4ddc2142d7b9cec5122b',1,'vamp_server::VampServer']]],
-  ['value_7',['value',['../structCheckValue.html#a96d0c95abbb5c848c92f09df55d253a1',1,'CheckValue::value()'],['../structvamp_1_1same__num__scalars.html#a4b2e301acfe4b7d55f542575f9dd43b0',1,'vamp::same_num_scalars::value()']]],
+  ['value_7',['value',['../structvamp_1_1same__num__scalars.html#a4b2e301acfe4b7d55f542575f9dd43b0',1,'vamp::same_num_scalars::value()'],['../structCheckValue.html#a96d0c95abbb5c848c92f09df55d253a1',1,'CheckValue::value()']]],
   ['vamp_5finvalid_8',['vamp_invalid',['../namespaceprobe__cuboid.html#a58b6718bd9f42215c7a6bb2ece051c66',1,'probe_cuboid']]],
   ['vbus_5fdata_9',['vbus_data',['../classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode.html#add45da51be6129c9e68ad72f3b067ef2',1,'omnidriver::odrive_serial_twist::SerialCommNode']]],
   ['vbus_5fpub_10',['vbus_pub',['../classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode.html#a6e9b0120821c1e81f13d937ffcd6011f',1,'omnidriver::odrive_serial_twist::SerialCommNode']]],
@@ -44,12 +44,10 @@ var searchData=
   ['vision_5fmanager_41',['vision_manager',['../classtest__vision__manager_1_1TestVisionManager.html#a5d8c1bf8cd97f06cadbe9e0abd831dac',1,'test_vision_manager::TestVisionManager']]],
   ['vision_5ftasks_42',['vision_tasks',['../namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a66ff213d20092d5fa520cffdc25d0588',1,'task_manager.subtask_managers.vision_tasks.vision_tasks()'],['../namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a63fe5db1c4b4e863170f23945233b405',1,'task_manager.subtask_managers.hri_tasks.vision_tasks()']]],
   ['visual_5finfo_5fdescription_43',['VISUAL_INFO_DESCRIPTION',['../namespacetest__vision__manager.html#ad75e75c8402f819461da26e3619d4f2e',1,'test_vision_manager']]],
-  ['visualize_44',['VISUALIZE',['../classpointing__detection_1_1DetectPointingObjectServer.html#a9a2d6aa34e568d3b8acfe56c1be9b836',1,'pointing_detection::DetectPointingObjectServer']]],
-  ['visualize_45',['visualize',['../classzed__simulator_1_1ZedSimulator.html#a04ace0fe9e0fef80137a5f0cf4b5f963',1,'zed_simulator::ZedSimulator']]],
-  ['visualizer_5fpub_46',['visualizer_pub',['../classpointing__detection_1_1DetectPointingObjectServer.html#ade5a75bb3d159e28d1fe4b2520337bcb',1,'pointing_detection::DetectPointingObjectServer']]],
-  ['voice_5factivity_5ftopic_47',['VOICE_ACTIVITY_TOPIC',['../namespacefrida__constants_1_1hri__constants.html#aeae565aebb4e2edc79e98eaa9cfdc111',1,'frida_constants::hri_constants']]],
-  ['volume_48',['volume',['../structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a55ce21974a4e47049f1003db5d940d41',1,'vamp::collision::CAPT::BuildFrame']]],
-  ['vowel_5ffreq_5fhigh_49',['VOWEL_FREQ_HIGH',['../namespacefrida__constants_1_1hri__constants.html#aaef590928a116f77d6ac95c25420bc21',1,'frida_constants::hri_constants']]],
-  ['vowel_5ffreq_5flow_50',['VOWEL_FREQ_LOW',['../namespacefrida__constants_1_1hri__constants.html#a56bf361bc52f5478274dc6f3eb125cc7',1,'frida_constants::hri_constants']]],
-  ['voxel_51',['voxel',['../classperception__3d_1_1shelf__geometry_1_1ShelfParams.html#ac5c93835eb7c94e23785521d33d74d84',1,'perception_3d::shelf_geometry::ShelfParams']]]
+  ['visualize_44',['visualize',['../classzed__simulator_1_1ZedSimulator.html#a04ace0fe9e0fef80137a5f0cf4b5f963',1,'zed_simulator::ZedSimulator']]],
+  ['voice_5factivity_5ftopic_45',['VOICE_ACTIVITY_TOPIC',['../namespacefrida__constants_1_1hri__constants.html#aeae565aebb4e2edc79e98eaa9cfdc111',1,'frida_constants::hri_constants']]],
+  ['volume_46',['volume',['../structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a55ce21974a4e47049f1003db5d940d41',1,'vamp::collision::CAPT::BuildFrame']]],
+  ['vowel_5ffreq_5fhigh_47',['VOWEL_FREQ_HIGH',['../namespacefrida__constants_1_1hri__constants.html#aaef590928a116f77d6ac95c25420bc21',1,'frida_constants::hri_constants']]],
+  ['vowel_5ffreq_5flow_48',['VOWEL_FREQ_LOW',['../namespacefrida__constants_1_1hri__constants.html#a56bf361bc52f5478274dc6f3eb125cc7',1,'frida_constants::hri_constants']]],
+  ['voxel_49',['voxel',['../classperception__3d_1_1shelf__geometry_1_1ShelfParams.html#ac5c93835eb7c94e23785521d33d74d84',1,'perception_3d::shelf_geometry::ShelfParams']]]
 ];

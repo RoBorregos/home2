@@ -1,7 +1,6 @@
 var hric__commands_8py =
 [
     [ "hric_commands.HRICCommands", "classhric__commands_1_1HRICCommands.html", "classhric__commands_1_1HRICCommands" ],
-    [ "_load_yolo_pose", "hric__commands_8py.html#a1a0e3f0c859c7561246de2440181ff63", null ],
     [ "main", "hric__commands_8py.html#a295f86308e2091a1cafb49a1abbadfe9", null ],
     [ "AREA_PERCENTAGE_THRESHOLD", "hric__commands_8py.html#a41b7b67e4fc7415666f63955d8aa0b86", null ],
     [ "CHECK_TIMEOUT", "hric__commands_8py.html#a3cca12f77741a3bca2925462cc5e244c", null ],

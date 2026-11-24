@@ -225,10 +225,13 @@ Vision pipeline</h1>
 <div class="line"> </div>
 <div class="line">    subgraph VIS[&quot;home2-vision (ROS 2)&quot;]</div>
 <div class="line">        IO</div>
-<div class="line">        OD[&quot;ObjectDetect2D&lt;br/&gt;yolo_finetuned + embedding_gallery&quot;]</div>
+<div class="line">        OD[&quot;ObjectDetect2D&lt;br/&gt;yolo_finetuned + embedding_gallery&lt;br/&gt;+ yolo11m-pose (DetectPose)&quot;]</div>
 <div class="line">        ZS[&quot;ZeroShotDetect2D&lt;br/&gt;yoloe-11l-seg&quot;]</div>
-<div class="line">        TRK[&quot;tracker_node&lt;br/&gt;yolov8n + ByteTrack, yolo11m-pose&quot;]</div>
+<div class="line">        TRK[&quot;tracker_node&lt;br/&gt;yolov8n + ByteTrack&quot;]</div>
 <div class="line">        FR[&quot;face_recognition&lt;br/&gt;InsightFace buffalo_sc&quot;]</div>
+<div class="line">        HC[&quot;hric_commands&quot;]</div>
+<div class="line">        GC[&quot;gpsr_commands&quot;]</div>
+<div class="line">        MD[&quot;moondream_node&lt;br/&gt;yolov8n person crop&quot;]</div>
 <div class="line">        HC[&quot;hric_commands&lt;br/&gt;yolo11m-pose&quot;]</div>
 <div class="line">        GC[&quot;gpsr_commands&lt;br/&gt;yolo11m-pose&quot;]</div>
 <div class="line">        MD[&quot;vlm_node&lt;br/&gt;yolov8n person crop&quot;]</div>
@@ -236,10 +239,10 @@ Vision pipeline</h1>
 <div class="line"> </div>
 <div class="line">    OD --&gt;|/vision/detections + detections_3d| TM[task_manager&lt;br/&gt;vision_tasks.py]</div>
 <div class="line">    HC --&gt;|srv YoloDetect| OD</div>
+<div class="line">    HC &amp; GC &amp; TRK --&gt;|srv DetectPose| OD</div>
 <div class="line">    HC --&gt;|srv MapAreas| NAV[nav_central]</div>
 <div class="line">    GC --&gt;|srv CropQuery| MD</div>
 <div class="line">    MD --&gt;|gRPC :50052| MDS[&quot;home2-moondream-server&lt;br/&gt;Moondream2 2B VLM&quot;]</div>
-<div class="line">    ZS --&gt;|/vision/zero_shot_detections| PD[pointing_detection]</div>
 <div class="line"> </div>
 <div class="line">    TRK -.-&gt;|/vision/tracking_results| SM[nav person_goal_smoother]</div>
 <div class="line">    FR -.-&gt;|/vision/follow_face| ARM[manipulation follow_face]</div>
@@ -253,7 +256,7 @@ Packages</h1>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Node   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Key interfaces    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>ObjectDetect2D</code>   </td><td class="markdownTableBodyNone">Runs the models listed under <code>models:</code> in <code>config/parameters.yaml</code> continuously and IoU-dedupes across them   </td><td class="markdownTableBodyNone">pubs <code>/vision/detections</code>, <code>/vision/detections_3d</code>, <code>/vision/detections_image</code>; srvs <code>DetectionHandler</code>, <code>YoloDetect</code>, <code>SetTrashCategory</code>    </td></tr>
+<td class="markdownTableBodyNone"><code>ObjectDetect2D</code>   </td><td class="markdownTableBodyNone">Runs the models listed under <code>models:</code> in <code>config/parameters.yaml</code> continuously and IoU-dedupes across them   </td><td class="markdownTableBodyNone">pubs <code>/vision/detections</code>, <code>/vision/detections_3d</code>, <code>/vision/detections_image</code>; srvs <code>DetectionHandler</code>, <code>YoloDetect</code>, <code>SetTrashCategory</code>, <code>DetectPose</code>&lt;tt&gt;/vision/pose/detect (the shared yolo11m-pose)    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>ZeroShotDetect2D</code>   </td><td class="markdownTableBodyNone">YOLOE open-vocabulary detection for classes not in the finetuned model   </td><td class="markdownTableBodyNone">pubs <code>/vision/zero_shot_detections*</code>; srv <code>SetDetectorClasses</code>   </td></tr>
 </table>
@@ -273,25 +276,23 @@ Adding an object to the gallery (few-shot)</h3>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Node   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Key interfaces   </th><th class="markdownTableHeadNone">Model    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>   </td><td class="markdownTableBodyNone">Person detection, seat finding, handover point, chair removal   </td><td class="markdownTableBodyNone">srvs <code>DetectPerson</code>, <code>FindSeat</code>, <code>DetectHand</code>, <code>ChairsToRemove</code>   </td><td class="markdownTableBodyNone">yolo11m-pose    </td></tr>
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>   </td><td class="markdownTableBodyNone">Person detection, seat finding, handover point, chair removal   </td><td class="markdownTableBodyNone">srvs <code>DetectPerson</code>, <code>FindSeat</code>, <code>DetectHand</code>, <code>ChairsToRemove</code>   </td><td class="markdownTableBodyNone">pose via <code>DetectPose</code>    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>   </td><td class="markdownTableBodyNone">Counting and describing people by pose, gesture, clothing color   </td><td class="markdownTableBodyNone">srvs <code>CountByPose</code>, <code>CountBy</code>, <code>CountByColor</code>, <code>PersonPoseGesture</code>   </td><td class="markdownTableBodyNone">yolo11m-pose    </td></tr>
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>   </td><td class="markdownTableBodyNone">Counting and describing people by pose, gesture, clothing color   </td><td class="markdownTableBodyNone">srvs <code>CountByPose</code>, <code>CountBy</code>, <code>CountByColor</code>, <code>PersonPoseGesture</code>   </td><td class="markdownTableBodyNone">pose via <code>DetectPose</code>    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code><a class="el" href="namespacetracker__node.html">tracker_node</a></code>   </td><td class="markdownTableBodyNone">Locks onto one person and publishes their 3D point for nav to follow   </td><td class="markdownTableBodyNone">srvs <code>SetBool</code>&lt;tt&gt;set_tracking_target, <code>TrackBy</code>, <code>Trigger</code>&lt;tt&gt;is_tracking; pub <code>/vision/tracking_results</code>   </td><td class="markdownTableBodyNone">yolov8n + ByteTrack, yolo11m-pose    </td></tr>
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacetracker__node.html">tracker_node</a></code>   </td><td class="markdownTableBodyNone">Locks onto one person and publishes their 3D point for nav to follow   </td><td class="markdownTableBodyNone">srvs <code>SetBool</code>&lt;tt&gt;set_tracking_target, <code>TrackBy</code>, <code>Trigger</code>&lt;tt&gt;is_tracking; pub <code>/vision/tracking_results</code>   </td><td class="markdownTableBodyNone">yolov8n + ByteTrack, pose via <code>DetectPose</code>    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>face_recognition</code>   </td><td class="markdownTableBodyNone">Learns and recognizes faces; drives the arm's face following   </td><td class="markdownTableBodyNone">srvs <code>SaveName</code>&lt;tt&gt;new_name, <code>SaveName</code>&lt;tt&gt;follow_by_name; pubs <code>/vision/follow_face</code>, <code>/vision/person_list</code>   </td><td class="markdownTableBodyNone">InsightFace <code>buffalo_sc</code>    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code><a class="el" href="namespacerestaurant__commands.html">restaurant_commands</a></code>   </td><td class="markdownTableBodyNone">Maps waving customers onto table positions   </td><td class="markdownTableBodyNone">srv <code>CustomerTables</code>   </td><td class="markdownTableBodyNone">— (delegates)    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>   </td><td class="markdownTableBodyNone">Finds seated / waving customers in the full frame   </td><td class="markdownTableBodyNone">srv <code>Customer</code>   </td><td class="markdownTableBodyNone">yolo11m-pose    </td></tr>
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>   </td><td class="markdownTableBodyNone">Finds seated / waving customers in the full frame   </td><td class="markdownTableBodyNone">srv <code>Customer</code>   </td><td class="markdownTableBodyNone">pose via <code>DetectPose</code>    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code>   </td><td class="markdownTableBodyNone">The single camera-rotation point (see Concepts)   </td><td class="markdownTableBodyNone">pub <code>/vision/camera/image_oriented</code>   </td><td class="markdownTableBodyNone">—    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code><a class="el" href="namespacepointing__detection.html">pointing_detection</a></code>   </td><td class="markdownTableBodyNone">Resolves which object a person is pointing at   </td><td class="markdownTableBodyNone">srvs <code>DetectPointingObject</code>, <code>SetPointingObjectClasses</code>   </td><td class="markdownTableBodyNone">consumes zero-shot    </td></tr>
-<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code><a class="el" href="namespacezed__simulator.html">zed_simulator</a></code>   </td><td class="markdownTableBodyNone">Publishes a plain webcam onto the ZED topics for laptop dev   </td><td class="markdownTableBodyNone">params <code>video_id</code>, <code>use_zed</code>, <code>visualize</code>   </td><td class="markdownTableBodyNone">—   </td></tr>
 </table>
-<p><code><a class="el" href="pose__detection_8py.html">pose_detection.py</a></code> is a library, not a node: it holds the COCO keypoint constants and the gesture/pose classification used by <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code> and <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>.</p>
+<p><code><a class="el" href="pose__detection_8py.html">pose_detection.py</a></code> is a library, not a node: COCO keypoints and gesture/pose logic for <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>, <code><a class="el" href="namespacetracker__node.html">tracker_node</a></code> and <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>. <code>PoseDetection</code> is a client of <code>ObjectDetect2D</code>'s <code>DetectPose</code> service (one shared yolo11m-pose); call it from a <code>MultiThreadedExecutor</code>.</p>
 <h3><a class="anchor" id="autotoc_md192"></a>
 &lt;tt&gt;VisionRuntime&lt;/tt&gt;</h3>
 <p><code><a class="el" href="vision__runtime_8py.html">scripts/task_nodes/vision_runtime.py</a></code> is the counterpart to <code>object_detector_2d</code>'s <code>BaseDetectorNode</code>: camera subscriptions, the <code>/vision/&lt;node&gt;/active</code> gate, rotation tracking, TF, the debug publisher and a non-spinning <code>call_service</code>. Subclasses read <code>self.image</code>, <code>self.depth_image</code> and <code>self.camera_info</code> as they did when each node owned its own subscriptions.</p>

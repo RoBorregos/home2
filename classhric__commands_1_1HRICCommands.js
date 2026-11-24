@@ -32,6 +32,6 @@ var classhric__commands_1_1HRICCommands =
     [ "moondream_client", "classhric__commands_1_1HRICCommands.html#a649c12c2a7c5af56dc9c912ecfd0edb1", null ],
     [ "output_image", "classhric__commands_1_1HRICCommands.html#a329e0997d6445297a73c54141635a303", null ],
     [ "people", "classhric__commands_1_1HRICCommands.html#a3fafa10cbc4ade9b2bc489f6fa47b4ac", null ],
-    [ "pose_model", "classhric__commands_1_1HRICCommands.html#a72378d2331c926b62e8b700636e25969", null ],
+    [ "pose_detection", "classhric__commands_1_1HRICCommands.html#af8c41ba7d4b9a346052baa125835b111", null ],
     [ "yolo_client", "classhric__commands_1_1HRICCommands.html#a0795c21b02da000e923989b32387b5ed", null ]
 ];

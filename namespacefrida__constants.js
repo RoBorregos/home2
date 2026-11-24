@@ -200,6 +200,7 @@ var namespacefrida__constants =
       [ "PERSON_POSTURE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a6d96f71b12768490ba56fa9f15276494", null ],
       [ "POINTING_DETECTION_IMAGE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a6ba95f0c96f9ebfc1519c97553250532", null ],
       [ "POINTING_OBJECT_SERVICE", "namespacefrida__constants_1_1vision__constants.html#a28ae7767028a1fb6be896bcdef1aae7e", null ],
+      [ "POSE_DETECTION_SERVICE", "namespacefrida__constants_1_1vision__constants.html#a68bf85771273e6e6237e6193a2e4f897", null ],
       [ "POSE_GESTURE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#afeb805efc563abd1a5aa8255cbbaa0a6", null ],
       [ "QUERY_TOPIC", "namespacefrida__constants_1_1vision__constants.html#ab6f09741cb770fc257e257b6fd02fea0", null ],
       [ "READ_QR_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a0f1e21b2876c5aff0a6ce0bb081cd000", null ],

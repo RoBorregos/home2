@@ -398,9 +398,6 @@ var annotated_dup =
     [ "point_transformer", "namespacepoint__transformer.html", [
       [ "PointTransformer", "classpoint__transformer_1_1PointTransformer.html", "classpoint__transformer_1_1PointTransformer" ]
     ] ],
-    [ "pointing_detection", "namespacepointing__detection.html", [
-      [ "DetectPointingObjectServer", "classpointing__detection_1_1DetectPointingObjectServer.html", "classpointing__detection_1_1DetectPointingObjectServer" ]
-    ] ],
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", [
       [ "Guest", "classreceptionist__task__manager_1_1Guest.html", "classreceptionist__task__manager_1_1Guest" ],
       [ "ReceptionistTM", "classreceptionist__task__manager_1_1ReceptionistTM.html", "classreceptionist__task__manager_1_1ReceptionistTM" ]

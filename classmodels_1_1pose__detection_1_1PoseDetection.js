@@ -1,6 +1,6 @@
 var classmodels_1_1pose__detection_1_1PoseDetection =
 [
-    [ "__init__", "classmodels_1_1pose__detection_1_1PoseDetection.html#aef3212f23f3668cad0171f8b22834213", null ],
+    [ "__init__", "classmodels_1_1pose__detection_1_1PoseDetection.html#a449f9c175936c266dad6c1b3a20e598c", null ],
     [ "_get_keypoints", "classmodels_1_1pose__detection_1_1PoseDetection.html#a78677aade2c962507ec02583283f20c9", null ],
     [ "_is_pointing_left", "classmodels_1_1pose__detection_1_1PoseDetection.html#a4fa6ea8e95055b8ecf1d504816a79a47", null ],
     [ "_is_pointing_right", "classmodels_1_1pose__detection_1_1PoseDetection.html#abdaa098d2429b77ce826e0d4ca835b96", null ],
@@ -10,7 +10,6 @@ var classmodels_1_1pose__detection_1_1PoseDetection =
     [ "_is_waving", "classmodels_1_1pose__detection_1_1PoseDetection.html#a140b7d32bc48bc664cbba411965f5cec", null ],
     [ "_joint_angle_vectors", "classmodels_1_1pose__detection_1_1PoseDetection.html#af058ac541ba1710b71c98eaaa296e0d9", null ],
     [ "are_arms_down", "classmodels_1_1pose__detection_1_1PoseDetection.html#a8a68b3f2ec2e8d323afccf27432d0291", null ],
-    [ "detect", "classmodels_1_1pose__detection_1_1PoseDetection.html#a80efe2305d71777854bbbdb7af4c87b5", null ],
     [ "detect_people", "classmodels_1_1pose__detection_1_1PoseDetection.html#adc384d4dec43bae2e72922d5a0b8dff7", null ],
     [ "detectGesture", "classmodels_1_1pose__detection_1_1PoseDetection.html#a1347746dc2ca20138813e4805652f79d", null ],
     [ "draw_landmarks", "classmodels_1_1pose__detection_1_1PoseDetection.html#a276afa52f7525a7a53e81e3bda6d62f8", null ],
@@ -20,5 +19,8 @@ var classmodels_1_1pose__detection_1_1PoseDetection =
     [ "is_sitting_from_keypoints", "classmodels_1_1pose__detection_1_1PoseDetection.html#ad95d4c5bd47672abf95b9963613c6bd8", null ],
     [ "is_waving_from_keypoints", "classmodels_1_1pose__detection_1_1PoseDetection.html#ae499214a0de9340a7c2720e78835503a", null ],
     [ "personAngle", "classmodels_1_1pose__detection_1_1PoseDetection.html#a068799762b7d88c3dac400239a653c13", null ],
-    [ "yolo_pose", "classmodels_1_1pose__detection_1_1PoseDetection.html#abf71d9974255ad45920ec80c32f858f9", null ]
+    [ "bridge", "classmodels_1_1pose__detection_1_1PoseDetection.html#a6869cb2e137cc1b1e455cc9685da2975", null ],
+    [ "client", "classmodels_1_1pose__detection_1_1PoseDetection.html#a4bd987a56cffb6f6f7c99acccf753856", null ],
+    [ "node", "classmodels_1_1pose__detection_1_1PoseDetection.html#a096d0308d975d3e45eee548cfe9de343", null ],
+    [ "timeout", "classmodels_1_1pose__detection_1_1PoseDetection.html#a465f0dfa5d4016f3b2c8191f85769e01", null ]
 ];

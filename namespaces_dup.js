@@ -306,7 +306,6 @@ var namespaces_dup =
     [ "pickandplace_task_manager", "namespacepickandplace__task__manager.html", "namespacepickandplace__task__manager" ],
     [ "Planner", "namespacePlanner.html", "namespacePlanner" ],
     [ "point_transformer", "namespacepoint__transformer.html", "namespacepoint__transformer" ],
-    [ "pointing_detection", "namespacepointing__detection.html", "namespacepointing__detection" ],
     [ "ppc", "namespaceppc.html", [
       [ "generate_launch_description", "namespaceppc.html#aa3727ca5bcd22835536315a39ed75071", null ]
     ] ],

@@ -102,8 +102,8 @@ $(document).ready(function(){initNavTree('classmodels_1_1tracker_1_1TrackerModel
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a6c6ef3e4407a9f50681a9eacd211abe0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodels_1_1tracker_1_1TrackerModel.html#a6c6ef3e4407a9f50681a9eacd211abe0">__init__</a> (self)</td></tr>
 <tr class="separator:a6c6ef3e4407a9f50681a9eacd211abe0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2149c9a07bcdd4cac1d49372be1e5e00"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodels_1_1tracker_1_1TrackerModel.html#a2149c9a07bcdd4cac1d49372be1e5e00">load</a> (self)</td></tr>
-<tr class="separator:a2149c9a07bcdd4cac1d49372be1e5e00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae56c0ab8954e37ca33b57df2d5da586"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodels_1_1tracker_1_1TrackerModel.html#aae56c0ab8954e37ca33b57df2d5da586">load</a> (self, <a class="el" href="classmodels_1_1pose__detection_1_1PoseDetection.html">PoseDetection</a> <a class="el" href="classmodels_1_1tracker_1_1TrackerModel.html#af99f89c58a6d90cadaf244c696fd33c6">pose</a>)</td></tr>
+<tr class="separator:aae56c0ab8954e37ca33b57df2d5da586"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a697c092378c778507701171fc2900af9"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodels_1_1tracker_1_1TrackerModel.html#a697c092378c778507701171fc2900af9">load_reid</a> (self)</td></tr>
 <tr class="separator:a697c092378c778507701171fc2900af9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2bbf5a48735533f4fdeda3cd45900e97"><td class="memItemLeft" align="right" valign="top">list[dict]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodels_1_1tracker_1_1TrackerModel.html#a2bbf5a48735533f4fdeda3cd45900e97">track</a> (self, frame, float conf_threshold=<a class="el" href="namespacemodels_1_1tracker.html#abc81becf4cea0c02c02025af097f2fa2">CONF_THRESHOLD</a>)</td></tr>
@@ -169,8 +169,8 @@ Public Attributes</h2></td></tr>
 <pre class="fragment">Normalized ReID embedding (1-D tensor) for a BGR person crop.</pre> 
 </div>
 </div>
-<a id="a2149c9a07bcdd4cac1d49372be1e5e00" name="a2149c9a07bcdd4cac1d49372be1e5e00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2149c9a07bcdd4cac1d49372be1e5e00">&#9670;&#160;</a></span>load()</h2>
+<a id="aae56c0ab8954e37ca33b57df2d5da586" name="aae56c0ab8954e37ca33b57df2d5da586"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae56c0ab8954e37ca33b57df2d5da586">&#9670;&#160;</a></span>load()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -179,12 +179,22 @@ Public Attributes</h2></td></tr>
           <td class="memname"> None models.tracker.TrackerModel.load </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="classmodels_1_1pose__detection_1_1PoseDetection.html">PoseDetection</a>&#160;</td>
+          <td class="paramname"><em>pose</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Load the per-frame models (YOLO + pose). ReID is loaded separately.</pre> 
+<pre class="fragment">Load YOLO and keep the pose client.</pre> 
 </div>
 </div>
 <a id="a697c092378c778507701171fc2900af9" name="a697c092378c778507701171fc2900af9"></a>

@@ -5,7 +5,6 @@ var dir_dafe0b1426346d1cf04b71ae40010d5b =
     [ "utils", "dir_2044c9c828f066d02c134b0f2709e1b2.html", "dir_2044c9c828f066d02c134b0f2709e1b2" ],
     [ "example_node.py", "example__node_8py.html", "example__node_8py" ],
     [ "image_orienter.py", "image__orienter_8py.html", "image__orienter_8py" ],
-    [ "pointing_detection.py", "pointing__detection_8py.html", "pointing__detection_8py" ],
     [ "test_chairs_to_remove.py", "test__chairs__to__remove_8py.html", "test__chairs__to__remove_8py" ],
     [ "tracker_node.py", "tracker__node_8py.html", "tracker__node_8py" ],
     [ "zed_simulator.py", "zed__simulator_8py.html", "zed__simulator_8py" ]

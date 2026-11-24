@@ -388,7 +388,6 @@ var hierarchy =
       [ "pick_and_place.scene_overlay.SceneOverlay", "classpick__and__place_1_1scene__overlay_1_1SceneOverlay.html", null ],
       [ "pickandplace_task_manager.PickAndPlaceTM", "classpickandplace__task__manager_1_1PickAndPlaceTM.html", null ],
       [ "point_transformer.PointTransformer", "classpoint__transformer_1_1PointTransformer.html", null ],
-      [ "pointing_detection.DetectPointingObjectServer", "classpointing__detection_1_1DetectPointingObjectServer.html", null ],
       [ "receptionist_task_manager.ReceptionistTM", "classreceptionist__task__manager_1_1ReceptionistTM.html", null ],
       [ "record_joints_node.JointRecorder", "classrecord__joints__node_1_1JointRecorder.html", null ],
       [ "record_relative_pose.DockingPoseRecorder", "classrecord__relative__pose_1_1DockingPoseRecorder.html", null ],

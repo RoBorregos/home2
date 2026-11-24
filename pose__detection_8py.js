@@ -1,8 +1,8 @@
 var pose__detection_8py =
 [
     [ "models.pose_detection.PoseDetection", "classmodels_1_1pose__detection_1_1PoseDetection.html", "classmodels_1_1pose__detection_1_1PoseDetection" ],
-    [ "load_yolo_pose", "pose__detection_8py.html#aeda6ad2e6228e6c6766ce3d45e1312ac", null ],
     [ "main", "pose__detection_8py.html#a0081ab19bcebed14f32d6ebb7ab3b407", null ],
+    [ "DEFAULT_TIMEOUT", "pose__detection_8py.html#ac310855207475f1cdbe7666c811e7640", null ],
     [ "KP_CONF", "pose__detection_8py.html#abda8d67aad212f9a92a490ded3d4f642", null ],
     [ "LEFT_ANKLE", "pose__detection_8py.html#ada0cec3c0d851d59ea801b56b3cf10ad", null ],
     [ "LEFT_ELBOW", "pose__detection_8py.html#a251d12122f06d7422ba5b2e512223d1d", null ],
@@ -11,6 +11,7 @@ var pose__detection_8py =
     [ "LEFT_SHOULDER", "pose__detection_8py.html#adc174a79756eebe468c01d57fa73368c", null ],
     [ "LEFT_WRIST", "pose__detection_8py.html#a98dc8a018814a3a385a406aca2f1d88a", null ],
     [ "NOSE", "pose__detection_8py.html#ab7210ca6205e020f4d764cde7fd19642", null ],
+    [ "NUM_KEYPOINTS", "pose__detection_8py.html#a47b17ccfcb83e8a10c1162572f8c61f8", null ],
     [ "RIGHT_ANKLE", "pose__detection_8py.html#ad7ebcbedbc2adedbf4db8c97a3956fd5", null ],
     [ "RIGHT_ELBOW", "pose__detection_8py.html#a96e6adb71bc9f26b68a70b07f84e65b3", null ],
     [ "RIGHT_HIP", "pose__detection_8py.html#aac7170abbef51a248673484293c99def", null ],
