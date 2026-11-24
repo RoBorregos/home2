@@ -11,10 +11,13 @@ import math
 import time
 import random
 
+import numpy as np
 import rclpy
 from frida_constants.hri_constants import DISPLAY_CAPTURE_TOPIC
 from frida_constants.vision_classes import BBOX
 from frida_constants.vision_constants import (
+    EMBED_CROPS_SERVICE,
+    EMBED_TEXT_SERVICE,
     CHAIR_REMOVAL_IMAGE_TOPIC,
     CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
@@ -45,7 +48,7 @@ from frida_constants.vision_constants import (
     CUSTOMER_TABLES_TOPIC,
     CAMERA_ROTATION_TOPIC,
 )
-from frida_interfaces.msg import PersonList, CustomerTable
+from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
 from frida_interfaces.srv import (
     ChairsToRemove,
     DetectPerson,
@@ -61,6 +64,8 @@ from frida_interfaces.srv import (
     SaveName,
     DetectHand,
     CustomerTables,
+    EmbedCrops,
+    EmbedText,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.node import Node
@@ -149,6 +154,9 @@ class VisionTasks:
 
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
+        self.embed_text_client = self.node.create_client(EmbedText, EMBED_TEXT_SERVICE)
+        self.embed_crops_client = self.node.create_client(EmbedCrops, EMBED_CROPS_SERVICE)
+
         self.services = {
             Task.HRIC: {
                 "detect_person": {"client": self.detect_person_client, "type": "service"},
@@ -210,6 +218,11 @@ class VisionTasks:
                 },
                 "customer": {"client": self.customer_client, "type": "service"},
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
+            },
+            Task.FINALS: {
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
+                "embed_text": {"client": self.embed_text_client, "type": "service"},
+                "embed_crops": {"client": self.embed_crops_client, "type": "service"},
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -277,6 +290,36 @@ class VisionTasks:
         self._capture_pub.publish(
             String(data=json.dumps({"label": label, "topic": topic, "data": data}))
         )
+
+    # ── CLIP embeddings (served by finals_commands) ──
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, None))
+    @service_check("embed_text_client", (Status.SERVICE_CHECK, None), TIMEOUT)
+    def embed_text(self, text: str) -> tuple[int, np.ndarray | None]:
+        """Unit CLIP vector of a text."""
+        status, result = self._call(
+            self.embed_text_client, EmbedText.Request(texts=[text]), name="embed_text"
+        )
+        if status is not None or not result.success:
+            return Status.EXECUTION_ERROR, None
+        return Status.EXECUTION_SUCCESS, np.array(result.embeddings, dtype=np.float32)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
+    @service_check("embed_crops_client", (Status.SERVICE_CHECK, []), TIMEOUT)
+    def embed_crops(self, boxes: list[BBOX]) -> tuple[int, list[np.ndarray]]:
+        """Unit CLIP vector of each box's crop, from the frame the boxes were detected in."""
+        if not boxes:
+            return Status.EXECUTION_SUCCESS, []
+        request = EmbedCrops.Request()
+        request.stamp = boxes[0].point3d.header.stamp
+        request.detections = [
+            ObjectDetection(xmin=b.x1, xmax=b.x2, ymin=b.y1, ymax=b.y2) for b in boxes
+        ]
+        status, result = self._call(self.embed_crops_client, request, name="embed_crops")
+        if status is not None or not result.success:
+            return Status.EXECUTION_ERROR, []
+        vectors = np.array(result.embeddings, dtype=np.float32).reshape(len(boxes), result.dim)
+        return Status.EXECUTION_SUCCESS, list(vectors)
 
     @mockable()
     def activate_face_recognition(self):

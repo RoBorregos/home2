@@ -35,7 +35,7 @@ else
 fi
 
 case $TASK in
-    "--hric"|"--safety")
+    "--hric"|"--safety"|"--finals")
         RUN="ros2 launch manipulation_general hric.launch.py"
         ;;
     "--carry")

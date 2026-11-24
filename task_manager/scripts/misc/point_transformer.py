@@ -14,10 +14,8 @@ from frida_interfaces.srv import (
     GetAreaForPoint,
 )
 import json
-import os
 import time
 from sensor_msgs.msg import LaserScan
-from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import TransformStamped
 from task_manager.utils.status import Status
 from math import sqrt
@@ -179,14 +177,15 @@ class PointTransformer(Node):
         return self._get_location_from_pose_local(posex, posey)
 
     def _get_location_from_pose_local(self, posex, posey):
-        """Fallback: the static frida_constants copy of areas.json.
+        """Fallback: navigation's static default-map areas file.
 
         Kept only for running without navigation — it describes a different map
         than the one nav_central serves, so the answer can disagree.
         """
 
-        package_share_directory = get_package_share_directory("frida_constants")
-        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+        file_path = (
+            "/workspace/src/navigation/packages/map_context/maps/areas/area_default_map.json"
+        )
         mylocation = ""
 
         # Load areas from the JSON file
