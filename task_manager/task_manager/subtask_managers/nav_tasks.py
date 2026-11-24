@@ -22,6 +22,7 @@ from frida_constants.navigation_constants import (
     FOLLOW_PERSON_NAV_SERVICE,
     NAV_QUERY_SERVICE,
     DOCK_TABLE_SERVICE,
+    DOCK_TABLE_TIMEOUT,
     GO_TO_POSE_SERVICE,
     GET_ROBOT_POSE_SERVICE,
     APPROACH_POINT_SERVICE,
@@ -49,8 +50,8 @@ from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
 NAV_GOAL_TIMEOUT = 90.0
-# Planned dock = detect + plan + MPPI approach + final straight-in
-DOCK_TIMEOUT = 150.0
+# table_docker answers within DOCK_BUDGET; this adds nav_central's overhead.
+DOCK_TIMEOUT = DOCK_TABLE_TIMEOUT
 
 
 def _mock_pose():

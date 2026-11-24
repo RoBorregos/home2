@@ -225,3 +225,39 @@ def test_free_ideal_pose_has_no_hits():
     ignore = ap.halfplane_ignore((1.0, 0.0), (1.0, 0.0), margin=0.03)
     x = 1.0 - FRONT - TABLE.gap
     assert len(ap.footprint_hits(grid, x, 0.0, 0.0, samples, ignore)) == 0
+
+
+def test_cost_field_matches_footprint_cost():
+    grid = empty_grid()
+    samples = ap.footprint_samples(FOOTPRINT, grid.resolution / 2, padding=0.03)
+    fill_box(grid, -0.25, 0.48, -0.20, 0.53)
+    fill_box(grid, 0.6, -0.3, 0.9, 0.2, cost=120)
+    ignore = ap.halfplane_ignore((0.8, 0.0), (1.0, 0.0), margin=0.06)
+    xs = 0.013 + np.arange(-12, 13) * 0.05
+    ys = -0.021 + np.arange(-12, 13) * 0.05
+    yaw = 0.37
+    field = ap.footprint_cost_field(grid, xs, ys, yaw, samples, ignore)
+    for i, x in enumerate(xs):
+        for j, y in enumerate(ys):
+            assert field[i, j] == ap.footprint_cost(grid, x, y, yaw, samples, ignore)
+
+
+def test_astar_gives_up_fast_when_the_detour_leaves_the_window():
+    # A detour longer than the search window is the global planner's job: the
+    # local A* must say "no" quickly instead of searching the whole costmap.
+    import time
+    grid = empty_grid()
+    samples = ap.footprint_samples(FOOTPRINT, grid.resolution / 2, padding=0.03)
+    fill_box(grid, -1.5, 0.6, 1.5, 0.65)  # wall wider than the 1.5 m window
+    t0 = time.perf_counter()
+    path = ap.footprint_astar(grid, (0.0, 0.0), (0.0, 1.2), 0.0, samples)
+    assert path is None
+    assert time.perf_counter() - t0 < 1.0
+
+
+def test_in_reach_band():
+    assert ap.in_reach_band(0.05, 0.02, 0.03, TABLE)
+    assert not ap.in_reach_band(0.30, 0.0, 0.0, TABLE)    # too far for the arm
+    assert not ap.in_reach_band(0.05, 0.3, 0.0, TABLE)    # badly rotated
+    assert not ap.in_reach_band(0.05, 0.0, 0.2, TABLE)    # off to the side
+    assert not ap.in_reach_band(None, 0.0, 0.0, TABLE)

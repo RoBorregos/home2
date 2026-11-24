@@ -33,6 +33,7 @@ from frida_constants.navigation_constants import (
     MOVE_LOCATION_SERVICE,
     DOCK_SERVICE,
     DOCK_TABLE_SERVICE,
+    DOCK_TABLE_TIMEOUT,
 )
 
 from PyQt5.QtWidgets import (
@@ -560,7 +561,7 @@ class NavRosNode(Node):
                     req = DockTable.Request()
                     req.surface_type = surface_type
                     future = self._dock_table_client.call_async(req)
-                    if not _wait(future, 150.0):
+                    if not _wait(future, DOCK_TABLE_TIMEOUT):
                         on_done(False, "Dock timed out")
                         return
                     res = future.result()
@@ -571,7 +572,7 @@ class NavRosNode(Node):
                     on_done(False, "Dock service not available")
                     return
                 future = self._dock_client.call_async(Trigger.Request())
-                if not _wait(future, 150.0):
+                if not _wait(future, DOCK_TABLE_TIMEOUT):
                     on_done(False, "Dock timed out")
                     return
                 res = future.result()

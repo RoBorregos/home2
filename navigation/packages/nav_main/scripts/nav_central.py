@@ -19,6 +19,7 @@ from nav_msgs.msg import OccupancyGrid
 from map_msgs.msg import OccupancyGridUpdate
 from tf2_geometry_msgs import do_transform_point
 from frida_constants.navigation_constants import(
+        DOCK_CLIENT_TIMEOUT,
         SCAN_TOPIC,
         APPROACH_POINT_SERVICE,
         GLOBAL_COSTMAP_TOPIC,
@@ -799,7 +800,7 @@ class Nav_Central(Node):
                         + (f" at target {point} [{frame}]" if point else ""))
         # Bounded dock call, capturing the actual approach result.
         future = self.dock_client.call_async(Trigger.Request())
-        if not self._wait(future, 120.0):
+        if not self._wait(future, DOCK_CLIENT_TIMEOUT):
             return (False, "dock timed out", {})
         res = future.result()
         return (res.success, res.message, self._dock_result())

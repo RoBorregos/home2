@@ -208,6 +208,16 @@ def side_of(points, x, y, yaw, center_band=0.10):
     return "left" if lateral > 0 else "right"
 
 
+def in_reach_band(gap, yaw_err, lateral_err, profile, yaw_tol=0.10, lateral_tol=0.08):
+    """Whether a docked base is good enough for the arm even if the docker did not
+    converge: front gap inside [gap_min, gap_max] and heading / lateral offset
+    within relaxed tolerances (rad, m). Used when the time budget runs out."""
+    if gap is None or yaw_err is None or lateral_err is None:
+        return False
+    return (profile.gap_min - 0.01 <= gap <= profile.gap_max + 0.01
+            and abs(yaw_err) <= yaw_tol and abs(lateral_err) <= lateral_tol)
+
+
 def ideal_candidate(candidates, profile):
     """The pose the planner would pick with nothing in the way: smallest lateral
     error, then closest to the preferred gap."""
@@ -354,12 +364,34 @@ def rank(candidates, profile, weights=None, grid=None, samples=None, robot=None,
     return valid, candidates
 
 
+def footprint_cost_field(grid, xs, ys, yaw, samples, ignore=None, unknown_cost=0):
+    """footprint_cost() for the base at every (xs[i], ys[j]) of a lattice at once,
+    heading `yaw`: a (len(xs), len(ys)) array. Same semantics (max cost under the
+    footprint, `ignore` on world points, unknown -> unknown_cost), but one
+    vectorised pass per footprint sample instead of one call per pose: the
+    configuration-space obstacle map a fixed-heading A* needs."""
+    X, Y = np.meshgrid(np.asarray(xs, dtype=float), np.asarray(ys, dtype=float), indexing="ij")
+    field = np.zeros(X.shape, dtype=np.int32)
+    offsets = transform_points(np.asarray(samples, dtype=float), 0.0, 0.0, yaw)
+    for ox, oy in offsets:
+        wx, wy = X + ox, Y + oy
+        vals = grid.lookup(wx, wy).astype(np.int32)
+        vals = np.where((vals < 0) | (vals == NO_INFORMATION), unknown_cost, vals)
+        if ignore is not None:
+            vals[ignore(np.stack([wx.ravel(), wy.ravel()], axis=1)).reshape(X.shape)] = 0
+        np.maximum(field, vals, out=field)
+    return field
+
+
 def footprint_astar(grid, start, goal, yaw, samples, ignore=None, step=None,
-                    cost_weight=1.0, max_expansions=20000):
+                    cost_weight=1.0, max_expansions=20000, window=1.5):
     """Holonomic A* over (x, y) at fixed heading `yaw` on `grid`: every node keeps
     the whole footprint (`samples`) off lethal cells. For short approach legs on
     the local costmap, where the obstacles nav2's planner lost (thin chair legs)
-    are known. Returns [(x, y), ...] from start to goal, or None."""
+    are known. The search stays inside the start/goal bounding box grown by
+    `window` metres, whose footprint costs are computed up front
+    (footprint_cost_field), so each expansion is a table lookup.
+    Returns [(x, y), ...] from start to goal, or None."""
     step = step or grid.resolution
     sx, sy = start
     gx, gy = goal
@@ -370,15 +402,18 @@ def footprint_astar(grid, start, goal, yaw, samples, ignore=None, step=None,
     def world(k):
         return sx + k[0] * step, sy + k[1] * step
 
-    free_cache = {}
+    goal_k = key(gx, gy)
+    pad = int(math.ceil(window / step))
+    i_lo, i_hi = min(0, goal_k[0]) - pad, max(0, goal_k[0]) + pad
+    j_lo, j_hi = min(0, goal_k[1]) - pad, max(0, goal_k[1]) + pad
+    field = footprint_cost_field(grid, sx + np.arange(i_lo, i_hi + 1) * step,
+                                 sy + np.arange(j_lo, j_hi + 1) * step, yaw, samples, ignore)
 
     def cost(k):
-        if k not in free_cache:
-            x, y = world(k)
-            free_cache[k] = footprint_cost(grid, x, y, yaw, samples, ignore)
-        return free_cache[k]
+        if not (i_lo <= k[0] <= i_hi and j_lo <= k[1] <= j_hi):
+            return LETHAL  # outside the search window
+        return int(field[k[0] - i_lo, k[1] - j_lo])
 
-    goal_k = key(gx, gy)
     if cost(goal_k) >= LETHAL:
         return None
     start_k = (0, 0)

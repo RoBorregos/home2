@@ -72,6 +72,13 @@ DOCK_PREVIEW_SERVICE = (
 )
 DOCKED_TOPIC = "/navigation/docked"  # std_msgs/Bool (latched): currently docked?
 RETREAT_DISTANCE = 0.2  # m the base backs off on undock (table_docker retreat_distance)
+# Hard cap (s, wall clock) on one dock request: table_docker always answers within
+# it, docking "good enough" (inside the reach band) if it did not converge.
+DOCK_BUDGET = 30.0
+# Client-side waits: the budget plus the caller's own overhead (setting the
+# request params, resuming nav2), so a client never gives up before the docker.
+DOCK_CLIENT_TIMEOUT = DOCK_BUDGET + 15.0  # nav_central -> table_docker
+DOCK_TABLE_TIMEOUT = DOCK_BUDGET + 30.0  # task manager / UI -> nav_central
 POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
 
 ### General Constants
