@@ -165,11 +165,14 @@ RIGHT_MOUTH_LANDMARK = 291
 
 # Talking detection tuning
 TALKING_HISTORY_FRAMES = 20
-# Crops sent per is_talking request. Each request starts a fresh MouthActivity, so
-# the first frames only fill its TALKING_HISTORY_FRAMES buffer and debounce; the
-# server spends ~20 ms per crop, so more crops mean a slower answer. 28 matched the
-# 35-crop answers 97% of the time; shorter windows start missing speech.
-TALKING_REQUEST_FRAMES = 28
+# face_recognition -> is_talking requests
+TALKING_REQUEST_FRAMES = 28  # crops per request (~20 ms each on the server)
+TALKING_MIN_NEW_FRAMES = 15  # new crops before a face is sent again
+TALKING_MIN_FACE_WIDTH = 30  # px; smaller (background) faces are skipped
+TALKING_CROP_MARGIN = 0.25
+TALKING_CROP_MAX_SIZE = 192  # px; keeps a request under the 8 MB iceoryx chunk
+TALKING_TRACK_GAP_SEC = 0.5  # a face unseen this long restarts its crops
+IS_TALKING_TIMEOUT = 5.0
 TALKING_MIN_DELTA = 0.01
 TALKING_DIRECTION_CHANGE_THRESHOLD = 2
 TALKING_DEBOUNCE_ON_FRAMES = 3
