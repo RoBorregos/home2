@@ -162,8 +162,12 @@ SCENARIOS = {
 def docker_last_result():
     """table_docker's `last_result` JSON (timings, path, degraded) as a dict, {} if unavailable."""
     try:
-        out = subprocess.run(["ros2", "param", "get", "/table_docker", "last_result"],
-                             capture_output=True, text=True, timeout=15).stdout
+        out = subprocess.run(
+            ["ros2", "param", "get", "/table_docker", "last_result"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        ).stdout
         return json.loads(out.split("is:", 1)[1].strip()) if "is:" in out else {}
     except (subprocess.SubprocessError, FileNotFoundError, ValueError):
         return {}
@@ -553,7 +557,9 @@ class SimDockTest(Node):
             res["docker"] = {k: last.get(k) for k in ("path", "degraded", "timings")}
             total = (last.get("timings") or {}).get("total")
             # Node-clock time, so a slow simulation does not fail it.
-            res["checks"]["within_budget"] = total is not None and total <= DOCK_BUDGET + 1.0
+            res["checks"]["within_budget"] = (
+                total is not None and total <= DOCK_BUDGET + 1.0
+            )
         if sc["check"] != "point" and sc.get("target"):
             # The DockTable diagnostics must match what the sim knows: the chair
             # blocks the island target, nothing blocks the others.
@@ -593,15 +599,20 @@ class SimDockTest(Node):
 
     def log_timings(self):
         """Per-phase dock time summary (median / max, node-clock s) across the scenarios."""
-        runs = [(r["name"], (r.get("docker") or {}).get("timings") or {}) for r in self.results]
+        runs = [
+            (r["name"], (r.get("docker") or {}).get("timings") or {})
+            for r in self.results
+        ]
         runs = [(n, t) for n, t in runs if t]
         if not runs:
             return
         for phase in sorted({p for _, t in runs for p in t}):
             vals = [t[phase] for _, t in runs if phase in t]
             worst = max(runs, key=lambda nt: nt[1].get(phase, -1.0))[0]
-            self.get_logger().info(f"  t_{phase}: median={float(np.median(vals)):.1f}s "
-                                   f"max={max(vals):.1f}s ({worst})")
+            self.get_logger().info(
+                f"  t_{phase}: median={float(np.median(vals)):.1f}s "
+                f"max={max(vals):.1f}s ({worst})"
+            )
 
     def save(self):
         os.makedirs(os.path.dirname(RESULTS), exist_ok=True)

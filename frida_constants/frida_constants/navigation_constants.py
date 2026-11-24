@@ -83,7 +83,7 @@ RETREAT_DISTANCE = 0.2  # m the base backs off on undock (table_docker retreat_d
 DOCK_BUDGET = 100.0  # table_docker dock_timeout default
 # Client waits = budget + caller overhead, so clients never give up before the docker.
 DOCK_CLIENT_TIMEOUT = DOCK_BUDGET + 20.0  # nav_central -> table_docker
-DOCK_TABLE_TIMEOUT = DOCK_BUDGET + 70.0  # task manager / UI -> nav_central (resume/pause nav2 too)
+DOCK_TABLE_TIMEOUT = DOCK_BUDGET + 70.0  # task manager / UI -> nav_central
 POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
 
 ### General Constants
