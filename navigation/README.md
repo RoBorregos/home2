@@ -203,33 +203,204 @@ arena rooms/objects), and exports them to
 `[x, y, z, qx, qy, qz, qw]`. You can also hand-edit the `.pgm` to paint virtual
 obstacles or draw a keepout mask that Nav2 will respect.
 
-### Docking to a table / shelf
+### Docking to a table / shelf (planned approach)
 
 `table_docker.py` (started automatically by `general_navigation` /`restaurant`
-on the omnibase) performs a **perpendicular approach** to a table or shelf: Nav2
-brings the robot to a static "near" pose, then the docker detects the surface's
-front face from lidar/point-cloud (line for flat tables, circle for round ones),
-locks it, and closed-loop drives the holonomic base until the arm is
-`target_distance` from the surface.
+on the omnibase) docks at a table, counter or shelf **without hardcoded
+distances**. Callers name the **surface type**, and optionally the object to work
+on. The docker then works through four steps:
+
+1. **Detect.** It finds the front face from lidar/point cloud (a line for flat
+   surfaces, a circle for round tables) and locks it in `odom`.
+2. **Base placement.** It samples candidate base poses along the face, or
+   around the round table, inside that type's **reach band** `[gap_min, gap_max]`.
+   - The full footprint of each candidate is checked against the local costmap,
+     so a chair next to the table rejects the poses it overlaps.
+   - The remaining candidates are scored on gap, lateral offset from the object,
+     and travel.
+3. **Motion.** The robot drives to a pre-dock pose in front of the best
+   candidate. The path is chosen in this order:
+   1. the straight line, when the swept footprint is free;
+   2. otherwise a footprint-aware A* on the local costmap plus the remembered
+      obstacles;
+   3. as a last resort, the Nav2 planner.
+
+   MPPI (Nav2 `controller_server`) drives the straight line. Paths 2 and 3 skirt
+   obstacles, often ones only the docker remembers, such as chair legs. MPPI
+   optimises against Nav2's costmap and would cut those corners, so the docker
+   follows those paths with its own holonomic controller (`follow_detours`,
+   `path_speed`, `path_lookahead`). That controller settles on the pre-dock
+   pose within `path_xy_tol` (4 cm). Paths keep the full `footprint_padding`
+   from obstacles, and remembered obstacles get a soft cost ring
+   (`memory_inflation`, 10 cm) so paths and scores keep away from them. During
+   the motion, the robot stops if a remembered obstacle reaches the bare
+   footprint or a live lidar point comes within `safety_clearance`.
+
+   On arrival the docker re-detects and re-plans.
+4. **Straight-in.** A holonomic controller closes the last centimetres against
+   the locked face. Once docked, it re-detects up close and corrects. The live
+   lidar keeps every point outside the footprint.
+
+Three safeguards keep the approach from trusting a single snapshot:
+
+- **Obstacle memory.** During a dock, every lethal costmap cell seen since the
+  request started is kept, and so is every lidar hit within
+  `scan_memory_range` (2 m). The memory is cleared when the dock ends. nav2's
+  costmap loses thin obstacles such as chair legs once rays pass beside them or
+  they fall into the lidar's near blind zone. Legs thinner than a cell may never
+  reach the costmap at all, while the lidar still sees them. Hits within 2 cm
+  of the footprint are dropped, because they are the robot itself or a noisy
+  ray. Hits within `scan_memory_face_margin` (12 cm) of the docked surface are
+  also dropped: they scatter around the surface's own front over a dock, so near
+  the surface only the costmap counts. The
+  plan, the swept-path checks and the guard during the motion all use the
+  remembered cells.
+- **Same-surface check.** A re-detection more than 10 cm *closer* than the
+  locked face is ignored, so the docker does not switch to a chair in front of
+  the table. A face up to 35 cm *farther* is accepted only if the lidar shows the
+  strip straight ahead is free up to it, for example the back of a cabinet niche
+  once the side panels are out of view. Close-range re-detections of flat faces
+  look only at the ±25° strip the arm will work on.
+- **Face fusion.** Up close the lidar sees only a short piece of a flat face.
+  A close-range fit shorter than `fuse_min_span` (40 cm) borrows the
+  orientation of the longest stretch seen; a longer one keeps its own, since the
+  far fit can be skewed by what stands next to the surface. The distance comes
+  from the closest view, plus the nearest lidar point straight ahead.
+
+The dock also guards against a few situations seen on the robot:
+
+- **Someone standing in the way.** When no dock pose is free at the start, the
+  docker keeps re-planning for `blocked_wait` (8 s) before failing, e.g. while
+  an operator or a referee steps aside. Remembered obstacles are never wiped:
+  after a full `memory_window` (4 s) only those not seen again in that window
+  are forgotten. Something seen only now and then (a bin's rim, which only the
+  camera sees) must not vanish and make the spot look free.
+- **Contact.** If the live lidar sees something more than `contact_tolerance`
+  (5 mm) inside the footprint during the straight-in, the robot stops and the
+  dock fails instead of reporting docked; the next undock backs off.
+- **Overall timeout.** `dock_timeout` (100 s) caps the whole request, below
+  `nav_central`'s 120 s wait, so the robot never keeps driving after the caller
+  gave up.
+- **Failed dock next to the surface.** A dock that drove and then failed with the
+  front closer than `failed_retreat_gap` (30 cm) to something still backs off on
+  the next undock, so nav2 does not plan from inside the inflation.
+- **The robot itself.** Points inside the footprint (the arm or the body seen by
+  the camera) are dropped before fitting the face.
+
+The planning code is `nav_main/approach_planner.py` (pure Python, unit tested in
+`nav_main/test/test_approach_planner.py`).
+
+Distances live **per surface type** in
+[`config/approach_profiles.yaml`](packages/nav_main/config/approach_profiles.yaml):
+
+| Type | Preferred gap (robot front → surface) | Band | Used by |
+| --- | --- | --- | --- |
+| `table`, `counter`, `round_table` | 0.025 m | 0.02 to 0.045 m | PPC and GPSR tables / counters |
+| `cabinet`, `shelf` | 0.165 m | 0.145 to 0.185 m | PPC cabinet, GPSR shelf-like furniture |
+| `dishwasher` | 0.185 m | 0.165 to 0.205 m | PPC and GPSR dishwasher, PPC cooking table |
+| `serving_table` | 0.185 m | 0.165 to 0.205 m | Restaurant |
+
+The preferred gaps are exactly the stand-offs PPC and Restaurant used before
+(`old offset + 0.19 − 0.325`), and the bands are only ±2 cm, so manipulation
+sees the same distances it was calibrated at. GPSR used to dock at 2.5 cm
+everywhere; it now uses these per-surface distances too. Widen a band only after
+manipulation confirms the arm still reaches there.
+
+The same file holds four more settings:
+
+- the band for `approach_point`, which is the distance from the base centre to
+  the person or object,
+- the scoring weights, separate for docking and for `approach_point`,
+- `footprint_padding`, the margin that candidate poses keep from every obstacle
+  other than the surface being docked at,
+- `reach_check`, the IK verification of candidate poses described below.
 
 You can activate docking in three ways:
 
-- **From the `nav_ui` panel** — press the **Dock** button (optionally set a
-  front offset). It calls `nav_central`'s `DockTable` service so a per-call
-  offset can be applied.
-- **From a service call** (see below).
-- **Automatically** — `nav_central` calls the undock service before every new
-  location goal so the robot backs off a docked surface before planning.
+- **From the `nav_ui` panel**: pick the surface type and press
+  **Approach Table**. **Preview Dock** detects and plans without moving (press
+  **Resume Nav** first, or the preview has no costmap and does not check
+  obstacles), and **Undock** backs off.
+- **From a service call** (see below), or `nav_tasks.dock_table(surface_type=...,
+  target=PointStamped)` in a task manager.
+- **Automatically for undocking**: `nav_central` calls the undock service before
+  every new location goal, so the robot backs off a docked surface before
+  planning.
 
 ```bash
-# Preview the detected face/orientation without moving
+# Preview: detect + plan, show candidates in RViz (/approach_planner/candidates), no motion
 ros2 service call /navigation/preview_dock std_srvs/srv/Trigger {}
 
-# Dock (offset 0.0 uses the docker default)
-ros2 service call /navigation/dock_table frida_interfaces/srv/DockTable "{offset: 0.0}"
+# Dock at a counter, standing in front of an object seen by vision
+ros2 service call /navigation/dock_table frida_interfaces/srv/DockTable \
+  "{surface_type: counter, target: {header: {frame_id: base_link}, point: {x: 0.9, y: 0.3}}}"
 
 # Undock / back off so Nav2 can plan the next goal
 ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
+```
+
+The old `offset` field still works when `surface_type` is empty: it is converted
+to the gap it used to produce.
+
+`nav_central` resumes nav2 and forwards the `DockTable` request unchanged to
+table_docker's own typed service, `/table_docker/dock_table`, which returns the
+diagnostics in its response. The request never goes through parameters, so two
+callers (e.g. `nav_ui` and a task) cannot overwrite each other's request; docks
+run one at a time. Both table_docker and `nav_central` take the robot
+**footprint from nav2's costmaps** (`/local_costmap/local_costmap` and
+`/global_costmap/global_costmap`), so `nav2_omni*.yaml` is its single source;
+their own `footprint` parameter is only a fallback while nav2 is not up.
+
+#### Reach check (the arm can actually reach the object)
+
+The reach band says how far the robot stands from the surface. It does not
+say whether the arm reaches *this* object from *this* pose. With
+`check_reach: true` and a 3D `target` (the object to grasp), the docker checks
+the best-ranked candidate poses with MoveIt's `/compute_ik` before moving:
+
+- The object is expressed in the `base_link` the robot *would* have at each
+  candidate, so nothing moves while checking.
+- Both the grasp and the pre-grasp must have IK. The gripper approach
+  (`grasp: top | front`) comes from the surface profile. Quaternions and
+  pre-grasp distances are in `reach_check.grasps`, matching manipulation's place
+  pipeline.
+- The first candidate that passes wins, so the usual cost is one or two IK
+  calls. If none passes, the ranking is kept and the response says
+  `reach: unreachable`. Manipulation may still manage, since the check is
+  kinematics only.
+- Without `moveit_msgs`, without `/compute_ik`, or without a target `z`, the dock
+  runs as before and reports `reach: unchecked`.
+
+Use it only when `target` is the object to grasp, not for the centre of a
+table.
+
+#### Dock diagnostics (what blocked the robot)
+
+Besides `success`, the `DockTable` response reports:
+
+| Field | Meaning |
+| --- | --- |
+| `lateral_error` | Target position relative to the docked base, in m (+ = left) |
+| `reach` | `ok`, `unreachable` or `unchecked` |
+| `target_blocked` | The pose straight in front of the target (or of the staging pose) was blocked |
+| `blocker`, `blocker_side` | Centre of what blocks it (map frame) and where it sits: `left`, `center`, `right` or `both` (obstacles on each side) |
+
+`nav_tasks.dock_table` keeps these in `nav.last_dock_result`. Use them to decide
+which chairs must be moved for the robot to fit.
+
+To collect data across runs, set `table_docker`'s `result_log` parameter to a
+file path. Every dock then appends one JSON line with the surface, the target,
+the planned and measured gap, the lateral error, the reach verdict and the
+blocker. Use this data to tune the bands in `approach_profiles.yaml`. The
+measured gap is the nearest lidar point straight ahead, and the lidar sits about
+14 cm above the floor. It is right for fronts that reach the floor (cabinets,
+counters); under a table top it sees the legs, so measure tables with a tape.
+
+```bash
+ros2 param set /table_docker result_log /workspace/log/dock_results.jsonl
+ros2 service call /navigation/dock_table frida_interfaces/srv/DockTable \
+  "{surface_type: table, check_reach: true,
+    target: {header: {frame_id: base_link}, point: {x: 0.8, y: 0.2, z: 0.78}}}"
 ```
 
 ## Navigation services
@@ -241,10 +412,10 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 | --- | --- | --- |
 | `/navigation/go_to_map_area` | `MoveLocation` | Go to a named area/sublocation from `areas.json` |
 | `/navigation/go_to_pose` | `GoToPose` | Go to a map-frame pose |
-| `/navigation/approach_point` | `ApproachPoint` | Approach a point at a standoff distance |
+| `/navigation/approach_point` | `ApproachPoint` | Approach a point: planned pose in the standoff band, footprint-checked, with fallbacks |
 | `/navigation/get_robot_pose` | `GetRobotPose` | Current pose from TF (map → base_link) |
 | `/navigation/query_path` | `NavQuery` | Path distance between two areas (no motion) |
-| `/navigation/dock_table` | `DockTable` | Dock to the surface in front (with offset) |
+| `/navigation/dock_table` | `DockTable` | Planned dock at the surface in front (surface type + optional target) |
 | `/navigation/is_door_open` | `CheckDoor` | Door open/closed via lidar |
 | `/navigation/areas_json` | `MapAreas` | Return `areas.json` as a string |
 | `/navigation/follow_person` | `SetBool` | Start/stop person following |
@@ -364,7 +535,7 @@ trajectories, and lets the operator:
 - Set the **initial pose** (required before localized navigation starts —
   `nav_central` waits for it).
 - Send goals, change the active map, save maps, resume paused navigation.
-- Trigger docking with a configurable offset.
+- Trigger docking for a chosen surface type.
 
 ## Robot bases
 

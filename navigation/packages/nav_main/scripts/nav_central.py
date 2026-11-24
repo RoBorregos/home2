@@ -7,7 +7,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallb
 from rclpy.qos import qos_profile_sensor_data, QoSProfile, DurabilityPolicy
 from composition_interfaces.srv import LoadNode
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
-from rcl_interfaces.srv import SetParameters
+from rcl_interfaces.srv import GetParameters
 from nav2_msgs.srv import ManageLifecycleNodes, ClearEntireCostmap
 from nav2_msgs.action import NavigateToPose, ComputePathToPose
 from action_msgs.msg import GoalStatus
@@ -16,6 +16,7 @@ from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger, SetBool
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped, TwistStamped
 from nav_msgs.msg import OccupancyGrid
+from map_msgs.msg import OccupancyGridUpdate
 from tf2_geometry_msgs import do_transform_point
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
@@ -59,9 +60,9 @@ from frida_constants.navigation_constants import(
         COMPUTE_PATH_ACTION_SERVER,
         TIMEOUT_NAV_QUERY,
         UNDOCK_SERVICE,
-        DOCK_SERVICE,
+        DOCKER_DOCK_TABLE_SERVICE,
+        GLOBAL_COSTMAP_PARAMS,
         DOCK_TABLE_SERVICE,
-        DEFAULT_DOCK_OFFSET,
         )
 from ament_index_python.packages import get_package_share_directory
 import os
@@ -84,6 +85,7 @@ import math
 import statistics
 import yaml
 import re
+from nav_main import approach_planner as ap
 
 
 # Seconds to wait between NavigateToPose retries when a goal is rejected or
@@ -184,12 +186,14 @@ class Nav_Central(Node):
         # planning a new goal. No-op if the table_docker node isn't running.
         self.undock_client = self.create_client(
             Trigger, UNDOCK_SERVICE, callback_group=self.rtab_service_group)
-        # Dock (perpendicular approach) client + a parameter client to set the
-        # per-location front_offset on table_docker before approaching.
+        # Dock (planned perpendicular approach): table_docker's typed DockTable, the
+        # request and its diagnostics travel in the call itself.
         self.dock_client = self.create_client(
-            Trigger, DOCK_SERVICE, callback_group=self.rtab_service_group)
-        self.dock_param_client = self.create_client(
-            SetParameters, '/table_docker/set_parameters', callback_group=self.rtab_service_group)
+            DockTable, DOCKER_DOCK_TABLE_SERVICE, callback_group=self.rtab_service_group)
+        # nav2's global costmap: its `footprint` is the robot outline approach_point uses.
+        self.costmap_param_client = self.create_client(
+            GetParameters, f"{GLOBAL_COSTMAP_PARAMS}/get_parameters",
+            callback_group=self.rtab_service_group)
         # Costmap clear clients — wipe stale obstacle marks (e.g. from the parked/docked
         # pose) before a new goal so the planner/MPPI start from a clean slate.
         self.clear_local_costmap_client = self.create_client(
@@ -263,10 +267,29 @@ class Nav_Central(Node):
             OccupancyGrid, GLOBAL_COSTMAP_TOPIC,
             lambda msg: setattr(self, "_costmap_grid", msg), costmap_qos,
             callback_group=self.service_group)
+        # The global costmap's full grid is only re-sent on resize; live obstacle
+        # marks arrive as patches.
+        self.create_subscription(
+            OccupancyGridUpdate, GLOBAL_COSTMAP_TOPIC + "_updates",
+            self._costmap_update_cb, 10, callback_group=self.service_group)
         self.create_subscription(
             OccupancyGrid, MAP_TOPIC,
             lambda msg: setattr(self, "_static_grid", msg), 1,
             callback_group=self.service_group)
+
+        # Base placement (approach_point + legacy dock offsets): same footprint as
+        # nav2's costmaps and the reach bands in approach_profiles.yaml.
+        fp_text = self.declare_parameter(
+            'footprint', '[[0.325, 0.25], [0.325, -0.25], [-0.325, -0.25], [-0.325, 0.25]]').value
+        self._footprint = yaml.safe_load(fp_text)
+        profiles_file = self.declare_parameter('approach_profiles', os.path.join(
+            get_package_share_directory('nav_main'), 'config', 'approach_profiles.yaml')).value
+        with open(profiles_file) as f:
+            profiles = yaml.safe_load(f) or {}
+        self._point_profiles = ap.load_profiles(profiles.get('points'))
+        self._approach_weights = ap.load_weights(profiles.get('weights'), 'point')
+        self._footprint_padding = float(profiles.get('footprint_padding', 0.0))
+        self._fp_samples = ap.footprint_samples(self._footprint, 0.025, self._footprint_padding)
 
         # Initial pose tracking
         self._initial_pose_set = False
@@ -734,37 +757,57 @@ class Nav_Central(Node):
         if not ok:
             self.nav_logger("warn", "Go_To_Area -> Undock failed/timed out, continuing anyway")
 
-    def _approach_table(self, offset):
-        """Set the per-call front_offset on table_docker, then trigger the
-        perpendicular approach. Returns (success, message)."""
-        if not self.dock_client.service_is_ready():
+    def _approach_table(self, request):
+        """Forward a DockTable request to table_docker's typed dock and return its
+        response (None if the docker is not up or did not answer). The whole
+        request travels in the call and the diagnostics come back in the response,
+        so a second caller cannot overwrite this one's request."""
+        if not self.dock_client.wait_for_service(timeout_sec=1.0):
             self.nav_logger("warn", "Approach -> table_docker not available")
-            return (False, "table_docker not available")
-        if offset is None or offset <= 0.0:
-            offset = DEFAULT_DOCK_OFFSET
-        if self.dock_param_client.service_is_ready():
-            req = SetParameters.Request()
-            req.parameters = [make_param('front_offset', float(offset))]
-            self._call_service_with_timeout(
-                self.dock_param_client, req, TIMEOUT_RTAB_SERVICE, "Approach SetParam")
-        self.nav_logger("info", f"Approach -> docking to surface (front_offset={offset})")
-        # Bounded dock call, capturing the actual approach result.
-        future = self.dock_client.call_async(Trigger.Request())
-        if not self._wait(future, 90.0):
-            return (False, "dock timed out")
-        res = future.result()
-        return (res.success, res.message)
+            return None
+        target = request.target
+        self.nav_logger("info", f"Approach -> docking to {request.surface_type or 'default'}"
+                        + (f" (legacy offset {request.offset:.2f})"
+                           if not request.surface_type and request.offset > 0.0 else "")
+                        + (f" at target ({target.point.x:.2f}, {target.point.y:.2f}, "
+                           f"{target.point.z:.2f}) [{target.header.frame_id}]"
+                           if target.header.frame_id else ""))
+        # Bounded dock call. table_docker caps the whole request at its
+        # `dock_timeout` (100 s), below this wait.
+        future = self.dock_client.call_async(request)
+        if not self._wait(future, 120.0):
+            return None
+        return future.result()
 
     def dock_table_callback(self, request, response):
-        """Service: dock to the table/shelf in front of the robot (with offset)."""
-        self.nav_logger("info", f"Dock_Table -> Service called (offset={request.offset})")
-        success, message = self._approach_table(request.offset)
-        response.success = success
-        response.error = message
-        if success:
+        """Service: plan + dock at the surface in front of the robot."""
+        self.nav_logger("info", f"Dock_Table -> Service called (surface='{request.surface_type}', "
+                                f"offset={request.offset})")
+        # The approach drives through MPPI (controller_server) and reads the local
+        # costmap, so nav2 runs for the duration of the dock; restore the prior state after.
+        was_paused = self.nav2_paused
+        self._set_paused(False)
+        try:
+            res = self._approach_table(request)
+        finally:
+            if was_paused:
+                self._set_paused(True)
+        if res is None:
+            response.success = False
+            response.error = "table_docker not available or dock timed out"
+            response.reach = "unchecked"
+            self.nav_logger("error", f"Dock_Table -> Failed: {response.error}")
+            return response
+        response = res
+        side = response.blocker_side
+        self.nav_logger("info", f"Dock_Table -> reach={response.reach} "
+                                f"lateral_err={response.lateral_error:.2f}m"
+                                + (f" blocked {'on both sides' if side == 'both' else 'on the ' + side}"
+                                   if response.target_blocked else ""))
+        if response.success:
             self.nav_logger("info", "Dock_Table -> Docked")
         else:
-            self.nav_logger("error", f"Dock_Table -> Failed: {message}")
+            self.nav_logger("error", f"Dock_Table -> Failed: {response.error}")
         return response
 
     def _clear_costmaps(self, settle_s=0.3):
@@ -858,10 +901,17 @@ class Nav_Central(Node):
 
     def approach_point_callback(self, request, response):
         """Approach a person/object seen by vision: transform the target to the
-        map frame, pick the nearest costmap-free pose `standoff` meters from it
-        (robot side first, facing the target) and navigate there through the
-        same goal pipeline as go_to_pose."""
-        standoff = request.standoff if request.standoff > 0.0 else 0.65
+        map frame, plan the base pose (rings inside the reach band, full-footprint
+        costmap check, scored by distance band + travel; see approach_planner) and
+        navigate there through the same goal pipeline as go_to_pose, falling back
+        to the next-best poses if nav2 cannot reach the first one."""
+        prof = self._point_profiles.get('default') or ap.ReachProfile(0.65, 0.50, 0.95)
+        if request.standoff > 0.0:
+            # Caller's standoff is the preferred distance; same band width as before
+            # (the old search tried standoff, +0.15, +0.30).
+            prof = ap.ReachProfile(request.standoff, max(0.35, request.standoff - 0.15),
+                                   request.standoff + 0.30)
+        standoff = prof.gap
         response.goal = PoseStamped()
 
         target = request.target
@@ -899,35 +949,38 @@ class Nav_Central(Node):
                 f"({dist:.2f} m away, align={align})")
             response.goal = self._approach_pose(rx, ry, tx, ty)
             self._retreat_if_docked()
-            self.resume_slam()
+            self._set_paused(False)
             ok = self._align_parallel(tx, ty, align, request.final_distance)
             response.success = ok
             response.error = "" if ok else "parallel alignment failed"
-            self.pause_slam()
+            self._set_paused(True)
             return response
 
         if dist <= standoff + 0.05:
             # Already close enough: face the target, never drive into it.
             goal = self._approach_pose(rx, ry, tx, ty)
+            goals = [goal]
             self.nav_logger("info", "Approach_Point -> already close, facing target")
         else:
-            goal = self._find_free_approach(tx, ty, rx, ry, standoff)
-            if goal is None:
+            goals = self._plan_approach_point(tx, ty, rx, ry, prof)
+            if not goals:
                 response.success = False
                 response.error = "no free approach pose found around target"
                 self.nav_logger("warn", f"Approach_Point -> {response.error}")
                 return response
+            goal = goals[0]
             self.nav_logger(
                 "info",
                 f"Approach_Point -> goal ({goal.pose.position.x:.2f}, "
-                f"{goal.pose.position.y:.2f}) for target ({tx:.2f}, {ty:.2f})")
+                f"{goal.pose.position.y:.2f}) for target ({tx:.2f}, {ty:.2f}), "
+                f"{len(goals) - 1} fallback(s)")
 
         response.goal = goal
 
         # align left/right: rotate abeam of the target instead of just facing it
-        # (e.g. picking the laundry basket up from the side). Runs as the
-        # `_navigate` after-hook, while nav2/slam are still resumed; a failure
-        # here overrides the otherwise-successful nav goal.
+        # (e.g. picking the laundry basket up from the side). Runs after the nav
+        # goal, while nav2/slam are still resumed; a failure here overrides the
+        # otherwise-successful nav goal.
         align_ok = True
 
         def _after():
@@ -940,7 +993,25 @@ class Nav_Central(Node):
                 # yaw — make sure the base front actually points at the person.
                 self._face_target(tx, ty)
 
-        ok, msg = self._navigate(goal, "Approach_Point", after=_after)
+        # Same pipeline as _navigate, but with least commitment: if nav2 cannot
+        # reach the best pose, try the next-best ones.
+        self._retreat_if_docked()
+        if not self._ready_to_drive("Approach_Point"):
+            response.success = False
+            response.error = "Navigation not initialized"
+            return response
+        ok, msg = False, "no approach pose"
+        for i, goal in enumerate(goals):
+            # Fallbacks get 2 attempts each; the last candidate keeps retrying like
+            # every other goal (send_nav_goal's default), as approach_point did before.
+            last = i == len(goals) - 1
+            ok, msg = self.send_nav_goal(goal, max_attempts=None if last else 2)
+            if ok:
+                response.goal = goal
+                _after()
+                break
+            self.nav_logger("warn", f"Approach_Point -> candidate {i} failed ({msg}), trying next")
+        self._set_paused(True)
         if ok and not align_ok:
             ok, msg = False, "parallel alignment failed"
         response.success = ok
@@ -1044,38 +1115,63 @@ class Nav_Central(Node):
         pose.pose.orientation.w = math.cos(yaw / 2.0)
         return pose
 
-    def _grid_cell_free(self, grid, wx, wy, max_cost=50):
-        """Whether world (wx, wy) lies on a known grid cell with cost < max_cost."""
-        info = grid.info
-        mx = int((wx - info.origin.position.x) / info.resolution)
-        my = int((wy - info.origin.position.y) / info.resolution)
-        if not (0 <= mx < info.width and 0 <= my < info.height):
-            return False
-        cost = grid.data[my * info.width + mx]
-        return 0 <= cost < max_cost
-
-    def _find_free_approach(self, tx, ty, rx, ry, standoff):
-        """Nearest free approach pose: walk a ring around the target at
-        `standoff` (then slightly farther), starting on the robot's side and
-        fanning out. Prefers the global costmap (inflation + live obstacles);
-        falls back to the SLAM map; with no grid at all, trusts the direct
-        robot-side pose and lets the planner decide."""
-        base = math.atan2(ry - ty, rx - tx)  # target -> robot direction
-        grid = self._costmap_grid or self._static_grid
+    def _costmap_update_cb(self, msg):
+        """Apply an OccupancyGridUpdate patch to the stored global costmap."""
+        grid = self._costmap_grid
         if grid is None:
-            self.nav_logger("warn", "Approach_Point -> no grid; using raw standoff pose")
-            gx = tx + standoff * math.cos(base)
-            gy = ty + standoff * math.sin(base)
-            return self._approach_pose(gx, gy, tx, ty)
-        for radius in (standoff, standoff + 0.15, standoff + 0.30):
-            for step in range(0, 19):  # 0°, then ±10° ... ±180° around the target
-                for sign in ((1,) if step == 0 else (1, -1)):
-                    ang = base + sign * math.radians(10 * step)
-                    gx = tx + radius * math.cos(ang)
-                    gy = ty + radius * math.sin(ang)
-                    if self._grid_cell_free(grid, gx, gy):
-                        return self._approach_pose(gx, gy, tx, ty)
-        return None
+            return
+        w, h = grid.info.width, grid.info.height
+        if msg.x + msg.width > w or msg.y + msg.height > h:
+            return
+        for row in range(msg.height):
+            start = (msg.y + row) * w + msg.x
+            grid.data[start:start + msg.width] = msg.data[row * msg.width:(row + 1) * msg.width]
+
+    def _sync_footprint(self):
+        """Take the footprint from nav2's global costmap, the single source of the
+        robot outline; the `footprint` parameter is only the fallback while nav2 is
+        not up (or uses robot_radius)."""
+        if not self.costmap_param_client.service_is_ready():
+            return
+        future = self.costmap_param_client.call_async(GetParameters.Request(names=['footprint']))
+        if not self._wait(future, 1.0) or future.result() is None or not future.result().values:
+            return
+        text = future.result().values[0].string_value
+        try:
+            fp = yaml.safe_load(text) if text else None
+        except yaml.YAMLError:
+            return
+        if not (isinstance(fp, list) and len(fp) >= 3
+                and all(isinstance(p, list) and len(p) == 2 for p in fp)):
+            return
+        if fp != self._footprint:
+            self.nav_logger("info", f"Approach_Point -> footprint from {GLOBAL_COSTMAP_PARAMS}: {fp}")
+            self._footprint = fp
+            self._fp_samples = ap.footprint_samples(fp, 0.025, self._footprint_padding)
+
+    def _plan_approach_point(self, tx, ty, rx, ry, prof, max_goals=3):
+        """Ranked approach poses around (tx, ty), facing it: rings inside the reach
+        band, full footprint checked on the global costmap (or the SLAM map),
+        scored by distance from the preferred standoff and travel from the robot.
+        Returns up to `max_goals` PoseStampeds at least 0.3 m apart (fallbacks)."""
+        self._sync_footprint()
+        msg = self._costmap_grid or self._static_grid
+        grid = ap.Grid.from_occupancy_grid(msg) if msg is not None else None
+        if grid is None:
+            self.nav_logger("warn", "Approach_Point -> no grid; footprint not checked")
+        cands = ap.ring_candidates((tx, ty), (rx, ry), prof.gap_min, prof.gap, prof.gap_max,
+                                   d_step=0.1, angle_step_deg=10.0)
+        # Unknown cells count as blocked: never park the base in unexplored space.
+        valid, _ = ap.rank(cands, prof, self._approach_weights, grid, self._fp_samples,
+                           (rx, ry), unknown_cost=ap.LETHAL)
+        goals, picked = [], []
+        for c in valid:
+            if all(math.hypot(c.x - px, c.y - py) >= 0.3 for px, py in picked):
+                picked.append((c.x, c.y))
+                goals.append(self._approach_pose(c.x, c.y, tx, ty))
+            if len(goals) >= max_goals:
+                break
+        return goals
 
     def _pose_from_coords(self, coords):
         """Build a map-frame PoseStamped from an areas.json coordinate array."""

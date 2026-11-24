@@ -41,7 +41,8 @@ CONFIRM_MATCH_RADIUS = 0.8  # m between two detections to accept a caller (persi
 # ── Approach ──
 CUSTOMER_STANDOFF = 2.0  # m from the caller for the table scan
 TABLE_STANDOFF = 0.6  # m from the table point for order taking / delivery
-DOCK_TABLE_OFFSET = 0.32  # m front offset for the perpendicular dock_table approach
+# Surface profile for dock_table (distances live in nav_main/config/approach_profiles.yaml)
+DOCK_SURFACE = "serving_table"
 CUSTOMER_CLOSE_DISTANCE = 3.5  # m — re-approach if the caller is farther than this
 MAX_APPROACH_RETRIES = 3
 MAX_SCAN_ATTEMPTS = 3  # table scans before falling back to the caller point
@@ -274,11 +275,14 @@ class RestaurantTaskManager(Node):
             yaw_offset_deg=float(self.get_parameter("bar_return_yaw_deg").value)
         )
 
-    def _dock_to_table(self):
-        """Perpendicular-dock to the table/bar in front: tuck the arm first
-        (nav_pose keeps it inside the footprint at the 0.32 m offset)."""
+    def _dock_to_table(self, target=None):
+        """Planned perpendicular dock to the table/bar in front: tuck the arm first
+        (nav_pose keeps it inside the footprint at the serving_table gap).
+
+        `target`: the customer table's map point, so the robot faces the table it
+        serves instead of whatever stretch of face the lidar saw first."""
         self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
-        status, _ = self.subtask_manager.nav.dock_table(offset=DOCK_TABLE_OFFSET)
+        status, _ = self.subtask_manager.nav.dock_table(surface_type=DOCK_SURFACE, target=target)
         return status
 
     def _navigate_to_serve_table(self):
@@ -622,7 +626,7 @@ class RestaurantTaskManager(Node):
                         Logger.warn(self, "Return to table failed, delivering from here.")
                     # Final perpendicular docking so the place happens at a safe,
                     # repeatable distance from the tabletop.
-                    dock_status = self._dock_to_table()
+                    dock_status = self._dock_to_table(target=table.get("table_point"))
                     if dock_status != Status.EXECUTION_SUCCESS:
                         Logger.warn(self, "Table docking failed, placing from approach pose.")
                     self.subtask_manager.hri.say(f"Here is your {item}.")

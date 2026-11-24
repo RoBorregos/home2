@@ -25,6 +25,9 @@ RETRIES = 1
 MIN_REACHABLE_SHELF_Z = 0.20
 # A pick/place location whose name contains one of these is treated as a shelf:
 SHELF_FURNITURE_HINTS = ("shelf", "cabinet", "rack", "pantry", "bookcase")
+# Flat-topped furniture GPSR docks at with the 'table' profile (dinner_table,
+# side_table, bedside_table, coffee_table, cooking_table, desk, bar, sink, tv_stand).
+TABLE_FURNITURE_HINTS = ("table", "desk", "bar", "sink", "tv_stand")
 
 
 def search_command(command, objects: list[object]):
@@ -47,6 +50,7 @@ class GPSRSingleTask(GenericTask):
         self._shelf_objects: dict[int, list[str]] = {}  # the scan's labels per level
         self.shelf_level_heights: dict[int, float] = {}  # measured, 1 = lowest
         self._shelf_measured = False  # the scan boxes are only valid until the base moves
+        self._docked_here = False  # docked at last_location since arriving there
 
     ## Nav
     def go_to(self, command: GoTo):
@@ -83,6 +87,7 @@ class GPSRSingleTask(GenericTask):
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
         self.last_location = target
         self._shelf_measured = False
+        self._docked_here = False
         return result, "arrived to:" + command.location_to_go
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
@@ -97,6 +102,7 @@ class GPSRSingleTask(GenericTask):
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
         self.last_location = sublocation if sublocation else location
         self._shelf_measured = False
+        self._docked_here = False
         return result
 
     ## Manipulation
@@ -126,6 +132,38 @@ class GPSRSingleTask(GenericTask):
         """True when the last navigated furniture is shelf-like (levels, not a table)."""
         loc = (self.last_location or "").lower()
         return any(hint in loc for hint in SHELF_FURNITURE_HINTS)
+
+    def _surface_type(self) -> str | None:
+        """approach_profiles.yaml surface type of the furniture the robot is at, so
+        GPSR docks at the same per-surface distances as PPC. None when it is not a
+        dockable surface (bed, sofa, seats, bins, appliances, unknown names): a dock
+        there finds no face and burns its timeout."""
+        if self._at_shelf_furniture():
+            return "shelf"
+        loc = (self.last_location or "").lower()
+        if "dishwasher" in loc or "cooking_table" in loc:
+            return "dishwasher"  # close front: PPC docks its cooking table the same way
+        if "counter" in loc:
+            return "counter"
+        if any(hint in loc for hint in TABLE_FURNITURE_HINTS):
+            return "table"
+        return None
+
+    def _dock_here(self) -> None:
+        """Planned dock at the furniture in front, once per stop: pick and place at
+        the same stop reuse it. The arm must be tucked (nav_pose) while docking."""
+        if self._docked_here:
+            return
+        self._docked_here = True
+        surface = self._surface_type()
+        if surface is None:
+            self.subtask_manager.nav.node.get_logger().info(
+                f"No dock at '{self.last_location}': not a dockable surface"
+            )
+            return
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        self.subtask_manager.nav.dock_table(surface_type=surface)
+        self._shelf_measured = False  # the base moved: rescan the shelf
 
     def _measure_shelf(self) -> None:
         """Scan the shelf in front of the robot, once per stop."""
@@ -200,7 +238,8 @@ class GPSRSingleTask(GenericTask):
         """
         if isinstance(command, dict):
             command = PickObject(**command)
-        self.subtask_manager.nav.dock_table()
+        # Shelves need room for the arm to reach in; tables are docked close.
+        self._dock_here()
         self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
 
         if self._at_shelf_furniture():
@@ -323,6 +362,7 @@ class GPSRSingleTask(GenericTask):
 
         place_retries = 0
         self.subtask_manager.hri.say("I will place the object.", wait=False)
+        self._dock_here()
 
         if self._at_shelf_furniture():
             self._measure_shelf()

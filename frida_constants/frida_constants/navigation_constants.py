@@ -41,7 +41,7 @@ PATROL_SCAN_YAW_TOLERANCE = 35.0  # deg of heading error still counted as scanne
 ### Move to location service
 MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
 
-### Dock to table/shelf service (nav_central -> table_docker), with desired offset
+### Dock to table/shelf service (nav_central -> table_docker): surface type + optional target
 DOCK_TABLE_SERVICE = "/navigation/dock_table"
 GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 
@@ -70,6 +70,13 @@ UNDOCK_SERVICE = (
 DOCK_PREVIEW_SERVICE = (
     "/navigation/preview_dock"  # std_srvs/Trigger: detect + show markers, no motion
 )
+# table_docker's typed dock (frida_interfaces/DockTable): the whole request travels in
+# the call and the diagnostics come back in the response. nav_central forwards
+# DOCK_TABLE_SERVICE here (after resuming nav2).
+DOCKER_DOCK_TABLE_SERVICE = "/table_docker/dock_table"
+# nav2 costmaps whose `footprint` parameter is the single source of the robot outline.
+LOCAL_COSTMAP_PARAMS = "/local_costmap/local_costmap"
+GLOBAL_COSTMAP_PARAMS = "/global_costmap/global_costmap"
 DOCKED_TOPIC = "/navigation/docked"  # std_msgs/Bool (latched): currently docked?
 RETREAT_DISTANCE = 0.2  # m the base backs off on undock (table_docker retreat_distance)
 POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
@@ -114,8 +121,6 @@ FOLLOW_GOAL_UPDATE_TIMEOUT = (
 )
 FOLLOW_ACTION_SERVER_TIMEOUT = 3.0  # Wait for NavigateToPose action server
 
-# Default docking offset (table_docker front_offset).
-DEFAULT_DOCK_OFFSET = 0.16
 
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
