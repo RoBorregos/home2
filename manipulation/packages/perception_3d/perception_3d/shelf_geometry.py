@@ -39,6 +39,7 @@ class ShelfParams:
     wall_bin: float = 0.02
     min_wall_points: int = 40
     wall_min_height: float = 0.25  # back wall
+    back_wall_min_width_fraction: float = 0.30  # a tall back wall spans this much
     # Side walls are seen at a grazing angle: often only one compartment of them.
     side_wall_min_height: float = 0.15
     wall_search: float = 0.20  # a wall must sit within this of the boards' extent
@@ -314,7 +315,10 @@ def _walls(
         y_lo, y_hi = _extent(strip[:, 1])
         tall = z_hi - z_lo >= p.wall_min_height
         wide = y_hi - y_lo >= p.min_width_fraction * width
-        if not (tall or wide):
+        # Tall alone is not enough: an object's face near the back is tall too (on
+        # the robot a 14 cm wide box beat the full-width back panel 7 cm behind it).
+        some_width = y_hi - y_lo >= p.back_wall_min_width_fraction * width
+        if not (wide or (tall and some_width)):
             continue
         if found["back"] is None or x_peak < found["back"]:
             found["back"] = x_peak  # the nearest tall plane behind the boards
@@ -388,17 +392,17 @@ def detect_shelf(
     if not candidates:
         raise ShelfNotFound("no horizontal surface in view")
 
-    # Reference width: the side walls when both are seen, else the widest surface.
-    widest = max(c["y"][1] - c["y"][0] for c in candidates)
-    y_all = (min(c["y"][0] for c in candidates), max(c["y"][1] for c in candidates))
-    back_all = max(c["x"][1] for c in candidates)
-    # Where the shelf starts, from the surfaces wide enough to be boards (not objects).
+    # The shelf's extent comes from the surfaces that look like boards: solid and
+    # about as wide as the widest solid one. A sparse surface (the floor's edge at
+    # z=0.05 on the robot, 1.3 m wide and 24 % filled) or an object's top otherwise
+    # stretches the extent and pushes the real side wall out of the search.
+    solid = [c for c in candidates if c["fill"] >= p.min_fill_fraction] or candidates
+    widest = max(c["y"][1] - c["y"][0] for c in solid)
     board_like = [
-        c
-        for c in candidates
-        if c["y"][1] - c["y"][0] >= p.min_width_fraction * widest
-        and c["fill"] >= p.min_fill_fraction
-    ] or candidates
+        c for c in solid if c["y"][1] - c["y"][0] >= p.min_width_fraction * widest
+    ]
+    y_all = (min(c["y"][0] for c in board_like), max(c["y"][1] for c in board_like))
+    back_all = max(c["x"][1] for c in board_like)
     walls, wall_top = _walls(
         points[vertical_mask],
         normals[vertical_mask],

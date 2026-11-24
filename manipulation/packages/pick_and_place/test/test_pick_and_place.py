@@ -1646,3 +1646,39 @@ def test_a_shelf_pick_that_cannot_back_out_never_plans_the_return(strategies):
     )
     assert not success
     assert arm.named_positions == []  # no table_stare from inside the shelf
+
+
+def test_a_shelf_pick_clears_the_scene_but_keeps_the_shelf_before_backing_out(
+    strategies,
+):
+    # Robot: the approach left the hand in the neighbours' spheres, so the exit's
+    # first waypoint was already in collision ("Cartesian planner completed 0.0").
+    perception = FakePerception(
+        located_point=make_point(z=0.50),
+        cluster=bottle_cluster(),
+        grasps=[([make_pose()], [0.9])],
+    )
+    arm = FakeArm(link_pose=_shelf_exit_pose())
+    success, _ = run_pick(
+        arm,
+        perception,
+        strategies,
+        object_name="bottle",
+        is_shelf=True,
+        shelf=make_shelf(SHELF),
+        in_configuration=True,
+    )
+    assert success
+    attach = arm.calls.index("attach_pick_object")
+    after = arm.calls[attach:]
+    clean = after.index("remove_all_collision_objects")
+    assert after.index("set_shelf_boxes") > clean  # the shelf goes back in
+    assert after.index("clear_octomap") > clean
+    assert after.index("move_to_pose") > after.index("set_shelf_boxes")
+
+
+def test_a_blocked_lift_logs_what_the_hand_collides_with():
+    arm = FakeArm(link_pose=_frontal_exit_pose(), move_to_pose_results=[False])
+    arm.contacts = ["left_finger <-> other_ 0.63 0.33 0.98"]
+    assert not pick_pipeline._shelf_exit(arm, SHELF_TUNING, front_x=0.48)
+    assert any("other_ 0.63" in m for m in arm.logger.warn_messages)

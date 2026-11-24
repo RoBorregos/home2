@@ -355,3 +355,28 @@ def test_assumed_walls_grow_outward_not_inward():
     # A seen wall keeps the thin box.
     seen = _wall_boxes(detect_shelf(shelf_frames()))["wall_left"]
     assert seen.size[1] == pytest.approx(p.wall_thickness + p.padding)
+
+
+def test_sparse_floor_edge_does_not_stretch_the_shelf():
+    # On the robot the floor's edge (z=0.05) showed up 1.3 m wide but 24 % filled: it
+    # set the boards' extent and the real right wall, 29 cm inside it, was dropped.
+    floor = np.vstack(
+        [
+            _patch(np.arange(0.35, 0.50, STEP), np.arange(y0, y0 + 0.2, STEP), [0.05])
+            for y0 in (-0.75, 0.45)
+        ]
+    )
+    frames = _with(shelf_frames(objects=False, top=False), 1, floor)
+    geometry = detect_shelf(frames, ShelfParams(z_min=0.02))
+    assert geometry.has_left_wall and geometry.has_right_wall
+    assert abs(geometry.y_min + Y_HALF) < 0.02 and abs(geometry.y_max - Y_HALF) < 0.02
+
+
+def test_tall_object_face_near_the_back_is_not_the_back_wall():
+    # On the robot a 14 cm wide, 30 cm tall box face beat the real back panel.
+    face = _patch(
+        [BACK - 0.07], np.arange(-0.35, -0.21, STEP), np.arange(0.40, 0.70, STEP)
+    )
+    geometry = detect_shelf(_with(shelf_frames(), 1, face))
+    assert geometry.has_back_wall
+    assert abs(geometry.back_x - BACK) < 0.02, geometry.back_x

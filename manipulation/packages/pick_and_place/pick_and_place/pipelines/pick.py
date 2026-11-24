@@ -202,6 +202,7 @@ def _pick(
             outcome.place_top_down = True
             outcome.object_pick_height = _top_down_pick_height(outcome.object_height)
     if request.is_shelf:
+        _scene_for_shelf_exit(arm, request.shelf)
         front_x = getattr(request.shelf, "front_x", None)
         if not _shelf_exit(arm, strategies[PICK_STRATEGY_SHELF].profile.shelf, front_x):
             # A planned return from inside the compartment swings the arm into the
@@ -645,6 +646,22 @@ def _top_down_pick_height(object_height: float) -> float:
 # ======================================================================
 
 
+def _scene_for_shelf_exit(arm, shelf_scan) -> None:
+    """Leave only the shelf boxes and the held object in the scene for the way out.
+
+    The cartesian approach is not collision checked, so the hand ends up inside the
+    neighbours' spheres (``other_*``) and the octomap of what it holds. Every exit
+    plan then fails from its first waypoint (on the robot: "Cartesian planner
+    completed 0.0"), and the old fallback planned the return from inside the
+    shelf, swinging the wrist into the walls. Backing out retraces the way in, so
+    those obstacles protect nothing there.
+    """
+    arm.remove_all_collision_objects(attached=False)  # the held object stays
+    if shelf_scan is not None:
+        arm.set_shelf_boxes(shelf_scan.boxes)
+    arm.clear_octomap()
+
+
 def _shelf_exit(arm, shelf, front_x: Optional[float] = None) -> bool:
     """Lift off the board, then back out along the way in, as straight MoveIt paths.
 
@@ -664,7 +681,11 @@ def _shelf_exit(arm, shelf, front_x: Optional[float] = None) -> bool:
     with arm.phase("shelf_exit"):
         target = _straight_move(arm, target, np.array([0.0, 0.0, shelf.exit_lift]))
         if target is None:
-            arm.logger.warn("Shelf exit: could not lift off the board")
+            contacts = arm.scene_contacts()
+            arm.logger.warn(
+                "Shelf exit: could not lift off the board; current state "
+                + (f"collides: {contacts}" if contacts else "is collision free")
+            )
             return False
         if norm < 0.5:  # a steep grasp has no meaningful "straight back"
             return True
