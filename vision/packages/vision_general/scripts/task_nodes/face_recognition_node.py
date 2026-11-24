@@ -37,6 +37,9 @@ MAX_DEGREE = 1
 TALKING_CROP_MARGIN = 0.25
 # Longest crop side sent to is_talking; keeps a request under the 8 MB iceoryx chunk.
 TALKING_CROP_MAX_SIZE = 192
+# Faces narrower than this (px) are background faces: MediaPipe rarely finds their
+# landmarks, and their requests only delay the answers for the people talking.
+TALKING_MIN_FACE_WIDTH = 30
 # A track not seen for this long is dropped, and its crops restart if it reappears.
 TALKING_TRACK_GAP_SEC = 0.5
 # New crops a face needs before its window is sent to is_talking again.
@@ -163,6 +166,8 @@ class FaceRecognition(VisionRuntime):
     def _add_talk_crop(self, frame, bbox, name, now):
         """Append this face's crop to its track (the nearest one, or a new one)."""
         x1, y1, x2, y2 = bbox
+        if x2 - x1 < TALKING_MIN_FACE_WIDTH:
+            return
         cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
         # Scale with face size so a moving close face stays one track.
         threshold = max(TRACK_THRESHOLD, (x2 - x1) / 2)
@@ -181,7 +186,6 @@ class FaceRecognition(VisionRuntime):
                 "crops": deque(maxlen=TALKING_REQUEST_FRAMES),
                 "new": 0,
                 "talking": False,
-                "was_talking": False,
             }
             self.talk_tracks.append(track)
         elif now - track["seen"] > TALKING_TRACK_GAP_SEC:
@@ -216,9 +220,11 @@ class FaceRecognition(VisionRuntime):
             if not future.done():
                 self.is_talking_client.remove_pending_request(future)
                 continue
-            track["was_talking"], track["talking"] = (
-                track["talking"],
-                future.result().is_talking,
+            track["talking"] = future.result().is_talking
+            # TODO(remove before PR): answer timing, testing only.
+            self.get_logger().info(
+                f"is_talking {track['name']}@{track['x']:.0f}: {track['talking']} "
+                f"in {now - track['sent']:.2f}s"
             )
             if track["talking"] and gen == self.talker_gen:
                 self._set_last_talker(track)
@@ -241,6 +247,7 @@ class FaceRecognition(VisionRuntime):
                 self.bridge.cv2_to_imgmsg(crop, "bgr8") for crop in track["crops"]
             ]
             track["new"] = 0
+            track["sent"] = now  # TODO(remove before PR): answer timing, testing only.
             # is_talking answers one request at a time.
             deadline = now + IS_TALKING_TIMEOUT * (len(self.talk_pending) + 1)
             self.talk_pending.append(
@@ -270,12 +277,14 @@ class FaceRecognition(VisionRuntime):
 
     def _set_last_talker(self, track):
         prev = self.last_talker
-        # A window still holds a few seconds of whoever just stopped talking,
-        # so a face that keeps talking only takes over if the talker left.
+        # Keep the current talker while its own latest answer still says talking;
+        # once it is silent (or gone), whoever talks takes over.
         if (
-            track["was_talking"]
-            and prev is not None
-            and any(self._same_person(prev, t) for t in self.talk_tracks)
+            prev is not None
+            and not self._same_person(prev, track)
+            and any(
+                t["talking"] and self._same_person(prev, t) for t in self.talk_tracks
+            )
         ):
             return
         self.last_talker = {
