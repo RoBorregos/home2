@@ -325,11 +325,20 @@ class TableDocker(Node):
         self.predock_distance = self.declare_parameter("predock_distance", 0.20).value
         # Skip MPPI when already this close to the pre-dock pose.
         self.predock_skip = self.declare_parameter("predock_skip", 0.06).value
-        self.motion_timeout = self.declare_parameter("motion_timeout", 45.0).value
+        self.motion_timeout = self.declare_parameter("motion_timeout", 15.0).value
         # Whole dock request (detect + every motion leg + straight-in + refinements).
         # Keep it below nav_central's wait on the dock service (120 s) so the robot
         # never keeps driving after the caller gave up on it.
         self.dock_timeout = self.declare_parameter("dock_timeout", DOCK_BUDGET).value
+        # Seconds of dock_timeout kept back for the final straight-in.
+        self.servo_reserve = self.declare_parameter("servo_reserve", 8.0).value
+        # Fast path: servo straight in (no MPPI) when the dock pose is close and the sweep is free.
+        self.use_fast_path = self.declare_parameter("use_fast_path", True).value
+        self.fast_path_max_dist = self.declare_parameter("fast_path_max_dist", 0.8).value
+        self.fast_path_max_yaw = self.declare_parameter("fast_path_max_yaw", 0.5).value
+        # Relaxed tolerances (rad, m) to accept a dock inside the reach band when time runs out.
+        self.degraded_yaw_tol = self.declare_parameter("degraded_yaw_tol", 0.10).value
+        self.degraded_lateral_tol = self.declare_parameter("degraded_lateral_tol", 0.08).value
         self.goal_checker = self.declare_parameter("goal_checker", "general_goal_checker").value
         # MPPI only has to reach the pre-dock neighbourhood; the straight-in
         # controller corrects the rest against the re-detected face.
@@ -341,7 +350,7 @@ class TableDocker(Node):
         self.max_motion_legs = int(self.declare_parameter("max_motion_legs", 2).value)
         self.replan_shift = self.declare_parameter("replan_shift", 0.15).value
         # Once docked, re-detect up close and correct if the plan moves > refine_shift.
-        self.refine_passes = int(self.declare_parameter("refine_passes", 2).value)
+        self.refine_passes = int(self.declare_parameter("refine_passes", 1).value)
         self.refine_shift = self.declare_parameter("refine_shift", 0.03).value
         # Close-range re-detection only looks at the strip the arm will work on.
         self.refine_fov_deg = self.declare_parameter("refine_fov_deg", 50.0).value
@@ -401,7 +410,7 @@ class TableDocker(Node):
         self.min_wz = self.declare_parameter("min_wz", 0.06).value
         self.min_vy = self.declare_parameter("min_vy", 0.04).value
         self.control_rate = self.declare_parameter("control_rate", 15.0).value
-        self.approach_timeout = self.declare_parameter("approach_timeout", 40.0).value
+        self.approach_timeout = self.declare_parameter("approach_timeout", 12.0).value
         self.settle_cycles = int(self.declare_parameter("settle_cycles", 3).value)
         self.max_tf_fail = int(self.declare_parameter("max_tf_fail", 30).value)
 
@@ -436,6 +445,10 @@ class TableDocker(Node):
         self._target_z = None   # target height above base_link (m), for the reach check
         self._blocked = None    # what blocks the ideal dock pose (see _diagnose_block)
         self._dock_deadline = math.inf  # node-clock s; set for the duration of a dock
+        self._timings = {}  # node-clock s per dock phase, reported in last_result
+        self._path_used = ""  # how the base reached the dock: fast | straight | local A* | planner
+        self._degraded = False  # docked inside the reach band without converging
+        self._active_profile = None
         self._costmap = None
         # Lethal cells seen since the current request started (odom cell keys).
         # Thin obstacles (chair legs) get raytraced out of nav2's costmap as soon
@@ -748,6 +761,21 @@ class TableDocker(Node):
     def _out_of_time(self):
         return self._now() > self._dock_deadline
 
+    def _motion_deadline(self, timeout):
+        """Like _deadline() but leaves servo_reserve for the straight-in."""
+        return min(self._now() + timeout, self._dock_deadline - self.servo_reserve)
+
+    def _no_motion_time(self):
+        return self._now() > self._dock_deadline - self.servo_reserve
+
+    def _cap(self, timeout, reserve=0.0):
+        """`timeout` shrunk to the time left in the dock minus `reserve` (>= 0.05 s)."""
+        return max(0.05, min(timeout, self._dock_deadline - reserve - self._now()))
+
+    def _time(self, phase, t0):
+        """Add the node-clock time since `t0` to `phase` in the dock timings."""
+        self._timings[phase] = self._timings.get(phase, 0.0) + self._now() - t0
+
     def _publish_docked(self):
         self.docked_pub.publish(Bool(data=self.docked))
 
@@ -807,8 +835,7 @@ class TableDocker(Node):
         if cloud is None or not _HAVE_PC2:
             return np.empty((0, 2))
         try:
-            raw = pc2.read_points(cloud, field_names=("x", "y", "z"), skip_nans=True)
-            arr = np.array([[p[0], p[1], p[2]] for p in raw], dtype=float)
+            arr = pc2.read_points_numpy(cloud, field_names=("x", "y", "z"), skip_nans=True).astype(float)
             if arr.size == 0:
                 return np.empty((0, 2))
             if len(arr) > 6000:
@@ -1303,7 +1330,7 @@ class TableDocker(Node):
         r.timeout.sec = int(cfg["timeout"])
         r.timeout.nanosec = int((cfg["timeout"] % 1.0) * 1e9)
         future = self.ik_client.call_async(req)
-        if not self._wait(future, cfg["timeout"] + 1.0) or future.result() is None:
+        if not self._wait(future, self._cap(cfg["timeout"] + 0.3)) or future.result() is None:
             self.log("warn", "Reach check: no answer from the IK service")
             return None
         return future.result().error_code.val == 1  # MoveItErrorCodes.SUCCESS
@@ -1532,16 +1559,16 @@ class TableDocker(Node):
                     return path, "local A*"
         # Still nothing: let the global planner route around (goal given in odom;
         # the planner transforms it into the map frame).
-        if not self.plan_client.wait_for_server(timeout_sec=2.0):
+        if not self.plan_client.wait_for_server(timeout_sec=self._cap(1.0, self.servo_reserve)):
             return None, "planner unavailable"
         g = ComputePathToPose.Goal()
         g.goal = self._pose_msg(self.odom_frame, *goal)
         g.planner_id = "GridBased"
         send = self.plan_client.send_goal_async(g)
-        if not self._wait(send, 5.0) or not send.result().accepted:
+        if not self._wait(send, self._cap(2.0, self.servo_reserve)) or not send.result().accepted:
             return None, "planner rejected"
         res = send.result().get_result_async()
-        if not self._wait(res, 10.0) or not res.result().result.path.poses:
+        if not self._wait(res, self._cap(4.0, self.servo_reserve)) or not res.result().result.path.poses:
             return None, "no path"
         path = res.result().result.path
         grid = self._fresh_grid()
@@ -1619,6 +1646,7 @@ class TableDocker(Node):
         path, how = self._approach_path(plan)
         if path is None:
             return False, how
+        self._path_used = how
         self.path_pub.publish(path)
         if how != "straight" and self.follow_detours:
             # The straight line was blocked, so this path skirts obstacles, often
@@ -1639,7 +1667,7 @@ class TableDocker(Node):
                 return False, "FollowPath rejected (nav2 paused?)"
             handle = send.result()
             res = handle.get_result_async()
-            end = self._deadline(self.motion_timeout)
+            end = self._motion_deadline(self.motion_timeout)
             ignore = self._face_ignore()
             guard = self._fp_samples
             tick = 0
@@ -1686,7 +1714,7 @@ class TableDocker(Node):
         pts = np.asarray(pts, dtype=float)
         n = len(pts)
         dt = 1.0 / self.control_rate
-        deadline = self._deadline(self.motion_timeout)
+        deadline = self._motion_deadline(self.motion_timeout)
         ignore = self._face_ignore()
         idx = tick = tf_fail = 0
         while rclpy.ok():
@@ -2038,6 +2066,9 @@ class TableDocker(Node):
             self._plan = None
             self._blocked = None
         self._dock_deadline = self._now() + self.dock_timeout
+        self._timings, self._path_used, self._degraded = {}, "", False
+        self._active_profile = profile
+        t_start = self._now()
         self._near_surface = False
         self._contact = False
         start_pose = self._robot_pose(self.odom_frame)
@@ -2056,10 +2087,12 @@ class TableDocker(Node):
                 if self._near_surface:
                     self.log("warn", "Dock failed touching/next to something; the next "
                                      "undock backs off")
+            self._timings["total"] = self._now() - t_start
             self._record_result(response)
             return response
         finally:
             self._dock_deadline = math.inf
+            self._active_profile = None
             with self._lock:
                 self._remember = False
                 self._memory = {}
@@ -2069,6 +2102,7 @@ class TableDocker(Node):
 
     def _dock(self, profile, response):
         start = self.get_clock().now()
+        t0 = self._now()
         fit = self._detect_and_lock(profile.shape)
         if fit is not None and profile.shape == "auto":
             # Re-detections must not flip between a line and a circle.
@@ -2077,6 +2111,7 @@ class TableDocker(Node):
         # on activation) so thin obstacles such as chair legs are in it.
         if not self._wait_costmap(start + Duration(seconds=0.5)):
             self.log("warn", "No fresh local costmap; planning without collision check")
+        self._time("detect", t0)
         if fit is None:
             self._publish_markers(None, None)
             response.success = False
@@ -2091,6 +2126,7 @@ class TableDocker(Node):
         self._publish_markers(self._face_in_base(), None, contour=fit["contour"])
 
         # (a) base placement
+        t0 = self._now()
         plan = self._plan_dock(profile)
         if plan is None and self.blocked_wait > 0.0:
             # Usually a person standing where the base should go (an operator, a
@@ -2101,7 +2137,7 @@ class TableDocker(Node):
             # voxel layer decays) would vanish and the spot would look free.
             self.log("warn", f"No free dock pose; waiting up to {self.blocked_wait:.0f}s "
                              f"for the spot to clear (someone standing there?)")
-            end = self._deadline(self.blocked_wait)
+            end = self._motion_deadline(self.blocked_wait)
             waited_from = self._now()
             while plan is None and self._now() < end:
                 time.sleep(1.0)
@@ -2113,6 +2149,7 @@ class TableDocker(Node):
                 plan = self._plan_dock(profile)
             if plan is not None:
                 self.log("info", "Dock spot cleared; continuing")
+        self._time("plan", t0)
         if plan is None:
             self._stop()
             response.success = False
@@ -2123,11 +2160,15 @@ class TableDocker(Node):
                          f"cost={plan['cost']} ({plan['n_valid']}/{plan['n_total']} candidates free"
                          + ("" if plan["checked"] else ", no costmap") + ")")
 
-        # (b) MPPI to the pre-dock pose, re-detecting + re-planning on arrival
-        if self.use_planned_motion:
+        # (b) Fast path straight in, else MPPI to the pre-dock pose with re-planning on arrival
+        t0 = self._now()
+        if self._fast_path_ok(plan):
+            self._path_used = "fast"
+            self.log("info", "Fast path: dock pose close and the straight sweep is free; no MPPI")
+        elif self.use_planned_motion:
             for leg in range(1, self.max_motion_legs + 1):
-                if self._out_of_time():
-                    self.log("warn", f"Dock timeout ({self.dock_timeout:.0f}s) before motion leg {leg}")
+                if self._no_motion_time():
+                    self.log("warn", f"Dock budget ({self.dock_timeout:.0f}s) left no time for motion leg {leg}")
                     break
                 ok, msg = self._drive_to_predock(plan)
                 if not ok and leg < self.max_motion_legs:
@@ -2154,28 +2195,25 @@ class TableDocker(Node):
         # The servo moves in a straight line, so it only runs when that sweep is
         # clear (e.g. never cuts across a round table after MPPI stopped short).
         safe, why = self._servo_path_safe(plan)
-        if not safe and self.use_planned_motion and not self._out_of_time():
+        if not safe and self.use_planned_motion and not self._no_motion_time():
             # MPPI stopped inside its loose tolerance where the straight sweep grazes
             # something (tight spot): one more, tighter MPPI leg before giving up.
             self.log("warn", f"Straight-in blocked ({why}); tighter MPPI leg to the pre-dock")
             ok, msg = self._drive_to_predock(plan, self.precise_xy_tol / 2, self.precise_yaw_tol / 2)
             self.log("info" if ok else "warn", f"Approach motion (tight): {msg}")
             safe, why = self._servo_path_safe(plan)
-        if not safe:
+        self._time("motion", t0)
+        if not safe or self._out_of_time():
             self._stop()
-            response.success = False
-            response.message = f"No safe straight-in to the planned dock pose ({why})"
-            self.log("error", response.message)
-            return response
-        if self._out_of_time():
-            self._stop()
-            response.success = False
-            response.message = f"Dock timed out ({self.dock_timeout:.0f}s) before the straight-in"
-            self.log("error", response.message)
-            return response
+            ok, msg = self._good_enough(f"No safe straight-in to the planned dock pose ({why})" if not safe
+                                        else f"Dock timed out ({self.dock_timeout:.0f}s) before the straight-in")
+            return self._finish(response, ok, msg)
+        t0 = self._now()
         ok, msg = self._servo(plan)
-        for _ in range(self.refine_passes if ok else 0):
-            if self._out_of_time():
+        self._time("servo", t0)
+        t0 = self._now()
+        for _ in range(self.refine_passes if ok and not self._degraded else 0):
+            if self._no_motion_time():
                 break
             # Flat faces: look only at the strip ahead (a round table needs its arc).
             new, shift = self._replan(profile, plan, narrow=profile.shape == "line")
@@ -2189,13 +2227,18 @@ class TableDocker(Node):
                 break
             plan = new
             ok, msg = self._servo(plan)
+        self._time("refine", t0)
+        return self._finish(response, ok, msg)
+
+    def _finish(self, response, ok, msg):
+        """Stop, publish the docked state and fill the Trigger response."""
         self._stop()
         if ok:
             self.docked = True
             self._publish_docked()
         response.success = ok
         response.message = msg
-        self.log("info" if ok else "error", msg)
+        self.log(("warn" if self._degraded else "info") if ok else "error", msg)
         return response
 
     def _record_result(self, response):
@@ -2219,6 +2262,9 @@ class TableDocker(Node):
             "blocker": None,
             "blocker_frame": "",
             "blocker_side": "",
+            "degraded": self._degraded,
+            "path": self._path_used,
+            "timings": {k: round(v, 2) for k, v in self._timings.items()},
         }
         if response.success:
             gap = self._live_front_clearance()
@@ -2251,6 +2297,44 @@ class TableDocker(Node):
         R, t = Rt
         p = R @ np.array([float(xy[0]), float(xy[1]), 0.0]) + t
         return "map", [float(p[0]), float(p[1])]
+
+    def _dock_errors(self):
+        """(gap, yaw_err, lateral_err) of the base against the current plan, or None."""
+        pb = self._plan_in_base()
+        if pb is None:
+            return None
+        n, q = pb["normal"], pb["q"]
+        e_yaw = reduce_angle_mod_pi(math.atan2(n[1], n[0]))
+        gap = float(n @ q) - self.front
+        front = self._live_front_clearance()
+        if front is not None and abs(e_yaw) < 0.1:
+            gap = min(gap, front)
+        return gap, e_yaw, float(q[1])
+
+    def _good_enough(self, why):
+        """(ok, msg): accept the current pose as a degraded dock if it is inside the reach band."""
+        err = self._dock_errors()
+        prof = self._active_profile
+        if self._contact or err is None or prof is None or not ap.in_reach_band(
+                *err, prof, self.degraded_yaw_tol, self.degraded_lateral_tol):
+            return False, why
+        self._degraded = True
+        return True, (f"Docked (degraded: {why}): gap={err[0]:.3f}m "
+                      f"yaw_err={math.degrees(err[1]):.1f}deg lateral={err[2]:.3f}m")
+
+    def _fast_path_ok(self, plan):
+        """Whether the servo can go straight to the dock pose: close, small turn, free sweep."""
+        if not self.use_fast_path:
+            return False
+        start = self._robot_pose(self.odom_frame)
+        if start is None:
+            return False
+        goal = plan["pose"]
+        dyaw = abs((goal[2] - start[2] + math.pi) % (2 * math.pi) - math.pi)
+        if math.hypot(goal[0] - start[0], goal[1] - start[1]) > self.fast_path_max_dist \
+                or dyaw > self.fast_path_max_yaw:
+            return False
+        return self._servo_path_safe(plan)[0]
 
     def _servo_path_safe(self, plan, blind_limit=0.30):
         """Whether the straight sweep from here to the planned pose is collision-free
@@ -2317,7 +2401,7 @@ class TableDocker(Node):
                 self._publish_markers(self._face_in_base(), None)
             if self._now() > deadline:
                 self._stop()
-                return False, "Dock timed out before converging"
+                return self._good_enough("Dock timed out before converging")
 
             pb = self._plan_in_base()
             if pb is None:

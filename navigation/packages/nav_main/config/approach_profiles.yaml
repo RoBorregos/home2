@@ -70,7 +70,7 @@ reach_check:
   group: xarm6                  # frida_pymoveit2.robots.xarm6.MOVE_GROUP_ARM
   ik_link: gripper_grasp_frame  # manipulation_constants.GRASP_LINK_FRAME
   timeout: 0.1                  # s per IK request
-  max_candidates: 6             # best-ranked candidates checked per plan
+  max_candidates: 3             # best-ranked candidates checked per plan
   grasps:
     # xyzw quaternions in base_link, as manipulation's place pipeline uses them
     top:   {quat: [0.0, 1.0, 0.0, 0.0], pregrasp: 0.10}
