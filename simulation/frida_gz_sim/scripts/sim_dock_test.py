@@ -43,6 +43,7 @@ from rclpy.time import Time
 from tf2_ros import Buffer, TransformListener
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from frida_constants.navigation_constants import (
+    DOCK_BUDGET,
     GO_TO_POSE_SERVICE,
     MOVE_LOCATION_SERVICE,
 )
@@ -156,6 +157,16 @@ SCENARIOS = {
         "check": "point",
     },
 }
+
+
+def docker_last_result():
+    """table_docker's `last_result` JSON (timings, path, degraded) as a dict, {} if unavailable."""
+    try:
+        out = subprocess.run(["ros2", "param", "get", "/table_docker", "last_result"],
+                             capture_output=True, text=True, timeout=15).stdout
+        return json.loads(out.split("is:", 1)[1].strip()) if "is:" in out else {}
+    except (subprocess.SubprocessError, FileNotFoundError, ValueError):
+        return {}
 
 
 def gazebo_pose(model="frida", attempts=6):
@@ -537,6 +548,12 @@ class SimDockTest(Node):
                 b.header.frame_id,
             ]
         res["dock_result"] = diag
+        if sc["check"] != "point":
+            last = docker_last_result()
+            res["docker"] = {k: last.get(k) for k in ("path", "degraded", "timings")}
+            total = (last.get("timings") or {}).get("total")
+            # Node-clock time, so a slow simulation does not fail it.
+            res["checks"]["within_budget"] = total is not None and total <= DOCK_BUDGET + 1.0
         if sc["check"] != "point" and sc.get("target"):
             # The DockTable diagnostics must match what the sim knows: the chair
             # blocks the island target, nothing blocks the others.
@@ -566,12 +583,25 @@ class SimDockTest(Node):
             self.save()
         passed = sum(r["passed"] for r in self.results)
         self.get_logger().info(f"Dock test: {passed}/{len(self.results)} passed")
+        self.log_timings()
         for r in self.results:
             self.get_logger().info(
                 f"  {r['name']}: {'PASS' if r['passed'] else 'FAIL'} "
                 f"{ {k: v for k, v in r.items() if k not in ('name', 'passed')} }"
             )
         return passed == len(self.results)
+
+    def log_timings(self):
+        """Per-phase dock time summary (median / max, node-clock s) across the scenarios."""
+        runs = [(r["name"], (r.get("docker") or {}).get("timings") or {}) for r in self.results]
+        runs = [(n, t) for n, t in runs if t]
+        if not runs:
+            return
+        for phase in sorted({p for _, t in runs for p in t}):
+            vals = [t[phase] for _, t in runs if phase in t]
+            worst = max(runs, key=lambda nt: nt[1].get(phase, -1.0))[0]
+            self.get_logger().info(f"  t_{phase}: median={float(np.median(vals)):.1f}s "
+                                   f"max={max(vals):.1f}s ({worst})")
 
     def save(self):
         os.makedirs(os.path.dirname(RESULTS), exist_ok=True)
