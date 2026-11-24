@@ -713,9 +713,7 @@ class MotionPlanningServer(Node):
         """Handle requests to get the collision objects in the planning scene"""
         response = GetCollisionObjects.Response()
 
-        self.planner.update_planning_scene()
         planning_scene = self.planner.get_planning_scene()
-        print(planning_scene)
         for collision_object in planning_scene.world.collision_objects:
             new_collision_object = CollisionObject()
             new_collision_object.id = collision_object.id

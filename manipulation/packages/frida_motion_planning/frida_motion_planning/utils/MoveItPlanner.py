@@ -6,6 +6,8 @@ import rclpy
 from frida_motion_planning.utils.Planner import Planner
 from frida_pymoveit2.robots import xarm6
 from geometry_msgs.msg import PoseStamped
+from moveit_msgs.msg import PlanningSceneComponents
+from moveit_msgs.srv import GetPlanningScene
 from pymoveit2 import GripperInterface, MoveIt2, MoveIt2State
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
@@ -432,11 +434,14 @@ class MoveItPlanner(Planner):
     def update_planning_scene(self) -> None:
         self.moveit2.update_planning_scene()
 
-    def get_planning_scene(self) -> None:
-        self.update_planning_scene()  # check the pymoveit2 library
-        return (
-            self.moveit2.planning_scene
-        )  # Return the current planning scene after the update
+    def get_planning_scene(self):
+        # Skip the octomap: serializing it races the octomap updater and segfaults move_group
+        request = GetPlanningScene.Request()
+        request.components.components = (
+            PlanningSceneComponents.WORLD_OBJECT_NAMES
+            | PlanningSceneComponents.WORLD_OBJECT_GEOMETRY
+        )
+        return self.moveit2._get_planning_scene_service.call(request).scene
 
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)
