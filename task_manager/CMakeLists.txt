@@ -11,7 +11,7 @@ find_package(frida_constants REQUIRED)
 find_package(nav2_msgs REQUIRED)
 
 #Install directories
-install(DIRECTORY
+install(DIRECTORY config
   DESTINATION share/${PROJECT_NAME})
 
 ######################### Python  #########################
