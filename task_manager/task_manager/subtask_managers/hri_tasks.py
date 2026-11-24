@@ -153,16 +153,33 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
+def _words(s: str) -> str:
+    return " ".join(re.sub(r"[^\w\s]", " ", s.lower()).split())
+
+
+def is_hotword_echo(text: str, hotwords: str) -> bool:
+    """True if text looks like Whisper echoing (part of) the hotword prompt on silence.
+
+    That is the full hotword string, or 2+ hotwords with no other words ("living room, office").
+    A single echoed hotword can't be told apart from the user saying it.
+    """
+    text, hotwords = text.strip(), hotwords.strip()
+    if not text or text == hotwords:
+        return bool(text)
+    keys = {_words(h) for h in hotwords.split(",")} - {""}
+    said = f" {_words(text)} "
+    found = [k for k in keys if f" {k} " in said]
+    vocab = {w for k in keys for w in k.split()}
+    return len(found) >= 2 and set(said.split()) <= vocab
+
+
 def match_hotwords(text: str, hotwords: str, exclude: str = "") -> str:
     """Return the only hotword (comma-separated list) said in text, "" if none or several.
 
     Hyphens and punctuation count as spaces so "coca-cola" matches "coca cola", and a hotword
     contained in a longer matched one ("tea" in "iced tea") is not counted twice.
     """
-
-    def words(s: str) -> str:
-        return " ".join(re.sub(r"[^\w\s]", " ", s.lower()).split())
-
+    words = _words
     said = f" {words(text)} "
     excluded = words(exclude)
     found = {}
@@ -532,7 +549,7 @@ class HRITasks:
         result = goal_future.result().result
         # On silence or too-short audio the transcription can come back as the hotwords themselves.
         transcription = result.transcription.strip()
-        heard_text = "" if transcription == self.last_hotwords.strip() else transcription
+        heard_text = "" if is_hotword_echo(transcription, self.last_hotwords) else transcription
         execution_status = (
             Status.EXECUTION_SUCCESS if len(heard_text) > 0 else Status.TARGET_NOT_FOUND
         )
@@ -713,7 +730,7 @@ class HRITasks:
                 text = (
                     goal_future.result().result.transcription.strip() if goal_future.done() else ""
                 )
-                if text == self.last_hotwords.strip():
+                if is_hotword_echo(text, self.last_hotwords):
                     text = ""
                 keyword = "no" if heard_no else self.keyword
                 answer = self._interpret_confirmation(
@@ -753,8 +770,9 @@ class HRITasks:
                 if (
                     goal_future.done()
                     and len(goal_future.result().result.transcription.strip()) > 0
-                    and goal_future.result().result.transcription.strip()
-                    != self.last_hotwords.strip()
+                    and not is_hotword_echo(
+                        goal_future.result().result.transcription, self.last_hotwords
+                    )
                 ):
                     words = format_transcription(self.current_transcription)
                     if not self.negation_words.intersection(words) and (
@@ -791,7 +809,7 @@ class HRITasks:
             str: "yes", "no", "" (nothing heard or unclear, ask again) or the corrected value.
         """
         text = (text or "").strip()
-        if text == hotwords.strip():
+        if is_hotword_echo(text, hotwords):
             text = ""
         words = format_transcription(text) if text else []
 
