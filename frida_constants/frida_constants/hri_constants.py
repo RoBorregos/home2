@@ -95,6 +95,8 @@ CATEGORIZE_IDK_THRESHOLD = 0.01
 # STT
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 DEFAULT_HOTWORDS = "Frida, RoBorregos"
+# Finals command phase: biases STT towards the command verbs
+FINALS_HOTWORDS = "where is bring find look stop"
 
 
 # Fundamental frequency range for human voice (Hz)

@@ -356,7 +356,7 @@ nodes natively for normal use — go through `run.sh`.**
 | Change how "go to X" behaves | `nav_central.py` `MoveLocation` handler → Nav2 goal send |
 | Tune driving (speed, smoothness, obstacle avoidance) | `config/omni_config/nav2_omni.yaml` (MPPI critics/limits) |
 | Change SLAM / localization | `omni_setup/{slam,localization}.launch.py` + `mapper_params_*.yaml` |
-| Add/rename a place | `frida_constants/map_areas/areas.json` (+ re-annotate via `nav_ui`) |
+| Add/rename a place | `map_context/maps/areas/areas_<map>.json` (+ re-annotate via `nav_ui`) |
 | Table approach for manipulation | `table_docker.py` + `dock_table()` in `nav_tasks.py` |
 | New competition task that drives around | new `*_task_manager.py` FSM in `task_manager/scripts/`, call `self.subtask_manager.nav.*` |
 | Recovery / blocked-goal behavior | BTs in `nav_main/bt/` + `adaptive_goal_publisher.py` |

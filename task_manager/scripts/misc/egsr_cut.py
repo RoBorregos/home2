@@ -29,8 +29,6 @@ from frida_constants.vision_enums import DetectBy
 import json
 from collections import deque
 
-import os
-from ament_index_python.packages import get_package_share_directory
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 ATTEMPT_LIMIT = 3
@@ -144,9 +142,10 @@ class EGPSRTM(Node):
             ["living_room", "cabinet"],
         ]
 
-        package_share_directory = get_package_share_directory("frida_constants")
         # Load areas from the JSON file
-        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+        file_path = (
+            "/workspace/src/navigation/packages/map_context/maps/areas/area_default_map.json"
+        )
         with open(file_path, "r") as file:
             self.areas = json.load(file)
 
