@@ -92,11 +92,6 @@ class FaceRecognition(VisionRuntime):
         )
 
         self.verbose = self.declare_parameter("verbose", True)
-        # TODO(remove before PR): max_fps is only for measuring CPU on Frida.
-        # Inference cap to save CPU (0 = every frame). Live: ros2 param set
-        # /face_recognition max_fps 10 (also lower TALKING_REQUEST_FRAMES if lowered).
-        self.declare_parameter("max_fps", 0.0)
-        self.last_inference = 0.0
         self.setup()
 
     def setup(self):
@@ -221,11 +216,6 @@ class FaceRecognition(VisionRuntime):
                 self.is_talking_client.remove_pending_request(future)
                 continue
             track["talking"] = future.result().is_talking
-            # TODO(remove before PR): answer timing, testing only.
-            self.get_logger().info(
-                f"is_talking {track['name']}@{track['x']:.0f}: {track['talking']} "
-                f"in {now - track['sent']:.2f}s"
-            )
             if track["talking"] and gen == self.talker_gen:
                 self._set_last_talker(track)
 
@@ -247,7 +237,6 @@ class FaceRecognition(VisionRuntime):
                 self.bridge.cv2_to_imgmsg(crop, "bgr8") for crop in track["crops"]
             ]
             track["new"] = 0
-            track["sent"] = now  # TODO(remove before PR): answer timing, testing only.
             # is_talking answers one request at a time.
             deadline = now + IS_TALKING_TIMEOUT * (len(self.talk_pending) + 1)
             self.talk_pending.append(
@@ -311,12 +300,6 @@ class FaceRecognition(VisionRuntime):
             return
         if self.image is None:
             return
-        # TODO(remove before PR): max_fps throttle, testing only.
-        max_fps = self.get_parameter("max_fps").value
-        now = time.time()
-        if max_fps > 0 and now - self.last_inference < 1.0 / max_fps:
-            return
-        self.last_inference = now
         # Frame id is the source stamp; skip frames already processed.
         self.id = self.image_header.stamp if self.image_header is not None else None
         if self.id is not None and self.id == self.processing_id:
