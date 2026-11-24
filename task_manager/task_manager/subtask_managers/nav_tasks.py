@@ -111,8 +111,7 @@ class NavigationTasks:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self.node)
         # Origin pose captured the first time get_current_pose() succeeds (return_to_origin)
         self._origin_pose = None
-        # Follow-person state reported by person_goal_smoother (latched topic):
-        # idle | following | lost | searching | gave_up. See follow_status().
+        # Follow state from person_goal_smoother: idle|following|lost|searching|gave_up.
         self._follow_status = FOLLOW_STATUS_IDLE
         self._follow_not_following_since = None
         self.node.create_subscription(

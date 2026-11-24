@@ -94,9 +94,7 @@ APPROACH_DIRECT_ALIGN_RANGE = 2.0
 # Max time to wait for the arm pointer to home back to its normal pose before
 # returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
 ARM_HOME_TIMEOUT = 10.0
-# Follow person: the follow BT is re-sent whenever Nav2 finishes it while follow
-# is still active (abort after exhausting its recoveries, rejection, ...). The
-# delay backs off from the first to the second value on consecutive failures.
+# Re-send delay (first, backoff) when Nav2 ends the follow BT while follow is active.
 FOLLOW_RESEND_DELAY = (0.5, 2.0)
 
 
@@ -461,15 +459,12 @@ class Nav_Central(Node):
         if not self._ready_to_drive("Follow Person"):
             return False
 
-        # Fresh session: a goal cached from a previous follow may be far away or
-        # unreachable, and seeding the BT with it made the planner abort before
-        # the GoalUpdater ever swapped in the live one.
+        # Drop goals cached from a previous follow.
         self._latest_goal_update = None
         self._follow_resends = 0
         self._follow_active = True
 
-        # 1. Tell person_goal_smoother to switch Nav2 params to follow mode, and
-        # wait for it: the goal must start under the follow-mode controller limits.
+        # 1. Switch smoother to follow-mode params and wait for it.
         applied, message = self._set_smoother_follow_mode(True)
         if applied:
             self.nav_logger("info", "Follow Person -> smoother set to follow mode")
@@ -583,8 +578,7 @@ class Nav_Central(Node):
             self.destroy_timer(timer)
         if not self._follow_active:
             return
-        # Seed with the live goal (the smoother re-sends it at a heartbeat), else
-        # with the robot's own pose: always reachable.
+        # Seed with the live goal, else the robot's own pose.
         pose = self._latest_goal_update
         if pose is None:
             pose = PoseStamped()
@@ -604,8 +598,7 @@ class Nav_Central(Node):
         if self._follow_resend_timer is not None:
             self.destroy_timer(self._follow_resend_timer)
             self._follow_resend_timer = None
-        # 1. Cancel the running goal (robot stops); wait briefly for the ack so
-        # the controller has released cmd_vel before the params switch back.
+        # 1. Cancel the goal and wait for the ack before restoring params.
         if self._follow_goal_handle is not None:
             try:
                 self._wait(self._follow_goal_handle.cancel_goal_async(), 1.0)

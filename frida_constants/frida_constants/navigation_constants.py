@@ -106,8 +106,7 @@ class SUBTASK_MANAGER(Enum):
 GOAL_UPDATE_TOPIC = "/goal_update"
 FOLLOW_MODE_SERVICE = "/navigation/set_follow_mode"
 FOLLOW_PERSON_NAV_SERVICE = "/navigation/follow_person"
-# person_goal_smoother's follow state, std_msgs/String (latched): one of
-# FOLLOW_STATUS_* below. The task manager polls it to decide when to re-lock.
+# Follow state from person_goal_smoother (latched String, FOLLOW_STATUS_*).
 FOLLOW_STATUS_TOPIC = "/navigation/follow_status"
 FOLLOW_STATUS_IDLE = "idle"  # follow mode off
 FOLLOW_STATUS_FOLLOWING = "following"  # tracker data flowing, goal chasing the person
@@ -126,8 +125,7 @@ FOLLOW_GOAL_UPDATE_TIMEOUT = (
 )
 FOLLOW_ACTION_SERVER_TIMEOUT = 3.0  # Wait for NavigateToPose action server
 
-# Lost-person recovery timings (person_goal_smoother parameter defaults). The task
-# managers wait for the whole recovery before re-locking, so keep them in sync here.
+# Lost-person recovery timings (smoother defaults; task managers wait for them).
 FOLLOW_LOST_GOTO_TIMEOUT = 8.0  # s driving to the last-known position ("lost")
 FOLLOW_SEARCH_TIMEOUT = 15.0  # s sweeping in place there ("searching") before "gave_up"
 # Longest time navigation can stay out of "following" before reporting "gave_up".

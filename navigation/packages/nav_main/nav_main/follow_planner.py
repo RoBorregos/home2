@@ -11,12 +11,10 @@ import math
 
 from nav_main.approach_planner import INSCRIBED, LETHAL
 
-# Costmap cells at or above this are not a goal we send: the planner tolerance
-# would move the goal anyway and MPPI would refuse to drive into them.
+# Costmap cost at or above this is not a valid goal.
 MAX_GOAL_COST = INSCRIBED
 
-# Status strings mirrored from frida_constants.navigation_constants (kept local so
-# this module stays importable without ROS packages on the path).
+# Mirrors frida_constants FOLLOW_STATUS_* (no ROS import needed).
 FOLLOWING = "following"
 LOST = "lost"
 SEARCHING = "searching"

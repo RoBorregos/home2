@@ -31,12 +31,7 @@ HOT_DRINKS = "fanta, water, lipton, coca-cola, soda, lemonade, pepsi, orange jui
 FOLLOW_STOP_KEYWORDS = ["stop", "stop following", "halt", "you can stop"]
 FOLLOW_LISTEN_TIMEOUT = 5.0
 FOLLOW_MAX_DURATION = 180.0
-# Navigation reports the follow state on /navigation/follow_status (nav.follow_status()).
-# On its own it drives to the person's last-known position and sweeps for them
-# ("lost" -> "searching"); only when that fails ("gave_up") or drags on longer than
-# FOLLOW_RELOCK_AFTER_S does the task manager step in and re-lock the tracker. The
-# safety net sits past the smoother's full recovery (lost + search) so the sweep is
-# never cut short.
+# Re-lock only if nav gives up or loss outlasts the smoother's full recovery.
 FOLLOW_RELOCK_AFTER_S = FOLLOW_RECOVERY_MAX_S + 5.0
 FOLLOW_RELOCK_TRIES = 2
 DOOR_WAIT_TIMEOUT = 15.0
@@ -629,9 +624,7 @@ class HRIC_TM(Node):
 
             # Keep following until the guest says a stop keyword. The duration cap is
             # a safety net so a missed "stop" never traps the robot in follow mode.
-            # Between listening windows, check whether navigation lost the guest:
-            # it recovers short losses by itself (last-known position + search), the
-            # task manager only re-locks the tracker when nav gives up.
+            # Re-lock the tracker only when nav gives up.
             follow_start = time.time()
             relocks = 0
             while self.running_task:

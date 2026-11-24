@@ -182,9 +182,7 @@ start_rviz() {
   in_background rviz "ros2 launch frida_gz_sim sim_rviz.launch.py config:=$config"
 }
 
-# Person-following scenarios: a simulated walking person + a stand-in for the vision
-# tracker (same topics/services as tracker_node), then the scenario runner in the
-# foreground. Needs a running --nav sim.
+# Person-follow sim test: fake walker + tracker stand-in (needs a running --nav sim).
 follow_test() {
   docker exec home2-simulation bash -c "pkill -f '[s]im_person'; true" >/dev/null 2>&1 || true
   rm -f logs/sim_person.log logs/sim_person_tracker.log

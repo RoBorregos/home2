@@ -263,8 +263,7 @@ def line_face_candidates(p1, p2, normal, front, half_width, profile, target=None
     length = float(np.linalg.norm(d))
     u = d / length if length > 1e-6 else np.array([-n[1], n[0]])
     yaw = math.atan2(n[1], n[0])
-    # Keep the base mostly in front of the face: centre can go up to
-    # `edge_margin` past each end (default half the base width).
+    # Base centre may go up to `edge_margin` past each end of the face.
     margin = half_width if edge_margin is None else edge_margin
     t_lo, t_hi = -margin, length + margin
     if target is not None:

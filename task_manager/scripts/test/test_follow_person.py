@@ -25,8 +25,7 @@ Usage:
     ros2 run task_manager test_follow_person.py --ros-args -p track:=false
     # offline dry-run (mocks every service call):
     ros2 run task_manager test_follow_person.py --ros-args -p mocked:=true
-    # arm pose while following (default front_low_stare, '' keeps the current pose)
-    # and the pose it returns to after stopping (default nav_pose):
+    # pose: arm pose while following, end_pose: pose after stop ('' skips):
     ros2 run task_manager test_follow_person.py --ros-args -p pose:=front_stare_carry_bag \
         -p end_pose:=nav_carry_bag_pose
 """
@@ -66,8 +65,7 @@ class TestFollowPerson(Node):
         # When True, drive the base/nav follow (nav_central). Set False to test
         # the arm/tracker in isolation (no base motion; nav stack not needed).
         self.nav_follow = self.declare_parameter("nav", True).value
-        # Arm pose for following (camera facing the person, same as the HRIC task
-        # manager) and the pose to return to afterwards. '' skips the move.
+        # Arm pose while following and after; '' skips the move.
         self.pose = self.declare_parameter("pose", "front_low_stare").value
         self.end_pose = self.declare_parameter("end_pose", "nav_pose").value
 

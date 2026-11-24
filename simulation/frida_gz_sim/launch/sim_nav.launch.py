@@ -144,10 +144,7 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    # Person following: the same bridge the robot runs (vision tracker -> Nav2
-    # GoalUpdater, nav2 param switch on /navigation/set_follow_mode). Idle until
-    # nav_central's follow_person service asks for it. The restore pair matches the
-    # profile nav2 is launched with above (limp by default, like the robot today).
+    # Person-follow bridge (same as robot); restore pair matches the launched nav2 profile.
     standard_cfg = nav2_config_file or os.path.join(
         nav_main, "config", "omni_config", "nav2_omni_limp.yaml"
     )

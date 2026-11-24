@@ -354,13 +354,7 @@ class GPSRTask(GenericTask):
                 stop_reason = "stop requested"
                 break
 
-            # Lost-person fallback: get_track_person reports whether the tracker
-            # currently has the target in frame (ReID re-acquisition included), and
-            # nav.follow_status() says what navigation is doing about a loss (it
-            # drives to the last-known position and sweeps for the person by
-            # itself; "gave_up" means that search timed out). Only after
-            # FOLLOW_LOST_TIMEOUT of continuous loss, or when nav gives up, do we
-            # interrupt the follow and renegotiate — brief occlusions self-heal.
+            # Renegotiate only after FOLLOW_LOST_TIMEOUT of loss or when nav gives up.
             nav_gave_up = self.subtask_manager.nav.follow_status() == "gave_up"
             if (
                 self.subtask_manager.vision.get_track_person() == Status.EXECUTION_SUCCESS

@@ -54,9 +54,7 @@ LOGS = "/workspace/sim_logs"
 STAGING_TIMEOUT = 300.0
 SAMPLE_DT = 0.1
 
-# Living-room corridor along y = -9.6: free from x ~ -2.6 to x ~ 4.4 (see the arena
-# map). The wall column at x ~ 1.0..1.6, y ~ -7.4..-9.0 hides the laundry doorway
-# (2.4, -7.6) from a robot standing west of it: that is the corner-turn loss.
+# Corridor y=-9.6, free x -2.6..4.4; wall at x~1.3 hides the laundry door (corner loss).
 ROBOT_START = (-2.0, -9.6, 0.0)
 PERSON_START = (-0.5, -9.6)
 HIDEOUT = (2.4, -7.4)
@@ -163,8 +161,7 @@ class SimFollowTest(Node):
             meta["occupied_thresh"],
         )
 
-        # Ground truth: gz's OdometryPublisher reports the base pose in the world
-        # frame, and the arena world frame IS the map frame (world_from_map.py).
+        # Ground truth: gz odometry is in world frame, which equals map.
         self.robot = None
         self.person = None
         self.status = "unknown"

@@ -1,6 +1,4 @@
-# Sim clock alone in its own parameter_bridge process, so heavy sensor streams in
-# bridge.yaml (camera images, point cloud) can never block it. Every node runs on
-# use_sim_time, so a stalled /clock freezes all of their timers.
+# Sim clock in its own bridge process so sensor streams can't block it.
 - ros_topic_name: /clock
   gz_topic_name: /clock
   ros_type_name: rosgraph_msgs/msg/Clock

@@ -1,19 +1,4 @@
-<!--
-  Person following: chase the moving goal that person_goal_smoother publishes on
-  /goal_update (GoalUpdater swaps it into every replan). nav_central sends this
-  tree with a seed goal and re-sends it if it ever finishes, so the tree's own
-  job is to keep replanning and keep driving:
-
-  * 4 Hz replan: a walking person moves ~0.3 m between plans; the old 1 Hz left
-    the path a full stride stale and the base visibly late on every turn.
-  * Every leaf has a recovery: the goal sits right behind a person who is a
-    lidar obstacle, so one failed plan (inflated goal cell) must clear and retry,
-    not abort the whole follow. The outer fallback only clears costmaps and
-    waits: no Spin/BackUp here, those would break line of sight with the person
-    the smoother is steering us back toward.
-  * TruncatePath keeps the controller from trying to settle exactly on a goal
-    that moves at every tick.
--->
+<!-- Person follow: 4 Hz replan toward /goal_update, clear-costmap recoveries only (no Spin/BackUp). -->
 <root BTCPP_format="4" main_tree_to_execute="MainTree">
   <BehaviorTree ID="MainTree">
     <RecoveryNode number_of_retries="30" name="FollowRecovery">

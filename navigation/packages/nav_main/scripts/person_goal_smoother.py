@@ -25,8 +25,7 @@ Pure geometry lives in nav_main/follow_planner.py (unit-tested offline).
 
 Usage:
     ros2 run nav_main person_goal_smoother.py
-    # nav_central's /navigation/follow_person switches this node to follow mode
-    # and sends NavigateToPose with bt/follow_dynamic_point.xml.
+    # Follow mode is toggled by nav_central's /navigation/follow_person.
 """
 
 import math
@@ -70,8 +69,7 @@ CONTROLLER_KEYS = [
     "FollowPath.wz_max",
     "FollowPath.GoalCritic.cost_weight",
     "FollowPath.GoalAngleCritic.cost_weight",
-    # Raised in follow mode so the base keeps facing the person while it drives
-    # (the goal yaw points at them); standard only aligns yaw within 0.5 m.
+    # Raised in follow mode so the base keeps facing the person.
     "FollowPath.GoalAngleCritic.threshold_to_consider",
     "FollowPath.PathFollowCritic.cost_weight",
     "FollowPath.PathAlignCritic.cost_weight",
@@ -154,9 +152,7 @@ def _make_param(name, value):
 class PersonGoalSmoother(Node):
     def __init__(self):
         super().__init__("person_goal_smoother")
-        # All state callbacks stay serialized in one group; only the SetParameters
-        # responses run in their own group, so _follow_mode_cb can block until the
-        # Nav2 params are applied (main() uses a MultiThreadedExecutor).
+        # SetParameters responses get their own group so _follow_mode_cb can block on them.
         cb = MutuallyExclusiveCallbackGroup()
         param_cb = ReentrantCallbackGroup()
 
@@ -182,14 +178,11 @@ class PersonGoalSmoother(Node):
         self.declare_parameter("search_dwell", 2.5)
         self.declare_parameter("search_step_deg", 60.0)
         self.declare_parameter("search_timeout", FOLLOW_SEARCH_TIMEOUT)
-        # "last_position" (default) runs the recovery above; "halt" freezes at the
-        # robot's own pose on loss (legacy behavior) and reports gave_up at once.
+        # "last_position": run the recovery; "halt": stop in place and report gave_up.
         self.declare_parameter("lost_behavior", "last_position")
         # Selects the (standard, follow) nav2 config PAIR to switch between.
         self.declare_parameter("default_base", "omnibase")
-        # Explicit config-pair override. The launch file forwards the ACTUAL nav2
-        # config it started Nav2 with (e.g. nav2_omni_limp.yaml) so leaving follow
-        # mode restores THOSE values, not the healthy-base nav2_omni.yaml speeds.
+        # Nav2 config to restore on follow exit (what Nav2 was launched with).
         self.declare_parameter("standard_config_file", "")
         self.declare_parameter("follow_config_file", "")
 
@@ -220,8 +213,7 @@ class PersonGoalSmoother(Node):
 
         # --- TF ---
         self.tf_buffer = Buffer()
-        # Own spin thread: _tracker_cb waits on lookup_transform, and TF updates
-        # must keep arriving while it does.
+        # Own spin thread so TF keeps updating while _tracker_cb waits on it.
         self.tf_listener = TransformListener(self.tf_buffer, self, spin_thread=True)
 
         # --- Subscribers ---
@@ -414,9 +406,7 @@ class PersonGoalSmoother(Node):
         if not self.follow_mode_active:
             return
         map_frame = self.get_parameter("map_frame").value
-        # Transform at the point's own stamp: the camera rides on the arm, which
-        # pans while following. Fall back to latest if TF lacks that stamp. The
-        # exact-stamp try never waits, so a missing stamp costs no time.
+        # Transform at the point's stamp (camera pans on the arm), else latest.
         point_map, err = None, None
         for stamp, wait in ((rclpy.time.Time.from_msg(msg.header.stamp), 0.0),
                             (rclpy.time.Time(), 0.1)):
@@ -452,8 +442,7 @@ class PersonGoalSmoother(Node):
             self.smooth_y = alpha * py + (1.0 - alpha) * self.smooth_y
         self._update_velocity(now)
 
-        # Distance gate: only recompute when the person moved enough (the
-        # heartbeat keeps re-sending the current goal regardless).
+        # Recompute only when the person moved enough; heartbeat re-sends regardless.
         if self.last_goal_x is not None and math.hypot(
                 self.smooth_x - self.last_goal_x, self.smooth_y - self.last_goal_y) \
                 < self.get_parameter("distance_gate").value:
