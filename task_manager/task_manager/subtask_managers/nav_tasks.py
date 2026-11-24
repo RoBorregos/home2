@@ -129,6 +129,7 @@ class NavigationTasks:
                 },
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
                 "approach_point_srv": {"client": self.approach_point_srv, "type": "service"},
+                "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
             },
             Task.RESTAURANT: {
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},

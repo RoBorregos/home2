@@ -97,10 +97,14 @@ class FinalsTaskManager(Node):
     def _elapsed(self) -> float:
         return time.monotonic() - self.started_at
 
+    def _now(self) -> float:
+        """ROS clock (sim time in Gazebo), same clock semantic_nav marks scans with."""
+        return self.get_clock().now().nanoseconds / 1e9
+
     def _wait(self, seconds: float) -> None:
         """Wait without blocking the node's callbacks."""
-        deadline = time.monotonic() + seconds
-        while time.monotonic() < deadline:
+        deadline = self._now() + seconds
+        while self._now() < deadline:
             rclpy.spin_once(self, timeout_sec=0.05)
 
     @staticmethod
@@ -197,8 +201,8 @@ class FinalsTaskManager(Node):
     def _look(self, step: dict) -> None:
         """Watch a viewpoint for its dwell and record the objects detected often enough."""
         samples, last_stamp, looked = [], None, False
-        deadline = time.monotonic() + step["dwell_s"]
-        while time.monotonic() < deadline:
+        deadline = self._now() + step["dwell_s"]
+        while self._now() < deadline:
             status, boxes = self.subtask_manager.vision.detect_objects()
             if status in (Status.EXECUTION_SUCCESS, Status.TARGET_NOT_FOUND):
                 looked = True

@@ -26,9 +26,7 @@ semantic_nav:
     # mode "quick": surfaces per area
     quick_mode_per_area: 1
 
-    # Relocate viewpoints that sit inside the costmap inflation. Off: the tagged poses
-    # sit in the inflation by design (go_to_area drives to them as they are), and on
-    # map23oct2026 the relocation sent 6 of 9 behind walls, out of reach.
+    # Off for every map: tagged poses are used as-is (relocation sent 6/9 behind walls on map23oct2026).
     validate_with_costmap: false
     viewpoint_check_radius: 0.25    # m, inscribed radius of the 0.65x0.50 footprint
     viewpoint_max_cost: 50          # same threshold as nav_central._grid_cell_free

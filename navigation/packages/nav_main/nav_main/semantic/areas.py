@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import math
 
-from .viewpoints import DEFAULT_PROBE_DISTANCE
+from .surfaces import Viewpoint
+from .viewpoints import DEFAULT_PROBE_DISTANCE, target_of
 
 # Not sublocations
 NON_SUBLOCATION_KEYS = ("polygon", "safe_place")
@@ -43,13 +44,12 @@ def areas_containing(areas_data: dict, x: float, y: float) -> list[str]:
     return hits
 
 
-def _furniture_position(pose) -> tuple[float, float]:
+def _furniture_position(pose, probe_distance: float = DEFAULT_PROBE_DISTANCE) -> tuple[float, float]:
     """Where the furniture of a tagged pose is; the pose itself if it has no heading."""
     x, y = float(pose[0]), float(pose[1])
     if len(pose) < 7:
         return x, y
-    yaw = 2.0 * math.atan2(float(pose[5]), float(pose[6]))
-    return x + DEFAULT_PROBE_DISTANCE * math.cos(yaw), y + DEFAULT_PROBE_DISTANCE * math.sin(yaw)
+    return target_of(Viewpoint("", "", x, y, float(pose[5]), float(pose[6])), probe_distance)
 
 
 def nearest_sublocations(
@@ -58,6 +58,7 @@ def nearest_sublocations(
     x: float,
     y: float,
     max_distance: float = DEFAULT_SUBLOCATION_DISTANCE,
+    probe_distance: float = DEFAULT_PROBE_DISTANCE,
 ) -> tuple[list[str], list[float]]:
     """(names, distances) of `area`'s sublocations, nearest first, within range.
 
@@ -71,7 +72,7 @@ def nearest_sublocations(
         if not isinstance(pose, (list, tuple)) or len(pose) < 2:
             continue
         try:
-            furniture_x, furniture_y = _furniture_position(pose)
+            furniture_x, furniture_y = _furniture_position(pose, probe_distance)
             distance = math.hypot(furniture_x - x, furniture_y - y)
         except (TypeError, ValueError):
             continue
@@ -86,6 +87,7 @@ def area_for_point(
     x: float,
     y: float,
     max_distance: float = DEFAULT_SUBLOCATION_DISTANCE,
+    probe_distance: float = DEFAULT_PROBE_DISTANCE,
 ) -> tuple[str, list[str], list[float], bool]:
     """(area, sublocations, distances, in_house) for a map-frame point.
 
@@ -97,8 +99,8 @@ def area_for_point(
         return "", [], [], False
     if len(hits) > 1:
         hits.sort(
-            key=lambda a: (nearest_sublocations(areas_data, a, x, y, float("inf"))[1] or [1e9])[0]
+            key=lambda a: (nearest_sublocations(areas_data, a, x, y, float("inf"), probe_distance)[1] or [1e9])[0]
         )
     area = hits[0]
-    names, distances = nearest_sublocations(areas_data, area, x, y, max_distance)
+    names, distances = nearest_sublocations(areas_data, area, x, y, max_distance, probe_distance)
     return area, names, distances, in_house
