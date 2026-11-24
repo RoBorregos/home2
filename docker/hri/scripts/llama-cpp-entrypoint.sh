@@ -23,6 +23,11 @@ wait_for_server() {
     local attempt=0
     debug_log "Waiting for llama-server ($alias) on port $port..."
     while ! curl -sf "http://localhost:$port/health" >/dev/null 2>&1; do
+        # Fail fast if llama-server died (e.g. the GGUF didn't fit in memory).
+        if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+            echo "ERROR: llama-server ($alias) exited while loading $model"
+            exit 1
+        fi
         attempt=$((attempt + 1))
         if [ $attempt -ge $max_attempts ]; then
             echo "ERROR: llama-server ($alias) on port $port did not start after $max_attempts attempts"
@@ -66,6 +71,7 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] ||
         --parallel 1 \
         --alias "$MAIN_ALIAS" \
         &
+    SERVER_PID=$!
     wait_for_server 11434 "$MAIN_ALIAS" "$MAIN_MODEL"
 fi
 
@@ -90,8 +96,9 @@ if [ "$ROLE" = "gpsr" ]; then
         --temp 0 \
         --metrics \
         &
+    SERVER_PID=$!
     # Big GGUFs take minutes to load on the Orin
-    wait_for_server 11435 rbrgs "$RBRGS_MODEL" 150
+    wait_for_server 11435 rbrgs "$RBRGS_MODEL" 450
 fi
 
 wait

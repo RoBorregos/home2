@@ -5,6 +5,7 @@
 # Usage:
 #   ./rbrgs_compare.sh [--runs N] [--no-restore] model_a.gguf model_a.gguf:long model_b.gguf ...
 #   A ":long" suffix tests that model with the long fine-tuning system prompt instead of the default one.
+#   Split GGUFs: pass the first shard (name-00001-of-0000N.gguf).
 
 set -euo pipefail
 
@@ -14,6 +15,9 @@ ASSETS_DIR="$REPO_ROOT/hri/packages/nlp/assets"
 HRI_DIR="$REPO_ROOT/docker/hri"
 COMPOSE="compose/docker-compose-${ENV_TYPE:-l4t}.yml"
 ROS_CONTAINER="${ROS_CONTAINER:-home2-hri-ros-${ENV_TYPE:-l4t}}"
+LLAMA_CONTAINER="home2-hri-llamacpp-${ENV_TYPE:-l4t}"
+# RAM left for the main LLM, ROS and the OS; bigger GGUFs are refused so the Jetson doesn't OOM.
+RAM_HEADROOM_GB=8
 RESULTS_DIR="$SCRIPT_DIR/results"
 PORT=11435
 LOAD_TIMEOUT=900
@@ -25,15 +29,25 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --runs)       RUNS="$2"; shift 2 ;;
         --no-restore) RESTORE=false; shift ;;
-        -h|--help)    sed -n '2,7p' "$0"; exit 0 ;;
+        -h|--help)    sed -n '2,8p' "$0"; exit 0 ;;
         *)            MODELS+=("$1"); shift ;;
     esac
 done
-[[ ${#MODELS[@]} -ge 1 ]] || { sed -n '2,7p' "$0"; exit 1; }
+[[ ${#MODELS[@]} -ge 1 ]] || { sed -n '2,8p' "$0"; exit 1; }
 
+# Bytes of a GGUF, summing every shard of a split one.
+gguf_bytes() {
+    local f="$ASSETS_DIR/$1"
+    [[ "$f" =~ ^(.*)-00001-of-([0-9]+)\.gguf$ ]] && f=$(ls "${BASH_REMATCH[1]}"-*-of-"${BASH_REMATCH[2]}".gguf)
+    # shellcheck disable=SC2086
+    stat -L -c %s $f | awk '{ s += $1 } END { print s }'
+}
+MEM_LIMIT=$(awk -v h="$RAM_HEADROOM_GB" '/^MemTotal:/ { printf "%d", $2 * 1024 - h * 1024 ^ 3 }' /proc/meminfo)
 for m in "${MODELS[@]}"; do
     [[ -s "$ASSETS_DIR/${m%%:*}" ]] || { echo "ERROR: $ASSETS_DIR/${m%%:*} not found"; exit 1; }
     [[ "$m" != *:* || "${m#*:}" == long ]] || { echo "ERROR: unknown prompt variant in $m (only :long)"; exit 1; }
+    size=$(gguf_bytes "${m%%:*}")
+    (( size <= MEM_LIMIT )) || { echo "ERROR: ${m%%:*} is $((size / 1024 ** 3)) GiB, more than this machine can hold (limit $((MEM_LIMIT / 1024 ** 3)) GiB)"; exit 1; }
 done
 docker ps -q -f name="^${ROS_CONTAINER}$" | grep -q . \
     || { echo "ERROR: $ROS_CONTAINER not running (start it with ./run.sh hri --gpsr)"; exit 1; }
@@ -43,25 +57,32 @@ PREP_CMD="rm -rf /tmp/rbrgs_bench && mkdir -p /tmp/rbrgs_bench \
     && cp -r /workspace/src/task_manager/task_manager/utils/baml_src /tmp/rbrgs_bench/ \
     && sed -i 's#http://[0-9.]*:$PORT#http://localhost:$PORT#' /tmp/rbrgs_bench/baml_src/client.baml"
 BENCH_PROMPT=/tmp/rbrgs_bench/baml_src/robot_commands.baml
-# Extra sentences of the long fine-tuning prompt (from 2306cf633), appended to GenerateCommandList's system line.
+# Rest of the system prompt finetune-qwen.py trains with; its string concat leaves no space after "understand.".
 LONG_PROMPT_TAIL="the format is a list of commands, each with an action, complement, and characteristic. The action is the main verb of the command, the complement is an object or location related to the action, and the characteristic is optional additional information about the action."
 prepare_tests() {
     docker exec "$ROS_CONTAINER" bash -c "$PREP_CMD"
     [[ "$1" == long ]] || return 0
     docker exec "$ROS_CONTAINER" sed -i \
-        "/^function GenerateCommandList/,/^}/ s/understand\.\$/understand. $LONG_PROMPT_TAIL/" "$BENCH_PROMPT"
+        "/^function GenerateCommandList/,/^}/ s/understand\.\$/understand.$LONG_PROMPT_TAIL/" "$BENCH_PROMPT"
     docker exec "$ROS_CONTAINER" grep -qF "$LONG_PROMPT_TAIL" "$BENCH_PROMPT" \
         || { echo "ERROR: long prompt was not applied to $BENCH_PROMPT"; exit 1; }
 }
 run_tests() { docker exec "$ROS_CONTAINER" bash -c "cd /tmp/rbrgs_bench && baml-cli test --from baml_src/ --parallel 1"; }
+# Cold TTFT (no prompt cache) of each test command, sending the same prompt the tests just used.
+run_ttft() {
+    docker exec "$ROS_CONTAINER" bash -c "cat /tmp/rbrgs_bench/baml_src/*.baml" \
+        | python3 -I "$SCRIPT_DIR/ttft.py" --model "$1" --run "$2" --port "$PORT" >> "$TTFT"
+}
 TOTAL_TESTS=$(cat "$REPO_ROOT"/task_manager/task_manager/utils/baml_src/*.baml | grep -c '^test ' || true)
 
 mkdir -p "$RESULTS_DIR"
 STAMP=$(date +%Y%m%d_%H%M%S)
 TSV="$RESULTS_DIR/rbrgs_compare_${STAMP}.tsv"
 METRICS="$RESULTS_DIR/rbrgs_metrics_${STAMP}.tsv"
+TTFT="$RESULTS_DIR/rbrgs_ttft_${STAMP}.tsv"
 printf "model\trun\ttest\tstatus\tsecs\n" > "$TSV"
 printf "model\tkey\tvalue\n" > "$METRICS"
+printf "model\trun\ttest\tttft_ms\tprompt_tokens\tprefill_ms\n" > "$TTFT"
 
 LOADED=""
 serve_model() {
@@ -80,6 +101,10 @@ serve_model() {
     # Give the old server time to die so /health can't answer from it.
     sleep 5
     until curl -sf "localhost:$PORT/health" >/dev/null 2>&1; do
+        if ! docker ps -q -f name="^${LLAMA_CONTAINER}$" | grep -q .; then
+            echo "ERROR: $LLAMA_CONTAINER exited while loading ${model}:"; docker logs --tail 15 "$LLAMA_CONTAINER" 2>&1 || true
+            return 1
+        fi
         sleep 5; waited=$((waited + 5))
         if (( waited >= LOAD_TIMEOUT )); then
             echo "ERROR: rbrgs did not come up in ${LOAD_TIMEOUT}s"; return 1
@@ -122,7 +147,11 @@ trap restore EXIT
 
 for m in "${MODELS[@]}"; do
     prompt=""; [[ "$m" == *:* ]] && prompt="${m#*:}"
-    serve_model "${m%%:*}"
+    if ! serve_model "${m%%:*}"; then
+        echo "  skipping $m: it did not load"
+        printf "%s\tload_failed\t1\n" "$m" >> "$METRICS"
+        continue
+    fi
     warmup
     ram=$(ram_mb)
     [[ -z "$LOAD_SECS" ]] || printf "%s\tload_secs\t%s\n" "$m" "$LOAD_SECS" >> "$METRICS"
@@ -157,15 +186,21 @@ for m in "${MODELS[@]}"; do
                 secs = $1; sub(/s$/, "", secs); name = $3; sub(/^GenerateCommandList::/, "", name)
                 printf "%s\t%s\t%s\t%s\t%s\n", m, r, name, $2, secs
             }' >> "$TSV"
+        run_ttft "$m" "$r" || echo "  WARNING: TTFT probe failed for $m run $r"
     done
 done
 
 SUMMARY="$RESULTS_DIR/rbrgs_summary_${STAMP}.txt"
 {
 echo
-awk -F'\t' -v models="${MODELS[*]}" -v mf="$METRICS" '
+awk -F'\t' -v models="${MODELS[*]}" -v mf="$METRICS" -v tf="$TTFT" '
     FNR == 1 { next }
     FILENAME == mf { x[$1 SUBSEP $2] += $3; has[$1 SUBSEP $2] = 1; next }
+    FILENAME == tf {
+        if ($4 != "") { nt[$1]++; tt[$1] += $4; ttl[$1 SUBSEP nt[$1]] = $4 }
+        if ($6 != "") { np[$1]++; tp[$1] += $6; tpt[$1] += $5 }
+        next
+    }
     { n[$1]++; p[$1] += ($4 == "PASSED"); t[$1] += $5; lat[$1 SUBSEP n[$1]] = $5 * 1000 }
     function row(label, fmt, key,    i, m, v) {
         printf "  %-28s", label
@@ -182,6 +217,12 @@ awk -F'\t' -v models="${MODELS[*]}" -v mf="$METRICS" '
         if (key == "p90")   return n[m] ? pct(m, 90) : ""
         if (key == "min")   return n[m] ? pct(m, 0) : ""
         if (key == "max")   return n[m] ? pct(m, 100) : ""
+        if (key == "tmean") return nt[m] ? tt[m] / nt[m] : ""
+        if (key == "tmed")  return nt[m] ? pct(m, 50, ttl, nt[m]) : ""
+        if (key == "tp90")  return nt[m] ? pct(m, 90, ttl, nt[m]) : ""
+        if (key == "tmax")  return nt[m] ? pct(m, 100, ttl, nt[m]) : ""
+        if (key == "tpre")  return np[m] ? tp[m] / np[m] : ""
+        if (key == "ttok")  return np[m] ? tpt[m] / np[m] : ""
         if (key == "ptok")  return has[m SUBSEP "prompt_tokens"] && n[m] ? x[m SUBSEP "prompt_tokens"] / n[m] : ""
         if (key == "gtok")  return has[m SUBSEP "gen_tokens"] && n[m] ? x[m SUBSEP "gen_tokens"] / n[m] : ""
         if (key == "pps")   return x[m SUBSEP "prompt_secs"] > 0 ? x[m SUBSEP "prompt_tokens"] / x[m SUBSEP "prompt_secs"] : ""
@@ -191,10 +232,10 @@ awk -F'\t' -v models="${MODELS[*]}" -v mf="$METRICS" '
         q = m SUBSEP key
         return has[q] ? x[q] : ""
     }
-    # Nearest-rank percentile of the per-command latencies (ms).
-    function pct(m, q,    i, j, c, s, tmp, idx) {
-        c = n[m]
-        for (i = 1; i <= c; i++) s[i] = lat[m SUBSEP i]
+    # Nearest-rank percentile of the per-command latencies (ms), or of arr/cnt when given.
+    function pct(m, q, arr, cnt,    i, j, c, s, tmp, idx) {
+        c = cnt ? cnt : n[m]
+        for (i = 1; i <= c; i++) s[i] = cnt ? arr[m SUBSEP i] : lat[m SUBSEP i]
         for (i = 2; i <= c; i++) { tmp = s[i]; for (j = i - 1; j >= 1 && s[j] > tmp; j--) s[j + 1] = s[j]; s[j + 1] = tmp }
         idx = int(q * c / 100 + 0.999999); if (idx < 1) idx = 1; if (idx > c) idx = c
         return s[idx]
@@ -207,6 +248,9 @@ awk -F'\t' -v models="${MODELS[*]}" -v mf="$METRICS" '
         print "Latency per command (ms, end to end)"
         row("mean", "%.0f", "mean"); row("median", "%.0f", "med"); row("p90", "%.0f", "p90")
         row("min", "%.0f", "min");   row("max", "%.0f", "max")
+        print "Time to first token (ms, cold prompt cache)"
+        row("mean", "%.0f", "tmean"); row("median", "%.0f", "tmed"); row("p90", "%.0f", "tp90"); row("max", "%.0f", "tmax")
+        row("server prefill (ms)", "%.0f", "tpre"); row("prompt tokens", "%.0f", "ttok")
         print "llama.cpp"
         row("prompt tokens / command", "%.0f", "ptok"); row("generated tokens / command", "%.0f", "gtok")
         row("prefill speed (tok/s)", "%.1f", "pps");    row("generation speed (tok/s)", "%.1f", "gps")
@@ -214,7 +258,7 @@ awk -F'\t' -v models="${MODELS[*]}" -v mf="$METRICS" '
         print "Resources"
         row("load time (s)", "%.0f", "load_secs"); row("system RAM in use (MB)", "%.0f", "ram_mb")
         row("total test time (s)", "%.0f", "wall_secs")
-    }' "$METRICS" "$TSV"
+    }' "$METRICS" "$TTFT" "$TSV"
 
 echo
 echo "Per test (PASS/FAIL, or passes/runs, and mean ms):"
@@ -258,6 +302,7 @@ rm -f "$SUMMARY.tmp"
 echo
 echo "Raw results: $TSV"
 echo "Metrics:     $METRICS"
+echo "TTFT:        $TTFT"
 } | tee "$SUMMARY"
 echo "Summary saved: $SUMMARY"
 
