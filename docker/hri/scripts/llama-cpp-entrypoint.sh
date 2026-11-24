@@ -19,15 +19,10 @@ wait_for_server() {
     local port=$1
     local alias=$2
     local model=$3
-    local max_attempts=${4:-30}
+    local max_attempts=30
     local attempt=0
     debug_log "Waiting for llama-server ($alias) on port $port..."
     while ! curl -sf "http://localhost:$port/health" >/dev/null 2>&1; do
-        # Fail fast if llama-server died (e.g. the GGUF didn't fit in memory).
-        if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-            echo "ERROR: llama-server ($alias) exited while loading $model"
-            exit 1
-        fi
         attempt=$((attempt + 1))
         if [ $attempt -ge $max_attempts ]; then
             echo "ERROR: llama-server ($alias) on port $port did not start after $max_attempts attempts"
@@ -48,8 +43,6 @@ MAIN_CTX="${LLAMA_CTX_SIZE:-2048}"
 # Keep the correctness-first llama.cpp default until q8_0 is validated on the
 # target Jetson; set LLAMA_CACHE_TYPE=q8_0 for that A/B comparison.
 CACHE_TYPE="${LLAMA_CACHE_TYPE:-f16}"
-# GPSR command interpreter; override to A/B fine-tunes without renaming files.
-RBRGS_MODEL="${RBRGS_MODEL_FILE:-rbrgs-qwen3.5-9b-F16.gguf}"
 
 if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] || [ "$ROLE" = "bench" ]; then
     if [ ! -s "$MODELS_DIR/$MAIN_MODEL" ]; then
@@ -71,19 +64,14 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] ||
         --parallel 1 \
         --alias "$MAIN_ALIAS" \
         &
-    SERVER_PID=$!
     wait_for_server 11434 "$MAIN_ALIAS" "$MAIN_MODEL"
 fi
 
 # rbrgs on port 11435, gpsr only
 if [ "$ROLE" = "gpsr" ]; then
-    if [ ! -s "$MODELS_DIR/$RBRGS_MODEL" ]; then
-        echo "ERROR: model not found or empty: $MODELS_DIR/$RBRGS_MODEL"
-        exit 1
-    fi
-    echo "llama.cpp serving $RBRGS_MODEL as 'rbrgs' on :11435"
+    debug_log "Starting rbrgs on port 11435..."
     llama-server \
-        --model "$MODELS_DIR/$RBRGS_MODEL" \
+        --model "$MODELS_DIR/command-interpreter-qwen3.5-4b-q8_0.gguf" \
         --host 0.0.0.0 \
         --port 11435 \
         --ctx-size 4096 \
@@ -94,11 +82,8 @@ if [ "$ROLE" = "gpsr" ]; then
         --reasoning off \
         --alias rbrgs \
         --temp 0 \
-        --metrics \
         &
-    SERVER_PID=$!
-    # Big GGUFs take minutes to load on the Orin
-    wait_for_server 11435 rbrgs "$RBRGS_MODEL" 450
+    wait_for_server 11435 rbrgs command-interpreter-qwen3.5-4b-q8_0.gguf
 fi
 
 wait

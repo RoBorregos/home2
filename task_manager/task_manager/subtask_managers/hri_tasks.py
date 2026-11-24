@@ -1144,7 +1144,7 @@ class HRITasks:
                 steps.append("answer a question from the person")
             elif action == "follow_person_until":
                 destination = getattr(cmd, "destination", "cancelled")
-                if destination == "cancelled":
+                if destination in ("", "cancelled", "canceled"):
                     steps.append("follow the person until told to stop")
                 else:
                     steps.append(f"follow the person to {destination}")
