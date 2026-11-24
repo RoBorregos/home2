@@ -100,14 +100,22 @@ try:
 except Exception:
     _HAVE_MOVEIT = False
 
+from frida_interfaces.srv import DockTable
 from frida_constants.navigation_constants import (
     DOCK_SERVICE,
     UNDOCK_SERVICE,
     DOCK_PREVIEW_SERVICE,
+    DOCKER_DOCK_TABLE_SERVICE,
+    LOCAL_COSTMAP_PARAMS,
     DOCKED_TOPIC,
     SCAN_TOPIC,
     POINT_CLOUD_TOPIC,
+    DOCK_BUDGET,
 )
+
+# Old DockTable `offset` callers: the base used to stop `offset + 0.19` m (the old
+# docker's min_safe) from the face; converted to the robot-front gap they produced.
+LEGACY_DOCK_MIN_SAFE = 0.19
 
 
 def quat_to_rot(x, y, z, w):
@@ -287,7 +295,8 @@ class TableDocker(Node):
         self.footprint = self._parse_footprint(self.declare_parameter(
             "footprint", "[[0.325, 0.25], [0.325, -0.25], [-0.325, -0.25], [-0.325, 0.25]]").value)
 
-        # --- Per-call request (nav_central sets these before each dock) ---
+        # --- Per-call request: set by the typed DockTable call (DOCKER_DOCK_TABLE_SERVICE);
+        # as parameters they only serve the Trigger dock/preview and manual tests ---
         # surface_type selects the reach band in approach_profiles.yaml; target_gap
         # >= 0 overrides its preferred gap; target_point [x, y] in target_frame is
         # the object to stand in front of (empty = centre of the detected face).
@@ -298,8 +307,10 @@ class TableDocker(Node):
         self.target_frame = self.declare_parameter("target_frame", "map").value
         # Verify candidates with the arm's IK against the 3D target_point.
         self.check_reach = self.declare_parameter("check_reach", False).value
-        # Outcome of the last dock (JSON), read back by nav_central for DockTable.
+        # Outcome of the last dock (JSON), for benchmarks/debugging (the typed
+        # DockTable returns it in its response).
         self.last_result = self.declare_parameter("last_result", "{}").value
+        self._last_result = {}
         # Append every dock outcome as one JSON line to this file ("" = off), to
         # tune the reach bands from real runs.
         self.result_log = self.declare_parameter("result_log", "").value
@@ -315,6 +326,10 @@ class TableDocker(Node):
         # Skip MPPI when already this close to the pre-dock pose.
         self.predock_skip = self.declare_parameter("predock_skip", 0.06).value
         self.motion_timeout = self.declare_parameter("motion_timeout", 45.0).value
+        # Whole dock request (detect + every motion leg + straight-in + refinements).
+        # Keep it below nav_central's wait on the dock service (120 s) so the robot
+        # never keeps driving after the caller gave up on it.
+        self.dock_timeout = self.declare_parameter("dock_timeout", DOCK_BUDGET).value
         self.goal_checker = self.declare_parameter("goal_checker", "general_goal_checker").value
         # MPPI only has to reach the pre-dock neighbourhood; the straight-in
         # controller corrects the rest against the re-detected face.
@@ -330,8 +345,15 @@ class TableDocker(Node):
         self.refine_shift = self.declare_parameter("refine_shift", 0.03).value
         # Close-range re-detection only looks at the strip the arm will work on.
         self.refine_fov_deg = self.declare_parameter("refine_fov_deg", 50.0).value
+        # A close-range face fit at least this long (m) keeps its own orientation;
+        # shorter ones borrow the orientation of the longer, farther fit.
+        self.fuse_min_span = self.declare_parameter("fuse_min_span", 0.40).value
         # Cells within this distance of the docked face belong to the surface itself.
         self.face_ignore_margin = self.declare_parameter("face_ignore_margin", 0.06).value
+        # ...but only along the detected face, plus this much (m) past each end: a
+        # bin flush beside the table still counts. Above the base's half width +
+        # padding, so the surface's own unseen ends never block the docked pose.
+        self.face_ignore_extend = self.declare_parameter("face_ignore_extend", 0.40).value
         # Approach legs that cannot go straight (they skirt obstacles, often ones only
         # the docker remembers) are followed by the docker's own holonomic pursuit
         # instead of MPPI, which optimises against nav2's costmap and cuts corners.
@@ -354,6 +376,9 @@ class TableDocker(Node):
 
         # --- Safety: live lidar points must stay this far outside the footprint ---
         self.safety_clearance = self.declare_parameter("safety_clearance", 0.01).value
+        # Live lidar points deeper than this (m) inside the footprint = contact:
+        # the straight-in stops and the dock fails instead of reporting docked.
+        self.contact_tolerance = self.declare_parameter("contact_tolerance", 0.005).value
         self.yaw_tol = self.declare_parameter("yaw_tol", 0.03).value
         self.y_tol = self.declare_parameter("y_tol", 0.03).value
         self.dist_tol = self.declare_parameter("dist_tol", 0.015).value
@@ -384,6 +409,16 @@ class TableDocker(Node):
         self.retreat_distance = self.declare_parameter("retreat_distance", 0.5).value
         self.retreat_speed = self.declare_parameter("retreat_speed", 0.12).value
         self.retreat_timeout = self.declare_parameter("retreat_timeout", 20.0).value
+        # A dock that fails with the robot's front closer than this (m) to something
+        # straight ahead still backs off on the next undock, so nav2 does not plan the
+        # next goal from inside the surface's inflation.
+        self.failed_retreat_gap = self.declare_parameter("failed_retreat_gap", 0.30).value
+        # No free dock pose at the start: keep re-planning this long (s) before
+        # failing, in case a person is standing in the way. 0 = fail at once.
+        self.blocked_wait = self.declare_parameter("blocked_wait", 8.0).value
+        # While waiting, an obstacle counts only if seen again within this window
+        # (s). Longer than nav2's voxel decay (2 s) so flickering marks persist.
+        self.memory_window = self.declare_parameter("memory_window", 4.0).value
 
         # --- Visualization (RViz) ---
         self.polygon_depth = self.declare_parameter("polygon_depth", 0.40).value
@@ -400,14 +435,20 @@ class TableDocker(Node):
         self._target_odom = None
         self._target_z = None   # target height above base_link (m), for the reach check
         self._blocked = None    # what blocks the ideal dock pose (see _diagnose_block)
+        self._dock_deadline = math.inf  # node-clock s; set for the duration of a dock
         self._costmap = None
         # Lethal cells seen since the current request started (odom cell keys).
         # Thin obstacles (chair legs) get raytraced out of nav2's costmap as soon
         # as they fall between rays or into the lidar's near blind zone.
-        self._memory = set()
-        self._scan_memory = set()  # lidar hits, kept apart (see _fresh_grid)
+        # Each maps cell -> node-clock time it was last seen (see _fresh_grid).
+        self._memory = {}
+        self._scan_memory = {}  # lidar hits, kept apart (see _fresh_grid)
+        # Plans only use memory seen at/after this time (None = whole request).
+        self._memory_since = None
         self._remember = False
         self.docked = False
+        self._near_surface = False  # failed dock left the robot close to the surface
+        self._contact = False  # the straight-in stopped touching something
 
         sensor_cb = ReentrantCallbackGroup()
         srv_cb = MutuallyExclusiveCallbackGroup()
@@ -433,6 +474,8 @@ class TableDocker(Node):
                                                     callback_group=client_cb)
         self.ctrl_get_client = self.create_client(GetParameters, "/controller_server/get_parameters",
                                                   callback_group=client_cb)
+        self.costmap_param_client = self.create_client(
+            GetParameters, f"{LOCAL_COSTMAP_PARAMS}/get_parameters", callback_group=client_cb)
         self.ik_client = None
         if self.reach_cfg["enabled"] and _HAVE_MOVEIT:
             self.ik_client = self.create_client(GetPositionIK, self.reach_cfg["service"],
@@ -456,10 +499,15 @@ class TableDocker(Node):
         self.create_timer(0.5, self._publish_footprint)
 
         self.create_service(Trigger, DOCK_SERVICE, self._dock_cb, callback_group=srv_cb)
+        # Typed dock: the request travels in the call (no SetParameters before it,
+        # no last_result read after it), so two callers cannot overwrite each other's
+        # request. Same callback group as the Trigger: docks run one at a time.
+        self.create_service(DockTable, DOCKER_DOCK_TABLE_SERVICE, self._dock_table_cb,
+                            callback_group=srv_cb)
         self.create_service(Trigger, UNDOCK_SERVICE, self._undock_cb, callback_group=srv_cb)
         self.create_service(Trigger, DOCK_PREVIEW_SERVICE, self._preview_cb, callback_group=srv_cb)
 
-        # Apply runtime parameter changes live (nav_central sets the per-call
+        # Apply runtime parameter changes live (the Trigger dock/preview read the per-call
         # request before approaching; also makes `ros2 param set` effective).
         self.add_on_set_parameters_callback(self._on_set_params)
 
@@ -474,12 +522,7 @@ class TableDocker(Node):
             if p.name == "frontal_fov_deg":
                 self.frontal_fov = math.radians(float(p.value))
             elif p.name == "footprint":
-                self.footprint = self._parse_footprint(p.value)
-                self._fp_samples_padded = ap.footprint_samples(
-                    self.footprint, 0.025, self.footprint_padding)
-                self._fp_samples_path = self._fp_samples_padded
-                self._fp_samples_sweep = ap.footprint_samples(
-                    self.footprint, 0.025, self.footprint_padding / 2)
+                self._set_footprint(p.value)
             elif p.name == "target_point":
                 self.target_point = list(p.value or [])
             elif p.name == "profiles_file":
@@ -490,6 +533,34 @@ class TableDocker(Node):
         return SetParametersResult(successful=True)
 
     # ------------------------------------------------------- planning config
+    def _set_footprint(self, text):
+        """Use a new footprint polygon (text or list) everywhere it is sampled."""
+        self.footprint = self._parse_footprint(text)
+        self._fp_samples_padded = ap.footprint_samples(self.footprint, 0.025, self.footprint_padding)
+        self._fp_samples_path = self._fp_samples_padded
+        self._fp_samples_sweep = ap.footprint_samples(self.footprint, 0.025, self.footprint_padding / 2)
+
+    def _sync_footprint(self):
+        """Take the footprint from nav2's local costmap, the single source of the
+        robot outline (nav2_omni*.yaml). The `footprint` parameter is only the
+        fallback while nav2 is not up. Checked before every dock (cheap): a nav2
+        restart with another config is picked up too."""
+        if not self.costmap_param_client.wait_for_service(timeout_sec=0.5):
+            return
+        fut = self.costmap_param_client.call_async(GetParameters.Request(names=["footprint"]))
+        if not self._wait(fut, 1.0) or fut.result() is None or not fut.result().values:
+            return
+        text = fut.result().values[0].string_value
+        try:
+            fp = np.asarray(yaml.safe_load(text) if text else [], dtype=float)
+        except (yaml.YAMLError, ValueError):
+            return
+        if fp.ndim != 2 or fp.shape[0] < 3 or fp.shape[1] != 2:
+            return  # nav2 using robot_radius, or an unparsable value: keep ours
+        if not np.allclose(fp, self.footprint, atol=1e-3):
+            self.log("info", f"Footprint from {LOCAL_COSTMAP_PARAMS}: {fp.tolist()}")
+            self._set_footprint(fp.tolist())
+
     def _parse_footprint(self, text):
         fp = np.asarray(yaml.safe_load(text) if isinstance(text, str) else text, dtype=float)
         self.front, _, self.half_width = ap.footprint_extent(fp)
@@ -511,7 +582,7 @@ class TableDocker(Node):
         # tripping the guard.
         self._fp_samples_sweep = ap.footprint_samples(self.footprint, 0.025, self.footprint_padding / 2)
         if "default" not in self.profiles:
-            self.profiles["default"] = ap.ReachProfile(0.03, 0.02, 0.15, "auto")
+            self.profiles["default"] = ap.ReachProfile(0.025, 0.02, 0.045, "auto")
         rc = data.get("reach_check") or {}
         self.reach_cfg = {
             "enabled": bool(rc.get("enabled", False)),
@@ -534,8 +605,8 @@ class TableDocker(Node):
         if self.target_gap is not None and self.target_gap >= 0.0:
             # Explicit gap (e.g. a legacy offset): a band centred on it.
             prof.gap = float(self.target_gap)
-            prof.gap_min = max(0.01, prof.gap - 0.05)
-            prof.gap_max = prof.gap + 0.05
+            prof.gap_min = max(0.02, prof.gap - 0.02)
+            prof.gap_max = prof.gap + 0.02
         return prof
 
     def _reset_request(self):
@@ -568,7 +639,7 @@ class TableDocker(Node):
         res = info.resolution
         kx = np.floor((info.origin.position.x + (cols + 0.5) * res) / res).astype(int)
         ky = np.floor((info.origin.position.y + (rows + 0.5) * res) / res).astype(int)
-        self._memory.update(zip(kx.tolist(), ky.tolist()))
+        self._memory.update(dict.fromkeys(zip(kx.tolist(), ky.tolist()), self._now()))
 
     def _costmap_update_cb(self, msg):
         """Patch the stored costmap with an OccupancyGridUpdate."""
@@ -655,7 +726,7 @@ class TableDocker(Node):
         keys = np.floor(world[:, :2] / res).astype(int)
         with self._lock:
             if self._remember:
-                self._scan_memory.update(map(tuple, keys.tolist()))
+                self._scan_memory.update(dict.fromkeys(map(tuple, keys.tolist()), self._now()))
 
     def _cloud_cb(self, msg):
         with self._lock:
@@ -669,6 +740,13 @@ class TableDocker(Node):
         """Node clock in seconds: sim time in simulation, wall time on the robot.
         Motion deadlines use it so a slow simulation does not time them out."""
         return self.get_clock().now().nanoseconds * 1e-9
+
+    def _deadline(self, timeout):
+        """now + timeout, capped by the running dock's overall deadline."""
+        return min(self._now() + timeout, self._dock_deadline)
+
+    def _out_of_time(self):
+        return self._now() > self._dock_deadline
 
     def _publish_docked(self):
         self.docked_pub.publish(Bool(data=self.docked))
@@ -766,7 +844,13 @@ class TableDocker(Node):
             for c in clouds:
                 parts.append(self._cloud_points(c))
         parts = [p for p in parts if len(p)]
-        return np.vstack(parts) if parts else np.empty((0, 2))
+        if not parts:
+            return np.empty((0, 2))
+        pts = np.vstack(parts)
+        # Points inside (or touching) the footprint are the robot itself (the arm
+        # or the body seen by the camera, the lidar mounts), never a surface: a
+        # face fit on them lands inside the base, at a random angle.
+        return pts[ap.footprint_clearance(pts, self.footprint) > 0.02]
 
     def _wait_for_samples(self):
         """Block briefly until enough recent frames are buffered (robot stationary)."""
@@ -1029,8 +1113,13 @@ class TableDocker(Node):
             return None
         info = cm["info"]
         with self._lock:
-            memory = list(self._memory)
-            scan_memory = list(self._scan_memory)
+            since = self._memory_since
+            if since is None:
+                memory = list(self._memory)
+                scan_memory = list(self._scan_memory)
+            else:
+                memory = [k for k, t in self._memory.items() if t >= since]
+                scan_memory = [k for k, t in self._scan_memory.items() if t >= since]
         if scan_memory:
             # Lidar hits on the surface's own front scatter a few cm around the
             # fitted face over a dock (odometry drift, a blocky outline): near the
@@ -1077,7 +1166,8 @@ class TableDocker(Node):
             center, radius = face["center"], face["radius"]
             ref = math.atan2(robot[1] - center[1], robot[0] - center[0])
             cands = ap.circle_face_candidates(center, radius, self.front, profile, ref, target,
-                                              angle_step_deg=5.0, max_angle_deg=120.0)
+                                              angle_step_deg=5.0, max_angle_deg=120.0,
+                                              gap_step=0.02)
             ignore = ap.disc_ignore(center, radius, self.face_ignore_margin)
         else:
             n = face["normal"]
@@ -1085,9 +1175,10 @@ class TableDocker(Node):
             # staging pose an operator placed in front of this furniture), not at the
             # centre of whatever stretch of face the lidar happened to see.
             aim = target if target is not None else np.array(robot[:2])
+            # 2 cm gap steps: the bands are +-2 cm around the old stand-offs.
             cands = ap.line_face_candidates(face["p1"], face["p2"], n, self.front, self.half_width,
-                                            profile, aim)
-            ignore = ap.halfplane_ignore(face["centroid"], n, self.face_ignore_margin)
+                                            profile, aim, gap_step=0.02)
+            ignore = self._face_ignore()
         # Padded footprint: keep a margin from everything but the surface itself.
         valid, all_c = ap.rank(cands, profile, self.weights, grid, self._fp_samples_padded,
                                robot[:2], ignore)
@@ -1256,7 +1347,9 @@ class TableDocker(Node):
             return
         len_old = old.get("span", float(np.linalg.norm(old["p2"] - old["p1"])))
         len_new = float(np.linalg.norm(new["p2"] - new["p1"]))
-        if len_new >= len_old:
+        if len_new >= len_old or len_new >= self.fuse_min_span:
+            # Up close a long enough stretch is the better orientation: the far fit
+            # can be skewed by what stands next to the surface (a bin, a board).
             return
         n = old["normal"] / (np.linalg.norm(old["normal"]) + 1e-12)
         if n @ new["normal"] < 0:
@@ -1363,7 +1456,8 @@ class TableDocker(Node):
             return None
         if "center" in face:
             return ap.disc_ignore(face["center"], face["radius"], margin)
-        return ap.halfplane_ignore(face["centroid"], face["normal"], margin)
+        return ap.halfplane_ignore(face["centroid"], face["normal"], margin,
+                                   face["p1"], face["p2"], self.face_ignore_extend)
 
     def _path_free(self, path, grid, ignore):
         """Every pose of a nav_msgs/Path (any frame) keeps the footprint off lethal
@@ -1402,12 +1496,7 @@ class TableDocker(Node):
         swept footprint is collision-free, otherwise nav2's planner (global costmap)."""
         start = self._robot_pose(self.odom_frame)
         goal = plan["pre"]
-        with self._lock:
-            face = self._face
-        if "center" in face:
-            ignore = ap.disc_ignore(face["center"], face["radius"], self.face_ignore_margin)
-        else:
-            ignore = ap.halfplane_ignore(face["centroid"], face["normal"], self.face_ignore_margin)
+        ignore = self._face_ignore()
         if self._straight_path_free(start, goal, self._fresh_grid(), ignore, self._fp_samples_path):
             path = Path()
             path.header.frame_id = self.odom_frame
@@ -1430,15 +1519,17 @@ class TableDocker(Node):
                 s_cost = ap.footprint_cost(grid, start[0], start[1], goal[2], self._fp_samples_path, ignore)
                 self.log("warn", f"Local A* found no path (pre-dock cost {g_cost}, start cost {s_cost})")
             if pts is not None:
-                path = Path()
-                path.header.frame_id = self.odom_frame
-                path.header.stamp = self.get_clock().now().to_msg()
-                dyaw = (goal[2] - start[2] + math.pi) % (2 * math.pi) - math.pi
-                turn = max(1, int(len(pts) * 0.3))  # settle the heading early on
-                for i, (x, y) in enumerate(pts):
-                    path.poses.append(self._pose_msg(self.odom_frame, x, y,
-                                                     start[2] + dyaw * min(1.0, i / turn)))
-                return path, "local A*"
+                yaws = self._astar_yaws(pts, start[2], goal[2], grid, ignore)
+                if yaws is None:
+                    self.log("warn", "Local A* path has no collision-free heading schedule "
+                                     "(the base would clip something while turning)")
+                else:
+                    path = Path()
+                    path.header.frame_id = self.odom_frame
+                    path.header.stamp = self.get_clock().now().to_msg()
+                    for (x, y), yaw in zip(pts, yaws):
+                        path.poses.append(self._pose_msg(self.odom_frame, x, y, yaw))
+                    return path, "local A*"
         # Still nothing: let the global planner route around (goal given in odom;
         # the planner transforms it into the map frame).
         if not self.plan_client.wait_for_server(timeout_sec=2.0):
@@ -1464,6 +1555,43 @@ class TableDocker(Node):
         if grid is not None and not self._path_free(path, grid, ignore):
             return None, "planner path crosses a remembered obstacle"
         return path, "planner"
+
+    def _astar_yaws(self, pts, start_yaw, goal_yaw, grid, ignore, fracs=(0.3, 0.6, 1.0)):
+        """Heading per A* waypoint, turning from start_yaw to goal_yaw over the first
+        `frac` of the path. The A* only checked the footprint at goal_yaw, and the
+        rectangular base sweeps its corners while it turns, so every pose is checked
+        at its own heading. Tries a short turn first, then spreads it over more of
+        the path. Returns the yaws or None if no schedule is collision-free."""
+        dyaw = (goal_yaw - start_yaw + math.pi) % (2 * math.pi) - math.pi
+        n = len(pts)
+        if abs(dyaw) < 0.05 or n < 2:
+            return [goal_yaw] * n
+        # Starting already inside the padding (next to a chair): the first few cm
+        # can only get better, like the A* itself allows a lethal start.
+        x0, y0 = pts[0]
+        start_blocked = ap.footprint_cost(grid, x0, y0, start_yaw, self._fp_samples_path,
+                                          ignore) >= ap.LETHAL
+        for frac in fracs:
+            turn = max(1, int(n * frac))
+            yaws = [start_yaw + dyaw * min(1.0, i / turn) for i in range(n)]
+            ok = True
+            for i in range(1, n):
+                if start_blocked and math.hypot(pts[i][0] - x0, pts[i][1] - y0) < 0.10:
+                    continue
+                # Sub-steps of <= 0.1 rad between waypoints so a fast turn is covered.
+                k = max(1, int(math.ceil(abs(yaws[i] - yaws[i - 1]) / 0.1)))
+                for s in np.linspace(1.0 / k, 1.0, k):
+                    x = pts[i - 1][0] + s * (pts[i][0] - pts[i - 1][0])
+                    y = pts[i - 1][1] + s * (pts[i][1] - pts[i - 1][1])
+                    yaw = yaws[i - 1] + s * (yaws[i] - yaws[i - 1])
+                    if ap.footprint_cost(grid, x, y, yaw, self._fp_samples_path, ignore) >= ap.LETHAL:
+                        ok = False
+                        break
+                if not ok:
+                    break
+            if ok:
+                return yaws
+        return None
 
     def _to_frame(self, pose_odom, frame):
         frame = (frame or "map").lstrip("/")
@@ -1511,7 +1639,7 @@ class TableDocker(Node):
                 return False, "FollowPath rejected (nav2 paused?)"
             handle = send.result()
             res = handle.get_result_async()
-            end = self._now() + self.motion_timeout
+            end = self._deadline(self.motion_timeout)
             ignore = self._face_ignore()
             guard = self._fp_samples
             tick = 0
@@ -1558,7 +1686,7 @@ class TableDocker(Node):
         pts = np.asarray(pts, dtype=float)
         n = len(pts)
         dt = 1.0 / self.control_rate
-        deadline = self._now() + self.motion_timeout
+        deadline = self._deadline(self.motion_timeout)
         ignore = self._face_ignore()
         idx = tick = tf_fail = 0
         while rclpy.ok():
@@ -1831,6 +1959,7 @@ class TableDocker(Node):
     # ----------------------------------------------------------------- preview
     def _preview_cb(self, request, response):
         self.log("info", "Preview requested — detecting + planning (no motion)")
+        self._sync_footprint()
         profile = self._profile()
         self._fix_target()
         try:
@@ -1851,7 +1980,11 @@ class TableDocker(Node):
             response.message = (f"Detected ({shape_txt.strip()}): yaw_err={math.degrees(e_yaw):.1f}deg "
                                 f"dist={distance:.3f}m points={len(fit['pts'])}; "
                                 + (f"plan gap={plan['gap']:.2f}m lateral={plan['lateral']:.2f}m "
-                                   f"({plan['n_valid']}/{plan['n_total']} free) reach={plan['reach']}" if plan
+                                   f"({plan['n_valid']}/{plan['n_total']} free) reach={plan['reach']}"
+                                   + ("" if plan["checked"] else
+                                      " — NO COSTMAP (nav2 paused): obstacles NOT checked, "
+                                      "the real dock may find fewer free poses")
+                                   if plan
                                    else "no collision-free dock pose"))
             self.log("info", response.message)
             return response
@@ -1859,27 +1992,79 @@ class TableDocker(Node):
             self._reset_request()
 
     # ----------------------------------------------------------------- dock
+    def _dock_table_cb(self, request, response):
+        """Typed dock (frida_interfaces/DockTable): set this call's request, run the
+        dock, and return its diagnostics in the response."""
+        self._reset_request()
+        self._sync_footprint()  # the legacy offset conversion below uses self.front
+        if request.surface_type:
+            self.surface_type = request.surface_type
+        elif request.offset > 0.0:
+            # Legacy caller: keep the stop distance its offset used to give.
+            self.target_gap = max(0.0, float(request.offset) + LEGACY_DOCK_MIN_SAFE - self.front)
+        t = request.target
+        if t.header.frame_id:
+            # z too: the reach check needs the object's height.
+            self.target_point = [t.point.x, t.point.y, t.point.z]
+            self.target_frame = t.header.frame_id
+        self.check_reach = bool(request.check_reach and self.target_point)
+        trig = self._dock_cb(Trigger.Request(), Trigger.Response())
+        result = self._last_result
+        response.success = trig.success
+        response.error = "" if trig.success else trig.message
+        response.lateral_error = float(result.get("lateral_error") or 0.0)
+        response.reach = result.get("reach") or "unchecked"
+        response.target_blocked = bool(result.get("target_blocked"))
+        if result.get("blocker"):
+            response.blocker.header.frame_id = result.get("blocker_frame") or "map"
+            response.blocker.header.stamp = self.get_clock().now().to_msg()
+            response.blocker.point.x, response.blocker.point.y = (float(v) for v in result["blocker"][:2])
+            response.blocker_side = result.get("blocker_side") or ""
+        return response
+
     def _dock_cb(self, request, response):
+        self._last_result = {}
+        self._sync_footprint()
         profile = self._profile()
         self.log("info", f"Dock requested — surface={self.surface_type or 'default'} "
                          f"gap={profile.gap:.2f}m band=[{profile.gap_min:.2f}, {profile.gap_max:.2f}] "
                          f"target={self.target_point or '-'} [{self.target_frame}]")
         self._fix_target()
         with self._lock:
-            self._memory = set()
-            self._scan_memory = set()
+            self._memory = {}
+            self._scan_memory = {}
+            self._memory_since = None
             self._remember = True
             self._plan = None
             self._blocked = None
+        self._dock_deadline = self._now() + self.dock_timeout
+        self._near_surface = False
+        self._contact = False
+        start_pose = self._robot_pose(self.odom_frame)
         try:
             response = self._dock(profile, response)
+            if not response.success:
+                # Only a dock that actually drove can have left the robot inside the
+                # surface's inflation; one that failed while planning is where nav2
+                # put it, and the obstacle ahead may be anything (a bin).
+                end_pose = self._robot_pose(self.odom_frame)
+                moved = (start_pose is None or end_pose is None or math.hypot(
+                    end_pose[0] - start_pose[0], end_pose[1] - start_pose[1]) > 0.05)
+                front = self._live_front_clearance() if moved else None
+                self._near_surface = self._contact or (
+                    front is not None and front < self.failed_retreat_gap)
+                if self._near_surface:
+                    self.log("warn", "Dock failed touching/next to something; the next "
+                                     "undock backs off")
             self._record_result(response)
             return response
         finally:
+            self._dock_deadline = math.inf
             with self._lock:
                 self._remember = False
-                self._memory = set()
-                self._scan_memory = set()
+                self._memory = {}
+                self._scan_memory = {}
+                self._memory_since = None
             self._reset_request()
 
     def _dock(self, profile, response):
@@ -1907,6 +2092,27 @@ class TableDocker(Node):
 
         # (a) base placement
         plan = self._plan_dock(profile)
+        if plan is None and self.blocked_wait > 0.0:
+            # Usually a person standing where the base should go (an operator, a
+            # referee): they move. Re-plan for a few seconds before giving up,
+            # forgetting only the obstacles NOT seen again in the last
+            # memory_window seconds. Never wipe the memory: obstacles seen only
+            # intermittently (a bin's rim, which only the camera sees and nav2's
+            # voxel layer decays) would vanish and the spot would look free.
+            self.log("warn", f"No free dock pose; waiting up to {self.blocked_wait:.0f}s "
+                             f"for the spot to clear (someone standing there?)")
+            end = self._deadline(self.blocked_wait)
+            waited_from = self._now()
+            while plan is None and self._now() < end:
+                time.sleep(1.0)
+                if self._now() - waited_from < self.memory_window:
+                    continue  # forget nothing until a full window has been seen
+                with self._lock:
+                    self._memory_since = self._now() - self.memory_window
+                self._wait_costmap(self.get_clock().now(), 2.0)
+                plan = self._plan_dock(profile)
+            if plan is not None:
+                self.log("info", "Dock spot cleared; continuing")
         if plan is None:
             self._stop()
             response.success = False
@@ -1920,6 +2126,9 @@ class TableDocker(Node):
         # (b) MPPI to the pre-dock pose, re-detecting + re-planning on arrival
         if self.use_planned_motion:
             for leg in range(1, self.max_motion_legs + 1):
+                if self._out_of_time():
+                    self.log("warn", f"Dock timeout ({self.dock_timeout:.0f}s) before motion leg {leg}")
+                    break
                 ok, msg = self._drive_to_predock(plan)
                 if not ok and leg < self.max_motion_legs:
                     # The memory keeps growing as the robot moves (a chair leg seen
@@ -1945,7 +2154,7 @@ class TableDocker(Node):
         # The servo moves in a straight line, so it only runs when that sweep is
         # clear (e.g. never cuts across a round table after MPPI stopped short).
         safe, why = self._servo_path_safe(plan)
-        if not safe and self.use_planned_motion:
+        if not safe and self.use_planned_motion and not self._out_of_time():
             # MPPI stopped inside its loose tolerance where the straight sweep grazes
             # something (tight spot): one more, tighter MPPI leg before giving up.
             self.log("warn", f"Straight-in blocked ({why}); tighter MPPI leg to the pre-dock")
@@ -1958,8 +2167,16 @@ class TableDocker(Node):
             response.message = f"No safe straight-in to the planned dock pose ({why})"
             self.log("error", response.message)
             return response
+        if self._out_of_time():
+            self._stop()
+            response.success = False
+            response.message = f"Dock timed out ({self.dock_timeout:.0f}s) before the straight-in"
+            self.log("error", response.message)
+            return response
         ok, msg = self._servo(plan)
         for _ in range(self.refine_passes if ok else 0):
+            if self._out_of_time():
+                break
             # Flat faces: look only at the strip ahead (a round table needs its arc).
             new, shift = self._replan(profile, plan, narrow=profile.shape == "line")
             if shift <= self.refine_shift:
@@ -1982,9 +2199,9 @@ class TableDocker(Node):
         return response
 
     def _record_result(self, response):
-        """Outcome of this dock as JSON: the `last_result` parameter (nav_central
-        reads it back for the DockTable response) and, if set, one line of
-        `result_log` to tune the reach bands from real runs."""
+        """Outcome of this dock: `self._last_result` (the typed DockTable response is
+        built from it), the `last_result` parameter as JSON (benchmarks, debugging)
+        and, if set, one line of `result_log` to tune the reach bands from real runs."""
         with self._lock:
             plan, blocked = self._plan, self._blocked
         result = {
@@ -2013,8 +2230,10 @@ class TableDocker(Node):
             frame, point = self._odom_point_to_map(blocked["point"])
             result.update(blocker=[round(float(v), 3) for v in point], blocker_frame=frame,
                           blocker_side=blocked["side"])
-            self.log("warn", f"Ideal dock pose blocked by something on the {blocked['side']} "
+            self.log("warn", f"Ideal dock pose blocked by something "
+                             f"{'on both sides' if blocked['side'] == 'both' else 'on the ' + blocked['side']} "
                              f"at {result['blocker']} [{frame}]")
+        self._last_result = result
         text = json.dumps(result)
         self.set_parameters([rclpy.parameter.Parameter("last_result", value=text)])
         if self.result_log:
@@ -2060,7 +2279,7 @@ class TableDocker(Node):
                 if math.hypot(x - face["center"][0], y - face["center"][1]) < face["radius"] + self.front:
                     return False, "straight line crosses the round table"
         else:
-            ignore = ap.halfplane_ignore(face["centroid"], face["normal"], self.face_ignore_margin)
+            ignore = self._face_ignore()
         if self._straight_path_free(start, goal, grid, ignore):
             return True, ""
         return False, "swept footprint hits an obstacle" + self._sweep_hits_txt(start, goal, grid, ignore)
@@ -2087,7 +2306,7 @@ class TableDocker(Node):
         Returns (ok, message)."""
         gap = plan["gap"]
         dt = 1.0 / self.control_rate
-        deadline = self._now() + self.approach_timeout
+        deadline = self._deadline(self.approach_timeout)
         settled = 0
         tf_fail = 0
         tick = 0
@@ -2121,6 +2340,13 @@ class TableDocker(Node):
 
             # Live lidar safety (whole footprint, independent of the locked face).
             live, near = self._live_clearance(with_point=True)
+            if live is not None and live < -self.contact_tolerance:
+                # Something is already INSIDE the footprint (3rd-closest ray, so not
+                # one noisy return): the base is touching it. Never call that docked.
+                self._stop()
+                self._contact = True
+                return False, (f"Contact: obstacle {-live * 100:.1f} cm inside the footprint at "
+                               f"base_link ({near[0]:.2f}, {near[1]:.2f}); stopped")
             safety_stop = live is not None and live <= self.safety_clearance
 
             wz = self._clamp(self.k_yaw * e_yaw, self.max_wz)
@@ -2171,7 +2397,7 @@ class TableDocker(Node):
 
     # --------------------------------------------------------------- undock
     def _undock_cb(self, request, response):
-        if not self.docked:
+        if not self.docked and not self._near_surface:
             response.success = True
             response.message = "Not docked — nothing to undock"
             return response
@@ -2204,6 +2430,7 @@ class TableDocker(Node):
         with self._lock:
             self._face = None
         self.docked = False
+        self._near_surface = False
         self._publish_docked()
         self._publish_markers(None, None)
         response.success = True

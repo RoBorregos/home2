@@ -4,8 +4,8 @@
 One node owns the whole manipulation task: it serves ManipulationAction,
 GoToHand and the face / person follow services, and dispatches each task type
 to a pipeline. The pipelines (``pipelines/pick.py``, ``place.py``, ``pour.py``,
-``follow.py``) hold the logic and talk to the robot through ``robot/arm.py``
-and ``robot/perception.py``.
+``shelf.py``, ``follow.py``) hold the logic and talk to the robot through
+``robot/arm.py`` and ``robot/perception.py``.
 
 """
 
@@ -23,13 +23,15 @@ from frida_constants.manipulation_constants import (
     GO_TO_HAND_ACTION_SERVER,
     GRIPPER_REACH,
     MANIPULATION_ACTION_SERVER,
+    PICK_ACCELERATION,
+    SHELF_ACCELERATION,
+    SHELF_SCAN_TOLERANCE,
     RIM_DESCENT_SPEED,
 )
 from frida_constants.vision_constants import CENTROID_TOPIC, FOLLOW_TOPIC
 from frida_interfaces.action import GoToHand, ManipulationAction
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import FixedDistanceMove, FollowFace
-from frida_motion_planning.utils.tf_utils import transform_point
 from geometry_msgs.msg import Point, PoseStamped, Twist
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -42,6 +44,8 @@ from pick_and_place.pipelines import follow as follow_pipeline
 from pick_and_place.pipelines import pick as pick_pipeline
 from pick_and_place.pipelines import place as place_pipeline
 from pick_and_place.pipelines import pour as pour_pipeline
+from pick_and_place.pipelines import shelf as shelf_pipeline
+from pick_and_place.pipelines.classification import PICK_STRATEGY_SHELF
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import default_profiles_path, load_profiles
 from pick_and_place.pipelines.strategies import PickOutcome, build_strategies
@@ -80,6 +84,9 @@ class ManipulationCore(Node):
         self.declare_parameter("pick_profiles_file", "")
         # Benchmark switch: auto, gpd, or geometric (no GPD fallback).
         self.declare_parameter("pick_method", "auto")
+        # Shelf speed-ups to try on the robot one at a time (defaults: as validated).
+        self.declare_parameter("shelf_acceleration", SHELF_ACCELERATION)
+        self.declare_parameter("shelf_place_straight", False)
         self.add_on_set_parameters_callback(self._validate_parameters)
 
         self.arm = RobotArm(self)
@@ -93,12 +100,17 @@ class ManipulationCore(Node):
         # The most recent pick or pour. The place pipeline consumes it, so a
         # place is only meaningful after a pick or pour in this process.
         self._last_pick = PickOutcome()
+        # The last SCAN_SHELF, kept while the base stays put; this node alone puts its
+        # boxes in the planning scene.
+        self._shelf = None
+        self._picked_level = 0
 
         self._pipelines = {
             ManipulationTask.PICK: self._run_pick,
             ManipulationTask.PICK_CLOSEST: self._run_pick_closest,
             ManipulationTask.PLACE: self._run_place,
             ManipulationTask.POUR: self._run_pour,
+            ManipulationTask.SCAN_SHELF: self._run_scan_shelf,
         }
 
         self._manipulation_server = ActionServer(
@@ -178,9 +190,13 @@ class ManipulationCore(Node):
             self.arm.clear_octomap()
 
         self.arm.bind_goal(goal_handle, ManipulationAction.Feedback)
+        self._picked_level = 0
         try:
             success = pipeline(request)
             result.success = int(success)
+            if request.task_type == ManipulationTask.SCAN_SHELF and self._shelf:
+                result.shelf_levels = list(self._shelf.levels)
+            result.shelf_level = self._picked_level
             if success:
                 goal_handle.succeed()
             else:
@@ -214,34 +230,75 @@ class ManipulationCore(Node):
     # ==================================================================
 
     def _validate_parameters(self, parameters):
-        """Reject a pick_method typo instead of silently running auto."""
+        """Reject a pick_method typo or an acceleration outside (0, 1]."""
         for parameter in parameters:
             if parameter.name == "pick_method" and parameter.value not in PICK_METHODS:
                 return SetParametersResult(
                     successful=False,
                     reason=f"pick_method must be one of {PICK_METHODS}",
                 )
+            if parameter.name == "shelf_acceleration" and not 0 < parameter.value <= 1:
+                return SetParametersResult(
+                    successful=False, reason="shelf_acceleration must be in (0, 1]"
+                )
         return SetParametersResult(successful=True)
+
+    def _run_scan_shelf(self, request) -> bool:
+        """Survey the shelf in front, keep the scan and put its boxes in the scene."""
+        self._shelf = None
+        self.arm.remove_shelf_scene()
+        with self._shelf_motion(True):
+            tuning = self.strategies[PICK_STRATEGY_SHELF].profile.shelf
+            shelf = shelf_pipeline.scan(self.arm, self.perception, tuning)
+        if shelf is None:
+            return False
+        self._shelf = shelf
+        return self.arm.set_shelf_boxes(shelf.boxes)
+
+    def _current_shelf(self):
+        """The last scan while the base has not moved since, else None (and no boxes)."""
+        if self._shelf is None:
+            self.get_logger().error("No shelf scan: run SCAN_SHELF first")
+            return None
+        stale = self._shelf.stale(shelf_pipeline.base_pose(self.arm))
+        if stale:
+            self.get_logger().error(f"Shelf scan dropped: {stale}")
+            self._shelf = None
+            self.arm.remove_shelf_scene()
+        return self._shelf
 
     def _run_pick(self, request) -> bool:
         params = request.pick_params
         method = self.get_parameter("pick_method").value
+        shelf = self._current_shelf() if params.from_shelf else None
+        if params.from_shelf and shelf is None:
+            self._last_pick = PickOutcome()
+            return False
         pick_request = pick_pipeline.PickRequest(
             object_name=params.object_name,
             object_point=params.object_point,
             min_distance=params.min_distance or 0.0,
             max_distance=params.max_distance or pick_pipeline.PICK_MAX_DISTANCE,
-            is_shelf=request.scan_environment,
+            is_shelf=params.from_shelf,
             use_gpd=method == "gpd",
             gpd_fallback=method != "geometric",
-            in_configuration=params.in_configuration,
+            # A shelf pick has faced the object's level: perceive from there.
+            in_configuration=params.in_configuration or params.from_shelf,
+            shelf=shelf,
         )
 
         self.arm.remove_all_collision_objects(attached=True)
+        # The wipe takes the shelf boxes too: a shelf pick puts them back to face the
+        # object's level, and the wipes below remove them again.
+        if shelf is not None and not self._face_object_level(shelf, params):
+            self.arm.remove_all_collision_objects(attached=True)
+            self._last_pick = PickOutcome()
+            return False
         try:
-            success, outcome = pick_pipeline.execute(
-                self.arm, self.perception, pick_request, self.strategies
-            )
+            with self._shelf_motion(pick_request.is_shelf):
+                success, outcome = pick_pipeline.execute(
+                    self.arm, self.perception, pick_request, self.strategies
+                )
         except (PickAborted, PickHardwareError):
             self.arm.remove_all_collision_objects(attached=True)
             raise
@@ -255,15 +312,62 @@ class ManipulationCore(Node):
         self._last_pick = outcome
         return True
 
+    def _face_object_level(self, shelf, params) -> bool:
+        """Put the shelf boxes back and face the level that holds the object."""
+        if not self.arm.set_shelf_boxes(shelf.boxes):
+            return False
+        with self._shelf_motion(True):
+            level = shelf_pipeline.find_object(
+                self.arm, self.perception, shelf, params.object_name, params.shelf_level
+            )
+        if not level:
+            self.get_logger().error(f"{params.object_name} not seen on any shelf level")
+            return False
+        self._picked_level = level
+        return True
+
+    def _shelf_motion(self, is_shelf: bool):
+        """The shelf acceleration for a shelf task, the default otherwise."""
+        value = self.get_parameter("shelf_acceleration").value if is_shelf else None
+        return self.arm.acceleration_scaling(value or PICK_ACCELERATION)
+
     def _run_pick_closest(self, request) -> bool:
         """PICK_CLOSEST has never been implemented."""
         self.get_logger().error("PICK_CLOSEST is not implemented")
         return False
 
     def _run_place(self, request) -> bool:
-        success = place_pipeline.execute(
-            self.arm, self.perception, request.place_params, self._last_pick
-        )
+        params = copy.deepcopy(request.place_params)
+        level = params.shelf_level
+        is_shelf = params.is_shelf or level > 0
+        shelf = self._current_shelf() if is_shelf else None
+        if is_shelf and shelf is None:
+            return False
+        if level:
+            if not 1 <= level <= len(shelf.levels):
+                self.get_logger().error(f"Shelf level {level} is not in the scan")
+                return False
+            params.is_shelf = True
+            params.table_height = shelf.levels[level - 1].height
+            params.table_height_tolerance = SHELF_SCAN_TOLERANCE
+            self.arm.set_shelf_boxes(shelf.boxes)
+            with self._shelf_motion(True):
+                faced = shelf_pipeline.face_level(
+                    self.arm, shelf, level, for_place=True
+                )
+            if not faced:
+                self.get_logger().error(f"Could not face shelf level {level}")
+                return False
+        with self._shelf_motion(is_shelf):
+            success = place_pipeline.execute(
+                self.arm,
+                self.perception,
+                params,
+                self._last_pick,
+                straight_in=is_shelf
+                and self.get_parameter("shelf_place_straight").value,
+                shelf=shelf,
+            )
         if success:
             self.arm.remove_all_collision_objects(attached=True)
         return success
@@ -311,8 +415,8 @@ class ManipulationCore(Node):
         )
 
         if point.header.frame_id != "base_link":
-            success, point = transform_point(point, "base_link", self.arm.tf_buffer)
-            if not success:
+            point = self.arm.to_frame(point, "base_link")
+            if point is None:
                 self.get_logger().error(
                     f"Failed to transform hand point from "
                     f"'{goal_handle.request.point.header.frame_id}' to 'base_link'. "

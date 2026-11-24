@@ -51,6 +51,7 @@ from perception_3d.geometric_grasps import (
     grasp_for,
     parse_bbox,
 )
+from perception_3d.shelf_service import ShelfService
 
 BASE_FRAME = "link_base"  # every grasp pose is expressed here (z up)
 DEBUG_POSE_TOPIC = "/manipulation/generated_grasp_pose"
@@ -77,6 +78,8 @@ class GraspGenerator(Node):
 
         self._depth = None
         self._depth_frame = CAMERA_FRAME
+        self._fresh = None  # (image, frame_id) asked for through fresh_depth()
+        self._want_fresh = False
         self._intrinsics: Optional[Intrinsics] = None
 
         # Session state: only filled while a service call is collecting.
@@ -109,6 +112,10 @@ class GraspGenerator(Node):
             GENERATE_GRASPS_SERVICE,
             self._generate_cb,
             callback_group=group,
+        )
+        # The shelf scan needs the same depth image, intrinsics and TF: no own node.
+        self._shelf = ShelfService(
+            self, self._tf_buffer, group, self.fresh_depth, lambda: self._intrinsics
         )
         self.get_logger().info("Grasp generator ready")
 
@@ -276,9 +283,25 @@ class GraspGenerator(Node):
 
     def _depth_cb(self, msg: Image) -> None:
         """Idle unless a request is collecting (saves CPU)."""
+        if not (self._collecting or self._want_fresh):
+            return
+        image = self._bridge.imgmsg_to_cv2(msg, desired_encoding="32FC1")
+        if self._want_fresh:
+            self._fresh = (image, msg.header.frame_id)
+            self._want_fresh = False
         if self._collecting:
-            self._depth = self._bridge.imgmsg_to_cv2(msg, desired_encoding="32FC1")
+            self._depth = image
             self._depth_frame = msg.header.frame_id
+
+    def fresh_depth(self, timeout: float):
+        """(image, frame_id) of a depth frame received after this call, or None."""
+        self._fresh = None
+        self._want_fresh = True
+        deadline = time.time() + timeout
+        while self._fresh is None and time.time() < deadline:
+            time.sleep(0.01)
+        self._want_fresh = False
+        return self._fresh
 
     def _info_cb(self, msg: CameraInfo) -> None:
         if self._intrinsics is None:

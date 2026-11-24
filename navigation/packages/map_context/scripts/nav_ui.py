@@ -31,9 +31,11 @@ from frida_constants.navigation_constants import (
     RESUME_NAV_SERVICE,
     AREAS_SERVICE,
     MOVE_LOCATION_SERVICE,
-    DOCK_SERVICE,
+    DOCKER_DOCK_TABLE_SERVICE,
     DOCK_TABLE_SERVICE,
     DOCK_TABLE_TIMEOUT,
+    DOCK_PREVIEW_SERVICE,
+    UNDOCK_SERVICE,
 )
 
 from PyQt5.QtWidgets import (
@@ -200,11 +202,16 @@ class NavRosNode(Node):
             from frida_interfaces.srv import DockTable, MapAreas, MoveLocation
             self._areas_client = self.create_client(MapAreas, AREAS_SERVICE)
             self._move_client = self.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
-            self._dock_client = self.create_client(Trigger, DOCK_SERVICE)
-            # nav_central's DockTable wrapper: passes the surface type to
-            # table_docker before triggering the planned approach. Falls back to
-            # the raw Trigger dock if absent.
+            self._dock_client = self.create_client(DockTable, DOCKER_DOCK_TABLE_SERVICE)
+            # nav_central's DockTable (resumes nav2, then forwards to table_docker);
+            # table_docker's own typed DockTable above is the fallback if absent.
             self._dock_table_client = self.create_client(DockTable, DOCK_TABLE_SERVICE)
+            # Testing the planned dock: preview (detect + plan, no motion) and undock.
+            from rcl_interfaces.srv import SetParameters
+            self._preview_client = self.create_client(Trigger, DOCK_PREVIEW_SERVICE)
+            self._undock_client = self.create_client(Trigger, UNDOCK_SERVICE)
+            self._docker_param_client = self.create_client(
+                SetParameters, '/table_docker/set_parameters')
 
         # Mapping mode: the map-save client depends on the SLAM backend.
         if self.ui_mode == 'mapping':
@@ -541,9 +548,9 @@ class NavRosNode(Node):
     def dock_async(self, on_done, surface_type: str = "default"):
         """Approach the table in a background thread.
 
-        Prefers nav_central's DockTable service so `surface_type` selects the
-        reach band table_docker plans in. Falls back to the raw Trigger
-        DOCK_SERVICE (last-set request on the docker) when nav_central is not running.
+        Prefers nav_central's DockTable service (it resumes nav2 for the dock) so
+        `surface_type` selects the reach band table_docker plans in. Falls back to
+        table_docker's own typed DockTable when nav_central is not running.
         """
         import time
         from frida_interfaces.srv import DockTable
@@ -567,19 +574,70 @@ class NavRosNode(Node):
                     res = future.result()
                     on_done(res.success, res.error)
                     return
-                # nav_central not up — raw table_docker trigger (default surface).
+                # nav_central not up — table_docker's typed dock, same request.
                 if not self._dock_client.wait_for_service(timeout_sec=5.0):
                     on_done(False, "Dock service not available")
                     return
-                future = self._dock_client.call_async(Trigger.Request())
+                req = DockTable.Request()
+                req.surface_type = surface_type
+                future = self._dock_client.call_async(req)
                 if not _wait(future, DOCK_TABLE_TIMEOUT):
                     on_done(False, "Dock timed out")
                     return
                 res = future.result()
-                on_done(res.success, res.message)
+                on_done(res.success, res.error)
             except Exception as e:
                 on_done(False, str(e))
         threading.Thread(target=_worker, daemon=True).start()
+
+    def preview_dock_async(self, on_done, surface_type: str = "default"):
+        """Detect + plan at `surface_type` without moving (table_docker preview).
+        Candidates show in RViz on /approach_planner/candidates."""
+        from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
+        from rcl_interfaces.srv import SetParameters
+
+        def _worker():
+            try:
+                if self._docker_param_client.wait_for_service(timeout_sec=2.0):
+                    req = SetParameters.Request()
+                    req.parameters = [Parameter(name='surface_type', value=ParameterValue(
+                        type=ParameterType.PARAMETER_STRING, string_value=surface_type))]
+                    if not self._wait_future(self._docker_param_client.call_async(req), 3.0):
+                        on_done(False, "Could not set surface_type on table_docker")
+                        return
+                self._trigger(self._preview_client, 20.0, on_done)
+            except Exception as e:
+                on_done(False, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def undock_async(self, on_done):
+        """Back off the docked surface (table_docker undock)."""
+        def _worker():
+            try:
+                self._trigger(self._undock_client, 30.0, on_done)
+            except Exception as e:
+                on_done(False, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    @staticmethod
+    def _wait_future(future, timeout):
+        import time
+        elapsed = 0.0
+        while not future.done() and elapsed < timeout:
+            time.sleep(0.1)
+            elapsed += 0.1
+        return future.done()
+
+    def _trigger(self, client, timeout, on_done):
+        if not client.wait_for_service(timeout_sec=3.0):
+            on_done(False, f"{client.srv_name} not available")
+            return
+        future = client.call_async(Trigger.Request())
+        if not self._wait_future(future, timeout):
+            on_done(False, f"{client.srv_name} timed out")
+            return
+        res = future.result()
+        on_done(res.success, res.message)
 
     def send_goal(self, x, y, yaw):
         msg = PoseStamped()
@@ -1107,6 +1165,20 @@ class NavUI(QMainWindow):
             "Surface type to dock at; distances come from approach_profiles.yaml")
         approach_row.addWidget(self.combo_surface)
         loc_layout.addLayout(approach_row)
+        # Planned-dock testing: preview (detect + plan, candidates in RViz, no
+        # motion) and undock (back off so nav2 can plan the next goal).
+        dock_test_row = QHBoxLayout()
+        self.btn_preview_dock = QPushButton("Preview Dock")
+        self.btn_preview_dock.setToolTip(
+            "Detect the surface and plan the dock for the selected type, without moving. "
+            "See /approach_planner/candidates in RViz.")
+        self.btn_preview_dock.clicked.connect(self._on_preview_dock)
+        dock_test_row.addWidget(self.btn_preview_dock)
+        self.btn_undock = QPushButton("Undock")
+        self.btn_undock.setToolTip("Back off the docked surface")
+        self.btn_undock.clicked.connect(self._on_undock)
+        dock_test_row.addWidget(self.btn_undock)
+        loc_layout.addLayout(dock_test_row)
         nav_layout.addWidget(loc_group)
         # Populate shortly after startup (services need a moment to come up).
         QTimer.singleShot(1500, self._on_refresh_locations)
@@ -1411,6 +1483,34 @@ class NavUI(QMainWindow):
             QTimer.singleShot(0, self._on_approach_done)
 
         self.ros_node.dock_async(on_done, surface_type=surface)
+
+    def _on_preview_dock(self):
+        self.btn_preview_dock.setEnabled(False)
+        surface = self.combo_surface.currentText()
+        self.status.showMessage(f"Previewing dock ({surface}) ...")
+
+        def on_done(success, msg):
+            self._dock_test_result = (self.btn_preview_dock, "Preview", success, msg)
+            QTimer.singleShot(0, self._on_dock_test_done)
+
+        self.ros_node.preview_dock_async(on_done, surface_type=surface)
+
+    def _on_undock(self):
+        self.btn_undock.setEnabled(False)
+        self.status.showMessage("Undocking ...")
+
+        def on_done(success, msg):
+            self._dock_test_result = (self.btn_undock, "Undock", success, msg)
+            QTimer.singleShot(0, self._on_dock_test_done)
+
+        self.ros_node.undock_async(on_done)
+
+    def _on_dock_test_done(self):
+        btn, name, success, msg = self._dock_test_result
+        btn.setEnabled(True)
+        self.status.showMessage(f"{name} {'ok' if success else 'failed'}" + (f": {msg}" if msg else ""))
+        if not success:
+            QMessageBox.warning(self, f"{name} Failed", msg or "unknown error")
 
     def _on_approach_done(self):
         self.btn_approach.setEnabled(True)

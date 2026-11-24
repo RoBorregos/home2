@@ -12,24 +12,32 @@
 #   grasp    how the gripper approaches objects there (top | front), used by the
 #            reach check below; default top. Confirm per surface with manipulation.
 #
-# Initial values reproduce the distances the robot docked at before this change
-# (old offset + min_safe 0.19 - footprint front 0.325), so behaviour on the real
-# robot does not move. Ask manipulation for the measured reach band per surface.
+# Values reproduce EXACTLY the distances the robot docked at before this change
+# (gap = old offset + min_safe 0.19 - footprint front 0.325; offset 0 meant the
+# default 0.16), with a narrow +-2 cm band so manipulation, calibrated at those
+# distances, sees the same stand-off. Widen a band only after manipulation
+# confirms it still reaches there.
+#   old offset 0.16 (default) -> 2.5 cm   PPC tables/counter
+#   old offset 0.30           -> 16.5 cm  PPC cabinet
+#   old offset 0.32           -> 18.5 cm  PPC dishwasher / cooking table, restaurant
+# GPSR used to dock at 2.5 cm everywhere, but it barely docked; it now uses the
+# same per-surface distances as PPC (shelves like the cabinet).
 
 surfaces:
   # auto: fit line AND circle, keep the better one (dining tables may be round)
-  table:        {gap: 0.03, gap_min: 0.02, gap_max: 0.15, shape: auto}
-  round_table:  {gap: 0.03, gap_min: 0.02, gap_max: 0.15, shape: circle}
-  counter:      {gap: 0.03, gap_min: 0.02, gap_max: 0.15, shape: line}
+  table:        {gap: 0.025, gap_min: 0.02, gap_max: 0.045, shape: auto}
+  round_table:  {gap: 0.025, gap_min: 0.02, gap_max: 0.045, shape: circle}
+  counter:      {gap: 0.025, gap_min: 0.02, gap_max: 0.045, shape: line}
   # Front sits close / overhangs above the lidar plane: stand further back.
-  dishwasher:   {gap: 0.19, gap_min: 0.12, gap_max: 0.25, shape: line}
-  # Shelves: the arm needs room to reach in.
-  cabinet:      {gap: 0.17, gap_min: 0.10, gap_max: 0.25, shape: line, grasp: front}
-  shelf:        {gap: 0.17, gap_min: 0.10, gap_max: 0.25, shape: line, grasp: front}
+  dishwasher:   {gap: 0.185, gap_min: 0.165, gap_max: 0.205, shape: line}
+  # PPC cabinet: room for the arm to reach into the shelves.
+  cabinet:      {gap: 0.165, gap_min: 0.145, gap_max: 0.185, shape: line, grasp: front}
+  # Any shelf-like furniture (GPSR): same stand-off as the PPC cabinet.
+  shelf:        {gap: 0.165, gap_min: 0.145, gap_max: 0.185, shape: line, grasp: front}
   # Restaurant: serving at a customer table / bar with the arm tucked in nav_pose.
-  serving_table: {gap: 0.19, gap_min: 0.12, gap_max: 0.25, shape: auto}
+  serving_table: {gap: 0.185, gap_min: 0.165, gap_max: 0.205, shape: auto}
   # Unknown surface: table band, let table_docker pick line/circle.
-  default:      {gap: 0.03, gap_min: 0.02, gap_max: 0.15, shape: auto}
+  default:      {gap: 0.025, gap_min: 0.02, gap_max: 0.045, shape: auto}
 
 # approach_point (person / object seen by vision): here the band is the distance
 # from the base CENTRE to the target point.

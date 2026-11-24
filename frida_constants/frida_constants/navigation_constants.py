@@ -70,15 +70,20 @@ UNDOCK_SERVICE = (
 DOCK_PREVIEW_SERVICE = (
     "/navigation/preview_dock"  # std_srvs/Trigger: detect + show markers, no motion
 )
+# table_docker's typed dock (frida_interfaces/DockTable): the whole request travels in
+# the call and the diagnostics come back in the response. nav_central forwards
+# DOCK_TABLE_SERVICE here (after resuming nav2).
+DOCKER_DOCK_TABLE_SERVICE = "/table_docker/dock_table"
+# nav2 costmaps whose `footprint` parameter is the single source of the robot outline.
+LOCAL_COSTMAP_PARAMS = "/local_costmap/local_costmap"
+GLOBAL_COSTMAP_PARAMS = "/global_costmap/global_costmap"
 DOCKED_TOPIC = "/navigation/docked"  # std_msgs/Bool (latched): currently docked?
 RETREAT_DISTANCE = 0.2  # m the base backs off on undock (table_docker retreat_distance)
-# Hard cap (s, wall clock) on one dock request: table_docker always answers within
-# it, docking "good enough" (inside the reach band) if it did not converge.
-DOCK_BUDGET = 30.0
-# Client-side waits: the budget plus the caller's own overhead (setting the
-# request params, resuming nav2), so a client never gives up before the docker.
-DOCK_CLIENT_TIMEOUT = DOCK_BUDGET + 15.0  # nav_central -> table_docker
-DOCK_TABLE_TIMEOUT = DOCK_BUDGET + 30.0  # task manager / UI -> nav_central
+# Hard cap (s, wall clock) per dock request; table_docker always answers within it.
+DOCK_BUDGET = 100.0  # table_docker dock_timeout default
+# Client waits = budget + caller overhead, so clients never give up before the docker.
+DOCK_CLIENT_TIMEOUT = DOCK_BUDGET + 20.0  # nav_central -> table_docker
+DOCK_TABLE_TIMEOUT = DOCK_BUDGET + 70.0  # task manager / UI -> nav_central (resume/pause nav2 too)
 POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
 
 ### General Constants

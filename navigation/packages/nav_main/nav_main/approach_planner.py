@@ -197,21 +197,26 @@ def to_base_frame(point, x, y, yaw):
 
 
 def side_of(points, x, y, yaw, center_band=0.10):
-    """'left' | 'right' | 'center' of `points` (Nx2 world) seen from a base at
-    (x, y, yaw), by their mean lateral offset."""
+    """'left' | 'right' | 'center' | 'both' of `points` (Nx2 world) seen from a
+    base at (x, y, yaw): 'both' when there are points on each side, otherwise by
+    their mean lateral offset."""
     pts = np.asarray(points, dtype=float).reshape(-1, 2)
     if len(pts) == 0:
         return ""
-    lateral = float(np.mean([to_base_frame(p, x, y, yaw)[1] for p in pts]))
+    lat = np.array([to_base_frame(p, x, y, yaw)[1] for p in pts])
+    left, right = bool((lat > center_band).any()), bool((lat < -center_band).any())
+    if left and right:
+        # e.g. a bin on one side and a person on the other: the mean would say
+        # "center" although nothing is in front.
+        return "both"
+    lateral = float(np.mean(lat))
     if abs(lateral) <= center_band:
         return "center"
     return "left" if lateral > 0 else "right"
 
 
 def in_reach_band(gap, yaw_err, lateral_err, profile, yaw_tol=0.10, lateral_tol=0.08):
-    """Whether a docked base is good enough for the arm even if the docker did not
-    converge: front gap inside [gap_min, gap_max] and heading / lateral offset
-    within relaxed tolerances (rad, m). Used when the time budget runs out."""
+    """Gap inside the reach band and yaw/lateral errors within relaxed tolerances (rad, m)."""
     if gap is None or yaw_err is None or lateral_err is None:
         return False
     return (profile.gap_min - 0.01 <= gap <= profile.gap_max + 0.01
@@ -365,11 +370,7 @@ def rank(candidates, profile, weights=None, grid=None, samples=None, robot=None,
 
 
 def footprint_cost_field(grid, xs, ys, yaw, samples, ignore=None, unknown_cost=0):
-    """footprint_cost() for the base at every (xs[i], ys[j]) of a lattice at once,
-    heading `yaw`: a (len(xs), len(ys)) array. Same semantics (max cost under the
-    footprint, `ignore` on world points, unknown -> unknown_cost), but one
-    vectorised pass per footprint sample instead of one call per pose: the
-    configuration-space obstacle map a fixed-heading A* needs."""
+    """footprint_cost() at every lattice pose (xs[i], ys[j], yaw) at once: a C-space cost map."""
     X, Y = np.meshgrid(np.asarray(xs, dtype=float), np.asarray(ys, dtype=float), indexing="ij")
     field = np.zeros(X.shape, dtype=np.int32)
     offsets = transform_points(np.asarray(samples, dtype=float), 0.0, 0.0, yaw)
@@ -385,13 +386,7 @@ def footprint_cost_field(grid, xs, ys, yaw, samples, ignore=None, unknown_cost=0
 
 def footprint_astar(grid, start, goal, yaw, samples, ignore=None, step=None,
                     cost_weight=1.0, max_expansions=20000, window=1.5):
-    """Holonomic A* over (x, y) at fixed heading `yaw` on `grid`: every node keeps
-    the whole footprint (`samples`) off lethal cells. For short approach legs on
-    the local costmap, where the obstacles nav2's planner lost (thin chair legs)
-    are known. The search stays inside the start/goal bounding box grown by
-    `window` metres, whose footprint costs are computed up front
-    (footprint_cost_field), so each expansion is a table lookup.
-    Returns [(x, y), ...] from start to goal, or None."""
+    """Fixed-heading footprint A* inside the start/goal box grown by `window` m; [(x, y)...] or None."""
     step = step or grid.resolution
     sx, sy = start
     gx, gy = goal
@@ -449,14 +444,26 @@ def footprint_astar(grid, start, goal, yaw, samples, ignore=None, step=None,
     return None
 
 
-def halfplane_ignore(point_on_face, normal, margin):
-    """Ignore cells on/behind a flat face: (p - face) . n > -margin."""
+def halfplane_ignore(point_on_face, normal, margin, p1=None, p2=None, extend=0.0):
+    """Ignore cells on/behind a flat face: (p - face) . n > -margin.
+
+    With the face's segment `p1`-`p2`, only along that segment (+ `extend` past
+    each end): something flush BESIDE the surface (a bin, the next cabinet) is
+    still an obstacle, instead of the whole infinite line being ignored."""
     p0 = np.asarray(point_on_face, dtype=float)
     n = np.asarray(normal, dtype=float)
     n = n / (np.linalg.norm(n) + 1e-12)
+    if p1 is None or p2 is None:
+        def fn(world):
+            return (world - p0) @ n > -margin
+        return fn
+    u = np.array([-n[1], n[0]])
+    t1, t2 = sorted((float((np.asarray(p1, dtype=float) - p0) @ u),
+                     float((np.asarray(p2, dtype=float) - p0) @ u)))
 
     def fn(world):
-        return (world - p0) @ n > -margin
+        t = (world - p0) @ u
+        return ((world - p0) @ n > -margin) & (t >= t1 - extend) & (t <= t2 + extend)
     return fn
 
 
@@ -475,7 +482,7 @@ def load_weights(data, key):
 
 
 def load_profiles(data):
-    """Parse the `profiles` mapping of approach_profiles.yaml."""
+    """Parse a profile mapping of approach_profiles.yaml (`surfaces` or `points`)."""
     out = {}
     for name, p in (data or {}).items():
         out[name] = ReachProfile(float(p["gap"]), float(p["gap_min"]),

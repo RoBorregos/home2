@@ -438,12 +438,6 @@ class NavigationTasks:
         )
         return (Status.EXECUTION_SUCCESS, {"distance": result.distance_meters})
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
-    @service_check(
-        "dock_table_srv",
-        (Status.EXECUTION_ERROR, "Service not started"),
-        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
-    )
     def dock_table(
         self, offset=0.0, surface_type: str = "", target=None, check_reach: bool = False
     ):
@@ -460,8 +454,19 @@ class NavigationTasks:
 
         Returns (Status, error). Diagnostics land in `self.last_dock_result`:
         {"lateral_error", "reach", "target_blocked", "blocker" (PointStamped or
-        None), "blocker_side"}.
+        None), "blocker_side"}. It is cleared BEFORE the call, so a dock that never
+        reached the service (not started, mocked) leaves it empty, never stale.
         """
+        self.last_dock_result = {}
+        return self._dock_table(offset, surface_type, target, check_reach)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check(
+        "dock_table_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def _dock_table(self, offset, surface_type, target, check_reach):
         CLog.nav(
             self.node,
             "MOVE",
@@ -473,7 +478,6 @@ class NavigationTasks:
         if target is not None:
             request.target = target
         request.check_reach = bool(check_reach and target is not None)
-        self.last_dock_result = {}
         future = self.dock_table_srv.call_async(request)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=DOCK_TIMEOUT)
         result = future.result()
@@ -489,7 +493,12 @@ class NavigationTasks:
                 CLog.nav(
                     self.node,
                     "DOCK",
-                    f"Spot in front of the target blocked on the {result.blocker_side}",
+                    "Spot in front of the target blocked "
+                    + (
+                        "on both sides"
+                        if result.blocker_side == "both"
+                        else f"on the {result.blocker_side}"
+                    ),
                     level="warn",
                 )
             if result.success:

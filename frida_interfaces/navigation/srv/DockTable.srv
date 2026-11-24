@@ -26,7 +26,8 @@ float32 lateral_error
 string reach
 # The pose straight in front of the target was blocked (e.g. a chair): `blocker`
 # is the centre of what blocks it (map frame) and `blocker_side` where it sits
-# seen from that pose ("left" | "center" | "right"). Empty when nothing blocked.
+# seen from that pose ("left" | "center" | "right" | "both" = obstacles on each
+# side). Empty when nothing blocked.
 bool target_blocked
 geometry_msgs/PointStamped blocker
 string blocker_side

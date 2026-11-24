@@ -198,6 +198,8 @@ def test_side_of():
     assert ap.side_of([(1.0, -0.5)], 0.0, 0.0, 0.0) == "right"
     assert ap.side_of([(1.0, 0.05)], 0.0, 0.0, 0.0) == "center"
     assert ap.side_of([], 0.0, 0.0, 0.0) == ""
+    # A bin on one side and a person on the other: not "center".
+    assert ap.side_of([(1.0, 0.5), (1.0, -0.5)], 0.0, 0.0, 0.0) == "both"
 
 
 def test_chair_in_front_of_target_is_reported_as_blocker():
@@ -243,8 +245,7 @@ def test_cost_field_matches_footprint_cost():
 
 
 def test_astar_gives_up_fast_when_the_detour_leaves_the_window():
-    # A detour longer than the search window is the global planner's job: the
-    # local A* must say "no" quickly instead of searching the whole costmap.
+    # Long detours are the global planner's job: the local A* must give up quickly.
     import time
     grid = empty_grid()
     samples = ap.footprint_samples(FOOTPRINT, grid.resolution / 2, padding=0.03)
@@ -261,3 +262,9 @@ def test_in_reach_band():
     assert not ap.in_reach_band(0.05, 0.3, 0.0, TABLE)    # badly rotated
     assert not ap.in_reach_band(0.05, 0.0, 0.2, TABLE)    # off to the side
     assert not ap.in_reach_band(None, 0.0, 0.0, TABLE)
+def test_halfplane_ignore_limited_to_segment():
+    # Face along y in [-0.5, 0.5] at x = 1, normal +x. A cell on the face line
+    # inside the segment is the surface; one flush beside it (y = 1.2) is not.
+    ign = ap.halfplane_ignore((1.0, 0.0), (1.0, 0.0), 0.06, (1.0, -0.5), (1.0, 0.5), extend=0.4)
+    pts = np.array([[1.0, 0.0], [1.0, 0.85], [1.0, 1.2], [0.8, 0.0]])
+    assert ign(pts).tolist() == [True, True, False, False]
