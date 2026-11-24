@@ -17,6 +17,7 @@ from types import SimpleNamespace
 import pytest
 import yaml
 from contextlib import contextmanager
+from dataclasses import replace
 from scipy.spatial.transform import Rotation
 
 from fakes import (
@@ -164,6 +165,18 @@ def test_cartesian_approach_backs_off_and_closes_in_along_the_grasp_axis():
 
 
 @pytest.mark.parametrize("mode1_restored", [True, False])
+@pytest.mark.parametrize("rate", [None, 1000.0])
+def test_cartesian_approach_skips_a_drive_through_the_wrist_singularity(rate):
+    """A wrist flip mid-drive is xArm C24, which aborts the whole task."""
+    profile = replace(
+        load_profiles(PROFILES_PATH)[PICK_STRATEGY_GEOMETRIC], max_drive_joint_speed=0.5
+    )
+    arm = FakeArm(drive_rates=[rate])
+    with pytest.raises(PickAttemptFailed, match="singularity|no IK"):
+        CartesianApproachPick(profile).attempt(arm, candidate())
+    assert "move_to_pregrasp" not in arm.calls
+
+
 def test_cartesian_approach_fails_when_the_gripper_never_closed(mode1_restored):
     """The close runs on mode 1, so a failed restore must not read as a grasp."""
     closes = []

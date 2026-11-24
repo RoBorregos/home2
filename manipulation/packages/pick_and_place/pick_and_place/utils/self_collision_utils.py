@@ -1,3 +1,5 @@
+import copy
+import numpy as np
 from geometry_msgs.msg import PoseStamped
 from moveit_msgs.srv import GetPositionIK, GetStateValidity
 from moveit_msgs.msg import ContactInformation
@@ -6,6 +8,7 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_pymoveit2.robots.xarm6 import MOVE_GROUP_ARM
 
 IK_TIMEOUT_SEC = 0.2
+DRIVE_STEP = 0.005
 
 
 def compute_ik(
@@ -124,3 +127,30 @@ def endpoint_self_collides(
 
     # Invalid only due to world/attached objects (e.g. clothes) -> allowed.
     return False
+
+
+def drive_joint_rate(
+    compute_ik_client, pose_stamped: PoseStamped, direction, distance: float, seed=None
+):
+    """Largest rad/m any joint needs along the drive (xArm C24 check); None without IK."""
+    steps = int(np.ceil(distance / DRIVE_STEP - 1e-6))
+    previous, rate = None, 0.0
+    for step in range(steps + 1):
+        travelled = min(step * DRIVE_STEP, distance)
+        pose = copy.deepcopy(pose_stamped)
+        pose.pose.position.x += float(direction[0]) * travelled
+        pose.pose.position.y += float(direction[1]) * travelled
+        pose.pose.position.z += float(direction[2]) * travelled
+        response = compute_ik(
+            compute_ik_client, pose, avoid_collisions=step == 0, seed_joint_state=seed
+        )
+        if response is None or response.error_code.val != response.error_code.SUCCESS:
+            return None
+        seed = response.solution.joint_state
+        joints = np.array(seed.position)
+        if previous is not None:
+            rate = max(
+                rate, np.abs(joints - previous[1]).max() / (travelled - previous[0])
+            )
+        previous = (travelled, joints)
+    return rate

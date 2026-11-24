@@ -144,6 +144,7 @@ class PickProfile:
     force_guard: Optional[ForceGuardProfile] = None
     fallback_to_gpd: bool = False
     shelf: Optional[ShelfProfile] = None
+    max_drive_joint_speed: Optional[float] = None
 
     @property
     def effective_descent_distance(self) -> float:
@@ -172,6 +173,10 @@ class PickProfile:
                 f"{self.name}.pre_grasp_height must be >= 0, got {self.pre_grasp_height}"
             )
         _require_positive(self.pre_grasp_velocity, f"{self.name}.pre_grasp_velocity")
+        if self.max_drive_joint_speed is not None:
+            _require_positive(
+                self.max_drive_joint_speed, f"{self.name}.max_drive_joint_speed"
+            )
         if self.close_settle < 0.0:
             raise ProfileError(
                 f"{self.name}.close_settle must be >= 0, got {self.close_settle}"

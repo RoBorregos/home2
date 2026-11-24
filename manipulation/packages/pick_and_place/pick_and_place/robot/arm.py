@@ -75,7 +75,10 @@ from xarm_msgs.srv import MoveVelocity, SetInt16
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
-from pick_and_place.utils.self_collision_utils import endpoint_self_collides
+from pick_and_place.utils.self_collision_utils import (
+    drive_joint_rate,
+    endpoint_self_collides,
+)
 
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
@@ -512,6 +515,18 @@ class RobotArm:
             pose,
             latest_joint_state=self._latest_joint_state,
             logger=self._log,
+        )
+
+    def drive_joint_rate(
+        self, pose, direction, distance: float, seed=None
+    ) -> Optional[float]:
+        """Largest rad/m any joint needs on the drive from ``pose``; None without IK."""
+        return drive_joint_rate(
+            self._compute_ik_client,
+            pose,
+            direction,
+            distance,
+            self._latest_joint_state if seed is None else seed,
         )
 
     # ==================================================================
