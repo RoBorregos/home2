@@ -4,6 +4,7 @@ from typing import List, Union
 
 import rclpy
 from frida_motion_planning.utils.Planner import Planner
+from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_pymoveit2.robots import xarm6
 from geometry_msgs.msg import PoseStamped
 from moveit_msgs.msg import PlanningSceneComponents
@@ -441,7 +442,13 @@ class MoveItPlanner(Planner):
             PlanningSceneComponents.WORLD_OBJECT_NAMES
             | PlanningSceneComponents.WORLD_OBJECT_GEOMETRY
         )
-        return self.moveit2._get_planning_scene_service.call(request).scene
+        # Async with a timeout: a blocking call can deadlock when every executor thread waits
+        client = self.moveit2._get_planning_scene_service
+        future = client.call_async(request)
+        if not wait_for_future(future, timeout=PYMOVEIT_FUTURE_TIMEOUT):
+            client.remove_pending_request(future)
+            return None
+        return future.result().scene
 
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)
@@ -451,6 +458,8 @@ class MoveItPlanner(Planner):
             self.moveit2.detach_all_collision_objects()
         time.sleep(1e-03)
         planning_scene = self.get_planning_scene()
+        if planning_scene is None:
+            return
         for collision_object in planning_scene.world.collision_objects:
             print("Found collision object: ", collision_object.id)
             time.sleep(1e-09)

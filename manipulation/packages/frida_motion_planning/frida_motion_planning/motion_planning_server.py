@@ -714,6 +714,10 @@ class MotionPlanningServer(Node):
         response = GetCollisionObjects.Response()
 
         planning_scene = self.planner.get_planning_scene()
+        if planning_scene is None:
+            self.get_logger().error("get_planning_scene timed out")
+            response.success = False
+            return response
         for collision_object in planning_scene.world.collision_objects:
             new_collision_object = CollisionObject()
             new_collision_object.id = collision_object.id
