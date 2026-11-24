@@ -41,12 +41,6 @@ def generate_launch_description():
                 executable="octomap_cloud_filter.py",
                 output="screen",
             ),
-            # xArm driver mode/velocity API the pick pipeline calls for its final approach
-            Node(
-                package="frida_gz_sim",
-                executable="xarm_velocity_sim.py",
-                output="screen",
-            ),
             # Publishes /point_cloud, so it stays outside the remapped scope below
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(

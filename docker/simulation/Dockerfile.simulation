@@ -86,10 +86,6 @@ RUN apt-get update && apt-get install -y \
     nlohmann-json3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Task managers and the task harness (BAML client, behaviour trees, tests, run videos)
-RUN pip3 install --no-cache-dir --break-system-packages --ignore-installed typing-extensions baml-py==0.86.1 py_trees==2.2.3 pydantic==2.12.5 pytest \
-    && apt-get update && apt-get install -y ffmpeg espeak-ng && rm -rf /var/lib/apt/lists/*
-
 RUN mkdir -p /workspace && chown -R $USERNAME:$USERNAME /workspace \
     && echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/$USERNAME/.bashrc \
     && echo "if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi" >> /home/$USERNAME/.bashrc

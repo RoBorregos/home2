@@ -152,13 +152,6 @@ Sim-only pieces:
   applies the few URDF patches Gazebo needs.
 - `xarm_sim_bridge.py` serves `/xarm/set_tgpio_digital` (the real gripper IO
   service) and publishes `/gripper/grasp_state`.
-- `xarm_velocity_sim.py` serves the xArm driver API the pick pipeline calls directly
-  for its final approach (`/xarm/set_mode`, `/xarm/set_state`,
-  `/xarm/vc_set_cartesian_velocity`) and publishes `/xarm/robot_states`. A cartesian
-  velocity becomes a straight MoveIt path timed at the commanded speed, scaled by the
-  real-time factor because the pipeline times its moves on the wall clock.
-- The sim arm exposes joint effort, which the force-guarded descent of flat objects
-  uses to detect contact with the table.
 - `cloud_frame_fix.py` republishes the Gazebo cloud on the ZED topic in the
   frame its points use, throttled so large clouds do not starve DDS.
 - `grasp_attach.py` welds the object between the fingers to the gripper when it
