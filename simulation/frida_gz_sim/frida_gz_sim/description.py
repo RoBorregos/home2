@@ -89,6 +89,12 @@ def build_robot_description(
         if limit is not None:
             limit.set("effort", str(finger_effort))
 
+    # The force-guarded descent detects contact from joint effort
+    for joint in root.findall("ros2_control/joint"):
+        states = {state.get("name") for state in joint.findall("state_interface")}
+        if "effort" not in states:
+            ET.SubElement(joint, "state_interface", {"name": "effort"})
+
     for link in root.findall("link"):
         if link.get("name") in GRIPPER_BOXES:
             _box_collision(link, *GRIPPER_BOXES[link.get("name")])
