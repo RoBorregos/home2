@@ -79,17 +79,6 @@ To add a row: add it to the YAML and count it in the task's function in `scoring
 - Task: a generator in `scenario.py`, a scoresheet, a counter in `scoring.py` and an
   entry in `TASK_MANAGERS` in `run_scenario.py`.
 
-## CI
-
-- `.github/workflows/sim-tests.yml`: the unit tests on every pull request (hosted runner).
-- `.github/workflows/sim-tasks.yml`: the suite, nightly and on manual dispatch, on a
-  self-hosted runner labelled `frida-sim` (GPU + the sim image). It never runs on pull
-  requests because the repo is public. The score table lands in the job summary and the
-  run directories are uploaded as an artifact.
-
-Register the runner once on the machine that will run it (Settings > Actions > Runners >
-New self-hosted runner), adding the label `frida-sim`.
-
 ## Known limits
 
 - Grasp assist welds a grasp that ends within 6 cm of the object (`GRASP_MAX_GAP` in
