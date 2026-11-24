@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Face recognition ROS2 node. Model logic lives in models.face_recognition."""
 
-import threading
 import time
 from collections import deque
 
@@ -9,6 +8,7 @@ import rclpy
 import rclpy.duration
 import tqdm
 from ament_index_python.packages import get_package_share_directory
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from geometry_msgs.msg import Point
 from std_msgs.msg import String
 
@@ -37,7 +37,6 @@ MAX_DEGREE = 1
 TALKING_CROP_MARGIN = 0.25
 # Longest crop side sent to is_talking; keeps a request under the 8 MB iceoryx chunk.
 TALKING_CROP_MAX_SIZE = 192
-TALKER_POLL_PERIOD = 0.5
 # A track not seen for this long is dropped, and its crops restart if it reappears.
 TALKING_TRACK_GAP_SEC = 0.5
 # New crops a face needs before its window is sent to is_talking again.
@@ -55,6 +54,9 @@ class FaceRecognition(VisionRuntime):
             use_depth=True,
             use_camera_info=True,
             active_name="face_recognition",
+            # Inference runs inside the image callback; one frame at a time, and
+            # frames that arrive meanwhile are replaced by the newest (QoS depth 1).
+            image_callback_group=MutuallyExclusiveCallbackGroup(),
         )
         self.pbar = tqdm.tqdm(total=2)
 
@@ -87,9 +89,12 @@ class FaceRecognition(VisionRuntime):
         )
 
         self.verbose = self.declare_parameter("verbose", True)
+        # TODO(remove before PR): max_fps is only for measuring CPU on Frida.
+        # Inference cap to save CPU (0 = every frame). Live: ros2 param set
+        # /face_recognition max_fps 10 (also lower TALKING_REQUEST_FRAMES if lowered).
+        self.declare_parameter("max_fps", 0.0)
+        self.last_inference = 0.0
         self.setup()
-        self.create_timer(0.2, self.run, callback_group=self.callback_group)
-        threading.Thread(target=self._talker_loop, daemon=True).start()
 
     def setup(self):
         default_name = self.declare_parameter("default_name", "ale").value
@@ -107,14 +112,15 @@ class FaceRecognition(VisionRuntime):
         self.follow_name = "area"
         # Idle until the task manager activates it, unless launched with start_active.
         self.active = self.declare_parameter("start_active", False).value
-        self.is_processing = False
         self.id = None
         self.processing_id = rclpy.duration.Infinite
-        # face_model is shared by run() and the talker crop collector.
-        self.model_lock = threading.Lock()
+        # Per-face buffers of recent crops, filled from run()'s own detections.
+        self.talk_tracks: list = []
+        # In-flight is_talking requests: (track, future, deadline, gen).
+        self.talk_pending: list = []
         # Last person who talked ({name, x, y, bbox}); followed when follow_name == "area".
-        self.talker_lock = threading.Lock()
         self.last_talker = None
+        # Bumped by follow_by so answers to older requests are ignored.
         self.talker_gen = 0
         # Face followed last tick in "area" mode; kept instead of re-picking the largest.
         self.area_target = None
@@ -139,166 +145,118 @@ class FaceRecognition(VisionRuntime):
     def follow_by_name_callback(self, req, res):
         self.get_logger().info("Executing service follow by")
         self.follow_name = req.name
-        with self.talker_lock:
-            self.last_talker = None
-            self.talker_gen += 1
+        self.last_talker = None
+        self.talker_gen += 1
         res.success = len(self.curr_faces) > 0
         if not res.success:
             self.get_logger().info("No face detected")
         return res
 
-    def _add_face_crops(self, frame, tracks, now):
-        """Detect the faces in frame and append a crop to each face's track."""
+    # ── Talking detection ──
+    # run() already detects every face on every frame; each face's crop goes into
+    # a buffer, and when a buffer has enough new crops it is sent to is_talking
+    # asynchronously. Answers are collected on the next frames.
+
+    def _talking_enabled(self):
+        return self.follow_name == "area" and self.is_talking_client.service_is_ready()
+
+    def _add_talk_crop(self, frame, bbox, name, now):
+        """Append this face's crop to its track (the nearest one, or a new one)."""
+        x1, y1, x2, y2 = bbox
+        cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+        # Scale with face size so a moving close face stays one track.
+        threshold = max(TRACK_THRESHOLD, (x2 - x1) / 2)
+        track = next(
+            (
+                t
+                for t in self.talk_tracks
+                if t["seen"] != now
+                and abs(t["x"] - cx) < threshold
+                and abs(t["y"] - cy) < threshold
+            ),
+            None,
+        )
+        if track is None:
+            track = {
+                "crops": deque(maxlen=TALKING_REQUEST_FRAMES),
+                "new": 0,
+                "talking": False,
+                "was_talking": False,
+            }
+            self.talk_tracks.append(track)
+        elif now - track["seen"] > TALKING_TRACK_GAP_SEC:
+            # The crops must be a continuous sequence for MouthActivity.
+            track["crops"].clear()
+        track.update(name=name, x=cx, y=cy, bbox=(x1, y1, x2, y2), seen=now)
+
         height, width = frame.shape[:2]
-        with self.model_lock:
-            faces = self.face_model.detect(frame)
-        for face in faces:
-            x1, y1, x2, y2 = face.bbox.astype(int)
-            cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
-
-            # Scale with face size so a moving close face stays one track.
-            threshold = max(TRACK_THRESHOLD, (x2 - x1) / 2)
-            track = next(
-                (
-                    t
-                    for t in tracks
-                    if abs(t["x"] - cx) < threshold and abs(t["y"] - cy) < threshold
-                ),
-                None,
+        mw = int((x2 - x1) * TALKING_CROP_MARGIN)
+        mh = int((y2 - y1) * TALKING_CROP_MARGIN)
+        crop = frame[
+            max(y1 - mh, 0) : min(y2 + mh, height),
+            max(x1 - mw, 0) : min(x2 + mw, width),
+        ]
+        scale = TALKING_CROP_MAX_SIZE / max(*crop.shape[:2], 1)
+        if scale < 1:
+            crop = cv2.resize(
+                crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA
             )
-            if track is None:
-                with self.model_lock:
-                    name = self.face_model.match(face.embedding.astype(np.float32))
-                track = {
-                    "name": name,
-                    "crops": deque(maxlen=TALKING_REQUEST_FRAMES),
-                    "new": 0,
-                    "talking": False,
-                    "was_talking": False,
-                }
-                tracks.append(track)
-            elif now - track["seen"] > TALKING_TRACK_GAP_SEC:
-                # The crops must be a continuous sequence for MouthActivity.
-                track["crops"].clear()
-            track.update(x=cx, y=cy, bbox=(x1, y1, x2, y2), seen=now)
+        else:
+            crop = crop.copy()
+        track["crops"].append(crop)
+        track["new"] += 1
 
-            mw = int((x2 - x1) * TALKING_CROP_MARGIN)
-            mh = int((y2 - y1) * TALKING_CROP_MARGIN)
-            crop = frame[
-                max(y1 - mh, 0) : min(y2 + mh, height),
-                max(x1 - mw, 0) : min(x2 + mw, width),
-            ]
-            scale = TALKING_CROP_MAX_SIZE / max(*crop.shape[:2], 1)
-            if scale < 1:
-                crop = cv2.resize(
-                    crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA
-                )
-            else:
-                crop = crop.copy()
-            track["crops"].append(crop)
-            track["new"] += 1
+    def _update_talking(self, now):
+        """Collect is_talking answers, drop lost faces and send full buffers."""
+        for entry in list(self.talk_pending):
+            track, future, deadline, gen = entry
+            if not future.done() and now <= deadline:
+                continue
+            self.talk_pending.remove(entry)
+            if not future.done():
+                self.is_talking_client.remove_pending_request(future)
+                continue
+            track["was_talking"], track["talking"] = (
+                track["talking"],
+                future.result().is_talking,
+            )
+            if track["talking"] and gen == self.talker_gen:
+                self._set_last_talker(track)
 
-    def _next_frame(self, last_stamp):
-        """Return (frame, stamp) if a frame newer than last_stamp arrived, else (None, last_stamp)."""
-        frame = self.image
-        stamp = self.image_header.stamp if self.image_header is not None else None
-        if frame is None or stamp == last_stamp:
-            return None, last_stamp
-        return frame, stamp
+        # A face lost for too long is dropped, and its crops restart if it reappears.
+        self.talk_tracks = [
+            t for t in self.talk_tracks if now - t["seen"] <= TALKING_TRACK_GAP_SEC
+        ]
 
-    def _request_talking(self, tracks):
-        """Send one is_talking request per full track at once; returns [(track, future)]."""
-        pending = []
-        for track in tracks:
-            if len(track["crops"]) < TALKING_REQUEST_FRAMES:
+        busy = [p[0] for p in self.talk_pending]
+        for track in self.talk_tracks:
+            if (
+                len(track["crops"]) < TALKING_REQUEST_FRAMES
+                or track["new"] < TALKING_MIN_NEW_FRAMES
+                or any(track is b for b in busy)
+            ):
                 continue
             request = IsTalking.Request()
             request.frames = [
                 self.bridge.cv2_to_imgmsg(crop, "bgr8") for crop in track["crops"]
             ]
             track["new"] = 0
-            pending.append((track, self.is_talking_client.call_async(request)))
-        return pending
+            # is_talking answers one request at a time.
+            deadline = now + IS_TALKING_TIMEOUT * (len(self.talk_pending) + 1)
+            self.talk_pending.append(
+                (
+                    track,
+                    self.is_talking_client.call_async(request),
+                    deadline,
+                    self.talker_gen,
+                )
+            )
 
-    def _talking_results(self, pending):
-        """Collect the answered requests; drops the ones that did not finish."""
-        talkers = []
-        for track, future in pending:
+    def _reset_talking(self):
+        for _, future, _, _ in self.talk_pending:
             if not future.done():
                 self.is_talking_client.remove_pending_request(future)
-                continue
-            response = future.result()
-            track["was_talking"], track["talking"] = (
-                track["talking"],
-                response.is_talking,
-            )
-            if response.is_talking:
-                talkers.append(track)
-        return talkers
-
-    def _talker_loop(self):
-        # Crops are collected continuously, also while is_talking answers, and each
-        # face's latest TALKING_REQUEST_FRAMES are resent as soon as its answer is in.
-        tracks, pending = [], []  # pending: (track, future, deadline, gen)
-        last_stamp = None
-        while rclpy.ok():
-            if (
-                not self.active
-                or self.follow_name != "area"
-                or self.image is None
-                or not self.is_talking_client.service_is_ready()
-            ):
-                self._drop_pending(pending)
-                tracks, pending = [], []
-                time.sleep(TALKER_POLL_PERIOD)
-                continue
-            if not tracks and not pending and not self.curr_faces:
-                time.sleep(TALKER_POLL_PERIOD)
-                continue
-            try:
-                now = time.time()
-                # Handle each answer as soon as it arrives, not when all are in.
-                for entry in [p for p in pending if p[1].done() or now > p[2]]:
-                    pending.remove(entry)
-                    track, future, _, gen = entry
-                    talkers = self._talking_results([(track, future)])
-                    if talkers:
-                        self._set_last_talker(track, tracks, gen)
-
-                busy = [p[0] for p in pending]
-                ready = [
-                    t
-                    for t in tracks
-                    if t["new"] >= TALKING_MIN_NEW_FRAMES
-                    and not any(t is b for b in busy)
-                ]
-                if ready:
-                    with self.talker_lock:
-                        gen = self.talker_gen
-                    for track, future in self._request_talking(ready):
-                        # is_talking answers one request at a time.
-                        deadline = now + IS_TALKING_TIMEOUT * (len(pending) + 1)
-                        pending.append((track, future, deadline, gen))
-
-                frame, last_stamp = self._next_frame(last_stamp)
-                if frame is None:
-                    time.sleep(0.005)
-                    continue
-                self._add_face_crops(frame, tracks, now)
-                tracks[:] = [
-                    t for t in tracks if now - t["seen"] <= TALKING_TRACK_GAP_SEC
-                ]
-            except Exception as e:
-                self._drop_pending(pending)
-                tracks, pending = [], []
-                self.get_logger().warn(
-                    f"Talker loop error: {e}", throttle_duration_sec=5.0
-                )
-
-    def _drop_pending(self, pending):
-        for entry in pending:
-            if not entry[1].done():
-                self.is_talking_client.remove_pending_request(entry[1])
+        self.talk_tracks, self.talk_pending = [], []
 
     @staticmethod
     def _same_person(a, b):
@@ -310,49 +268,53 @@ class FaceRecognition(VisionRuntime):
             and abs(a["y"] - b["y"]) < TRACK_THRESHOLD
         )
 
-    def _set_last_talker(self, track, tracks, gen):
-        with self.talker_lock:
-            # Drop the result if follow_by was called while it was computed.
-            if gen != self.talker_gen:
-                return
-            prev = self.last_talker
-            # A window still holds a few seconds of whoever just stopped talking,
-            # so a face that keeps talking only takes over if the talker left.
-            if (
-                track["was_talking"]
-                and prev is not None
-                and any(self._same_person(prev, t) for t in tracks)
-            ):
-                return
-            self.last_talker = {
-                "name": track["name"],
-                "x": track["x"],
-                "y": track["y"],
-                "bbox": track["bbox"],
-            }
+    def _set_last_talker(self, track):
+        prev = self.last_talker
+        # A window still holds a few seconds of whoever just stopped talking,
+        # so a face that keeps talking only takes over if the talker left.
+        if (
+            track["was_talking"]
+            and prev is not None
+            and any(self._same_person(prev, t) for t in self.talk_tracks)
+        ):
+            return
+        self.last_talker = {
+            "name": track["name"],
+            "x": track["x"],
+            "y": track["y"],
+            "bbox": track["bbox"],
+        }
         if prev is None or not self._same_person(prev, track):
             self.get_logger().info(f"Last talker: {track['name']}")
 
     # ── Main loop ──
 
+    def _image_callback(self, msg):
+        # Inference runs on every new frame instead of a fixed-rate timer, so the
+        # talking crops are a dense sequence without a second detection pass.
+        super()._image_callback(msg)
+        self.run()
+
     def run(self):
-        if not self.active or self.is_processing:
+        if not self.active:
+            if self.talk_tracks or self.talk_pending:
+                self._reset_talking()
             return
         if self.image is None:
-            self.get_logger().info("No image", throttle_duration_sec=5.0)
             return
+        # TODO(remove before PR): max_fps throttle, testing only.
+        max_fps = self.get_parameter("max_fps").value
+        now = time.time()
+        if max_fps > 0 and now - self.last_inference < 1.0 / max_fps:
+            return
+        self.last_inference = now
         # Frame id is the source stamp; skip frames already processed.
         self.id = self.image_header.stamp if self.image_header is not None else None
         if self.id is not None and self.id == self.processing_id:
             return
         frame = self.image
         self.annotated_frame = frame
-        self.is_processing = True
-        try:
-            with self.model_lock:
-                self._run_inference(frame)
-        finally:
-            self.is_processing = False
+        self._run_inference(frame)
 
     def _run_inference(self, frame):
         self.processing_id = self.id
@@ -360,8 +322,9 @@ class FaceRecognition(VisionRuntime):
         center = [frame.shape[1] / 2, frame.shape[0] / 2]
 
         detected_faces = self.face_model.detect(frame)
-        with self.talker_lock:
-            talker = self.last_talker
+        talker = self.last_talker
+        talking_enabled = self._talking_enabled()
+        now = time.time()
 
         self.curr_faces = []
         face_list = PersonList()
@@ -395,6 +358,8 @@ class FaceRecognition(VisionRuntime):
 
             if not tracked or name == "Unknown":
                 name = self.face_model.match(ins_face.embedding.astype(np.float32))
+            if talking_enabled:
+                self._add_talk_crop(frame, (x1, y1, x2, y2), name, now)
 
             xc = left + (right - left) / 2.0
             yc = top + (bottom - top) / 2.0
@@ -451,6 +416,11 @@ class FaceRecognition(VisionRuntime):
                 talker_name = name
                 talker_face = (centerx, centery, (x1, y1, x2, y2))
 
+        if talking_enabled:
+            self._update_talking(now)
+        elif self.talk_tracks or self.talk_pending:
+            self._reset_talking()
+
         xc = yc = 0.0
         if largest_area_params:
             left, top, right, bottom = largest_area_params
@@ -502,18 +472,15 @@ class FaceRecognition(VisionRuntime):
                 2,
             )
             # Refresh the cache so the talker is followed while moving,
-            # unless the background loop replaced it meanwhile.
-            with self.talker_lock:
-                if self.last_talker is talker:
-                    tx, ty, bbox = talker_face
-                    self.last_talker = {
-                        "name": talker_name
-                        if talker_name != "Unknown"
-                        else talker["name"],
-                        "x": tx,
-                        "y": ty,
-                        "bbox": bbox,
-                    }
+            # unless a new answer replaced it during this frame.
+            if self.last_talker is talker:
+                tx, ty, bbox = talker_face
+                self.last_talker = {
+                    "name": talker_name if talker_name != "Unknown" else talker["name"],
+                    "x": tx,
+                    "y": ty,
+                    "bbox": bbox,
+                }
         elif sticky_params:
             # No talker, or it is out of view (cache kept): stay on the last followed face.
             left, top, right, bottom = sticky_params
