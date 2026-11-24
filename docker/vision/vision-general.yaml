@@ -23,6 +23,7 @@ services:
       - /run/jtop.sock:/run/jtop.sock
       - ./trt_cache:/workspace/trt_cache
       - ./trt_cache:/home/ros/.insightface
+      - ./trt_cache/clip:/home/ros/.cache/clip
 
     network_mode: host
     ipc: host
