@@ -4,6 +4,7 @@ var dir_796ddb26d3f951020bd008472cdfdae1 =
     [ "test", "dir_938ee6f9bdcf2e6c8e66992f51e17072.html", "dir_938ee6f9bdcf2e6c8e66992f51e17072" ],
     [ "util_nodes", "dir_775b033b3123c535116c0b7da09f4291.html", "dir_775b033b3123c535116c0b7da09f4291" ],
     [ "doing_laundry_task_manager.py", "doing__laundry__task__manager_8py.html", "doing__laundry__task__manager_8py" ],
+    [ "finals_task_manager.py", "finals__task__manager_8py.html", "finals__task__manager_8py" ],
     [ "gpsr_task_manager.py", "gpsr__task__manager_8py.html", "gpsr__task__manager_8py" ],
     [ "hric_task_manager.py", "hric__task__manager_8py.html", "hric__task__manager_8py" ],
     [ "pickandplace_task_manager.py", "pickandplace__task__manager_8py.html", "pickandplace__task__manager_8py" ],

@@ -60,7 +60,7 @@ var searchData=
   ['arcball_5fmap_5fto_5fsphere_57',['arcball_map_to_sphere',['../namespacevamp_1_1transformations.html#a5a0d6b23c5c91402bad4b2a5ea08bb84',1,'vamp::transformations']]],
   ['arcball_5fnearest_5faxis_58',['arcball_nearest_axis',['../namespacevamp_1_1transformations.html#a524690d47d69819cfaef7dc54518b359',1,'vamp::transformations']]],
   ['are_5farms_5fdown_59',['are_arms_down',['../classmodels_1_1pose__detection_1_1PoseDetection.html#a8a68b3f2ec2e8d323afccf27432d0291',1,'models::pose_detection::PoseDetection']]],
-  ['area_5ffor_5fpoint_60',['area_for_point',['../namespacenav__main_1_1semantic_1_1areas.html#a0863b95341db1ea271a565a7df2b7968',1,'nav_main::semantic::areas']]],
+  ['area_5ffor_5fpoint_60',['area_for_point',['../namespacenav__main_1_1semantic_1_1areas.html#a437fdfcbcfb6a71d1fa9813d18c5849d',1,'nav_main::semantic::areas']]],
   ['areas_5fcontaining_61',['areas_containing',['../namespacenav__main_1_1semantic_1_1areas.html#a06a2c314b407321bf03eb960f084ac0d',1,'nav_main::semantic::areas']]],
   ['areasservices_62',['AreasServices',['../classAreasServices.html#af485297a0f73498464f0a72fa580048b',1,'AreasServices']]],
   ['arm_5fdoor_5fdetection_63',['arm_door_detection',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aebc24fc63ab7890d3fd397b34cd4b76b',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],

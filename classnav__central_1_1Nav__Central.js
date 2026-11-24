@@ -115,5 +115,6 @@ var classnav__central_1_1Nav__Central =
     [ "tf_listener", "classnav__central_1_1Nav__Central.html#a30c262ad07f034b9c86491f022e6dbb2", null ],
     [ "undock_client", "classnav__central_1_1Nav__Central.html#a0cbb0f9419fd8901d91b1b150a5009ae", null ],
     [ "use_nav2", "classnav__central_1_1Nav__Central.html#af5056b7ddd47cc934902d8ff5ee6e702", null ],
-    [ "use_slam_toolbox", "classnav__central_1_1Nav__Central.html#a50b00fd3e9527372a29cfe44837d3614", null ]
+    [ "use_slam_toolbox", "classnav__central_1_1Nav__Central.html#a50b00fd3e9527372a29cfe44837d3614", null ],
+    [ "viewpoint_probe_distance", "classnav__central_1_1Nav__Central.html#a765682a26cc4b1dbb654d2a19db2e508", null ]
 ];

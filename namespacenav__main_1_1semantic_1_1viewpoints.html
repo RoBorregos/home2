@@ -119,6 +119,8 @@ Functions</h2></td></tr>
 <tr class="separator:a4cbad3d951db990bb325f6d837aec1e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f1577cd3ed4b52a4af2883641be7a6a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classnav__main_1_1semantic_1_1viewpoints_1_1ValidationReport.html">ValidationReport</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__main_1_1semantic_1_1viewpoints.html#a1f1577cd3ed4b52a4af2883641be7a6a">validate_viewpoints</a> (list[<a class="el" href="classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html">Viewpoint</a>] viewpoints, <a class="el" href="classnav__main_1_1semantic_1_1viewpoints_1_1Grid.html">Grid</a>|None grid, float radius=<a class="el" href="namespacenav__main_1_1semantic_1_1viewpoints.html#a3cff491aea78331d227b97960daa253f">DEFAULT_CHECK_RADIUS</a>, int max_cost=<a class="el" href="namespacenav__main_1_1semantic_1_1viewpoints.html#afa58f33bc4ff14ac2dadd86d902eec28">DEFAULT_MAX_COST</a>, float max_shift=0.6, float probe_distance=<a class="el" href="namespacenav__main_1_1semantic_1_1viewpoints.html#ad32f50be2250bf37ec666eb64de4ef65">DEFAULT_PROBE_DISTANCE</a>, bool unknown_is_free=True)</td></tr>
 <tr class="separator:a1f1577cd3ed4b52a4af2883641be7a6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1569c45b5c1222ab3f4f5799497cd114"><td class="memItemLeft" align="right" valign="top">list[<a class="el" href="classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html">Viewpoint</a>]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__main_1_1semantic_1_1viewpoints.html#a1569c45b5c1222ab3f4f5799497cd114">with_planned_poses</a> (list[<a class="el" href="classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html">Viewpoint</a>] viewpoints, list[<a class="el" href="classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html">Viewpoint</a>] planned)</td></tr>
+<tr class="separator:a1569c45b5c1222ab3f4f5799497cd114"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -441,6 +443,39 @@ behaviour, never to an empty patrol.
 pose over an unmapped cell is normal near the walls of a partially explored
 arena, and dropping it would be worse than letting Nav2 judge. Replacement
 poses are always chosen on known cells.
+</pre> 
+</div>
+</div>
+<a id="a1569c45b5c1222ab3f4f5799497cd114" name="a1569c45b5c1222ab3f4f5799497cd114"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1569c45b5c1222ab3f4f5799497cd114">&#9670;&#160;</a></span>with_planned_poses()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> list[<a class="el" href="classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html">Viewpoint</a>] nav_main.semantic.viewpoints.with_planned_poses </td>
+          <td>(</td>
+          <td class="paramtype">list[<a class="el" href="classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html">Viewpoint</a>]&#160;</td>
+          <td class="paramname"><em>viewpoints</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[<a class="el" href="classnav__main_1_1semantic_1_1surfaces_1_1Viewpoint.html">Viewpoint</a>]&#160;</td>
+          <td class="paramname"><em>planned</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">`viewpoints` with the poses of the last plan, matched by key.
+
+The robot stands where the plan sent it. Scan marking has to compare against
+that pose: a relocated viewpoint may face its furniture from another side, so
+against the tagged pose it would never count as scanned.
 </pre> 
 </div>
 </div>

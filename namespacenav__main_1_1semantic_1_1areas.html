@@ -103,10 +103,12 @@ Functions</h2></td></tr>
 <tr class="separator:a875e74ff609653eaf5b8e8d2064b084c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06a2c314b407321bf03eb960f084ac0d"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a06a2c314b407321bf03eb960f084ac0d">areas_containing</a> (dict areas_data, float x, float y)</td></tr>
 <tr class="separator:a06a2c314b407321bf03eb960f084ac0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae05bdf294f1e8545b14b3669e95cfa3b"><td class="memItemLeft" align="right" valign="top">tuple[list[str], list[float]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#ae05bdf294f1e8545b14b3669e95cfa3b">nearest_sublocations</a> (dict areas_data, str area, float x, float y, float max_distance=<a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a22ab0a9181d67710ef68cc2593ed1cd5">DEFAULT_SUBLOCATION_DISTANCE</a>)</td></tr>
-<tr class="separator:ae05bdf294f1e8545b14b3669e95cfa3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0863b95341db1ea271a565a7df2b7968"><td class="memItemLeft" align="right" valign="top">tuple[str, list[str], list[float], bool]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a0863b95341db1ea271a565a7df2b7968">area_for_point</a> (dict areas_data, float x, float y, float max_distance=<a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a22ab0a9181d67710ef68cc2593ed1cd5">DEFAULT_SUBLOCATION_DISTANCE</a>)</td></tr>
-<tr class="separator:a0863b95341db1ea271a565a7df2b7968"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a175b0ca0c1e6d4d6e910b4ac29cbe410"><td class="memItemLeft" align="right" valign="top">tuple[float, float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a175b0ca0c1e6d4d6e910b4ac29cbe410">_furniture_position</a> (pose, float probe_distance=DEFAULT_PROBE_DISTANCE)</td></tr>
+<tr class="separator:a175b0ca0c1e6d4d6e910b4ac29cbe410"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4751ee44726a1574e10a5bf410f8594e"><td class="memItemLeft" align="right" valign="top">tuple[list[str], list[float]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a4751ee44726a1574e10a5bf410f8594e">nearest_sublocations</a> (dict areas_data, str area, float x, float y, float max_distance=<a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a22ab0a9181d67710ef68cc2593ed1cd5">DEFAULT_SUBLOCATION_DISTANCE</a>, float probe_distance=DEFAULT_PROBE_DISTANCE)</td></tr>
+<tr class="separator:a4751ee44726a1574e10a5bf410f8594e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a437fdfcbcfb6a71d1fa9813d18c5849d"><td class="memItemLeft" align="right" valign="top">tuple[str, list[str], list[float], bool]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a437fdfcbcfb6a71d1fa9813d18c5849d">area_for_point</a> (dict areas_data, float x, float y, float max_distance=<a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a22ab0a9181d67710ef68cc2593ed1cd5">DEFAULT_SUBLOCATION_DISTANCE</a>, float probe_distance=DEFAULT_PROBE_DISTANCE)</td></tr>
+<tr class="separator:a437fdfcbcfb6a71d1fa9813d18c5849d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -117,8 +119,44 @@ Variables</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Point -&gt; room / furniture lookup over the active map's areas JSON.</pre> </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a0863b95341db1ea271a565a7df2b7968" name="a0863b95341db1ea271a565a7df2b7968"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0863b95341db1ea271a565a7df2b7968">&#9670;&#160;</a></span>area_for_point()</h2>
+<a id="a175b0ca0c1e6d4d6e910b4ac29cbe410" name="a175b0ca0c1e6d4d6e910b4ac29cbe410"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a175b0ca0c1e6d4d6e910b4ac29cbe410">&#9670;&#160;</a></span>_furniture_position()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[float, float] nav_main.semantic.areas._furniture_position </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>pose</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>probe_distance</em> = <code>DEFAULT_PROBE_DISTANCE</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Where the furniture of a tagged pose is; the pose itself if it has no heading.</pre> 
+</div>
+</div>
+<a id="a437fdfcbcfb6a71d1fa9813d18c5849d" name="a437fdfcbcfb6a71d1fa9813d18c5849d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a437fdfcbcfb6a71d1fa9813d18c5849d">&#9670;&#160;</a></span>area_for_point()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -145,7 +183,13 @@ Variables</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>max_distance</em> = <code><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a22ab0a9181d67710ef68cc2593ed1cd5">DEFAULT_SUBLOCATION_DISTANCE</a></code>&#160;</td>
+          <td class="paramname"><em>max_distance</em> = <code><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a22ab0a9181d67710ef68cc2593ed1cd5">DEFAULT_SUBLOCATION_DISTANCE</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>probe_distance</em> = <code>DEFAULT_PROBE_DISTANCE</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -197,8 +241,8 @@ Areas without a polygon (waypoints) never match.
 </pre> 
 </div>
 </div>
-<a id="ae05bdf294f1e8545b14b3669e95cfa3b" name="ae05bdf294f1e8545b14b3669e95cfa3b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae05bdf294f1e8545b14b3669e95cfa3b">&#9670;&#160;</a></span>nearest_sublocations()</h2>
+<a id="a4751ee44726a1574e10a5bf410f8594e" name="a4751ee44726a1574e10a5bf410f8594e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4751ee44726a1574e10a5bf410f8594e">&#9670;&#160;</a></span>nearest_sublocations()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -231,7 +275,13 @@ Areas without a polygon (waypoints) never match.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>max_distance</em> = <code><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a22ab0a9181d67710ef68cc2593ed1cd5">DEFAULT_SUBLOCATION_DISTANCE</a></code>&#160;</td>
+          <td class="paramname"><em>max_distance</em> = <code><a class="el" href="namespacenav__main_1_1semantic_1_1areas.html#a22ab0a9181d67710ef68cc2593ed1cd5">DEFAULT_SUBLOCATION_DISTANCE</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>probe_distance</em> = <code>DEFAULT_PROBE_DISTANCE</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -240,7 +290,11 @@ Areas without a polygon (waypoints) never match.
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">(names, distances) of `area`'s sublocations, nearest first, within range.</pre> 
+<pre class="fragment">(names, distances) of `area`'s sublocations, nearest first, within range.
+
+Distances are to the furniture, not to the tagged pose: that pose is where the
+robot stands, about one standoff in front of it.
+</pre> 
 </div>
 </div>
 <a id="a875e74ff609653eaf5b8e8d2064b084c" name="a875e74ff609653eaf5b8e8d2064b084c"></a>

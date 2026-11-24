@@ -15,6 +15,7 @@ var hri__constants_8py =
     [ "DOORBELL_ARMED_TOPIC", "hri__constants_8py.html#af389049cb8421fabf9b65cdd32d4c4fa", null ],
     [ "EI_DETECTION_TOPIC", "hri__constants_8py.html#a615c08822aa7ff399b5daf93033a00a6", null ],
     [ "EXTRACT_DATA_SERVICE", "hri__constants_8py.html#ae336bc5e472cc38814ce9b4eb0928c31", null ],
+    [ "FINALS_HOTWORDS", "hri__constants_8py.html#a9be2ff1a89231a65a9b40e05bcf41860", null ],
     [ "FIND_CLOSEST_SERVICE", "hri__constants_8py.html#a0795f01b17671ccc4a7411b5e9faf4c9", null ],
     [ "GPSR_COMMAND_INDEX_TOPIC", "hri__constants_8py.html#a38822034ad302c559f887912bec561a0", null ],
     [ "GPSR_COMMANDS", "hri__constants_8py.html#aae7202a78fec255321e754d7a99ad996", null ],

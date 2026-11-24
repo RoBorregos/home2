@@ -107,6 +107,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a53d9e32bae885356d98525d2cedbcbd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b043d37f055718cdc1b53e520544a17"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a3b043d37f055718cdc1b53e520544a17">setup_services</a> (self)</td></tr>
 <tr class="separator:a3b043d37f055718cdc1b53e520544a17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a150efc80e3e9ff24b2f4adc5f26a2fef"><td class="memItemLeft" align="right" valign="top">tuple[int, np.ndarray|None]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a150efc80e3e9ff24b2f4adc5f26a2fef">embed_text</a> (self, str text)</td></tr>
+<tr class="separator:a150efc80e3e9ff24b2f4adc5f26a2fef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad033fcf6b32e7caae008ecd15ee8b32a"><td class="memItemLeft" align="right" valign="top">tuple[int, list[np.ndarray]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad033fcf6b32e7caae008ecd15ee8b32a">embed_crops</a> (self, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>] boxes)</td></tr>
+<tr class="separator:ad033fcf6b32e7caae008ecd15ee8b32a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae904a386996cab8ca35793fba86a4de0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae904a386996cab8ca35793fba86a4de0">activate_face_recognition</a> (self)</td></tr>
 <tr class="separator:ae904a386996cab8ca35793fba86a4de0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbb40dcc342658d105313cd78253b4ce"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#afbb40dcc342658d105313cd78253b4ce">deactivate_face_recognition</a> (self)</td></tr>
@@ -238,6 +242,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a68b8ceaf79435bd7788de02df25c1158"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90204cacd38264cf4ff07b661926ce34"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a90204cacd38264cf4ff07b661926ce34">count_by_color_client</a></td></tr>
 <tr class="separator:a90204cacd38264cf4ff07b661926ce34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3164569bb1aca21cf6b5da39183e649"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad3164569bb1aca21cf6b5da39183e649">embed_text_client</a></td></tr>
+<tr class="separator:ad3164569bb1aca21cf6b5da39183e649"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42a9a754e9cfa2458e4016764aa56ab0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a42a9a754e9cfa2458e4016764aa56ab0">embed_crops_client</a></td></tr>
+<tr class="separator:a42a9a754e9cfa2458e4016764aa56ab0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:accf10d8d12975267d8aebe00471718c9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#accf10d8d12975267d8aebe00471718c9">services</a></td></tr>
 <tr class="separator:accf10d8d12975267d8aebe00471718c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -966,6 +974,62 @@ annotated frame on CHAIR_REMOVAL_IMAGE_TOPIC for the display.</pre>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Returns true when a person is detected</pre> 
+</div>
+</div>
+<a id="ad033fcf6b32e7caae008ecd15ee8b32a" name="ad033fcf6b32e7caae008ecd15ee8b32a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad033fcf6b32e7caae008ecd15ee8b32a">&#9670;&#160;</a></span>embed_crops()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[int, list[np.ndarray]] task_manager.subtask_managers.vision_tasks.VisionTasks.embed_crops </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>]&#160;</td>
+          <td class="paramname"><em>boxes</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Unit CLIP vector of each box's crop, from the frame the boxes were detected in.</pre> 
+</div>
+</div>
+<a id="a150efc80e3e9ff24b2f4adc5f26a2fef" name="a150efc80e3e9ff24b2f4adc5f26a2fef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a150efc80e3e9ff24b2f4adc5f26a2fef">&#9670;&#160;</a></span>embed_text()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[int, np.ndarray | None] task_manager.subtask_managers.vision_tasks.VisionTasks.embed_text </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>text</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Unit CLIP vector of a text.</pre> 
 </div>
 </div>
 <a id="ade303dfa8db6edd52d3c3a8d98a227c4" name="ade303dfa8db6edd52d3c3a8d98a227c4"></a>
@@ -1777,6 +1841,34 @@ feed nav.approach_point().</pre>
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks.detect_person_client</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a42a9a754e9cfa2458e4016764aa56ab0" name="a42a9a754e9cfa2458e4016764aa56ab0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a42a9a754e9cfa2458e4016764aa56ab0">&#9670;&#160;</a></span>embed_crops_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks.embed_crops_client</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad3164569bb1aca21cf6b5da39183e649" name="ad3164569bb1aca21cf6b5da39183e649"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3164569bb1aca21cf6b5da39183e649">&#9670;&#160;</a></span>embed_text_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks.embed_text_client</td>
         </tr>
       </table>
 </div><div class="memdoc">

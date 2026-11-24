@@ -107,7 +107,7 @@ var searchData=
   ['viewpoint_5fcheck_5fradius_104',['viewpoint_check_radius',['../classsemantic__nav__node_1_1SemanticNav.html#a5156a7a587fcf32f02351312f677339c',1,'semantic_nav_node::SemanticNav']]],
   ['viewpoint_5fmax_5fcost_105',['viewpoint_max_cost',['../classsemantic__nav__node_1_1SemanticNav.html#ab099c2dc59e3b27fefdee40cb15ebca9',1,'semantic_nav_node::SemanticNav']]],
   ['viewpoint_5fmax_5fshift_106',['viewpoint_max_shift',['../classsemantic__nav__node_1_1SemanticNav.html#a92c887da2bd034562c97dad5b8850238',1,'semantic_nav_node::SemanticNav']]],
-  ['viewpoint_5fprobe_5fdistance_107',['viewpoint_probe_distance',['../classsemantic__nav__node_1_1SemanticNav.html#a4e9bb2485daad0a8e9949766cd99c2a9',1,'semantic_nav_node::SemanticNav']]],
+  ['viewpoint_5fprobe_5fdistance_107',['viewpoint_probe_distance',['../classnav__central_1_1Nav__Central.html#a765682a26cc4b1dbb654d2a19db2e508',1,'nav_central.Nav_Central.viewpoint_probe_distance()'],['../classsemantic__nav__node_1_1SemanticNav.html#a4e9bb2485daad0a8e9949766cd99c2a9',1,'semantic_nav_node.SemanticNav.viewpoint_probe_distance()']]],
   ['viewpoints_108',['viewpoints',['../classsemantic__nav__node_1_1SemanticNav.html#a9aef60f30515053c2962e5f6ea882fed',1,'semantic_nav_node::SemanticNav']]],
   ['viewpoints_2epy_109',['viewpoints.py',['../viewpoints_8py.html',1,'']]],
   ['views_110',['VIEWS',['../namespacelaunch__nav.html#a96af342b5bd59dd400aefda6b7532555',1,'launch_nav']]],
@@ -152,5 +152,6 @@ var searchData=
   ['vowel_5ffreq_5fhigh_149',['VOWEL_FREQ_HIGH',['../namespacefrida__constants_1_1hri__constants.html#aaef590928a116f77d6ac95c25420bc21',1,'frida_constants::hri_constants']]],
   ['vowel_5ffreq_5flow_150',['VOWEL_FREQ_LOW',['../namespacefrida__constants_1_1hri__constants.html#a56bf361bc52f5478274dc6f3eb125cc7',1,'frida_constants::hri_constants']]],
   ['voxel_151',['voxel',['../classperception__3d_1_1shelf__geometry_1_1ShelfParams.html#ac5c93835eb7c94e23785521d33d74d84',1,'perception_3d::shelf_geometry::ShelfParams']]],
-  ['voxel_5fdownsample_152',['voxel_downsample',['../namespaceperception__3d_1_1shelf__geometry.html#a05c92e4ad8a8031014fb36c89d360d07',1,'perception_3d::shelf_geometry']]]
+  ['voxel_5fdownsample_152',['voxel_downsample',['../namespaceperception__3d_1_1shelf__geometry.html#a05c92e4ad8a8031014fb36c89d360d07',1,'perception_3d::shelf_geometry']]],
+  ['vp_153',['vp',['../namespacetest__semantic__nav.html#ada1dc05359be63ba00ce6e3dea03ff52',1,'test_semantic_nav']]]
 ];

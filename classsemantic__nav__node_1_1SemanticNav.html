@@ -127,6 +127,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:af8bb3862919a733f52f9fa19b9db8f73"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af58f883db9edc152014c93273765b225"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#af58f883db9edc152014c93273765b225">scan_check_period</a></td></tr>
 <tr class="separator:af58f883db9edc152014c93273765b225"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae07dfe1bf077a340ca1cd1f174c28151"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#ae07dfe1bf077a340ca1cd1f174c28151">scan_still_radius</a></td></tr>
+<tr class="separator:ae07dfe1bf077a340ca1cd1f174c28151"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34aad910c7381c045ae728e9273c788b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#a34aad910c7381c045ae728e9273c788b">scan_dwell_fraction</a></td></tr>
+<tr class="separator:a34aad910c7381c045ae728e9273c788b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8224b487eab890775821ffccb833be80"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#a8224b487eab890775821ffccb833be80">snapshot_period</a></td></tr>
 <tr class="separator:a8224b487eab890775821ffccb833be80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab35752b5a28fd56dcfa580255b03c663"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#ab35752b5a28fd56dcfa580255b03c663">marker_period</a></td></tr>
@@ -176,8 +180,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:aaffc97dd57b78c12468f209a60884147"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1dc3d8f100f1981ee28d845a1abd1f98"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#a1dc3d8f100f1981ee28d845a1abd1f98">_now</a> (self)</td></tr>
 <tr class="separator:a1dc3d8f100f1981ee28d845a1abd1f98"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c62210625fc755eb17a7a4485af922b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#a0c62210625fc755eb17a7a4485af922b">_robot_pose</a> (self)</td></tr>
-<tr class="separator:a0c62210625fc755eb17a7a4485af922b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a945b98f5b8bca484811d9295245506a7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#a945b98f5b8bca484811d9295245506a7">_robot_pose</a> (self, float timeout=0.5)</td></tr>
+<tr class="separator:a945b98f5b8bca484811d9295245506a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22e0c38e2b49d534d3390fd045e68a5e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#a22e0c38e2b49d534d3390fd045e68a5e">_scan_timer</a> (self)</td></tr>
 <tr class="separator:a22e0c38e2b49d534d3390fd045e68a5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d4fffc4ae5f963afc44830b0748a2a0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsemantic__nav__node_1_1SemanticNav.html#a1d4fffc4ae5f963afc44830b0748a2a0">_snapshot_timer</a> (self)</td></tr>
@@ -497,8 +501,8 @@ there is lost on the next build.
 </pre> 
 </div>
 </div>
-<a id="a0c62210625fc755eb17a7a4485af922b" name="a0c62210625fc755eb17a7a4485af922b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c62210625fc755eb17a7a4485af922b">&#9670;&#160;</a></span>_robot_pose()</h2>
+<a id="a945b98f5b8bca484811d9295245506a7" name="a945b98f5b8bca484811d9295245506a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a945b98f5b8bca484811d9295245506a7">&#9670;&#160;</a></span>_robot_pose()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -510,8 +514,18 @@ there is lost on the next build.
           <td class="memname">def semantic_nav_node.SemanticNav._robot_pose </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>timeout</em> = <code>0.5</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -838,6 +852,20 @@ there is lost on the next build.
 
 </div>
 </div>
+<a id="a34aad910c7381c045ae728e9273c788b" name="a34aad910c7381c045ae728e9273c788b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34aad910c7381c045ae728e9273c788b">&#9670;&#160;</a></span>scan_dwell_fraction</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">semantic_nav_node.SemanticNav.scan_dwell_fraction</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a757f00d17775c91ab34e378041527d1f" name="a757f00d17775c91ab34e378041527d1f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a757f00d17775c91ab34e378041527d1f">&#9670;&#160;</a></span>scan_log</h2>
 
@@ -860,6 +888,20 @@ there is lost on the next build.
       <table class="memname">
         <tr>
           <td class="memname">semantic_nav_node.SemanticNav.scan_radius</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae07dfe1bf077a340ca1cd1f174c28151" name="ae07dfe1bf077a340ca1cd1f174c28151"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae07dfe1bf077a340ca1cd1f174c28151">&#9670;&#160;</a></span>scan_still_radius</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">semantic_nav_node.SemanticNav.scan_still_radius</td>
         </tr>
       </table>
 </div><div class="memdoc">

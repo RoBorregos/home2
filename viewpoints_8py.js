@@ -8,6 +8,7 @@ var viewpoints_8py =
     [ "relocate", "viewpoints_8py.html#a4cbad3d951db990bb325f6d837aec1e6", null ],
     [ "target_of", "viewpoints_8py.html#af654dcfc80ff7fd5b27de29045153f8e", null ],
     [ "validate_viewpoints", "viewpoints_8py.html#a1f1577cd3ed4b52a4af2883641be7a6a", null ],
+    [ "with_planned_poses", "viewpoints_8py.html#a1569c45b5c1222ab3f4f5799497cd114", null ],
     [ "DEFAULT_CHECK_RADIUS", "viewpoints_8py.html#a3cff491aea78331d227b97960daa253f", null ],
     [ "DEFAULT_MAX_COST", "viewpoints_8py.html#afa58f33bc4ff14ac2dadd86d902eec28", null ],
     [ "DEFAULT_PROBE_DISTANCE", "viewpoints_8py.html#ad32f50be2250bf37ec666eb64de4ef65", null ],

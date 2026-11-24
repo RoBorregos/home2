@@ -1,9 +1,10 @@
 var namespacenav__main_1_1semantic =
 [
     [ "areas", "namespacenav__main_1_1semantic_1_1areas.html", [
-      [ "area_for_point", "namespacenav__main_1_1semantic_1_1areas.html#a0863b95341db1ea271a565a7df2b7968", null ],
+      [ "_furniture_position", "namespacenav__main_1_1semantic_1_1areas.html#a175b0ca0c1e6d4d6e910b4ac29cbe410", null ],
+      [ "area_for_point", "namespacenav__main_1_1semantic_1_1areas.html#a437fdfcbcfb6a71d1fa9813d18c5849d", null ],
       [ "areas_containing", "namespacenav__main_1_1semantic_1_1areas.html#a06a2c314b407321bf03eb960f084ac0d", null ],
-      [ "nearest_sublocations", "namespacenav__main_1_1semantic_1_1areas.html#ae05bdf294f1e8545b14b3669e95cfa3b", null ],
+      [ "nearest_sublocations", "namespacenav__main_1_1semantic_1_1areas.html#a4751ee44726a1574e10a5bf410f8594e", null ],
       [ "point_in_polygon", "namespacenav__main_1_1semantic_1_1areas.html#a875e74ff609653eaf5b8e8d2064b084c", null ],
       [ "DEFAULT_SUBLOCATION_DISTANCE", "namespacenav__main_1_1semantic_1_1areas.html#a22ab0a9181d67710ef68cc2593ed1cd5", null ],
       [ "NON_SUBLOCATION_KEYS", "namespacenav__main_1_1semantic_1_1areas.html#a9d99b9c5c20fb02f09401aadd27ab4e7", null ]

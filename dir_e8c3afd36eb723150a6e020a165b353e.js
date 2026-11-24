@@ -5,6 +5,7 @@ var dir_e8c3afd36eb723150a6e020a165b353e =
     [ "decorators.py", "decorators_8py.html", "decorators_8py" ],
     [ "grasp_confirmation.py", "grasp__confirmation_8py.html", "grasp__confirmation_8py" ],
     [ "logger.py", "logger_8py.html", "logger_8py" ],
+    [ "scene_memory.py", "scene__memory_8py.html", "scene__memory_8py" ],
     [ "shelf_pick_logic.py", "shelf__pick__logic_8py.html", "shelf__pick__logic_8py" ],
     [ "status.py", "status_8py.html", "status_8py" ],
     [ "subtask_manager.py", "subtask__manager_8py.html", "subtask__manager_8py" ],

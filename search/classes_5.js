@@ -7,6 +7,6 @@ var searchData=
   ['embeddingstask_4',['EmbeddingsTask',['../classcore_1_1tasks_1_1EmbeddingsTask.html',1,'core::tasks']]],
   ['environment_5',['Environment',['../structvamp_1_1collision_1_1Environment.html',1,'vamp::collision']]],
   ['examplenode_6',['ExampleNode',['../classexample__node_1_1ExampleNode.html',1,'example_node']]],
-  ['executionstates_7',['ExecutionStates',['../classsafety__task__manager_1_1ExecutionStates.html',1,'safety_task_manager.ExecutionStates'],['../classstoring__groceries__manager_1_1ExecutionStates.html',1,'storing_groceries_manager.ExecutionStates']]],
+  ['executionstates_7',['ExecutionStates',['../classfinals__task__manager_1_1ExecutionStates.html',1,'finals_task_manager.ExecutionStates'],['../classsafety__task__manager_1_1ExecutionStates.html',1,'safety_task_manager.ExecutionStates'],['../classstoring__groceries__manager_1_1ExecutionStates.html',1,'storing_groceries_manager.ExecutionStates']]],
   ['explorationplanner_8',['ExplorationPlanner',['../classexploration__planner_1_1ExplorationPlanner.html',1,'exploration_planner']]]
 ];

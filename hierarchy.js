@@ -215,6 +215,7 @@ var hierarchy =
     [ "vamp::planning::ProlateHyperspheroid< Robot >", "classvamp_1_1planning_1_1ProlateHyperspheroid.html", null ],
     [ "vamp::planning::ProlateHyperspheroid< vamp::robots::Panda >", "classvamp_1_1planning_1_1ProlateHyperspheroid.html", null ],
     [ "vamp.pybullet_interface.PyBulletSimulator", "classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html", null ],
+    [ "task_manager.utils.scene_memory.Query", "classtask__manager_1_1utils_1_1scene__memory_1_1Query.html", null ],
     [ "vamp::planning::QueueEdge", "structvamp_1_1planning_1_1QueueEdge.html", null ],
     [ "vamp::planning::utils::QueueNode", "structvamp_1_1planning_1_1utils_1_1QueueNode.html", null ],
     [ "vamp.redirect_stream.RedirectStream", "classvamp_1_1redirect__stream_1_1RedirectStream.html", null ],
@@ -235,6 +236,8 @@ var hierarchy =
     [ "grasp_generator.Sample", "classgrasp__generator_1_1Sample.html", null ],
     [ "nav_main.semantic.staleness.ScanLog", "classnav__main_1_1semantic_1_1staleness_1_1ScanLog.html", null ],
     [ "perception_3d.geometric_grasps.Scene", "classperception__3d_1_1geometric__grasps_1_1Scene.html", null ],
+    [ "task_manager.utils.scene_memory.SceneMemory", "classtask__manager_1_1utils_1_1scene__memory_1_1SceneMemory.html", null ],
+    [ "task_manager.utils.scene_memory.SeenObject", "classtask__manager_1_1utils_1_1scene__memory_1_1SeenObject.html", null ],
     [ "fakes.ServiceStub", "classfakes_1_1ServiceStub.html", null ],
     [ "vamp::collision::Shape< DataT >", "structvamp_1_1collision_1_1Shape.html", [
       [ "vamp::collision::Cuboid< DataT >", "structvamp_1_1collision_1_1Cuboid.html", null ],
@@ -320,6 +323,7 @@ var hierarchy =
       [ "storing_groceries_manager.Shelf", "classstoring__groceries__manager_1_1Shelf.html", null ]
     ] ],
     [ "Enum", null, [
+      [ "finals_task_manager.ExecutionStates", "classfinals__task__manager_1_1ExecutionStates.html", null ],
       [ "frida_constants.ModuleNames", "classfrida__constants_1_1ModuleNames.html", null ],
       [ "frida_constants.hri_constants.KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
       [ "frida_constants.hri_constants.MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ],
@@ -338,6 +342,9 @@ var hierarchy =
       [ "task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.Direction", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html", null ],
       [ "task_manager.utils.status.Status", "classtask__manager_1_1utils_1_1status_1_1Status.html", null ],
       [ "task_manager.utils.task.Task", "classtask__manager_1_1utils_1_1task_1_1Task.html", null ]
+    ] ],
+    [ "NamedTuple", null, [
+      [ "task_manager.utils.scene_memory.Misplaced", "classtask__manager_1_1utils_1_1scene__memory_1_1Misplaced.html", null ]
     ] ],
     [ "Node", null, [
       [ "vamp_server.VampServer", "classvamp__server_1_1VampServer.html", null ]
@@ -358,6 +365,7 @@ var hierarchy =
       [ "egsr_cut.EGPSRTM", "classegsr__cut_1_1EGPSRTM.html", null ],
       [ "ex_orientation_path_constraint.MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", null ],
       [ "example_node.ExampleNode", "classexample__node_1_1ExampleNode.html", null ],
+      [ "finals_task_manager.FinalsTaskManager", "classfinals__task__manager_1_1FinalsTaskManager.html", null ],
       [ "follow_face_node_copt.FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", null ],
       [ "follow_person_node copy.FollowPersonNode", "classfollow__person__node_01copy_1_1FollowPersonNode.html", null ],
       [ "follow_person_node.FollowPersonNode", "classfollow__person__node_1_1FollowPersonNode.html", null ],

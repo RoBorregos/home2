@@ -11,6 +11,7 @@ var namespacetask__manager_1_1utils =
       [ "placed_ok", "namespacetask__manager_1_1utils_1_1grasp__confirmation.html#a9c1f5a890db47e81cde48d2933c10c9e", null ]
     ] ],
     [ "logger", "namespacetask__manager_1_1utils_1_1logger.html", "namespacetask__manager_1_1utils_1_1logger" ],
+    [ "scene_memory", "namespacetask__manager_1_1utils_1_1scene__memory.html", "namespacetask__manager_1_1utils_1_1scene__memory" ],
     [ "shelf_pick_logic", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html", [
       [ "levels_from_sorted_heights", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a5a91d09201029807b3ebe743e108a79b", null ]
     ] ],

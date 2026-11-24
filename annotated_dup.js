@@ -120,6 +120,10 @@ var annotated_dup =
     [ "finals_commands", "namespacefinals__commands.html", [
       [ "FinalsCommandsNode", "classfinals__commands_1_1FinalsCommandsNode.html", "classfinals__commands_1_1FinalsCommandsNode" ]
     ] ],
+    [ "finals_task_manager", "namespacefinals__task__manager.html", [
+      [ "ExecutionStates", "classfinals__task__manager_1_1ExecutionStates.html", null ],
+      [ "FinalsTaskManager", "classfinals__task__manager_1_1FinalsTaskManager.html", "classfinals__task__manager_1_1FinalsTaskManager" ]
+    ] ],
     [ "finetune_arcface", "namespacefinetune__arcface.html", [
       [ "ArcFaceHead", "classfinetune__arcface_1_1ArcFaceHead.html", "classfinetune__arcface_1_1ArcFaceHead" ]
     ] ],
@@ -491,6 +495,12 @@ var annotated_dup =
         ] ],
         [ "logger", "namespacetask__manager_1_1utils_1_1logger.html", [
           [ "Logger", "classtask__manager_1_1utils_1_1logger_1_1Logger.html", null ]
+        ] ],
+        [ "scene_memory", "namespacetask__manager_1_1utils_1_1scene__memory.html", [
+          [ "Misplaced", "classtask__manager_1_1utils_1_1scene__memory_1_1Misplaced.html", null ],
+          [ "Query", "classtask__manager_1_1utils_1_1scene__memory_1_1Query.html", null ],
+          [ "SceneMemory", "classtask__manager_1_1utils_1_1scene__memory_1_1SceneMemory.html", "classtask__manager_1_1utils_1_1scene__memory_1_1SceneMemory" ],
+          [ "SeenObject", "classtask__manager_1_1utils_1_1scene__memory_1_1SeenObject.html", null ]
         ] ],
         [ "status", "namespacetask__manager_1_1utils_1_1status.html", [
           [ "Status", "classtask__manager_1_1utils_1_1status_1_1Status.html", null ]

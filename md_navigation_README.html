@@ -319,6 +319,7 @@ Semantic navigation (patrol routes and area lookup)</h1>
 <p><b>The poses are not invented.</b> A sublocation entry in <code>areas_&lt;MAP_NAME&gt;.json</code> is already a <em>robot</em> pose: the tagger stores the operator's click as the base position and the drag as the heading, and <code>nav_central.go_to_area</code> sends it straight to Nav2. The node selects those poses, checks each one against the global costmap (relocating it around its furniture when something now blocks it), orders them in the shortest order (exact, grouped by room), and annotates each with an arm "stare" pose and a dwell time.</p>
 <p><b>Nav plans, the caller drives.</b> <code>PlanPatrol</code> returns a list; <a class="el" href="namespacetask__manager.html">task_manager</a> iterates it, navigates to each pose, asks manipulation for <code>arm_poses[i]</code> and waits <code>dwell_s[i]</code> so vision can confirm what is there. The node has no <code>cmd_vel</code> publisher and no action client — it cannot move the robot.</p>
 <p>Modes: <code>full</code> (every surface), <code>quick</code> (one per room), <code>revisit</code> (stalest first — what the robot has not looked at in a while, for Finals).</p>
+<p>A surface counts as scanned only when the robot <b>stops</b> at it: within <code>scan_radius</code> of the pose, facing it, without leaving a <code>scan_still_radius</code> circle for <code>scan_dwell_fraction</code> of its dwell. Driving past does not count, so <code>revisit</code> never skips a surface vision did not get to look at.</p>
 <p>Surface type, arm pose and dwell are inferred from the sublocation name (<code>table</code> → surface, <code>shelf</code>/<code>cabinet</code> → shelf, <code>refrigerator</code>/<code>sink</code> → appliance, <code>trash</code>/<code>basket</code> → floor, <code>bed</code>/<code>sofa</code> → low surface), and the sublocation pose is used as the viewpoint.</p>
 <h2><a class="anchor" id="autotoc_md165"></a>
 Topics</h2>
@@ -330,7 +331,10 @@ Topics</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/navigation/patrol/staleness</code>   </td><td class="markdownTableBodyNone"><code>String</code> (JSON)   </td><td class="markdownTableBodyNone">Age of the last scan per surface   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md166"></a>
+<h2><a class="anchor" id="autotoc_md166"></a>
+Unit tests</h2>
+<p>Pure Python, no ROS: <code>python3 -m pytest <a class="el" href="test__semantic__nav_8py.html">navigation/packages/nav_main/test/test_semantic_nav.py</a></code></p>
+<h1><a class="anchor" id="autotoc_md167"></a>
 Testing</h1>
 <p><a href="../task_manager/scripts/test/test_navigation_manager.py"><code>task_manager/scripts/test/test_navigation_manager.py</code></a> first checks the basics — ODrive axis errors and states, bus voltage, the merged <code>/scan</code>, the <code>map -&gt; base_link</code> TF and the <code><a class="el" href="namespacenav__central.html">nav_central</a></code> services — and then runs the <code>NavigationTasks</code> functions, which do move the robot.</p>
 <div class="fragment"><div class="line">ros2 run task_manager test_navigation_manager.py</div>
@@ -358,7 +362,7 @@ Testing</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>cmd_vel_topic</code> / <code>stamped_cmd_vel</code>   </td><td class="markdownTableBodyNone"><code>/cmd_vel</code> / <code>true</code>   </td><td class="markdownTableBodyNone">Where the base listens and whether it expects <code>TwistStamped</code>   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md167"></a>
+<h1><a class="anchor" id="autotoc_md168"></a>
 Nav_ui — live monitor &amp; control panel</h1>
 <p><code><a class="el" href="nav__ui_8py.html">nav_ui.py</a></code> (launched automatically with mapping / general navigation) is the Qt panel used on the field. It renders the map, robot pose, costmaps and planned trajectories, and lets the operator:</p>
 <ul>
@@ -366,7 +370,7 @@ Nav_ui — live monitor &amp; control panel</h1>
 <li>Send goals, change the active map, save maps, resume paused navigation.</li>
 <li>Trigger docking with a configurable offset.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md168"></a>
+<h1><a class="anchor" id="autotoc_md169"></a>
 Robot bases</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -374,7 +378,7 @@ Robot bases</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>omnidriver</code>   </td><td class="markdownTableBodyNone">Holonomic ODrive base   </td><td class="markdownTableBodyNone">Current   </td><td class="markdownTableBodyNone"><code>odrive_serial_twist</code> (cmd_vel → wheels), <code>odrive_dashboard</code> web dashboard, <code>simple_rx</code>   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md169"></a>
+<h1><a class="anchor" id="autotoc_md170"></a>
 External repositories</h1>
 <ul>
 <li><b>Dashgo base driver &amp; launch files</b>: Moved to <a href="https://github.com/RoBorregos/Dashgo.git">RoBorregos/Dashgo</a> </li>
