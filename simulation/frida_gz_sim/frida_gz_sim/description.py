@@ -11,9 +11,12 @@ FINGER_JOINTS = ("rightfinger", "leftfinger")
 
 # Box collisions (size, center) fitted to the gripper meshes; mesh contacts let objects tunnel into the palm
 GRIPPER_BOXES = {
-    "gripper": ((0.198, 0.129, 0.081), (0.0, -0.0255, -0.0055)),
-    "right_finger": ((0.039, 0.0616, 0.1), (-0.0065, 0.0, 0.05)),
-    "left_finger": ((0.039, 0.0616, 0.1), (0.0065, 0.0, 0.05)),
+    "gripper": (
+        (0.1985, 0.1436, 0.0918),
+        (0.0, 0.017, 0.045),
+    ),  # body + ZED, hook left out
+    "right_finger": ((0.0299, 0.0254, 0.0825), (0.0541, 0.0, 0.0692)),
+    "left_finger": ((0.0299, 0.0254, 0.0825), (-0.0341, 0.0, 0.0692)),
 }
 
 # The mobile base is driven by gz VelocityControl, which overwrites its velocity every

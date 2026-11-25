@@ -15,10 +15,10 @@
 
 <link name="gripper">
   <inertial>
-    <origin xyz="0.00033783 -0.0065249 0.0057345" rpy="0 0 0" />
-    <mass value="0.43538" />
-    <inertia ixx="0.00028883" ixy="-1.3378E-06" ixz="-7.8684E-07"
-               iyy="0.0016861" iyz="-7.2811E-06" izz="0.0015525" />
+    <origin xyz="-0.001867 0.013496 0.038407" rpy="0 0 0" />
+    <mass value="0.80064" />
+    <inertia ixx="0.00034711" ixy="2.2658E-06" ixz="1.5153E-06"
+               iyy="0.0020772" iyz="-7.1451E-06" izz="0.0022205" />
   </inertial>
   <visual>
     <origin xyz="0 0 0" rpy="0 0 0" />
@@ -42,7 +42,7 @@
   <link name="${prefix}_finger">
     <inertial>
       <origin xyz="${inertial_origin}" rpy="0 0 0" />
-      <mass value="0.1028" />
+      <mass value="0.058233" />
       <inertia ixx="${ixx}" ixy="${ixy}" ixz="${ixz}"
                iyy="${iyy}" iyz="${iyz}" izz="${izz}" />
     </inertial>
@@ -64,8 +64,8 @@
   </link>
 </xacro:macro>
 
-<xacro:finger prefix="right" inertial_origin="-0.0042467 -4.6842E-05 0.048292" ixx="8.1099E-05" ixy="3.8202E-08" ixz="1.9384E-06" iyy="7.2688E-05" iyz="-2.3121E-07" izz="1.8782E-05" />
-<xacro:finger prefix="left" inertial_origin="0.0042467 4.6842E-05 0.048292" ixx="8.1099E-05" ixy="3.8202E-08" ixz="-1.9384E-06" iyy="7.2688E-05" iyz="2.3121E-07" izz="1.8782E-05"/>
+<xacro:finger prefix="right" inertial_origin="0.057738 -0.0019521 0.030032" ixx="2.6744E-05" ixy="5.4499E-08" ixz="-2.3547E-06" iyy="2.5235E-05" iyz="3.2546E-08" izz="1.3060E-05" />
+<xacro:finger prefix="left" inertial_origin="-0.037796 0.0021521 0.030032" ixx="2.6744E-05" ixy="5.4499E-08" ixz="2.3547E-06" iyy="2.5235E-05" iyz="-3.2546E-08" izz="1.3060E-05"/>
 
   
   <xacro:if value="${fixed_joints}">
@@ -75,12 +75,15 @@
     <xacro:property name="finger_joint_type" value="prismatic" />
   </xacro:unless>
 
+  <!-- SolidWorks export (Nov 2026 gripper) has 0 = closed; origins are shifted
+       outward by the 0.0485 stroke and axes flipped to keep the repo convention
+       0 = open, upper = closed (xarm_sim_bridge, gripper controllers). -->
   <joint name="rightfinger" type="${finger_joint_type}">
-    <origin xyz="-0.069 0 0.017" rpy="0 0 0" />
+    <origin xyz="0.1175 -0.00205 0.063" rpy="0 0 3.1416" />
     <parent link="gripper" />
     <child link="right_finger" />
     <axis xyz="1 0 0" />
-    <limit lower="0" upper="0.056"
+    <limit lower="0" upper="0.0485"
            effort="1" velocity="8" />
     <!-- Real-robot controllers ignore URDF joint dynamics, so this has no
          effect on hardware; kept for completeness/any future simulator. -->
@@ -89,11 +92,11 @@
 
   <joint
     name="leftfinger" type="${finger_joint_type}">
-    <origin xyz="0.069 0 0.017" rpy="0 0 0" />
+    <origin xyz="-0.097558 -0.00205 0.063" rpy="0 0 3.1416" />
     <parent link="gripper" />
     <child link="left_finger" />
     <axis xyz="-1 0 0" />
-    <limit lower="0" upper="0.056"
+    <limit lower="0" upper="0.0485"
            effort="1" velocity="8" />
     <mimic joint="rightfinger" multiplier="1" offset="0" />
   </joint>
@@ -116,7 +119,9 @@
 
   <link name="zed"  />
   <joint name="ZED" type="fixed">
-    <origin xyz="0.0027 -0.0791 -0.0036" rpy="-0.0177 -0.7819 -1.5447" />
+    <!-- ponytail: ZED pose estimated from the gripper mesh (CS_Zed wasn't exported);
+         replace with the hand-eye calibration result (perception_3d/hand_eye_calibration.py). -->
+    <origin xyz="0 0.0634 0.0291" rpy="0 -0.7854 1.5708" />
     <parent link="gripper" />
     <child link="zed" />
     <axis xyz="0 0 1"/>

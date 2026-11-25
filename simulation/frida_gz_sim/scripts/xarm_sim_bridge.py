@@ -26,7 +26,7 @@ class XArmSimBridge(Node):
         super().__init__("xarm_sim_bridge")
         group = ReentrantCallbackGroup()
         self.open_position = self.declare_parameter("open_position", 0.0).value
-        self.closed_position = self.declare_parameter("closed_position", 0.056).value
+        self.closed_position = self.declare_parameter("closed_position", 0.0485).value
         self.motion_time = self.declare_parameter("motion_time", 0.8).value
         # Finger stopped this far short of fully closed means something is in between
         self.grasp_margin = self.declare_parameter("grasp_margin", 0.006).value

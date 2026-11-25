@@ -19,7 +19,7 @@
       <joint name="${prefix}rightfinger">
         <command_interface name="position">
           <param name="min">0.0</param>
-          <param name="max">0.056</param>
+          <param name="max">0.0485</param>
         </command_interface>
         <state_interface name="position">
           <param name="initial_value">${initial_value}</param>
