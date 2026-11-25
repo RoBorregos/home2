@@ -40,26 +40,20 @@ class ShelfParams:
     min_wall_points: int = 40
     wall_min_height: float = 0.25  # back wall
     back_wall_min_width_fraction: float = 0.30  # a tall back wall spans this much
-    # Side walls are seen at a grazing angle: often only one compartment of them.
+    # Side walls are seen at a grazing angle, often one compartment only.
     side_wall_min_height: float = 0.15
     wall_search: float = 0.20  # a wall must sit within this of the boards' extent
-    # Vertical points further than this in front of the boards are not walls (plinth,
-    # floor clutter, the robot's own side).
+    # Vertical points this far in front of the boards are not walls (plinth, clutter).
     wall_front_margin: float = 0.10
-    # A side wall is at or outside the boards' edge: a plane further inside is an
-    # object's side (on the robot, a cereal box 10 cm in from the wall).
+    # A plane further inside the boards' edge is an object's side, not a wall.
     wall_inside_tolerance: float = 0.04
     wall_thickness: float = 0.02
-    # A wall that was not seen is still there: box it at the boards' edge. The scan
-    # misses side walls far more often than a shelf really has none.
+    # Box unseen walls at the boards' edge: the scan often misses them.
     assume_walls: bool = True
-    # The boards' edge falls short of the real wall (5 cm on the robot): an assumed
-    # wall grows this far outward, never into the compartment.
+    # Assumed walls grow this far outward (the boards end short of the real wall).
     assumed_wall_thickness: float = 0.10
-    # Walls run from the floor, not from the lowest board: the side panels reach it.
     walls_to_floor: bool = True
-    # Walls rise this far past the highest structure seen: the camera may miss the top.
-    wall_top_margin: float = 0.05
+    wall_top_margin: float = 0.05  # past the highest structure seen
 
     board_sink: float = 0.01  # collision box top sits this far below the surface
     padding: float = 0.02  # every other box face grown this far into the free space
@@ -96,8 +90,7 @@ class ShelfGeometry:
     front_x: float
     back_x: float
     top_z: float = 0.0  # underside of the top board when only seen from below, else 0
-    # Top of the wall boxes: the highest wall or structure seen plus a margin, so an
-    # open-top shelf's walls rise past its top board. 0 when nothing was seen.
+    # Top of the wall boxes (highest structure seen + margin); 0 if none.
     wall_top: float = 0.0
     has_left_wall: bool = False
     has_right_wall: bool = False
@@ -267,12 +260,8 @@ def _walls(
 ) -> tuple[dict, float]:
     """Side walls near the boards' lateral extent, back wall near their far edge.
 
-    Only vertical points inside the shelf's own volume count: from just under the
-    lowest board up, and from the boards' front back. A plinth, the floor or clutter
-    beside the shelf otherwise wins over a wall that is only partly in view.
-
-    Returns ({"left"|"right"|"back": plane position or None}, top of the walls
-    found, 0.0 when none).
+    Only vertical points inside the shelf's volume count (above the lowest board,
+    behind its front). Returns ({"left"|"right"|"back": position or None}, wall top).
     """
     found = {"left": None, "right": None, "back": None}
     tops = {}
@@ -315,8 +304,7 @@ def _walls(
         y_lo, y_hi = _extent(strip[:, 1])
         tall = z_hi - z_lo >= p.wall_min_height
         wide = y_hi - y_lo >= p.min_width_fraction * width
-        # Tall alone is not enough: an object's face near the back is tall too (on
-        # the robot a 14 cm wide box beat the full-width back panel 7 cm behind it).
+        # Tall alone is not enough: an object's face near the back is tall too.
         some_width = y_hi - y_lo >= p.back_wall_min_width_fraction * width
         if not (wide or (tall and some_width)):
             continue
@@ -392,10 +380,8 @@ def detect_shelf(
     if not candidates:
         raise ShelfNotFound("no horizontal surface in view")
 
-    # The shelf's extent comes from the surfaces that look like boards: solid and
-    # about as wide as the widest solid one. A sparse surface (the floor's edge at
-    # z=0.05 on the robot, 1.3 m wide and 24 % filled) or an object's top otherwise
-    # stretches the extent and pushes the real side wall out of the search.
+    # Extent from board-like surfaces only (solid, near the widest width): a sparse
+    # floor edge or an object's top would stretch it past the real walls.
     solid = [c for c in candidates if c["fill"] >= p.min_fill_fraction] or candidates
     widest = max(c["y"][1] - c["y"][0] for c in solid)
     board_like = [
@@ -477,8 +463,7 @@ def detect_shelf(
     y_max = float(walls["right"] if walls["right"] is not None else y_all[1])
     front_x = float(min(level.front_x for level in with_clearance))
     back_x = float(walls["back"] if walls["back"] is not None else back_all)
-    # The walls are as tall as the shelf, not as the part of them in view: take the
-    # highest structure inside the shelf's footprint (back panel, wall edges, a lid).
+    # Walls are as tall as the highest structure in the shelf's footprint.
     structure = _structure_top(points, (y_min, y_max), (front_x, back_x), p)
     wall_top = max(wall_top, structure)
     if wall_top > 0.0:
@@ -510,8 +495,8 @@ def collision_boxes(
 
     Board tops sink ``board_sink`` so fingertips at an object's base do not collide;
     every other face grows ``padding`` into the free space for scan and hand-eye error.
-    With ``assume_walls`` a wall that was not seen is boxed at the boards' edge: a
-    missing box lets MoveIt plan straight through a real wall.
+    With ``assume_walls`` unseen walls are boxed too, so MoveIt cannot plan
+    through them.
     """
     boxes = []
     pad = p.padding
@@ -535,8 +520,7 @@ def collision_boxes(
             (front, g.y_min, top - level.thickness - pad),
             (back, g.y_max, top),
         )
-    # Walls run from the floor (or the lowest board) up to the highest board, or
-    # higher when the seen walls rise past it (an open-top shelf).
+    # Walls: floor (or lowest board) up to the top board or the seen wall top.
     lowest = g.levels[0].height - g.levels[0].thickness
     bottom = min(p.z_min, lowest) if p.walls_to_floor else lowest
     top = max(g.levels[-1].height, g.wall_top)

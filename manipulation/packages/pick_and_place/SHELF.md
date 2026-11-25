@@ -59,9 +59,7 @@ On-site tunables are `grasp_generator` parameters under `shelf.`: the search box
 - **Exit.** Straight MoveIt paths, collision checked: 2 cm up, then back until the
   fingertips are `exit_clearance` (5 cm) out of the scanned board front, at least
   `exit_retreat` (15 cm), at most `exit_max_retreat` (45 cm). `link_eef` is the flange,
-  17 cm behind the fingertips: a fixed 15 cm left the hand and the object in the
-  compartment, and RRTConnect then swung the wrist into the walls on the way to
-  `table_stare`. A blocked retreat is retried in `exit_step` (5 cm) pieces. If the
+  17 cm behind the fingertips. A blocked retreat is retried in `exit_step` (5 cm) pieces. If the
   hand cannot get out, the pick fails holding the object and **no return is planned
   from inside the shelf**.
 

@@ -205,8 +205,7 @@ def _pick(
         _scene_for_shelf_exit(arm, request.shelf)
         front_x = getattr(request.shelf, "front_x", None)
         if not _shelf_exit(arm, strategies[PICK_STRATEGY_SHELF].profile.shelf, front_x):
-            # A planned return from inside the compartment swings the arm into the
-            # shelf: stop here, holding the object, and let the caller recover.
+            # Planning the return from inside the shelf hits the walls: stop here.
             log.error(
                 f"[{strategy_key}] pick got '{request.object_name}' but could not "
                 "back out of the shelf; not planning the return from inside it"
@@ -647,14 +646,10 @@ def _top_down_pick_height(object_height: float) -> float:
 
 
 def _scene_for_shelf_exit(arm, shelf_scan) -> None:
-    """Leave only the shelf boxes and the held object in the scene for the way out.
+    """Keep only the shelf boxes and the held object in the scene for the exit.
 
-    The cartesian approach is not collision checked, so the hand ends up inside the
-    neighbours' spheres (``other_*``) and the octomap of what it holds. Every exit
-    plan then fails from its first waypoint (on the robot: "Cartesian planner
-    completed 0.0"), and the old fallback planned the return from inside the
-    shelf, swinging the wrist into the walls. Backing out retraces the way in, so
-    those obstacles protect nothing there.
+    The unchecked cartesian approach leaves the hand inside ``other_*`` spheres and
+    the octomap, so every exit plan would start in collision.
     """
     arm.remove_all_collision_objects(attached=False)  # the held object stays
     if shelf_scan is not None:
@@ -665,12 +660,9 @@ def _scene_for_shelf_exit(arm, shelf_scan) -> None:
 def _shelf_exit(arm, shelf, front_x: Optional[float] = None) -> bool:
     """Lift off the board, then back out along the way in, as straight MoveIt paths.
 
-    With the scan's ``front_x`` the retreat lasts until the fingertips are out of the
-    shelf: ``link_eef`` is the flange, GRIPPER_REACH behind them, so a fixed 15 cm
-    left the hand and the object in the compartment. A blocked straight retreat is
-    retried in ``exit_step`` pieces. False while the hand may still be inside: the
-    caller must not plan a free move from there (RRTConnect swings the wrist into
-    the walls).
+    With ``front_x`` it backs out until the fingertips clear the front (``link_eef``
+    is GRIPPER_REACH behind them); a blocked retreat is retried in ``exit_step``
+    pieces. False if the hand may still be inside the shelf.
     """
     target = arm.link_pose(EEF_LINK_NAME)  # straight-line plans always move link_eef
     if target is None:
@@ -734,11 +726,8 @@ def _straight_move(arm, start, offset: np.ndarray):
 
 
 def _exit_retreat(arm, shelf, front_x: Optional[float]) -> Tuple[float, bool]:
-    """How far to back out so the fingertips clear the shelf front by exit_clearance.
-
-    Returns (distance, whether that distance gets the fingertips out). Without the
-    scan's front, or backing out sideways, it is the fixed exit_retreat, trusted as
-    before.
+    """(distance, fingertips_out): retreat so the tips clear the front by
+    exit_clearance; the fixed exit_retreat without front_x or backing out sideways.
     """
     if front_x is None:
         return shelf.exit_retreat, True
