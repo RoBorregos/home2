@@ -19,16 +19,17 @@ from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
+    FACE_RECOGNITION_HZ,
     IMAGE_ORIENTED_TOPIC,
     IS_TALKING_TIMEOUT,
     IS_TALKING_TOPIC,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     SAVE_NAME_TOPIC,
+    TALKING_CROP_HZ,
     TALKING_CROP_MARGIN,
     TALKING_CROP_MAX_SIZE,
     TALKING_MIN_FACE_WIDTH,
-    TALKING_MIN_NEW_FRAMES,
     TALKING_REQUEST_FRAMES,
     TALKING_TRACK_GAP_SEC,
 )
@@ -52,7 +53,7 @@ class FaceRecognition(VisionRuntime):
             use_depth=True,
             use_camera_info=True,
             active_name="face_recognition",
-            # Inference runs per frame in the image callback, one frame at a time.
+            # Detection and talking crops run in the image callback, one frame at a time.
             image_callback_group=MutuallyExclusiveCallbackGroup(),
         )
         self.pbar = tqdm.tqdm(total=2)
@@ -102,8 +103,8 @@ class FaceRecognition(VisionRuntime):
         self.prev_faces: list = []
         self.curr_faces: list = []
         self.follow_name = "area"
-        # Idle until the task manager activates it, unless launched with start_active.
-        self.active = self.declare_parameter("start_active", False).value
+        # Idle until the task manager activates it.
+        self.active = False
         self.id = None
         self.processing_id = rclpy.duration.Infinite
         self.talk_tracks: list = []  # per-face crop buffers
@@ -111,6 +112,7 @@ class FaceRecognition(VisionRuntime):
         self.last_talker = None  # {name, x, y, bbox}
         self.talker_gen = 0  # bumped by follow_by to ignore older answers
         self.area_target = None  # (x, y) followed last frame in "area" mode
+        self.last_detect = self.last_crop = 0.0
 
         self.pbar.update(1)
         self.get_logger().info("Face Recognition Ready")
@@ -143,40 +145,44 @@ class FaceRecognition(VisionRuntime):
     # Each detected face's crop goes into a buffer; full buffers are sent to
     # is_talking asynchronously and the answers are collected on later frames.
 
-    def _add_talk_crop(self, frame, face, now):
-        x1, y1, x2, y2 = face["bbox"]
-        if x2 - x1 < TALKING_MIN_FACE_WIDTH:
-            return
-        threshold = max(TRACK_THRESHOLD, (x2 - x1) / 2)
-        track = next(
-            (
-                t
-                for t in self.talk_tracks
-                if t["seen"] != now
-                and abs(t["x"] - face["x"]) < threshold
-                and abs(t["y"] - face["y"]) < threshold
-            ),
-            None,
-        )
-        if track is None:
-            track = {"crops": deque(maxlen=TALKING_REQUEST_FRAMES), "new": 0}
-            track["talking"] = False
-            self.talk_tracks.append(track)
-        elif now - track["seen"] > TALKING_TRACK_GAP_SEC:
-            track["crops"].clear()  # crops must be a continuous sequence
-        track.update(_talker_fields(face), seen=now)
+    def _track_faces(self, faces, now):
+        """Match this detection's faces to the talking tracks (nearest, else new)."""
+        for face in faces:
+            x1, _, x2, _ = face["bbox"]
+            if x2 - x1 < TALKING_MIN_FACE_WIDTH:
+                continue
+            threshold = max(TRACK_THRESHOLD, (x2 - x1) / 2)
+            track = next(
+                (
+                    t
+                    for t in self.talk_tracks
+                    if t["seen"] != now
+                    and abs(t["x"] - face["x"]) < threshold
+                    and abs(t["y"] - face["y"]) < threshold
+                ),
+                None,
+            )
+            if track is None:
+                track = {"crops": deque(maxlen=TALKING_REQUEST_FRAMES), "new": 0}
+                track["talking"] = False
+                self.talk_tracks.append(track)
+            track.update(_talker_fields(face), seen=now)
 
-        mw = int((x2 - x1) * TALKING_CROP_MARGIN)
-        mh = int((y2 - y1) * TALKING_CROP_MARGIN)
-        crop = frame[max(y1 - mh, 0) : y2 + mh, max(x1 - mw, 0) : x2 + mw]
-        scale = min(1.0, TALKING_CROP_MAX_SIZE / max(crop.shape[:2]))
-        track["crops"].append(
-            cv2.resize(crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-        )
-        track["new"] += 1
+    def _add_talk_crops(self, frame):
+        """Crop every live track from its last box, even if the last detection missed it."""
+        for track in self.talk_tracks:
+            x1, y1, x2, y2 = track["bbox"]
+            mw = int((x2 - x1) * TALKING_CROP_MARGIN)
+            mh = int((y2 - y1) * TALKING_CROP_MARGIN)
+            crop = frame[max(y1 - mh, 0) : y2 + mh, max(x1 - mw, 0) : x2 + mw]
+            scale = min(1.0, TALKING_CROP_MAX_SIZE / max(crop.shape[:2]))
+            track["crops"].append(
+                cv2.resize(crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+            )
+            track["new"] += 1
 
     def _update_talking(self, now):
-        """Collect is_talking answers, drop lost faces and send full buffers."""
+        """Collect is_talking answers and send full buffers."""
         for entry in list(self.talk_pending):
             track, future, deadline, gen = entry
             if not future.done() and now <= deadline:
@@ -189,14 +195,11 @@ class FaceRecognition(VisionRuntime):
             if track["talking"] and gen == self.talker_gen:
                 self._set_last_talker(track)
 
-        self.talk_tracks = [
-            t for t in self.talk_tracks if now - t["seen"] <= TALKING_TRACK_GAP_SEC
-        ]
         busy = [p[0] for p in self.talk_pending]
         for track in self.talk_tracks:
             if (
                 len(track["crops"]) < TALKING_REQUEST_FRAMES
-                or track["new"] < TALKING_MIN_NEW_FRAMES
+                or track["new"] < TALKING_REQUEST_FRAMES
                 or any(track is b for b in busy)
             ):
                 continue
@@ -243,18 +246,34 @@ class FaceRecognition(VisionRuntime):
         self.id = self.image_header.stamp if self.image_header is not None else None
         if self.id is not None and self.id == self.processing_id:
             return
-        self.annotated_frame = self.image
-        self._run_inference(self.image)
+        self.processing_id = self.id
+        frame, now = self.image, time.time()
+        # InsightFace runs at FACE_RECOGNITION_HZ; between detections the talking
+        # crops (TALKING_CROP_HZ) reuse the last detected boxes.
+        talking = (
+            self.follow_name == "area" and self.is_talking_client.service_is_ready()
+        )
+        if now - self.last_detect >= 0.9 / FACE_RECOGNITION_HZ:
+            self.last_detect = now
+            self.annotated_frame = frame
+            self._run_inference(frame)
+            if talking:
+                self._track_faces(self.curr_faces, now)
+        if not talking:
+            self._reset_talking()
+            return
+        self.talk_tracks = [
+            t for t in self.talk_tracks if now - t["seen"] <= TALKING_TRACK_GAP_SEC
+        ]
+        if now - self.last_crop >= 0.9 / TALKING_CROP_HZ:
+            self.last_crop = now
+            self._add_talk_crops(frame)
+        self._update_talking(now)
 
     def _run_inference(self, frame):
-        self.processing_id = self.id
         annotated = frame.copy()
         height, width = frame.shape[:2]
         center = [width / 2, height / 2]
-        talking_enabled = (
-            self.follow_name == "area" and self.is_talking_client.service_is_ready()
-        )
-        now = time.time()
 
         faces = []
         face_list = PersonList()
@@ -275,8 +294,6 @@ class FaceRecognition(VisionRuntime):
                     ins_face.embedding.astype(np.float32)
                 )
             faces.append(face)
-            if talking_enabled:
-                self._add_talk_crop(frame, face, now)
 
             xc, yc = _box_center(box)
             p = Person()
@@ -287,11 +304,6 @@ class FaceRecognition(VisionRuntime):
             _draw_face(
                 annotated, box, face["name"], (255, 0, 0) if prev else (0, 0, 255)
             )
-
-        if talking_enabled:
-            self._update_talking(now)
-        else:
-            self._reset_talking()
 
         largest = max(
             faces,
