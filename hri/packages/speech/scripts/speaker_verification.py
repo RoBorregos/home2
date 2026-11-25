@@ -44,6 +44,10 @@ import wave
 from collections import Counter, deque
 from dataclasses import dataclass
 
+# numpy's OpenBLAS keeps ~12 threads spinning after every small matrix product
+# (fbank, MVDR): measured ~50 % of an Orin core wasted. Set before numpy loads.
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
 import numpy as np
 import rclpy
 from frida_interfaces.msg import AudioData
