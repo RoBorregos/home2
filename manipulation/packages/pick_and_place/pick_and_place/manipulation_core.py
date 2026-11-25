@@ -493,7 +493,6 @@ class ManipulationCore(Node):
         """Take a bag from a person's hand, gripping its handle below the wrist."""
         result = TakeFromHand.Result()
         result.success = False
-        result.payload_detected = False
 
         if self.arm.estop_active:
             self.get_logger().warn("E-stop active, aborting take from hand")
@@ -510,11 +509,9 @@ class ManipulationCore(Node):
                 handover_pipeline.TakeFromHandRequest(
                     hand_point=request.hand_point,
                     grasp_below_hand=request.grasp_below_hand,
-                    release_timeout=request.release_timeout,
                 ),
             )
             result.success = outcome.success
-            result.payload_detected = outcome.payload_detected
             result.message = outcome.message
             if outcome.success:
                 goal_handle.succeed()
@@ -538,10 +535,7 @@ class ManipulationCore(Node):
         finally:
             self.arm.release_goal()
 
-        self.get_logger().info(
-            f"[DONE] take from hand -> success={result.success} "
-            f"payload={result.payload_detected}"
-        )
+        self.get_logger().info(f"[DONE] take from hand -> success={result.success}")
         return result
 
     # ==================================================================

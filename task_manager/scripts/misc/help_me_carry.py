@@ -74,6 +74,7 @@ class HelpMeCarryTM(Node):
     def take_bag_from_hand(self) -> bool:
         """Take the bag by its handle from the person's hand. True if the arm holds it.
 
+        The arm only moves away once the person confirms by voice they let go.
         On failure the gripper is open and the arm at nav_pose, ready for the hook.
         """
         hri = self.subtask_manager.hri
@@ -102,14 +103,12 @@ class HelpMeCarryTM(Node):
                 continue
 
             hri.say("When my gripper closes, let go of the bag.", wait=True)
-            status, payload = manipulation.take_from_hand(hand_point)
+            status = manipulation.take_from_hand(hand_point)
             if status != Status.EXECUTION_SUCCESS:
                 Logger.warn(self, f"take_from_hand attempt {attempt + 1} failed")
                 hri.say("I could not reach the handle. Let's try again.")
+                manipulation.move_to_position("hand_bag_pose")
                 continue
-
-            if payload:
-                return True
 
             _, confirmation = hri.confirm(
                 "Have you let go of the bag? Say yes when the speaker turns blue",
@@ -118,9 +117,11 @@ class HelpMeCarryTM(Node):
                 wait_between_retries=5,
             )
             if confirmation == "yes":
+                manipulation.move_to_position("nav_pose")
                 return True
             manipulation.open_gripper()
             hri.say("Ok, I opened my gripper. Let's try again.")
+            manipulation.move_to_position("hand_bag_pose")
 
         manipulation.open_gripper()
         manipulation.move_to_position("nav_pose")

@@ -792,41 +792,40 @@ class ManipulationTasks:
         Logger.error(self.node, "GoToHand failed to reach target pose")
         return Status.EXECUTION_ERROR
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, True))
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
         client="_take_from_hand_action_client",
-        return_value=(Status.EXECUTION_ERROR, False),
+        return_value=Status.EXECUTION_ERROR,
         timeout=TIMEOUT,
     )
     def take_from_hand(
         self,
         point: PointStamped,
         grasp_below_hand: float = 0.0,
-        release_timeout: float = 0.0,
         timeout: float = 60.0,
-    ) -> tuple[Status, bool]:
+    ) -> Status:
         """Grip the handle of a bag the person holds out, below their wrist.
+
+        The arm stays at the grip: ask the person whether they let go before
+        moving it away.
 
         Args:
             point: the wrist of the hand holding the handle (PointStamped)
             grasp_below_hand: metres below the wrist to grip; <= 0 uses the default
-            release_timeout: seconds to wait for the person to let go; <= 0 uses the default
             timeout: seconds to wait for the result before cancelling the goal
 
         Returns:
             Status: EXECUTION_SUCCESS if the gripper closed on the handle
-            bool: True if the person let go (the arm carries the bag)
         """
         goal_msg = TakeFromHand.Goal()
         goal_msg.hand_point = point
         goal_msg.grasp_below_hand = float(grasp_below_hand)
-        goal_msg.release_timeout = float(release_timeout)
 
         future = self._take_from_hand_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None or not future.result().accepted:
             Logger.error(self.node, "TakeFromHand goal was rejected")
-            return Status.EXECUTION_ERROR, False
+            return Status.EXECUTION_ERROR
 
         Logger.info(self.node, "TakeFromHand goal accepted, waiting for result...")
         result_future = future.result().get_result_async()
@@ -834,17 +833,14 @@ class ManipulationTasks:
         if not result_future.done():
             Logger.error(self.node, f"TakeFromHand timed out after {timeout:.0f}s")
             future.result().cancel_goal_async()
-            return Status.EXECUTION_ERROR, False
+            return Status.EXECUTION_ERROR
 
         result = result_future.result().result
         if not result.success:
             Logger.error(self.node, f"TakeFromHand failed: {result.message}")
-            return Status.EXECUTION_ERROR, False
-        if result.payload_detected:
-            Logger.success(self.node, "TakeFromHand: bag taken")
-        else:
-            Logger.warn(self.node, f"TakeFromHand: {result.message}")
-        return Status.EXECUTION_SUCCESS, result.payload_detected
+            return Status.EXECUTION_ERROR
+        Logger.success(self.node, "TakeFromHand: handle gripped")
+        return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(

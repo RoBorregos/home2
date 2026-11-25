@@ -91,11 +91,8 @@ class FakeArm:
         shelf_boxes_ok: bool = True,
         link_pose: Optional[PoseStamped] = None,
         tf_fails: bool = False,
-        payload_results: Optional[List[bool]] = None,
     ):
         self._tf_fails = tf_fails
-        self._payload_results = list(payload_results or [])
-        self.payload_waits: List[tuple] = []
         self._estop = estop
         # Whether the planning scene takes the shelf boxes.
         self._shelf_boxes_ok = shelf_boxes_ok
@@ -218,11 +215,6 @@ class FakeArm:
         return self._next(
             self._contact_results, ContactResult(contact=True, descended_m=0.12)
         )
-
-    def wait_for_payload(self, min_effort_delta, timeout_s, joints, consecutive=10):
-        self.calls.append("wait_for_payload")
-        self.payload_waits.append((min_effort_delta, timeout_s, list(joints)))
-        return self._next(self._payload_results, True)
 
     def wait_until_ready(self):
         self.calls.append("wait_until_ready")

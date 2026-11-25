@@ -19,8 +19,6 @@ from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import follow as follow_pipeline
 from pick_and_place.pipelines import handover
 from pick_and_place.pipelines.errors import PickAborted
-from pick_and_place.robot import arm as arm_module
-from pick_and_place.robot.arm import RobotArm
 from pick_and_place.robot.geometry import approach_axis
 
 WRIST = (0.5, 0.0, 1.0)  # base_link, in front of the robot at chest height
@@ -63,7 +61,6 @@ MOTION = {
     "move_to_pregrasp",
     "move_to_pose",
     "cartesian_approach",
-    "wait_for_payload",
 }
 
 
@@ -72,13 +69,12 @@ MOTION = {
 # ============================================================================
 
 
-def test_request_fills_the_defaults_for_unset_values():
-    request = handover.TakeFromHandRequest(wrist_point(), -1.0, 0.0)
+def test_request_fills_the_default_for_an_unset_value():
+    request = handover.TakeFromHandRequest(wrist_point(), -1.0)
     assert request.grasp_below_hand == handover.GRASP_BELOW_WRIST
-    assert request.release_timeout == handover.RELEASE_TIMEOUT
 
-    custom = handover.TakeFromHandRequest(wrist_point(), 0.1, 3.0)
-    assert (custom.grasp_below_hand, custom.release_timeout) == (0.1, 3.0)
+    custom = handover.TakeFromHandRequest(wrist_point(), 0.1)
+    assert custom.grasp_below_hand == 0.1
 
 
 # ============================================================================
@@ -134,14 +130,6 @@ def test_fingers_close_horizontally_across_the_approach(yaw_deg):
     assert abs(np.dot(closing, approach)) < 1e-9
 
 
-def test_retreat_goes_back_and_up():
-    approach = np.array([1.0, 0.0, 0.0])
-    retreat = handover.retreat_direction(approach)
-    assert np.isclose(np.linalg.norm(retreat), 1.0)
-    assert retreat[2] > 0
-    assert np.dot(retreat, approach) < 0
-
-
 def test_grasp_pose_backs_the_grasp_link_off_the_handle():
     target, approach = np.array([0.5, 0.0, 0.92]), np.array([1.0, 0.0, 0.0])
     pose = handover.grasp_pose(target, approach, -0.125)
@@ -156,11 +144,11 @@ def test_grasp_pose_backs_the_grasp_link_off_the_handle():
 # ============================================================================
 
 
-def test_happy_path_grips_waits_for_the_release_then_retreats():
+def test_happy_path_grips_and_stays_put():
     arm = make_arm()
     outcome = run(arm)
 
-    assert (outcome.success, outcome.payload_detected) == (True, True)
+    assert outcome.success
     assert arm.calls == [
         "to_frame:base_link",
         "link_pose:link_base",
@@ -169,23 +157,14 @@ def test_happy_path_grips_waits_for_the_release_then_retreats():
         "move_to_pregrasp",
         "cartesian_approach",
         "close_gripper",
-        "wait_for_payload",
-        "cartesian_approach",
     ]
     assert arm.contexts == ["take_from_hand"]
-    assert arm.payload_waits == [
-        (
-            handover.PAYLOAD_EFFORT_DELTA,
-            handover.RELEASE_TIMEOUT,
-            list(handover.PAYLOAD_JOINTS),
-        )
-    ]
     approach, distance, speed = arm.approaches[0]
     assert (distance, speed) == (handover.PREGRASP_DISTANCE, handover.APPROACH_SPEED)
     # The approach is +x in base_link; link_base is yawed +90 deg, so -y there.
     np.testing.assert_allclose(approach, (0, -1, 0), atol=1e-9)
-    retreat = np.asarray(arm.approaches[1][0])
-    assert retreat[2] > 0 and retreat[1] > 0  # up and back towards the robot
+    # The person may still hold the bag: no move after the grip.
+    assert len(arm.approaches) == 1
 
 
 def test_the_target_is_below_the_wrist_at_every_step():
@@ -231,7 +210,7 @@ def test_a_blocked_approach_opens_backs_out_the_same_line_and_fails():
     arm = make_arm(descent_results=[False, True])
     outcome = run(arm)
 
-    assert (outcome.success, outcome.payload_detected) == (False, False)
+    assert not outcome.success
     assert arm.calls[-3:] == [
         "cartesian_approach",
         "open_gripper",
@@ -240,24 +219,8 @@ def test_a_blocked_approach_opens_backs_out_the_same_line_and_fails():
     # No other angle towards the person, and no grasp.
     assert arm.calls.count("move_to_pregrasp") == 1
     assert "close_gripper" not in arm.calls
-    assert "wait_for_payload" not in arm.calls
     forward, back = (np.asarray(a[0]) for a in arm.approaches)
     np.testing.assert_allclose(back, -forward)
-
-
-def test_no_retreat_while_the_person_still_holds_the_bag():
-    arm = make_arm(payload_results=[False])
-    outcome = run(arm)
-
-    assert (outcome.success, outcome.payload_detected) == (True, False)
-    assert arm.calls[-1] == "wait_for_payload"
-    assert arm.calls.count("cartesian_approach") == 1
-
-
-def test_the_release_timeout_reaches_the_payload_wait():
-    arm = make_arm()
-    run(arm, release_timeout=3.0)
-    assert arm.payload_waits[0][1] == 3.0
 
 
 @pytest.mark.parametrize(
@@ -292,107 +255,6 @@ def test_abort_propagates_before_any_motion():
     with pytest.raises(PickAborted):
         run(arm)
     assert not MOTION & set(arm.calls)
-
-
-def test_abort_after_the_grip_skips_the_retreat():
-    # Checks: open, pre-grasp, approach, then the one before the retreat.
-    arm = make_arm(abort_after=3)
-    with pytest.raises(PickAborted):
-        run(arm)
-    assert arm.calls[-1] == "wait_for_payload"
-
-
-# ============================================================================
-# RobotArm.wait_for_payload
-# ============================================================================
-
-
-class _Clock:
-    """Fake time for the arm module; each sleep is one /joint_states reading."""
-
-    def __init__(self, efforts):
-        self.now = 0.0
-        self.ticks = 0
-        self._efforts = efforts
-        self.arm = None
-
-    def time(self):
-        return self.now
-
-    def sleep(self, seconds):
-        self.now += seconds
-        self.ticks += 1
-        if self.arm is not None and self.arm._latest_joint_state is not None:
-            self.arm._latest_joint_state.effort = self._efforts(self.ticks)
-
-
-# Joints listed out of order, so a lookup by index would read the wrong ones.
-NAMES = ["joint3", "joint1", "joint2", "joint6", "joint5", "joint4"]
-BASELINE_TICKS = 10  # _sample_effort_baseline's readings
-
-
-def efforts(load_joint="joint3", delta=2.0, start=5, end=None):
-    """Efforts with ``delta`` on ``load_joint`` from reading ``start`` after the baseline."""
-
-    def at(tick):
-        values = [1.0] * len(NAMES)
-        reading = tick - BASELINE_TICKS
-        if reading >= start and (end is None or reading < end):
-            values[NAMES.index(load_joint)] += delta
-        return values
-
-    return at
-
-
-@pytest.fixture
-def payload_arm(monkeypatch):
-    def build(effort_fn, joint_state=True, estop=False):
-        clock = _Clock(effort_fn)
-        monkeypatch.setattr(arm_module, "time", clock)
-        arm = RobotArm.__new__(RobotArm)
-        arm._log = FakeLogger()
-        arm._estop = estop
-        arm._goal_handle = None
-        arm._latest_joint_state = (
-            SimpleNamespace(name=list(NAMES), effort=[1.0] * len(NAMES))
-            if joint_state
-            else None
-        )
-        clock.arm = arm
-        return arm
-
-    return build
-
-
-def wait(arm, **kwargs):
-    return arm.wait_for_payload(1.5, 2.0, ["joint2", "joint3", "joint5"], **kwargs)
-
-
-def test_a_sustained_load_is_a_payload(payload_arm):
-    assert wait(payload_arm(efforts()))
-
-
-def test_a_brief_tug_is_not_a_payload(payload_arm):
-    assert not wait(payload_arm(efforts(start=5, end=12)))
-
-
-def test_a_small_load_is_not_a_payload(payload_arm):
-    assert not wait(payload_arm(efforts(delta=1.0)))
-
-
-def test_load_on_an_unlisted_joint_is_ignored(payload_arm):
-    assert not wait(payload_arm(efforts(load_joint="joint1")))
-
-
-def test_no_joint_states_is_no_payload(payload_arm):
-    assert not wait(payload_arm(efforts(), joint_state=False))
-
-
-def test_an_estop_while_waiting_aborts(payload_arm):
-    arm = payload_arm(efforts(delta=0.0))
-    arm._estop = True
-    with pytest.raises(PickAborted):
-        wait(arm)
 
 
 # ============================================================================
@@ -435,18 +297,15 @@ def serve(core, goal_handle):
 
 
 def request():
-    return SimpleNamespace(
-        hand_point=wrist_point(), grasp_below_hand=0.0, release_timeout=0.0
-    )
+    return SimpleNamespace(hand_point=wrist_point(), grasp_below_hand=0.0)
 
 
-def test_core_reports_a_grip_without_payload_as_success(core):
-    core.arm = make_arm(payload_results=[False])
+def test_core_reports_a_grip_as_success(core):
     goal = _GoalHandle(request())
     result = serve(core, goal)
 
     assert goal.state == "succeeded"
-    assert (result.success, result.payload_detected) == (True, False)
+    assert result.success
     assert core.arm.calls[0] == "bind_goal" and core.arm.calls[-1] == "release_goal"
     assert not core._task_lock.locked()
 

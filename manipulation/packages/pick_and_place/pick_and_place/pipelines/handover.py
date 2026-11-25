@@ -2,7 +2,7 @@
 
     wrist point -> base_link -> handle point below the wrist -> reach check
     -> open gripper -> pre-grasp at the first usable yaw -> straight approach,
-    closing on reach -> wait for the person to let go -> back away and up
+    closing on reach
 
 The person is first shown how to hold the bag: arm extended towards the robot,
 the handle gripped from above with one hand and the bag hanging. The bag's
@@ -14,8 +14,9 @@ Safety rules, each with a test:
 - The target is always below the wrist, never the wrist itself.
 - A blocked approach (most likely the hand) opens the gripper, backs out along
   the same line and fails; it never tries another angle towards the person.
-- Without a payload the arm does not retreat, which could pull the bag out of a
-  hand still holding it; the caller confirms by voice instead.
+- After the grip the arm stays put: moving could pull the bag out of a hand
+  still holding it. The caller asks the person by voice whether they let go
+  and moves the arm away only on a yes.
 - An out-of-reach handle or a missing TF fails before the arm moves.
 
 PickAborted and PickHardwareError propagate: the core decides what to do.
@@ -52,14 +53,6 @@ APPROACH_SPEED = 40.0
 # Approach yaws tried in order, about world Z, from the straight line from the
 # arm base to the handle (degrees).
 APPROACH_YAWS_DEG = (0, 15, -15, 30, -30)
-# Effort rise on these joints that means the arm now carries the bag (Nm).
-PAYLOAD_EFFORT_DELTA = 1.5
-PAYLOAD_JOINTS = ("joint2", "joint3", "joint5")
-# How long the person gets to let go once the gripper closed (s).
-RELEASE_TIMEOUT = 8.0
-# Retreat with the bag, back towards the robot and up (m, mm/s).
-RETREAT_DISTANCE = 0.12
-RETREAT_SPEED = 40.0
 # -----------------------------------------------------------------------------
 
 # Below this horizontal distance the handle is over the arm base and has no
@@ -75,21 +68,17 @@ class TakeFromHandRequest:
 
     hand_point: PointStamped
     grasp_below_hand: float = 0.0
-    release_timeout: float = 0.0
 
     def __post_init__(self):
         if self.grasp_below_hand <= 0:
             self.grasp_below_hand = GRASP_BELOW_WRIST
-        if self.release_timeout <= 0:
-            self.release_timeout = RELEASE_TIMEOUT
 
 
 @dataclass
 class TakeFromHandOutcome:
-    """success: the gripper closed on the handle; payload_detected: the person let go."""
+    """success: the gripper closed on the handle."""
 
     success: bool = False
-    payload_detected: bool = False
     message: str = ""
 
 
@@ -140,15 +129,6 @@ def handle_grasp_quat(approach: np.ndarray) -> np.ndarray:
     return grasp_frame(np.asarray(approach, dtype=float), np.cross(WORLD_UP, approach))
 
 
-def retreat_direction(approach: np.ndarray) -> np.ndarray:
-    """Unit direction back along the approach and up, at 45 degrees."""
-    back = -np.asarray(approach, dtype=float)
-    back[2] = 0.0
-    back /= np.linalg.norm(back)
-    direction = back + WORLD_UP
-    return direction / np.linalg.norm(direction)
-
-
 def grasp_pose(
     target: np.ndarray, approach: np.ndarray, tip_offset: float
 ) -> PoseStamped:
@@ -171,7 +151,7 @@ def grasp_pose(
 
 
 def execute(arm, request: TakeFromHandRequest) -> TakeFromHandOutcome:
-    """Grip the bag's handle below the person's wrist and take it once released."""
+    """Grip the bag's handle below the person's wrist and hold it there."""
     log = arm.logger
     arm.set_context("take_from_hand")
 
@@ -209,28 +189,9 @@ def execute(arm, request: TakeFromHandRequest) -> TakeFromHandOutcome:
             )
         return _failed(log, "approach to the handle blocked; backed out")
 
-    with arm.phase("wait_for_payload"):
-        payload = arm.wait_for_payload(
-            PAYLOAD_EFFORT_DELTA, request.release_timeout, list(PAYLOAD_JOINTS)
-        )
-    if not payload:
-        # The person may still be holding it: moving now could pull the bag
-        # out of their hand. Stay put and let the caller confirm.
-        message = "handle gripped, but no payload: the person may still hold the bag"
-        log.warn(message)
-        return TakeFromHandOutcome(
-            success=True, payload_detected=False, message=message
-        )
-
-    arm.check_abort()
-    with arm.phase("retreat"):
-        if not arm.cartesian_approach(
-            to_arm.apply(retreat_direction(approach)), RETREAT_DISTANCE, RETREAT_SPEED
-        ):
-            log.warn("Retreat with the bag did not complete")
-
-    log.info("Bag taken from the person's hand")
-    return TakeFromHandOutcome(success=True, payload_detected=True, message="bag taken")
+    # Stay put with the gripper closed: the caller confirms the person let go.
+    log.info("Handle gripped, waiting for the caller to confirm the release")
+    return TakeFromHandOutcome(success=True, message="handle gripped")
 
 
 def _locate_handle(arm, request: TakeFromHandRequest):
@@ -286,4 +247,4 @@ def _xyz(point) -> np.ndarray:
 
 def _failed(log, message: str) -> TakeFromHandOutcome:
     log.error(f"Take from hand failed: {message}")
-    return TakeFromHandOutcome(success=False, payload_detected=False, message=message)
+    return TakeFromHandOutcome(success=False, message=message)
