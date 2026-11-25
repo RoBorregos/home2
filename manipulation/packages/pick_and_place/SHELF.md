@@ -56,12 +56,8 @@ On-site tunables are `grasp_generator` parameters under `shelf.`: the search box
   points up. Tilted 10, 0, 20 deg down, and 30, 45 deg with nothing above.
 - **Approach.** Pre-grasp, then straight in by xArm cartesian velocity (mode 5):
   **no collision check against the shelf boxes**. Then GPD if no frontal grasp works.
-- **Exit.** Straight MoveIt paths, collision checked: 2 cm up, then back until the
-  fingertips are `exit_clearance` (5 cm) out of the scanned board front, at least
-  `exit_retreat` (15 cm), at most `exit_max_retreat` (45 cm). `link_eef` is the flange,
-  17 cm behind the fingertips. A blocked retreat is retried in `exit_step` (5 cm) pieces. If the
-  hand cannot get out, the pick fails holding the object and **no return is planned
-  from inside the shelf**.
+- **Exit.** Two straight MoveIt paths, collision checked: 2 cm up, 15 cm back. When
+  cut, the return to `table_stare` is planned around the boxes.
 
 ## Place
 

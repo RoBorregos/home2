@@ -8,7 +8,7 @@ lets them be unit-tested against a fake arm with no ROS graph.
 import time
 from collections import deque
 from contextlib import contextmanager
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 import rclpy
@@ -61,7 +61,6 @@ from frida_motion_planning.utils.service_utils import (
     open_gripper,
 )
 from geometry_msgs.msg import PointStamped, PoseStamped
-from frida_pymoveit2.robots.xarm6 import MOVE_GROUP_ARM
 from moveit_msgs.srv import GetPositionIK, GetStateValidity
 from rclpy.action import ActionClient
 from rclpy.duration import Duration
@@ -564,28 +563,6 @@ class RobotArm:
             self._log.error(f"remove_collision_object({object_id}) failed")
             return False
         return future.result().success
-
-    def scene_contacts(self) -> List[str]:
-        """What the current state collides with in the planning scene, as
-        ``"body <-> body"``; empty when it is valid or the check is unavailable."""
-        joints = self._latest_joint_state
-        if joints is None or not self._state_validity_client.wait_for_service(
-            timeout_sec=2.0
-        ):
-            return []
-        request = GetStateValidity.Request()
-        request.robot_state.joint_state = joints
-        request.robot_state.is_diff = True  # keep the scene's attached objects
-        request.group_name = MOVE_GROUP_ARM
-        future = self._state_validity_client.call_async(request)
-        if not self.wait_for_future(future, timeout=3.0) or future.result() is None:
-            return []
-        return sorted(
-            {
-                f"{c.contact_body_1} <-> {c.contact_body_2}"
-                for c in future.result().contacts
-            }
-        )
 
     def remove_all_collision_objects(self, attached: bool = False) -> bool:
         request = RemoveCollisionObject.Request()

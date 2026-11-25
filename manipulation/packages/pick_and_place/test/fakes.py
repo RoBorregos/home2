@@ -97,8 +97,6 @@ class FakeArm:
         # Whether the planning scene takes the shelf boxes.
         self._shelf_boxes_ok = shelf_boxes_ok
         self.calls: List[str] = []
-        # What scene_contacts reports: the current state's collisions.
-        self.contacts: List[str] = []
         self.phases: List[str] = []
         self.contexts: List[str] = []
         self.named_positions: List[str] = []
@@ -270,10 +268,6 @@ class FakeArm:
     def remove_collision_object(self, object_id):
         self.calls.append("remove_collision_object")
         return True
-
-    def scene_contacts(self):
-        self.calls.append("scene_contacts")
-        return list(self.contacts)
 
     def remove_all_collision_objects(self, attached=False):
         self.calls.append("remove_all_collision_objects")
