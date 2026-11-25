@@ -294,3 +294,25 @@ def direction_label(robot_deg: float) -> str:
                 return name.replace("left", "right")
             return name
     return "back"
+
+
+def merge_doas(doas: list[dict], min_conf: float) -> dict | None:
+    """Confidence-weighted circular mean of several window DOAs (``_doa_for``
+    dicts). Used to give one direction to the target windows of a segment that
+    mixes several voices. Reliable windows are preferred when there are any."""
+    doas = [d for d in doas if d]
+    if not doas:
+        return None
+    good = [d for d in doas if d["confidence"] >= min_conf] or doas
+    w = np.array([max(d["confidence"], 1e-3) for d in good])
+    az = np.radians([d["azimuth_deg"] for d in good])
+    mean = float(np.degrees(np.angle(np.sum(w * np.exp(1j * az)))))
+    conf = float(np.mean([d["confidence"] for d in good]))
+    return {
+        "azimuth_deg": round(mean, 1),
+        "confidence": round(conf, 3),
+        "frames": len(good),
+        "sources": [],
+        "direction": direction_label(mean),
+        "reliable": conf >= min_conf,
+    }

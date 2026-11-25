@@ -95,3 +95,26 @@ def test_direction_label():
     assert direction_label(-45) == "front-right"
     assert direction_label(179) == "back"
     assert direction_label(-130) == "back-right"
+
+
+def test_merge_doas_weights_reliable_windows():
+    from speech.spatial.doa import merge_doas
+
+    wins = [
+        {"azimuth_deg": -95.0, "confidence": 0.6},
+        {"azimuth_deg": -105.0, "confidence": 0.6},
+        {"azimuth_deg": 40.0, "confidence": 0.05},  # unreliable, ignored
+    ]
+    d = merge_doas(wins, min_conf=0.15)
+    assert abs(d["azimuth_deg"] + 100.0) < 1.0
+    assert d["direction"] == "right" and d["reliable"] and d["frames"] == 2
+    # wrap-around: +175 and -175 average to 180, not 0
+    d = merge_doas(
+        [
+            {"azimuth_deg": 175.0, "confidence": 0.5},
+            {"azimuth_deg": -175.0, "confidence": 0.5},
+        ],
+        0.15,
+    )
+    assert abs(abs(d["azimuth_deg"]) - 180.0) < 1.0
+    assert merge_doas([None], 0.15) is None

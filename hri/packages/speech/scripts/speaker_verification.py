@@ -50,7 +50,13 @@ from frida_interfaces.msg import AudioData
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
-from speech.spatial.doa import ArrayGeometry, DoaConfig, SrpPhat, direction_label
+from speech.spatial.doa import (
+    ArrayGeometry,
+    DoaConfig,
+    SrpPhat,
+    direction_label,
+    merge_doas,
+)
 from speech.spatial.frontend import FrontEndConfig, SpatialFrontEnd
 from speech.spatial.tracker import SpeakerTracker, TrackerConfig
 from speech.speaker_id.embedder import DEFAULT_MODEL_FILE, SpeakerEmbedder
@@ -58,6 +64,7 @@ from speech.speaker_id.profiles import ProfileStore
 from speech.speaker_id.segmenter import Segment, Segmenter, SegmenterConfig
 from speech.speaker_id.silero import FRAME_SAMPLES, SileroVAD
 from speech.speaker_id.verifier import (
+    MIXED,
     NOT_TARGET,
     TARGET,
     VerifierConfig,
@@ -523,6 +530,7 @@ class SpeakerVerification(Node):
         if job.doa is not None:
             result["doa"] = job.doa
         label = "UNKNOWN"
+        wins: list = []
         if job.cut_by_tts and final:
             label = "TTS_CUT"
             result.update({"label": label, "target": self.target})
@@ -542,7 +550,13 @@ class SpeakerVerification(Node):
             result["infer_ms"] = round(infer_ms, 1)
             if not final:
                 self._seg_windows.setdefault(job.seg_id, []).append(
-                    (label, dec.target_score)
+                    (
+                        label,
+                        dec.target_score,
+                        result.get("best", ""),
+                        result.get("score", 0.0),
+                        job.doa,
+                    )
                 )
             else:
                 wins = self._seg_windows.pop(job.seg_id, [])
@@ -580,10 +594,49 @@ class SpeakerVerification(Node):
 
         self.result_pub.publish(String(data=json.dumps(result)))
         if job.doa is not None and "score" in result:
-            self._publish_located(result, job.doa)
+            if final and label == MIXED and self._publish_mixed(result, wins):
+                pass
+            else:
+                self._publish_located(result, job.doa)
         if final:
             self._log_final(result)
             self._dump(job, label, result.get("best", ""), result.get("score", 0.0))
+
+    def _publish_mixed(self, r: dict, wins: list) -> bool:
+        """A segment where the target and someone else both spoke: the
+        whole-segment embedding and DOA blend both voices, so publish one
+        located message per voice, each with the direction of its own windows."""
+        groups = {
+            TARGET: [w for w in wins if w[0] == TARGET],
+            NOT_TARGET: [w for w in wins if w[0] == NOT_TARGET],
+        }
+        published = False
+        for lbl, ws in groups.items():
+            doa = merge_doas([w[4] for w in ws], self.p["DOA_MIN_CONF"])
+            if doa is None:
+                continue
+            best = Counter(w[2] for w in ws).most_common(1)[0][0]
+            part = dict(r)
+            part.update(
+                {
+                    "label": lbl,
+                    "best": best,
+                    "score": round(float(np.median([w[3] for w in ws])), 3),
+                    "second_score": -1.0,
+                    "part": "target" if lbl == TARGET else "other",
+                }
+            )
+            if lbl == NOT_TARGET:
+                part["best"] = ""  # unknown voice: never named
+            self._publish_located(part, doa)
+            self.get_logger().info(
+                f"[seg {r['seg_id']}]   {part['part']:6s} voice: "
+                f"{best or '?'}:{part['score']:.2f} x{len(ws)} windows | "
+                f"DOA {doa['azimuth_deg']:+.0f}deg {doa['direction']} "
+                f"conf={doa['confidence']:.2f}"
+            )
+            published = True
+        return published
 
     def _publish_located(self, r: dict, doa: dict) -> None:
         """Who is speaking and from where, in one message."""
@@ -618,6 +671,7 @@ class SpeakerVerification(Node):
             "doa_reliable": doa["reliable"],
             "sources": doa["sources"],
             "dur": r["dur"],
+            "part": r.get("part", "whole"),
             "tracks": self.tracker.snapshot(now),
         }
         self.located_pub.publish(String(data=json.dumps(located)))
