@@ -68,9 +68,9 @@ Additional Flags:
 frida_interfaces Module Flags (optional, default is all modules):
   --hri              Build hri (+ its dependencies).
   --vision           Build vision (+ its dependencies).
-  --manipulation     Build manipulation (+ its dependencies).
+  --manipulation     Build manipulation; currently same as --all.
   --navigation       Build navigation (+ its dependencies).
-  --task-manager     Build task_manager (+ its dependencies).
+  --task-manager     Build task_manager; currently same as --all.
   --all              Build everything (default).
   Dependencies of the requested modules are added automatically. The
   install only grows across builds; run --clean-interfaces to reset it.
