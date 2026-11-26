@@ -947,9 +947,11 @@ class MatrixServerTests(unittest.TestCase):
         clock.sleep_for.assert_not_called()
 
     def test_unwritable_cache_file_does_not_fail_warmup(self):
-        nav, _ = server()
-        nav._path_cache_file = "/nonexistent/dir/cache.json"
-        self.assertTrue(nav._refresh_path_cache(full=False))
+        with tempfile.NamedTemporaryFile() as blocker:
+            nav, _ = server()
+            # Under a regular file, so even root cannot create the directory
+            nav._path_cache_file = f"{blocker.name}/dir/cache.json"
+            self.assertTrue(nav._refresh_path_cache(full=False))
         self.assertTrue(any("Could not save" in c.args[1] for c in nav.nav_logger.call_args_list))
 
     def test_budget_cut_warmup_retries_until_no_new_pairs(self):
