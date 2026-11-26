@@ -26,11 +26,15 @@ class HandleParams:
     proud_max: float = 0.18  # above standoff_max + bar depth
     depth_jump: float = 0.01  # blobs are also cut at depth jumps this big
     min_pixels: int = 5
-    length_min: float = 0.015  # visible lever along the door (at ~1 m only the tip reads)
+    length_min: float = (
+        0.015  # visible lever along the door (at ~1 m only the tip reads)
+    )
     length_max: float = 0.60  # above long pull bars (~45 cm)
     height_min: float = 0.005  # bar height
     height_max: float = GRIPPER_MAX_APERTURE  # the gripper must close on it
-    standoff_min: float = 0.01  # median blob distance off the door (reads short when far)
+    standoff_min: float = (
+        0.01  # median blob distance off the door (reads short when far)
+    )
     standoff_max: float = 0.15  # above deep levers (~9 cm)
     face_window: float = 0.15  # door face refitted this far around the blob
     min_face_points: int = 50

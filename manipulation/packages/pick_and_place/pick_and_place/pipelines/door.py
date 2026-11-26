@@ -37,7 +37,6 @@ MAX_PREGRASP_SWING = 130.0  # deg any joint may move to reach the pre-grasp
 GRASP_VELOCITY = 0.3  # the joint move to the pre-grasp, next to the door
 GRASP_PAST = 0.03  # m the fingertips go past the handle's front
 PRE_GRASP = 0.08  # m back from the grasp, closed in on by the guarded approach
-APPROACH_SPEED = 30.0  # mm/s, the back-off after letting go
 # m fixed drop pressing the lever (an effort stop ends too early).
 LEVER_DROP = 0.06
 PRESS_SPEED = 12.0  # mm/s
@@ -46,11 +45,11 @@ LEVER_ROLL = 40.0
 LEVER_VELOCITY = 0.1
 # deg joint 5 turns to press the lever.
 LEVER_TURN = 25.0
-OPEN_DISTANCE = 0.15  # m pushed
-# m the pull stops short of the arm base (link_base y = 0).
-PULL_BASE_CLEARANCE = 0.15
-UNLATCH_DISTANCE = 0.03  # m driven with the lever down
-RETREAT = 0.08  # m back (+y) after letting go
+OPEN_DISTANCE = 0.15  # m of straight pull the grasp check covers
+# m the handle may leave the door's arc in a straight pull: pull = R sin(acos(1 - tol / R)).
+HINGE_TOLERANCE = 0.02
+FALLBACK_PULL = 0.10  # m pulled when the hinge distance is unknown
+UNLATCH_DISTANCE = 0.02  # m driven with the lever down, then the lever is let back up
 # s for a fresh vision door_handle point (the gallery runs at ~1.2 Hz).
 GALLERY_WAIT = 3.0
 # Joint 5 must move the fingertips mostly up/down to press a lever, not sideways.
@@ -67,10 +66,13 @@ OPEN_GUARD = ForceGuardProfile(
     # As the plate: J1/J6 see little, J2's gravity drift false-trips.
     ignore_joints=(0, 1, 5),
     jump_window=0.3,
-    jump_trip=4.0,  # N
+    jump_trip=3.0,  # N
     jump_sustain=5,
     hard_ceiling=6.0,  # N, push/pull stop before ramming the door (approach keeps 15)
     max_descent=OPEN_DISTANCE,
+)
+PULL_SPEED = (
+    8.0  # mm/s, the unguarded pull once the push showed it does not open that way
 )
 # Closing in on the handle, stopping at the door; contact only counts in the last 3.5 cm.
 APPROACH_GUARD = replace(
@@ -158,27 +160,17 @@ def pick_handle(arm, handle) -> bool:
             return let_go(arm, False)
     with arm.phase("push_door"):
         arm.check_abort()
-        opened, pushed, latched = guarded_open(arm, PUSH, "push", unpress)
-    # Pull only when the push never unlatched (the lever is still held down).
+        opened, _, latched = guarded_open(arm, PUSH, "push", unpress)
+    # Pull only when the push never unlatched (the lever is still held down); no force guard.
     if not opened and latched:
         with arm.phase("pull_door"):
             arm.check_abort()
-            # Undo the push first, or the baseline holds the door's load.
-            if pushed > 0.002 and not arm.cartesian_approach(
-                PULL, pushed, OPEN_GUARD.descent_speed
-            ):
-                arm.logger.warn("Door pull: backing off the push did not complete")
-            tcp = arm.tcp_xyz()
-            if tcp is None:
-                arm.logger.error(
-                    "Door pull: no TCP reading, not pulling toward the base"
-                )
-                return let_go(arm, False)
-            pull = float(np.dot(-np.asarray(tcp), PULL)) - PULL_BASE_CLEARANCE
+            hinge = float(getattr(handle, "hinge_distance", 0.0))
+            pull = pull_distance(hinge)
             arm.logger.info(
-                f"Door pull: {pull * 1000:.0f} mm, stopping {PULL_BASE_CLEARANCE * 1000:.0f} mm from the arm base"
+                f"Door pull: {pull * 1000:.0f} mm straight (hinge {hinge * 1000:.0f} mm away, {HINGE_TOLERANCE * 1000:.0f} mm off the arc)"
             )
-            opened, _, _ = guarded_open(arm, PULL, "pull", unpress, pull)
+            opened = pull_open(arm, unpress, pull)
     return let_go(arm, opened)
 
 
@@ -255,13 +247,15 @@ def drive_blocked(arm, grasp, seed=None) -> str:
             PRE_GRASP,
             APPROACH_GUARD.descent_speed,
         ),
-        # One line from the full pull back to the full push, at the pressed lever's height.
+        # The unlatch pull back to the unlatch push, at the pressed lever's height.
         (
-            _shifted(grasp, PULL * OPEN_DISTANCE + DOWN * LEVER_DROP),
+            _shifted(grasp, PULL * UNLATCH_DISTANCE + DOWN * LEVER_DROP),
             PUSH,
-            2 * OPEN_DISTANCE,
+            2 * UNLATCH_DISTANCE,
             OPEN_GUARD.descent_speed,
         ),
+        # The straight pull at the grasp height (about a 0.6-0.9 m hinge).
+        (grasp, PULL, OPEN_DISTANCE, PULL_SPEED),
     )
     # Seeded with the pre-grasp solution, so the drives are checked on the branch the arm will be in.
     for start, direction, distance, speed in drives:
@@ -322,11 +316,8 @@ def press_lever(arm):
     return unpress
 
 
-def guarded_open(arm, direction, name: str, unpress, distance=OPEN_DISTANCE):
-    """Unlatch, ``unpress``, drive the rest, under OPEN_GUARD: (opened, m moved, latched)."""
-    if distance < UNLATCH_DISTANCE:
-        arm.logger.warn(f"Door {name}: only {distance * 1000:.0f} mm of room")
-        return False, 0.0, True
+def guarded_open(arm, direction, name: str, unpress):
+    """Unlatch under OPEN_GUARD, then ``unpress``: (opened, m moved, latched)."""
     first = arm.force_guarded_descent(
         replace(OPEN_GUARD, max_descent=UNLATCH_DISTANCE), direction
     )
@@ -343,34 +334,37 @@ def guarded_open(arm, direction, name: str, unpress, distance=OPEN_DISTANCE):
             f"Door {name}: going back up to the grasp height did not complete"
         )
         return False, moved, False
-    left = distance - moved
-    # The clock covers the drive at descent_speed plus OPEN_GUARD's 3.5 s of slack.
-    timeout = max(OPEN_GUARD.timeout, left * 1000 / OPEN_GUARD.descent_speed + 3.5)
-    rest = arm.force_guarded_descent(
-        replace(OPEN_GUARD, max_descent=left, timeout=timeout), direction
-    )
-    moved += rest.descended_m
-    if rest.contact or moved < distance - 1e-3:
-        arm.logger.warn(f"Door {name}: stopped after {moved * 1000:.0f} mm")
-        return False, moved, False
     arm.logger.info(f"Door opened by a {name} of {moved * 1000:.0f} mm")
     return True, moved, False
 
 
+def pull_open(arm, unpress, distance: float) -> bool:
+    """Pull UNLATCH_DISTANCE with the lever down, ``unpress``, pull the rest; cartesian, no force guard."""
+    if not arm.cartesian_approach(PULL, UNLATCH_DISTANCE, PULL_SPEED):
+        arm.logger.warn("Door pull: the unlatch pull did not complete")
+        return False
+    arm.logger.info("Door pull: unlatched, back up to the grasp height")
+    if not unpress():
+        arm.logger.warn("Door pull: going back up to the grasp height did not complete")
+        return False
+    if not arm.cartesian_approach(PULL, distance - UNLATCH_DISTANCE, PULL_SPEED):
+        arm.logger.warn("Door pull: the rest of the pull did not complete")
+        return False
+    arm.logger.info(f"Door opened by a pull of {distance * 1000:.0f} mm")
+    return True
+
+
+def pull_distance(hinge: float) -> float:
+    """Straight pull that keeps the handle within HINGE_TOLERANCE of its arc about the hinge."""
+    if hinge <= HINGE_TOLERANCE:
+        return FALLBACK_PULL
+    return hinge * math.sin(math.acos(1.0 - HINGE_TOLERANCE / hinge))
+
+
 def let_go(arm, result: bool) -> bool:
-    """Open the gripper, back off (+y) from the handle and return to table_stare; returns ``result``."""
+    """Open the gripper and stay there; returns ``result``."""
     with arm.phase("release_handle"):
         arm.open_gripper()
-        if not arm.cartesian_approach(PULL, RETREAT, APPROACH_SPEED):
-            arm.logger.warn("Back-off from the door handle did not complete")
-    with arm.phase("return/table_stare"):
-        for attempt in range(3):
-            if attempt > 0:
-                arm.clear_octomap()
-            if arm.move_to_named_position("table_stare", velocity=FAST_VELOCITY):
-                break
-        else:
-            arm.logger.error("Door: could not return to table_stare")
     return result
 
 
@@ -412,4 +406,6 @@ __all__ = [
     "guarded_open",
     "pick_handle",
     "press_lever",
+    "pull_open",
+    "pull_distance",
 ]

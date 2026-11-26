@@ -1621,34 +1621,37 @@ def test_door_grasps_keep_the_deepest_finger_off_the_door():
         assert handle.standoff - deepest >= door_pipeline.FINGER_CLEARANCE - 1e-6, label
 
 
-def test_door_backs_off_a_tripped_push_before_the_guarded_pull():
+def test_door_pulls_unguarded_after_a_tripped_push():
     arm = FakeArm(
         link_pose=make_pose(),
         contact_results=[
             ContactResult(contact=False, descended_m=0.08),  # approach
             ContactResult(contact=True, descended_m=0.016),  # push meets the door
-            ContactResult(contact=False, descended_m=0.03),  # pull unlatches
-            ContactResult(contact=False, descended_m=0.42),  # rest of the pull
         ],
     )
-    arm.tcp_xyz = lambda: (0.05, -0.60, 0.95)  # a 0.45 m pull
-    handle = SimpleNamespace(center=make_point(0.58, 0.23, 0.97), standoff=0.043)
+    handle = SimpleNamespace(
+        center=make_point(0.58, 0.23, 0.97), standoff=0.043, hinge_distance=0.75
+    )
     assert door_pipeline.pick_handle(arm, handle) is True
-    directions = [list(d) for d in arm.guard_directions]
-    assert directions == [
-        [0.0, -1.0, 0.0],
-        [0.0, -1.0, 0.0],
-        [0.0, 1.0, 0.0],
-        [0.0, 1.0, 0.0],
-    ]
-    back = [a for a in arm.approaches if list(a[0]) == [0.0, 1.0, 0.0]]
-    assert back[0][1] == pytest.approx(0.016)  # the push undone before the pull
+    # Only the approach and the push are force guarded.
+    assert np.allclose(
+        [list(d) for d in arm.guard_directions], [[0, -1, 0], [0, -1, 0]]
+    )
+    pulls = [a[1] for a in arm.approaches if list(a[0]) == [0.0, 1.0, 0.0]]
+    assert pulls == pytest.approx(
+        [
+            door_pipeline.UNLATCH_DISTANCE,
+            door_pipeline.pull_distance(0.75) - door_pipeline.UNLATCH_DISTANCE,
+        ]
+    )
     up = [a for a in arm.approaches if list(a[0]) == [0.0, 0.0, 1.0]]
     assert len(up) == 1 and up[0][1] == door_pipeline.LEVER_DROP  # back up once
-    assert arm.guards[-1].max_descent == pytest.approx(
-        0.60 - door_pipeline.PULL_BASE_CLEARANCE - 0.03
-    )
-    assert arm.named_positions[-1] == "table_stare"
+    assert arm.named_positions == []  # stays at the door, no table_stare
+
+
+def test_pull_keeps_the_handle_near_its_arc():
+    assert door_pipeline.pull_distance(0.75) == pytest.approx(0.172, abs=1e-3)
+    assert door_pipeline.pull_distance(0.0) == door_pipeline.FALLBACK_PULL
 
 
 def test_lever_is_pressed_straight_down_when_joint5_cannot():
