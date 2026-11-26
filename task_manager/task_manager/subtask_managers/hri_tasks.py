@@ -928,6 +928,8 @@ class HRITasks:
         """
         if not hotwords and query == "location":
             hotwords = self.location_hotwords()
+            # Whisper can echo a single injected place on silence with high confidence
+            always_confirm = always_confirm or bool(hotwords)
         current_attempt = 0
         while current_attempt < retries:
             current_attempt += 1
