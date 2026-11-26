@@ -28,6 +28,7 @@ from frida_constants.manipulation_constants import (
     RIM_NAMES,
     TOP_GRASP_DEPTH,
     TRASH_BIN_NAME,
+    ZED_DEPTH_SCALE,
 )
 
 GRASP_CLASS_OBJECTS = {
@@ -166,6 +167,7 @@ class Scene:
 
     def deproject(self, u, v, z) -> np.ndarray:
         u, v, z = map(np.atleast_1d, (u, v, z))
+        z = z * ZED_DEPTH_SCALE
         k = self.intrinsics
         cam = np.column_stack(
             ((u - k.cx) * z / k.fx, (v - k.cy) * z / k.fy, z, np.ones_like(z))
