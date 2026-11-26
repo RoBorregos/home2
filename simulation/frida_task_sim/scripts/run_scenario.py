@@ -162,14 +162,6 @@ def prepare(args) -> tuple[dict, str]:
     with open(os.path.join(run_dir, "grasp_objects.json"), "w") as f:
         json.dump(grasp, f)
     venue = venues.load(scenario["venue"])
-    cabinet = venue["furniture"][venue["ppc"]["cabinet"]]
-    shelf = {
-        "frame": "base_link",
-        "compartment_height": 0.26,
-        "arenas": {"1": cabinet["levels"]},
-    }
-    with open(os.path.join(run_dir, "shelf_levels.json"), "w") as f:
-        json.dump(shelf, f)
     # slam_toolbox starts localizing from the spawn pose
     gz_share = get_package_share_directory("frida_gz_sim")
     with open(os.path.join(gz_share, "config", "mapper_params_sim.yaml")) as f:
@@ -276,8 +268,6 @@ def run(args) -> int:
     )
     env = dict(
         os.environ,
-        FRIDA_SHELF_LEVELS_FILE=f"{run_dir}/shelf_levels.json",
-        FRIDA_ARENA="1",
         PYTHONUNBUFFERED="1",
     )
     stack = Stack(os.path.join(run_dir, "stack_logs"), env)
