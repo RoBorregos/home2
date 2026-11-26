@@ -71,18 +71,19 @@ fi
 if [ "$ROLE" = "gpsr" ]; then
     debug_log "Starting rbrgs on port 11435..."
     llama-server \
-        --model "$MODELS_DIR/rbrgs.F16.gguf" \
+        --model "$MODELS_DIR/command-interpreter-qwen3.5-4b-q8_0.gguf" \
         --host 0.0.0.0 \
         --port 11435 \
         --ctx-size 4096 \
         -ngl 99 \
         --flash-attn on \
         --parallel 1 \
+        --jinja \
+        --reasoning off \
         --alias rbrgs \
-        --temp 1.5 \
-        --min-p 0.1 \
+        --temp 0 \
         &
-    wait_for_server 11435 rbrgs rbrgs.F16.gguf
+    wait_for_server 11435 rbrgs command-interpreter-qwen3.5-4b-q8_0.gguf
 fi
 
 wait
