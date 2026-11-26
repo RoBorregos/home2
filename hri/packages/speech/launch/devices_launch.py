@@ -10,38 +10,6 @@ from frida_constants import ModuleNames, parse_ros_config
 LOG_LEVEL = os.environ.get("HRI_LOG_LEVEL", "info")
 
 
-def _frontend_node(use_spatial: bool, noise_cancellation_config: dict) -> Node:
-    if not use_spatial:
-        return Node(
-            package="speech",
-            executable="noise_cancellation.py",
-            ros_arguments=["--log-level", f"noise_cancellation:={LOG_LEVEL}"],
-            name="noise_cancellation",
-            output="screen",
-            emulate_tty=True,
-            parameters=[noise_cancellation_config],
-        )
-    spatial_config = parse_ros_config(
-        os.path.join(
-            get_package_share_directory("speech"), "config", "spatial_audio.yaml"
-        ),
-        [ModuleNames.HRI.value],
-    )["spatial_audio"]["ros__parameters"]
-    # take the place of noise_cancellation on the processed topic
-    spatial_config["ENHANCED_AUDIO_TOPIC"] = noise_cancellation_config[
-        "PROCESSED_AUDIO_TOPIC"
-    ]
-    return Node(
-        package="speech",
-        executable="spatial_audio.py",
-        ros_arguments=["--log-level", f"spatial_audio:={LOG_LEVEL}"],
-        name="spatial_audio",
-        output="screen",
-        emulate_tty=True,
-        parameters=[spatial_config],
-    )
-
-
 def generate_launch_description():
     mic_config = parse_ros_config(
         os.path.join(
@@ -81,6 +49,13 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["voice_detection"]["ros__parameters"]
 
+    speaker_verification_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "speaker_verification.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["speaker_verification"]["ros__parameters"]
+
     doorbell_detection_config = parse_ros_config(
         os.path.join(
             get_package_share_directory("speech"), "config", "doorbell_detection.yaml"
@@ -89,10 +64,6 @@ def generate_launch_description():
     )["doorbell_detection"]["ros__parameters"]
 
     env_type = os.environ.get("ENV_TYPE", "cpu")
-    # "spatial": spatial_audio (raw mics -> MVDR -> streaming DFN) feeds the
-    # processed topic instead of noise_cancellation (chip ch0 -> chunked DFN).
-    frontend = os.environ.get("HRI_AUDIO_FRONTEND", "legacy").lower()
-    use_spatial = frontend == "spatial" and SpeechApiUtils.respeaker_available()
 
     nodes = [
         Node(
@@ -104,7 +75,15 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[mic_config],
         ),
-        _frontend_node(use_spatial, noise_cancellation_config),
+        Node(
+            package="speech",
+            executable="noise_cancellation.py",
+            ros_arguments=["--log-level", f"noise_cancellation:={LOG_LEVEL}"],
+            name="noise_cancellation",
+            output="screen",
+            emulate_tty=True,
+            parameters=[noise_cancellation_config],
+        ),
         Node(
             package="speech",
             executable="voice_detection.py",
@@ -205,6 +184,18 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 parameters=[respeaker_config],
+            )
+        )
+        # Who is speaking and from where: needs the 4 raw ReSpeaker mics
+        nodes.append(
+            Node(
+                package="speech",
+                executable="speaker_verification.py",
+                ros_arguments=["--log-level", f"speaker_verification:={LOG_LEVEL}"],
+                name="speaker_verification",
+                output="screen",
+                emulate_tty=True,
+                parameters=[speaker_verification_config],
             )
         )
 

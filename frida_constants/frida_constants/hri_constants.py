@@ -14,22 +14,14 @@ USEFUL_AUDIO_TOPIC = "/hri/speech/useful_audio"
 RAW_AUDIO_TOPIC = "/hri/rawAudioChunk"
 # All 6 ReSpeaker channels interleaved (ch0 processed, ch1-4 raw mics, ch5 playback)
 MULTICHANNEL_AUDIO_TOPIC = "/hri/rawAudioMultichannel"
-# Mono output of the spatial front end (MVDR + streaming DeepFilterNet)
-ENHANCED_AUDIO_TOPIC = "/hri/enhancedAudioChunk"
 PROCESSED_AUDIO_TOPIC = "/hri/processedAudioChunk"
 VAD_AUDIO_TOPIC = "/hri/vadAudioChunk"
 VOICE_ACTIVITY_TOPIC = "/hri/voice_activity"
-# Speaker verification (speaker_verification.py, issue #1459)
-SPEAKER_ID_VAD_TOPIC = "/hri/speaker_id/vad"
-SPEAKER_ID_TARGET_ACTIVE_TOPIC = "/hri/speaker_id/target_active"
-SPEAKER_ID_RESULT_TOPIC = "/hri/speaker_id/result"
-SPEAKER_ID_METRICS_TOPIC = "/hri/speaker_id/metrics"
+# Speaker id (speaker_verification.py): who is speaking and from where (JSON),
+# enrollment commands and their replies
+SPEAKER_ID_LOCATED_TOPIC = "/hri/speaker_id/located"
 SPEAKER_ID_COMMAND_TOPIC = "/hri/speaker_id/command"
 SPEAKER_ID_STATUS_TOPIC = "/hri/speaker_id/status"
-# Who is speaking and from where (JSON), and the live sound direction (JSON)
-SPEAKER_ID_LOCATED_TOPIC = "/hri/speaker_id/located"
-SOUND_DOA_TOPIC = "/hri/speech/doa"
-SAYING_TOPIC = "/saying"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
 LLM_WRAPPER_SERVICE = "/hri/nlp/llm"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"

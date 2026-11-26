@@ -1,29 +1,19 @@
 #!/usr/bin/env python3
-"""Speaker verification node (issue #1459).
+"""Speaker verification node: who is speaking and from where (issue #1459).
 
-Runs next to the existing ``voice_detection`` VAD (it does not replace it) and
-answers "who is speaking, and is it the target person?":
+    ReSpeaker ch1-4 (raw mics) -> RTF-MVDR beam -> Silero VAD + energy gate
+        -> speech segments -> WeSpeaker ResNet34 embedding (GPU)
+        -> cosine vs enrolled profiles -> TARGET / NOT_TARGET / UNKNOWN / MIXED
+    ReSpeaker ch1-4 -> SRP-PHAT direction over the *same* window as each embedding
 
-    audio (int16) -> Silero VAD + adaptive energy gate -> speech segments
-                  -> ONNX speaker embedding (WeSpeaker ResNet34)
-                  -> cosine vs enrolled profiles -> TARGET / NOT_TARGET / UNKNOWN
+Output: SPEAKER_ID_LOCATED_TOPIC (String JSON), one message per decision (every
+EMBED_HOP_SEC while someone talks, plus one per finished segment) with the
+speaker name, the azimuth in the robot frame (0 = front, +90 = left) and the
+scores. When the target and someone else share a segment (MIXED) it publishes
+one message per voice, each with its own direction.
 
-Outputs:
-    SPEAKER_ID_VAD_TOPIC            Bool   voice activity (any voice)
-    SPEAKER_ID_TARGET_ACTIVE_TOPIC  Bool   the target person is speaking now
-    SPEAKER_ID_RESULT_TOPIC         String JSON, one per partial/final decision
-    SPEAKER_ID_METRICS_TOPIC        String JSON, periodic health/latency metrics
-    SPEAKER_ID_STATUS_TOPIC         String JSON, reply to commands (transient local)
-    SPEAKER_ID_LOCATED_TOPIC        String JSON, who spoke and from where (needs
-                                    MULTICHANNEL_AUDIO_TOPIC)
-    SOUND_DOA_TOPIC                 String JSON, live direction while someone speaks
-
-With MULTICHANNEL_AUDIO_TOPIC set the node reads the 6 ReSpeaker channels: the
-mono channel MONO_CHANNEL feeds VAD + embeddings exactly as before, and ch1-4
-feed SRP-PHAT (speech.spatial.doa) over the *same* window used for each
-embedding, so every decision carries the direction of that voice.
-
-Commands (String JSON on SPEAKER_ID_COMMAND_TOPIC), e.g.::
+Commands (String JSON on SPEAKER_ID_COMMAND_TOPIC, replies on
+SPEAKER_ID_STATUS_TOPIC), e.g.::
 
     {"op": "enroll_start"}
     {"op": "enroll_commit", "name": "mario"}
@@ -32,6 +22,9 @@ Commands (String JSON on SPEAKER_ID_COMMAND_TOPIC), e.g.::
     {"op": "set_target", "name": "mario"}      # "" = any enrolled person
     {"op": "forget", "name": "mario"}
     {"op": "list"} / {"op": "reload"}
+
+Without the ReSpeaker (MULTICHANNEL_AUDIO_TOPIC empty) it identifies speakers
+from RAW_AUDIO_TOPIC and the direction fields are null.
 """
 
 from __future__ import annotations
@@ -40,7 +33,6 @@ import json
 import os
 import threading
 import time
-import wave
 from collections import Counter, deque
 from dataclasses import dataclass
 
@@ -54,23 +46,29 @@ from frida_interfaces.msg import AudioData
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
-from speech.spatial.doa import (
+from speech.spatial_utils import (
     ArrayGeometry,
     DoaConfig,
+    FrontEndConfig,
+    MvdrFrontEnd,
+    SpeakerTracker,
     SrpPhat,
+    TrackerConfig,
     direction_label,
     merge_doas,
 )
-from speech.spatial.frontend import FrontEndConfig, SpatialFrontEnd
-from speech.spatial.tracker import SpeakerTracker, TrackerConfig
-from speech.speaker_id.embedder import DEFAULT_MODEL_FILE, SpeakerEmbedder
-from speech.speaker_id.profiles import ProfileStore
-from speech.speaker_id.segmenter import Segment, Segmenter, SegmenterConfig
-from speech.speaker_id.silero import FRAME_SAMPLES, SileroVAD
-from speech.speaker_id.verifier import (
+from speech.speaker_id_utils import (
+    DEFAULT_MODEL_FILE,
+    FRAME_SAMPLES,
     MIXED,
     NOT_TARGET,
     TARGET,
+    ProfileStore,
+    Segment,
+    Segmenter,
+    SegmenterConfig,
+    SileroVAD,
+    SpeakerEmbedder,
     VerifierConfig,
     aggregate_segment,
     build_profile,
@@ -134,9 +132,6 @@ class SpeakerVerification(Node):
         data_dir = _default_data_dir()
         embed_model = p["EMBED_MODEL"] or os.path.join(data_dir, DEFAULT_MODEL_FILE)
         profile_dir = p["PROFILE_DIR"] or os.path.join(data_dir, "profiles")
-        self.dump_dir = p["DUMP_SEGMENTS_DIR"]
-        if self.dump_dir:
-            os.makedirs(self.dump_dir, exist_ok=True)
 
         self.seg_cfg = SegmenterConfig(
             sample_rate=self.sr,
@@ -172,7 +167,7 @@ class SpeakerVerification(Node):
         if not os.path.isfile(embed_model):
             raise FileNotFoundError(
                 f"Speaker model not found: {embed_model}. "
-                "Run docker/hri/scripts/download-speaker-models.sh"
+                "Run docker/hri/scripts/download-model.sh (option speaker-id)"
             )
         providers = [x for x in p["ORT_PROVIDERS"].split(",") if x.strip()]
         self.embedder = SpeakerEmbedder(embed_model, providers, self.sr)
@@ -187,10 +182,8 @@ class SpeakerVerification(Node):
         self._muted_until = 0.0
         self._saying = False
         self._vad_state = False
-        self._last_prob = 0.0
         self._seg_wall_start: dict[int, float] = {}
         self._last_partial_t = 0.0
-        self._chunks = 0
 
         # Worker state
         self._jobs: deque[Job] = deque()
@@ -200,14 +193,9 @@ class SpeakerVerification(Node):
         self._enroll_started = 0.0
         self._enroll_waves: list[np.ndarray] = []
         self._lookback: deque[tuple[float, np.ndarray]] = deque()
-        self._infer_ms: deque[float] = deque(maxlen=200)
-        self._latency_ms: deque[float] = deque(maxlen=200)
-        self._labels: Counter = Counter()
-        self._drops = 0
-        self._segments = 0
-        self._target_active = False
-        self._current_seg_label: dict[int, str] = {}
-        self._seg_windows: dict[int, list[tuple[str, float]]] = {}
+        # partial windows of the open segments: (label, target_score, best,
+        # score, doa); used to split MIXED segments per voice
+        self._seg_windows: dict[int, list[tuple]] = {}
         self._running = True
 
         # ROS I/O
@@ -216,23 +204,12 @@ class SpeakerVerification(Node):
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
             reliability=ReliabilityPolicy.RELIABLE,
         )
-        self.vad_pub = self.create_publisher(Bool, p["SPEAKER_ID_VAD_TOPIC"], 10)
-        self.target_pub = self.create_publisher(
-            Bool, p["SPEAKER_ID_TARGET_ACTIVE_TOPIC"], 10
-        )
-        self.result_pub = self.create_publisher(
-            String, p["SPEAKER_ID_RESULT_TOPIC"], 10
-        )
-        self.metrics_pub = self.create_publisher(
-            String, p["SPEAKER_ID_METRICS_TOPIC"], 10
-        )
         self.status_pub = self.create_publisher(
             String, p["SPEAKER_ID_STATUS_TOPIC"], latched
         )
         self.located_pub = self.create_publisher(
             String, p["SPEAKER_ID_LOCATED_TOPIC"], 10
         )
-        self.doa_pub = self.create_publisher(String, p["SOUND_DOA_TOPIC"], 10)
         self.srp: SrpPhat | None = None
         self.tracker = SpeakerTracker(
             TrackerConfig(
@@ -252,7 +229,7 @@ class SpeakerVerification(Node):
             if p["MONO_SOURCE"] == "mvdr":
                 # embeddings from the RTF-MVDR beam of the raw mics (no DFN:
                 # it did not improve speaker separation in the offline eval)
-                self.mvdr_fe = SpatialFrontEnd(
+                self.mvdr_fe = MvdrFrontEnd(
                     SileroVAD(silero_path, self.sr),
                     FrontEndConfig(output_gain_db=p["MVDR_OUTPUT_GAIN_DB"]),
                 )
@@ -260,22 +237,19 @@ class SpeakerVerification(Node):
             else:
                 audio_topic = f"{mc_topic} (ch{p['MONO_CHANNEL']} + DOA ch1-4)"
             self.create_subscription(AudioData, mc_topic, self._mc_audio_cb, 50)
-            self.create_timer(p["DOA_PERIOD_SEC"], self._publish_live_doa)
         else:
-            audio_topic = p["INPUT_AUDIO_TOPIC"] or p["RAW_AUDIO_TOPIC"]
+            self.mvdr_fe = None
+            audio_topic = p["RAW_AUDIO_TOPIC"]
             self.create_subscription(AudioData, audio_topic, self._audio_cb, 50)
         self.audio_topic = audio_topic
         self.create_subscription(Bool, p["SAYING_TOPIC"], self._saying_cb, 10)
         self.create_subscription(
             String, p["SPEAKER_ID_COMMAND_TOPIC"], self._command_cb, 10
         )
-        self.create_timer(p["METRICS_PERIOD"], self._publish_metrics)
 
         self._worker = threading.Thread(target=self._worker_loop, daemon=True)
         self._worker.start()
 
-        self.vad_pub.publish(Bool(data=False))
-        self.target_pub.publish(Bool(data=False))
         self._status("startup", True, "ready")
         self.get_logger().info(
             f"SpeakerVerification ready | in: {audio_topic} | silero "
@@ -291,16 +265,10 @@ class SpeakerVerification(Node):
     def _declare_params(self) -> dict:
         defaults = {
             "RAW_AUDIO_TOPIC": "/hri/rawAudioChunk",
-            "INPUT_AUDIO_TOPIC": "",
             "SAYING_TOPIC": "/saying",
-            "SPEAKER_ID_VAD_TOPIC": "/hri/speaker_id/vad",
-            "SPEAKER_ID_TARGET_ACTIVE_TOPIC": "/hri/speaker_id/target_active",
-            "SPEAKER_ID_RESULT_TOPIC": "/hri/speaker_id/result",
-            "SPEAKER_ID_METRICS_TOPIC": "/hri/speaker_id/metrics",
             "SPEAKER_ID_COMMAND_TOPIC": "/hri/speaker_id/command",
             "SPEAKER_ID_STATUS_TOPIC": "/hri/speaker_id/status",
             "SPEAKER_ID_LOCATED_TOPIC": "/hri/speaker_id/located",
-            "SOUND_DOA_TOPIC": "/hri/speech/doa",
             "MULTICHANNEL_AUDIO_TOPIC": "",
             "MC_CHANNELS": 6,
             "MONO_CHANNEL": 0,
@@ -309,8 +277,6 @@ class SpeakerVerification(Node):
             "DOA_OFFSET_DEG": 0.0,
             "DOA_MIRROR": False,
             "DOA_MIN_CONF": 0.15,
-            "DOA_PERIOD_SEC": 0.25,
-            "DOA_LIVE_WIN_SEC": 0.5,
             "TRACK_MAX_AGE_SEC": 8.0,
             "TRACK_MATCH_DEG": 25.0,
             "SAMPLE_RATE": 16000,
@@ -319,7 +285,6 @@ class SpeakerVerification(Node):
             "EMBED_BACKEND": "wespeaker_resnet34_lm",
             "ORT_PROVIDERS": "cuda,cpu",
             "PROFILE_DIR": "",
-            "DUMP_SEGMENTS_DIR": "",
             "VAD_ON": 0.5,
             "VAD_OFF": 0.4,
             "ENERGY_MARGIN_DB": 3.0,
@@ -346,7 +311,6 @@ class SpeakerVerification(Node):
             "ENROLL_OUTLIER_TH": 0.45,
             "ENROLL_TIMEOUT_SEC": 90.0,
             "LOOKBACK_SEC": 30.0,
-            "METRICS_PERIOD": 1.0,
         }
         out = {}
         for name, default in defaults.items():
@@ -392,16 +356,7 @@ class SpeakerVerification(Node):
         d["reliable"] = est.confidence >= self.p["DOA_MIN_CONF"]
         return d
 
-    def _publish_live_doa(self) -> None:
-        if not self._vad_state or self._is_muted():
-            return
-        d = self._doa_for(int(self.p["DOA_LIVE_WIN_SEC"] * self.sr))
-        if d is not None:
-            d["t"] = round(time.time(), 3)
-            self.doa_pub.publish(String(data=json.dumps(d)))
-
     def _process_mono(self, samples: np.ndarray) -> None:
-        self._chunks += 1
         audio = samples.astype(np.float32) / 32768.0
         self._pending = np.concatenate([self._pending, audio])
 
@@ -414,7 +369,6 @@ class SpeakerVerification(Node):
             frame = self._pending[:FRAME_SAMPLES]
             self._pending = self._pending[FRAME_SAMPLES:]
             prob = self.vad(frame)
-            self._last_prob = prob
             info, started, finished = self.segmenter.push(frame, prob)
             if started is not None:
                 self._seg_wall_start[started.seg_id] = time.time()
@@ -430,9 +384,7 @@ class SpeakerVerification(Node):
                 self._maybe_partial(self.segmenter.current)
 
     def _set_vad(self, active: bool) -> None:
-        if active != self._vad_state:
-            self._vad_state = active
-            self.vad_pub.publish(Bool(data=active))
+        self._vad_state = active
 
     def _seg_stats(self, seg: Segment) -> tuple[float, float]:
         probs = np.asarray(seg.probs) if seg.probs else np.zeros(1)
@@ -466,7 +418,6 @@ class SpeakerVerification(Node):
 
     def _finish_segment(self, seg: Segment) -> None:
         self._set_vad(False)
-        self._segments += 1
         snr, vad_p = self._seg_stats(seg)
         wave_ = seg.wave()[-int(self.p["EMBED_MAX_SEC"] * self.sr) :]
         self._enqueue(
@@ -488,9 +439,7 @@ class SpeakerVerification(Node):
         with self._cv:
             if job.kind == "partial":
                 # keep only the newest partial; finals/commands are never dropped
-                before = len(self._jobs)
                 self._jobs = deque(j for j in self._jobs if j.kind != "partial")
-                self._drops += before - len(self._jobs)
             self._jobs.append(job)
             self._cv.notify()
 
@@ -531,8 +480,6 @@ class SpeakerVerification(Node):
             "enrolling": self._enrolling,
             "src": self.audio_topic,
         }
-        if job.doa is not None:
-            result["doa"] = job.doa
         label = "UNKNOWN"
         wins: list = []
         if job.cut_by_tts and final:
@@ -544,7 +491,6 @@ class SpeakerVerification(Node):
         else:
             emb = self.embedder.embed(job.wave)
             infer_ms = self.embedder.last_infer_ms
-            self._infer_ms.append(infer_ms)
             with self._lock:
                 dec = decide(
                     emb, self.store.profiles, self.target, job.duration, self.ver_cfg
@@ -577,34 +523,17 @@ class SpeakerVerification(Node):
 
         now = time.time()
         if final:
-            lat = (now - job.t_wall_end) * 1000.0
-            self._latency_ms.append(lat)
-            result["lat_ms"] = round(lat, 1)
+            result["lat_ms"] = round((now - job.t_wall_end) * 1000.0, 1)
+            self._seg_windows.pop(job.seg_id, None)
         else:
             result["since_onset_ms"] = round((now - job.t_wall_start) * 1000.0, 1)
-        self._labels[label if final else f"partial_{label}"] += 1
 
-        # target_active: True while the latest window is judged TARGET
-        # (UNKNOWN windows keep the previous state of this segment)
-        if label in (TARGET, NOT_TARGET):
-            self._current_seg_label[job.seg_id] = label
-        active = (not final) and self._current_seg_label.get(job.seg_id) == TARGET
+        # MIXED finals are published per voice; everything else as one message
+        split = final and label == MIXED and self._publish_mixed(result, wins)
+        if "score" in result and not split:
+            self._publish_located(result, job.doa)
         if final:
-            self._current_seg_label.pop(job.seg_id, None)
-            self._seg_windows.pop(job.seg_id, None)
-        if active != self._target_active:
-            self._target_active = active
-            self.target_pub.publish(Bool(data=active))
-
-        self.result_pub.publish(String(data=json.dumps(result)))
-        if job.doa is not None and "score" in result:
-            if final and label == MIXED and self._publish_mixed(result, wins):
-                pass
-            else:
-                self._publish_located(result, job.doa)
-        if final:
-            self._log_final(result)
-            self._dump(job, label, result.get("best", ""), result.get("score", 0.0))
+            self._log_final(result, job.doa)
 
     def _publish_mixed(self, r: dict, wins: list) -> bool:
         """A segment where the target and someone else both spoke: the
@@ -642,8 +571,15 @@ class SpeakerVerification(Node):
             published = True
         return published
 
-    def _publish_located(self, r: dict, doa: dict) -> None:
+    def _publish_located(self, r: dict, doa: dict | None) -> None:
         """Who is speaking and from where, in one message."""
+        doa = doa or {
+            "azimuth_deg": None,
+            "direction": None,
+            "confidence": 0.0,
+            "reliable": False,
+            "sources": [],
+        }
         known = (
             r.get("best")
             and r.get("score", 0.0) >= self.ver_cfg.accept_th
@@ -674,7 +610,10 @@ class SpeakerVerification(Node):
             "doa_confidence": doa["confidence"],
             "doa_reliable": doa["reliable"],
             "sources": doa["sources"],
+            "second": r.get("second", ""),
+            "second_score": r.get("second_score", 0.0),
             "dur": r["dur"],
+            "snr_db": r["snr_db"],
             "part": r.get("part", "whole"),
             "tracks": self.tracker.snapshot(now),
         }
@@ -715,7 +654,7 @@ class SpeakerVerification(Node):
             prof.add_to_pool(emb, self.ver_cfg.pool_max)
             self.store.save(prof)
 
-    def _log_final(self, r: dict) -> None:
+    def _log_final(self, r: dict, doa: dict | None) -> None:
         if "score" in r:
             second = (
                 f" 2nd={r['second']}:{r['second_score']:.2f}" if r["second"] else ""
@@ -729,9 +668,9 @@ class SpeakerVerification(Node):
                 f"vad_p={r['vad_p']:.2f} snr={r['snr_db']:.0f}dB "
                 f"infer={r['infer_ms']:.0f}ms lat={r['lat_ms']:.0f}ms"
                 + (
-                    f" | DOA {r['doa']['azimuth_deg']:+.0f}deg {r['doa']['direction']}"
-                    f" conf={r['doa']['confidence']:.2f}"
-                    if r.get("doa")
+                    f" | DOA {doa['azimuth_deg']:+.0f}deg {doa['direction']}"
+                    f" conf={doa['confidence']:.2f}"
+                    if doa
                     else ""
                 )
                 + (" [enrolling]" if r["enrolling"] else "")
@@ -741,18 +680,6 @@ class SpeakerVerification(Node):
                 f"[seg {r['seg_id']}] {r['dur']:.1f}s {r['label']} "
                 f"snr={r['snr_db']:.0f}dB" + (" [enrolling]" if r["enrolling"] else "")
             )
-
-    def _dump(self, job: Job, label: str, best: str, score: float) -> None:
-        if not self.dump_dir or job.wave is None:
-            return
-        stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(job.t_wall_end))
-        fname = f"{stamp}_seg{job.seg_id:04d}_{label}_{best or 'none'}_{score:.2f}.wav"
-        pcm = (np.clip(job.wave, -1, 1) * 32767).astype(np.int16)
-        with wave.open(os.path.join(self.dump_dir, fname), "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(self.sr)
-            wf.writeframes(pcm.tobytes())
 
     def _do_commit(self, name: str, waves: list[np.ndarray], source: str) -> None:
         res = build_profile(name, waves, self.embedder, self.backend, self.ver_cfg)
@@ -856,37 +783,6 @@ class SpeakerVerification(Node):
             log = self.get_logger().info if ok else self.get_logger().warning
             log(f"[cmd {op}] {message}")
 
-    # ----------------------------------------------------------- metrics
-    def _publish_metrics(self) -> None:
-        inf = np.asarray(self._infer_ms) if self._infer_ms else np.zeros(1)
-        lat = np.asarray(self._latency_ms) if self._latency_ms else np.zeros(1)
-        collected = sum(w.shape[0] for w in self._enroll_waves) / self.sr
-        metrics = {
-            "t": round(time.time(), 3),
-            "audio_chunks": self._chunks,
-            "vad_prob": round(self._last_prob, 3),
-            "in_speech": self.segmenter.in_speech,
-            "muted": self._is_muted(),
-            "noise_floor_db": round(self.segmenter.noise_floor_db, 1),
-            "infer_ms_p50": round(float(np.percentile(inf, 50)), 1),
-            "infer_ms_p95": round(float(np.percentile(inf, 95)), 1),
-            "final_lat_ms_p95": round(float(np.percentile(lat, 95)), 1),
-            "queue": len(self._jobs),
-            "partial_drops": self._drops,
-            "segments": self._segments,
-            "labels": dict(self._labels),
-            "target": self.target,
-            "target_active": self._target_active,
-            "enrolling": self._enrolling,
-            "enroll_collected_sec": round(collected, 2),
-            "profiles": list(self.store.profiles),
-            "accept_th": self.ver_cfg.accept_th,
-            "reject_th": self.ver_cfg.reject_th,
-            "margin": self.ver_cfg.margin,
-        }
-        self._chunks = 0
-        self.metrics_pub.publish(String(data=json.dumps(metrics)))
-
     def destroy_node(self) -> None:
         self._running = False
         with self._cv:
@@ -896,7 +792,13 @@ class SpeakerVerification(Node):
 
 def main(args=None) -> None:
     rclpy.init(args=args)
-    node = SpeakerVerification()
+    try:
+        node = SpeakerVerification()
+    except FileNotFoundError as exc:
+        # the rest of the HRI pipeline keeps running without speaker id
+        rclpy.logging.get_logger("speaker_verification").error(str(exc))
+        rclpy.shutdown()
+        return
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):

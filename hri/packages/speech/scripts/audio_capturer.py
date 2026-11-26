@@ -6,10 +6,10 @@ import wave
 import numpy as np
 import pyaudio
 import rclpy
-from frida_interfaces.msg import AudioData
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
+from frida_interfaces.msg import AudioData
 
 SAVE_PATH = "/workspace/src/hri/packages/speech/debug/audios"
 SAVE_IT = 100
