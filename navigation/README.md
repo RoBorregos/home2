@@ -246,6 +246,7 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 | `/navigation/get_robot_pose` | `GetRobotPose` | Current pose from TF (map → base_link) |
 | `/navigation/query_path` | `NavQuery` | Path distance between two areas (no motion) |
 | `/navigation/query_path_matrix` | `NavQueryMatrix` (action) | Full matrix, named pairs only, or robot-origin row; one nav2 resume/pause, cancellable with partial results |
+| `/navigation/cache_pairs` | `Trigger` | Warm every named path pair for GPSR (`./run.sh navigation --cache-pairs`) |
 | `/navigation/dock_table` | `DockTable` | Dock to the surface in front (with offset) |
 | `/navigation/is_door_open` | `CheckDoor` | Door open/closed via lidar |
 | `/navigation/areas_json` | `MapAreas` | Return `areas.json` as a string |
@@ -256,64 +257,75 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 
 ### GPSR distance cache
 
-`nav_central` owns the named location-pair cache in memory. Once navigation setup
-has loaded the finalized map and tagged locations, activated Nav2, and completed
-initial localization, it schedules warmup independently of GPSR. Warmup requires
-populated map-frame map and global-costmap grids, valid named poses, a discoverable
-planner action, and active planner/global-costmap lifecycle states. It retries
-every two seconds until these checks pass; merely being outside mapping mode or
-setting `nodes_status` does not establish readiness. Map/grid updates are received
-independently of the navigation-operation lock so they can arrive during checks.
-Its `path_cache_warmup_seconds` parameter defaults to 180 s. A round cut by the
-budget retries the missing pairs and stops once a round adds none. Warmup logs
-coverage and elapsed time. Mapping mode does not warm the cache.
+`nav_central` owns the named location-pair cache in memory. It never warms the
+cache by itself: with navigation already up (e.g. `./run.sh navigation --gpsr`),
+run
 
-Navigation saves the cache with its areas table to `path_cache_file` (default
-`/tmp/frida_nav_path_cache.json`; empty disables) whenever it changes, and every
-20 s during a long warmup. `/tmp` is mounted in the navigation and integration
-containers. On restart, navigation restores the file if it was planned on the
-same map name, areas file, SLAM config and area poses, so warmup plans only the
-missing pairs. `/tmp` is wiped on reboot.
+```bash
+./run.sh navigation --cache-pairs     # robot
+./run.sh simulation --cache-pairs     # nav sim
+```
+
+This calls the `/navigation/cache_pairs` (`std_srvs/Trigger`) service and blocks
+until warmup ends, printing for example `Cached 625/625 named pairs in 143.2s
+(complete)`. It exits non-zero if navigation isn't running, if setup hasn't finished
+(map and global-costmap grids, named poses, initial pose), or if some pairs stayed
+unsolved. Each run rebuilds every pair from scratch, so stale distances after a
+re-map or planner retune are dropped. Each round has a `path_cache_warmup_seconds`
+budget (180 s); a round cut by the budget retries the missing pairs and stops once
+a round adds none. At startup navigation restores the saved file and logs its
+coverage, warning `run ./run.sh navigation --cache-pairs` when it is missing or
+incomplete. Mapping mode does not warm the cache.
+
+Navigation saves the cache, with its areas table, to `path_cache_file`. The default
+is `navigation/packages/map_context/maps/path_cache/<map>.json` (gitignored; empty
+disables). That is on the robot's disk under the repo, so it survives reboots, and
+the navigation, integration and simulation containers all mount it at `/workspace/src`.
+The file is written whenever the cache changes, and every 20 s during a long warmup.
+It records the map name and `saved_at`, the time navigation loaded the map it
+planned on. On restart, navigation restores the file only if it was planned on the
+same map name, areas file, SLAM config and area poses, and if none of the map's
+`.posegraph`, `.data`, `.yaml` or `.pgm` files was modified after `saved_at`.
 
 GPSR reads its named pairs only from this file, never through the action, so it
-works the same whether navigation is up or down. It keeps saved pairs whose two
-poses match its current areas table (live from navigation, else the file's own).
+works the same whether navigation is up or down. It finds the file through
+`MAP_NAME`, which `docker/integration/run.sh` passes in the same way navigation
+gets it (recreate the integration container once to pick it up). GPSR discards the
+whole file if it belongs to another map, or if any map file is newer than
+`saved_at`. It then keeps only the pairs whose two poses match the current areas
+table: live from navigation, or, with navigation down, this map's
+`maps/areas/areas_<map>.json` read from disk. It never checks the file against its
+own areas copy. A re-tagged location therefore drops only the pairs that touch it.
 
 Matrix queries reuse successful named pairs and compute only missing pairs within
 the query budget. A fully cached named-pair query does not resume/pause Nav2.
 Unsolved pairs are not cached as permanently unreachable. GPSR reads the subset
 needed by its three commands from the file just before merging and keeps it only
-for the batch. Missing pairs use its scaled straight-line estimate. GPSR startup
-never computes the full matrix or waits through the warmup budget.
+for the batch. Missing pairs use its scaled straight-line estimate. GPSR never
+warms named pairs.
 
-After reaching `start_location`, GPSR snapshots the robot's complete pose and
-requests its distances to all named locations before collecting commands. Before
-merging the batch it checks that pose again, refreshing only the robot row if
-translation exceeds `path_origin_translation_tolerance` (0.1 m) or yaw exceeds
-`path_origin_rotation_tolerance` (0.174533 radians, 10 degrees). Missing TF or
-movement during the refresh drops origin costs. Test mode captures its initial
-origin on its first state-machine iteration without driving to the instruction
-point. Navigation always computes robot-origin rows fresh and never caches them.
+Just before merging each batch (the robot is still at the instruction point),
+GPSR snapshots the robot's complete pose and requests its distances only to the
+batch's own `go_to` areas, e.g. 4 areas for 3 commands rather than every named
+location. If TF is missing, or the robot moves more than
+`path_origin_translation_tolerance` (0.1 m) or turns more than
+`path_origin_rotation_tolerance` (10 degrees) during the query, the origin costs are
+dropped. Navigation always computes robot-origin rows fresh and never caches them.
 
 `NavQueryMatrix` accepts `mode` (`FULL=0`, `LOCATION_PAIRS=1`, `ROBOT_ORIGIN=2`),
 an optional `robot_start` in the `map` frame, and `budget_seconds`. Zero budget
-keeps the normal 25 s calculation budget; navigation uses its longer startup
-budget to warm named pairs. An empty start frame snapshots TF once after navigation
+keeps the normal 25 s calculation budget; `--cache-pairs` uses its longer
+warmup budget. An empty start frame snapshots TF once after navigation
 is acquired. Results are row-major `(n+1)×n`, `n×n`, or `1×n` respectively, with
 `-1` for unsolved pairs. The Python wrapper still returns a pair-to-distance dict.
 The action definition changed: rebuild `frida_interfaces` and its navigation,
 task-manager, and simulation consumers together.
 
 Restart navigation after changing the map, tags, or planner settings to reload
-them. A changed map name, areas file or pose invalidates the saved file; after
-re-mapping under the same name or retuning the planner, delete
-`/tmp/frida_nav_path_cache.json` first so the cache is rebuilt. For an in-process update while idle, apply the
-new configuration, call `load_map_areas()` if the tags changed, then invoke
-navigation's internal `_refresh_path_cache()` helper. It clears and rebuilds all
-named pairs under the navigation lock; this helper is not a public ROS service.
-Queries also invalidate stale entries when the loaded map identity or area table
-changes. Restarting GPSR does not rebuild the navigation cache. Temporary
-obstacles are handled by live navigation and do not rebuild the baseline cache.
+them, then run `--cache-pairs`. Queries also invalidate stale entries when the
+loaded map identity or area table changes. Restarting GPSR does not rebuild the
+navigation cache. Temporary obstacles are handled by live navigation and do not
+rebuild the baseline cache.
 
 ### Example service calls
 

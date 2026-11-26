@@ -10,11 +10,15 @@ import time
 from types import SimpleNamespace
 
 import rclpy
-from frida_constants.navigation_constants import TIMEOUT_NAV_QUERY_MATRIX
+from frida_constants.navigation_constants import (
+    NAV_CACHE_PAIRS_SERVICE,
+    TIMEOUT_NAV_QUERY_MATRIX,
+)
 from frida_interfaces.action import NavQueryMatrix
 from frida_gz_sim.nav import MAP_NAME
 from rclpy.node import Node
 from sim_nav_task_manager import gazebo_pose
+from std_srvs.srv import Trigger
 from task_manager.gpsr.merger import merge
 from task_manager.subtask_managers.nav_tasks import NavigationTasks
 from task_manager.utils.status import Status
@@ -134,6 +138,20 @@ class SimMergerTest(Node):
         for n, elapsed, solved, total in rows:
             flag = "" if solved == total else "  <- incomplete"
             self.get_logger().info(f"n={n:2d}  {elapsed:5.1f}s  {solved}/{total}{flag}")
+
+    def cache_pairs(self):
+        """Same warmup as ./run.sh navigation --cache-pairs; nav no longer warms on its own."""
+        client = self.create_client(Trigger, NAV_CACHE_PAIRS_SERVICE)
+        if not client.wait_for_service(timeout_sec=30.0):
+            raise RuntimeError(f"{NAV_CACHE_PAIRS_SERVICE} not available")
+        started = time.monotonic()
+        future = client.call_async(Trigger.Request())
+        rclpy.spin_until_future_complete(self, future)
+        result = future.result()
+        self.get_logger().info(
+            f"cache_pairs: success={result.success} '{result.message}' "
+            f"({time.monotonic() - started:.1f}s)"
+        )
 
     def run_cache_modes(self):
         """Read navigation's shared baseline twice, then request a fresh origin."""
@@ -257,6 +275,7 @@ class SimMergerTest(Node):
         self.get_logger().info(f"{label} drive time {time.monotonic() - t0:.0f}s")
 
     def run(self):
+        self.cache_pairs()
         self.run_cache_modes()
         self.run_timing()
         for name, spec in SCENARIOS.items():

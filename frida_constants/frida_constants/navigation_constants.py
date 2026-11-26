@@ -60,12 +60,16 @@ RESUME_NAV_SERVICE = "/navigation/resume_nav"
 ### Path query service (distance between two map areas without moving)
 NAV_QUERY_SERVICE = "/navigation/query_path"
 NAV_QUERY_MATRIX_ACTION_SERVER = "/navigation/query_path_matrix"
+# std_srvs/Trigger behind ./run.sh navigation --cache-pairs: warm every named pair
+NAV_CACHE_PAIRS_SERVICE = "/navigation/cache_pairs"
 COMPUTE_PATH_ACTION_SERVER = "/compute_path_to_pose"
 TIMEOUT_NAV_QUERY = 10.0  # seconds to wait for ComputePathToPose result
 # Budget for one matrix query, SLAM/nav2 resume included; unplanned pairs return -1.0
 TIMEOUT_NAV_QUERY_MATRIX = 25.0
-# Named-pair cache on disk (/tmp is mounted in nav and integration); empty disables
-NAV_PATH_CACHE_FILE = "/tmp/frida_nav_path_cache.json"
+# Map files and tagged areas (repo mount, same path in nav, integration and sim)
+NAV_MAPS_DIR = "/workspace/src/navigation/packages/map_context/maps"
+# Named-pair cache, one <map>.json per map; persistent on the robot's disk
+NAV_PATH_CACHE_DIR = NAV_MAPS_DIR + "/path_cache"
 PATH_CACHE_SAVE_PERIOD = 20.0  # seconds between saves during a long warmup
 
 ### Table/shelf docking (perpendicular approach) — see table_docker.py

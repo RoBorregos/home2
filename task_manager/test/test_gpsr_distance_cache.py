@@ -9,6 +9,7 @@ import ast
 import importlib.util
 import json
 import math
+import os
 from pathlib import Path
 import tempfile
 import time
@@ -74,7 +75,11 @@ def load_methods(path, class_name, names, **extra):
         NavQueryMatrix=NS(Goal=Goal, Result=NS, Feedback=NS),
         TIMEOUT_NAV_QUERY_MATRIX=8.0,
         DETOUR_FACTOR=1.4,
-        NAV_PATH_CACHE_FILE="/nonexistent/frida_nav_path_cache.json",
+        os=os,
+        NAV_MAPS_DIR="/nonexistent/maps",
+        NAV_PATH_CACHE_DIR="/nonexistent/maps/path_cache",
+        path_cache_file=STORE.path_cache_file,
+        map_files_changed_since=STORE.map_files_changed_since,
         PATH_CACHE_SAVE_PERIOD=20.0,
         load_path_cache=STORE.load_path_cache,
         save_path_cache=STORE.save_path_cache,
@@ -89,16 +94,15 @@ GPSR = load_methods(
     "task_manager/scripts/gpsr_task_manager.py",
     "GPSRTM",
     {
-        "_named_areas",
         "_query_paths",
         "_get_areas",
+        "_map_areas_file",
         "_saved_paths",
         "_saved_batch_pairs",
         "_load_batch_path_costs",
         "_discard_robot_paths",
         "_origin_matches",
         "_refresh_robot_paths",
-        "_ensure_plan_origin",
         "_path_cost",
         "run",
         "_execute_interleaved_batch",
@@ -134,7 +138,8 @@ SERVER = load_methods(
         "_setup",
         "_path_cache_inputs_ready",
         "_path_planner_ready",
-        "_try_warm_path_cache",
+        "cache_pairs_callback",
+        "_named_area_list",
         "_live_costmap_layers",
         "_set_costmap_layers",
         "_use_static_costmap",
@@ -172,6 +177,23 @@ CLIENT = load_methods(
 )
 
 
+# One batch visiting both test areas
+BOTH = (NS(commands=[NS(action="go_to", location_to_go=n) for n in ("sofa", "table")]),)
+
+
+def disk(tmp):
+    """Point GPSR's maps dir and path cache dir at ``tmp``."""
+    return patch.dict(
+        GPSR._saved_paths.__globals__,
+        {"NAV_MAPS_DIR": tmp, "NAV_PATH_CACHE_DIR": f"{tmp}/path_cache"},
+    )
+
+
+def write_areas(tmp, areas, map_name="arena"):
+    os.makedirs(f"{tmp}/areas", exist_ok=True)
+    Path(f"{tmp}/areas/areas_{map_name}.json").write_text(json.dumps(areas))
+
+
 def gpsr():
     tm = GPSR()
     tm._path_cache = {}
@@ -181,11 +203,11 @@ def gpsr():
     tm._origin_pose = None
     tm._plan_origin = None
     tm._resolve_area = lambda name: {"sofa": AREAS[0], "table": AREAS[1]}.get(name)
-    tm._test_origin_initialized = False
     tm.get_logger = Mock(return_value=Mock())
     parameters = {
         "path_origin_translation_tolerance": 0.1,
         "path_origin_rotation_tolerance": math.radians(10),
+        "map_name": "arena",
     }
     tm.get_parameter = lambda key: NS(value=parameters[key])
     tm.subtask_manager = NS(
@@ -212,7 +234,10 @@ def server(mode=Goal.FULL, *, paused=True):
     nav.config_path = "localization.yaml"
     nav._location_path_cache = {}
     nav._path_cache_context = None
+    nav._path_cache_warm_solved = -1
+    nav._path_cache_warm_report = None
     nav._path_cache_file = ""
+    nav._map_loaded_at = time.time()
     nav.use_nav2 = True
     nav._static_grid = grid()
     nav._costmap_grid = grid()
@@ -261,15 +286,45 @@ def server(mode=Goal.FULL, *, paused=True):
     return nav, handle
 
 
+def run_batch(tm):
+    """Run _execute_interleaved_batch with the merger and behaviour tree stubbed."""
+    tm._completed = set()
+    tm._spoken_merged_plan = Mock(return_value="Visit the kitchen")
+    tm.subtask_manager.hri = Mock()
+    tm.gpsr_tasks = tm.gpsr_individual_tasks = NS()
+    tm._on_action_start = tm._on_action_complete = Mock()
+    plan = NS(actions=[], fallback=[])
+    root = NS(status="SUCCESS")
+    tree = NS(setup=Mock(), tick=Mock())
+    merge = Mock(return_value=plan)
+    with patch.dict(
+        GPSR._execute_interleaved_batch.__globals__,
+        {
+            "merge": merge,
+            "build_tree": Mock(return_value=root),
+            "render_tree_ascii": lambda _: "tree",
+            "GLOBAL_BUDGET_S": 100,
+            "ANSWER_PUBLISHER": "/answers",
+            "GPSR_TASK_STEP_TOPIC": "/gpsr/step",
+            "py_trees": NS(
+                trees=NS(BehaviourTree=lambda _: tree),
+                common=NS(Status=NS(SUCCESS="SUCCESS", FAILURE="FAILURE", INVALID="INVALID")),
+            ),
+        },
+    ):
+        tm._execute_interleaved_batch()
+    return merge
+
+
 class CacheTests(unittest.TestCase):
-    def test_batch_reads_only_its_named_pairs_from_file_and_keeps_current_origin(self):
+    def test_batch_reads_only_its_named_pairs_from_file_and_drops_old_origin(self):
         with tempfile.TemporaryDirectory() as tmp:
             tm = gpsr()
             tm._path_cache = {(AREAS[1], AREAS[0]): 99, (None, AREAS[0]): 88}
             tm._origin_pose = pose()
             saved = {(AREAS[0], AREAS[1]): 6, (AREAS[0], AREAS[0]): 0, (AREAS[1], ("x", "y")): 3}
-            path = f"{tmp}/cache.json"
-            STORE.save_path_cache(path, "digest", LIVE, saved)
+            path = STORE.path_cache_file(f"{tmp}/path_cache", "arena")
+            STORE.save_path_cache(path, "digest", LIVE, saved, map_name="arena")
             commands = [
                 NS(
                     commands=[
@@ -278,42 +333,44 @@ class CacheTests(unittest.TestCase):
                     ]
                 )
             ]
-            with patch.dict(GPSR._saved_paths.__globals__, {"NAV_PATH_CACHE_FILE": path}):
-                tm._load_batch_path_costs(commands)
-            self.assertEqual(
-                tm._path_cache,
-                {(AREAS[0], AREAS[1]): 6, (AREAS[0], AREAS[0]): 0, (None, AREAS[0]): 88},
-            )
+            with disk(tmp):
+                areas = tm._load_batch_path_costs(commands)
+            self.assertEqual(areas, AREAS)
+            self.assertEqual(tm._path_cache, {(AREAS[0], AREAS[1]): 6, (AREAS[0], AREAS[0]): 0})
             self.assertEqual(tm._location_cache, {})
             self.assertEqual(tm._area_cache, {})
-            self.assertIsNotNone(tm._origin_pose)
+            self.assertIsNone(tm._origin_pose)
             tm.subtask_manager.nav.get_path_matrix.assert_not_called()
 
-    def test_changed_live_areas_discard_old_robot_row(self):
+    def test_batch_queries_robot_row_only_for_its_areas(self):
         tm = gpsr()
-        tm._areas = {"old": {"place": [0] * 7}}
-        tm._origin_pose = pose(10)
-        tm._path_cache[(None, AREAS[0])] = 88
-        tm._load_batch_path_costs([])
-        self.assertEqual(tm._named_areas(), AREAS)
-        self.assertIsNone(tm._origin_pose)
-        self.assertEqual(tm._path_cache, {})
-
-    def test_named_areas_excludes_metadata(self):
-        tm = gpsr()
-        tm._areas = dict(
-            LIVE,
-            metadata="arena",
-            polygons={"bounds": [[0, 0], [1, 1]]},
-            invalid={"pose": [float("nan")] * 7},
+        names = {"sofa": AREAS[0], "table": AREAS[1], "bed": ("bedroom", "bed")}
+        tm._resolve_area = names.get
+        tm._areas = dict(LIVE, bedroom={"bed": [8, 0, 0, 0, 0, 0, 1]}, hall={"door": [9] * 7})
+        tm.subtask_manager.nav.retrieve_areas.return_value = (1, tm._areas)
+        tm.subtask_manager.nav.get_path_matrix.return_value = (
+            1,
+            {(None, AREAS[0]): 2, (None, ("bedroom", "bed")): 9},
         )
-        self.assertEqual(tm._named_areas(), AREAS)
+        tm.batched_commands = [
+            NS(commands=[NS(action="go_to", location_to_go="sofa"), NS(action="say")]),
+            NS(commands=[NS(action="go_to", location_to_go="bed")]),
+            NS(commands=[NS(action="go_to", location_to_go="sofa")]),
+        ]
+        merge = run_batch(tm)
+        nav = tm.subtask_manager.nav.get_path_matrix
+        nav.assert_called_once()
+        self.assertEqual(nav.call_args.args[0], [AREAS[0], ("bedroom", "bed")])
+        self.assertEqual(nav.call_args.kwargs["mode"], Goal.ROBOT_ORIGIN)
+        self.assertEqual(merge.call_args.kwargs["origin"], (0, 0))
 
-    def test_no_destinations_does_not_query_a_matrix(self):
+    def test_no_destinations_does_not_query_but_keeps_straight_line_origin(self):
         tm = gpsr()
-        tm._load_batch_path_costs([NS(commands=[NS(action="say")])])
+        tm._current_robot_pose.return_value = pose(3)
+        tm._refresh_robot_paths(tm._load_batch_path_costs([NS(commands=[NS(action="say")])]))
         tm.subtask_manager.nav.get_path_matrix.assert_not_called()
         self.assertEqual(tm._path_cache, {})
+        self.assertEqual(tm._plan_origin, (3, 0))
 
     def test_new_batch_drops_previous_batch_pairs(self):
         tm = gpsr()
@@ -321,42 +378,40 @@ class CacheTests(unittest.TestCase):
         tm._load_batch_path_costs([NS(commands=[NS(action="go_to", location_to_go="sofa")])])
         self.assertEqual(tm._path_cache, {})
 
-    def test_origin_is_instruction_point_not_earlier_start(self):
+    def test_origin_is_the_pose_when_the_batch_is_planned(self):
         tm = gpsr()
         tm._origin_pose = pose(50)  # Old entrance origin.
         tm._path_cache = {(None, AREAS[0]): 50, (AREAS[0], AREAS[1]): 6}
         tm._current_robot_pose.return_value = pose(10)
         tm.subtask_manager.nav.get_path_matrix.return_value = (1, {(None, AREAS[0]): 10})
-        tm._ensure_plan_origin()
+        tm._refresh_robot_paths([AREAS[0]])
         self.assertEqual(tm._plan_origin, (10, 0))
         self.assertEqual(tm._path_cache[(None, AREAS[0])], 10)
         self.assertEqual(tm._path_cache[(AREAS[0], AREAS[1])], 6)
-        query = tm.subtask_manager.nav.get_path_matrix.call_args.kwargs
-        self.assertEqual(query["mode"], Goal.ROBOT_ORIGIN)
-        self.assertEqual(query["robot_start"].pose.position.x, 10)
+        query = tm.subtask_manager.nav.get_path_matrix.call_args
+        self.assertEqual(query.args[0], [AREAS[0]])
+        self.assertEqual(query.kwargs["mode"], Goal.ROBOT_ORIGIN)
+        self.assertEqual(query.kwargs["robot_start"].pose.position.x, 10)
 
-    def test_unchanged_pose_and_yaw_wrap_avoid_query(self):
+    def test_yaw_wrap_counts_as_the_same_origin(self):
         tm = gpsr()
         tm._origin_pose = pose(yaw=math.pi - 0.01)
-        tm._current_robot_pose.return_value = pose(0.01, yaw=-math.pi + 0.01)
-        tm._ensure_plan_origin()
-        tm.subtask_manager.nav.get_path_matrix.assert_not_called()
+        self.assertTrue(tm._origin_matches(pose(0.01, yaw=-math.pi + 0.01)))
 
-    def test_rotation_refreshes_only_origin(self):
+    def test_rotation_during_query_discards_origin(self):
         tm = gpsr()
-        tm._origin_pose = pose()
-        tm._current_robot_pose.return_value = pose(yaw=0.5)
-        tm._ensure_plan_origin()
-        self.assertEqual(
-            tm.subtask_manager.nav.get_path_matrix.call_args.kwargs["mode"], Goal.ROBOT_ORIGIN
-        )
+        tm._current_robot_pose.side_effect = [pose(), pose(yaw=0.5)]
+        tm.subtask_manager.nav.get_path_matrix.return_value = (1, {(None, AREAS[0]): 10})
+        tm._refresh_robot_paths(AREAS)
+        self.assertEqual(tm._path_cache, {})
+        self.assertIsNone(tm._plan_origin)
 
     def test_movement_during_query_discards_origin_but_keeps_named_pairs(self):
         tm = gpsr()
         tm._path_cache = {(AREAS[0], AREAS[1]): 6}
         tm._current_robot_pose.side_effect = [pose(10), pose(12)]
         tm.subtask_manager.nav.get_path_matrix.return_value = (1, {(None, AREAS[0]): 10})
-        tm._refresh_robot_paths()
+        tm._refresh_robot_paths(AREAS)
         self.assertEqual(tm._path_cache, {(AREAS[0], AREAS[1]): 6})
         self.assertIsNone(tm._plan_origin)
 
@@ -365,40 +420,32 @@ class CacheTests(unittest.TestCase):
         tm._path_cache = {(None, AREAS[0]): 50}
         tm._origin_pose = pose(50)
         tm._current_robot_pose.return_value = None
-        tm._ensure_plan_origin()
+        tm._refresh_robot_paths(AREAS)
         self.assertEqual(tm._path_cache, {})
         self.assertIsNone(tm._plan_origin)
+        tm.subtask_manager.nav.get_path_matrix.assert_not_called()
 
     def test_origin_query_failure_uses_current_straight_line_fallback(self):
         tm = gpsr()
         tm._current_robot_pose.return_value = pose(10)
         tm.subtask_manager.nav.get_path_matrix.return_value = (0, "Planner unavailable")
-        tm._refresh_robot_paths()
+        tm._refresh_robot_paths(AREAS)
         tm._resolve_area = lambda name: AREAS[0]
         tm._resolve_xy = lambda name: (0, 0)
         self.assertEqual(tm._path_cost(None, "sofa"), 14)
 
-    def test_gpsr_startup_never_warms_named_pairs(self):
+    def test_gpsr_startup_never_queries_paths(self):
         tm = gpsr()
         # An idle synthetic state exercises startup without HRI/navigation side effects.
         tm.current_state = "IDLE"
-        tm.interleave_enabled = True
-        tm.test_mode = False
-        tm._refresh_robot_paths = Mock()
-        tm.run()
-        tm.run()
-        tm._refresh_robot_paths.assert_not_called()
+        for test_mode in (False, True):
+            tm.interleave_enabled = True
+            tm.test_mode = test_mode
+            tm.run()
+            tm.run()
         tm.subtask_manager.nav.get_path_matrix.assert_not_called()
-        tm.test_mode = True
-        tm.run()
-        tm.run()
-        tm._refresh_robot_paths.assert_called_once()
-        tm._test_origin_initialized = False
-        tm.interleave_enabled = False
-        tm.run()
-        tm._refresh_robot_paths.assert_called_once()
 
-    def test_instruction_point_origin_is_captured_after_arrival_before_commands(self):
+    def test_start_location_does_not_query_the_robot_row(self):
         tm = gpsr()
         tm.interleave_enabled = True
         tm.test_mode = False
@@ -407,35 +454,90 @@ class CacheTests(unittest.TestCase):
         tm.subtask_manager.nav.check_door = Mock()
         events = []
         tm.navigate_to = Mock(side_effect=lambda *_: events.append("arrive") or 1)
-        tm._refresh_robot_paths = Mock(side_effect=lambda: events.append("origin"))
         tm.subtask_manager.hri = NS(say=lambda *_: events.append("announce"))
         tm.run()
-        self.assertEqual(events, ["arrive", "origin", "announce"])
+        self.assertEqual(events, ["arrive", "announce"])
+        tm.subtask_manager.nav.get_path_matrix.assert_not_called()
         self.assertEqual(tm.current_state, GPSR.TaskStates.WAIT_BUTTON_COMMAND)
 
-    def saved_cache(self, tmp, areas=LIVE):
-        path = f"{tmp}/cache.json"
+    def saved_cache(self, tmp, areas=LIVE, *, map_name="arena", saved_at=None):
+        path = STORE.path_cache_file(f"{tmp}/path_cache", map_name)
         pairs = {(AREAS[0], AREAS[1]): 6.5, (AREAS[1], AREAS[0]): 7.0, (AREAS[0], AREAS[0]): 0}
-        STORE.save_path_cache(path, "digest", areas, pairs)
+        STORE.save_path_cache(path, "digest", areas, pairs, map_name=map_name, saved_at=saved_at)
         return path
 
-    def test_navigation_down_uses_saved_areas_and_pairs(self):
+    def nav_down(self):
+        tm = gpsr()
+        tm._areas = None
+        tm.subtask_manager.nav.retrieve_areas.return_value = (0, "down")
+        tm.subtask_manager.nav.areas_backup = {"other": {"place": [0] * 7}}
+        tm.subtask_manager.nav.get_path_matrix.return_value = (0, "Action server not started")
+        return tm
+
+    def test_navigation_down_checks_pairs_against_the_areas_file_on_disk(self):
         with tempfile.TemporaryDirectory() as tmp:
-            tm = gpsr()
-            tm._areas = None
-            tm.subtask_manager.nav.retrieve_areas.return_value = (0, "down")
-            tm.subtask_manager.nav.areas_backup = {"other": {"place": [0] * 7}}
-            tm.subtask_manager.nav.get_path_matrix.return_value = (0, "Action server not started")
-            commands = [
-                NS(commands=[NS(action="go_to", location_to_go=n) for n in ("sofa", "table")])
-            ]
-            with patch.dict(
-                GPSR._saved_paths.__globals__, {"NAV_PATH_CACHE_FILE": self.saved_cache(tmp)}
-            ):
-                tm._load_batch_path_costs(commands)
+            tm = self.nav_down()
+            write_areas(tmp, LIVE)
+            self.saved_cache(tmp)
+            with disk(tmp):
+                tm._load_batch_path_costs(BOTH)
             self.assertEqual(tm._areas, LIVE)
             self.assertEqual(tm._path_cache[(AREAS[0], AREAS[1])], 6.5)
             self.assertEqual(tm._path_cost("table", "sofa"), 7.0)
+
+    def test_navigation_down_retagged_location_drops_only_its_pairs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tm = self.nav_down()
+            retagged = json.loads(json.dumps(LIVE))
+            retagged["kitchen"]["table"][0] = 9
+            write_areas(tmp, retagged)
+            self.saved_cache(tmp)  # Planned before the table moved
+            with disk(tmp):
+                tm._load_batch_path_costs(BOTH)
+            self.assertEqual(tm._path_cache, {(AREAS[0], AREAS[0]): 0})
+
+    def test_navigation_down_never_validates_the_cache_against_itself(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tm = self.nav_down()
+            self.saved_cache(tmp)  # No areas file: falls back to the unrelated backup
+            with disk(tmp):
+                tm._load_batch_path_costs(BOTH)
+            self.assertEqual(tm._areas, {"other": {"place": [0] * 7}})
+            self.assertEqual(tm._path_cache, {})
+
+    def test_map_files_newer_than_the_cache_make_it_stale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tm = gpsr()
+            self.saved_cache(tmp, saved_at=time.time() - 100)
+            Path(f"{tmp}/arena.pgm").write_text("edited")
+            with disk(tmp):
+                tm._load_batch_path_costs(BOTH)
+            self.assertEqual(tm._path_cache, {})
+            warnings = [c.args[0] for c in tm.get_logger.return_value.warning.call_args_list]
+            self.assertTrue(any("arena.pgm" in w and "--cache-pairs" in w for w in warnings))
+
+    def test_map_files_older_than_the_cache_keep_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tm = gpsr()
+            Path(f"{tmp}/arena.pgm").write_text("map")
+            os.utime(f"{tmp}/arena.pgm", (time.time() - 100, time.time() - 100))
+            self.saved_cache(tmp)
+            with disk(tmp):
+                tm._load_batch_path_costs(BOTH)
+            self.assertEqual(tm._path_cache[(AREAS[0], AREAS[1])], 6.5)
+
+    def test_cache_for_another_map_or_unknown_map_is_ignored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self.saved_cache(tmp, map_name="other")
+            os.replace(path, STORE.path_cache_file(f"{tmp}/path_cache", "arena"))
+            tm = gpsr()
+            with disk(tmp):
+                tm._load_batch_path_costs(BOTH)
+            self.assertEqual(tm._path_cache, {})
+            tm = gpsr()
+            tm.get_parameter = lambda key: NS(value="" if key == "map_name" else 0.1)
+            with disk(tmp):
+                self.assertEqual(tm._saved_paths(), (None, {}))
 
     def test_saved_pairs_skip_locations_that_moved(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -443,8 +545,8 @@ class CacheTests(unittest.TestCase):
             moved["kitchen"]["table"][0] = 9
             tm = gpsr()
             tm.subtask_manager.nav.get_path_matrix.return_value = (0, "timeout")
-            path = self.saved_cache(tmp, moved)
-            with patch.dict(GPSR._saved_paths.__globals__, {"NAV_PATH_CACHE_FILE": path}):
+            self.saved_cache(tmp, moved)
+            with disk(tmp):
                 tm._load_batch_path_costs(
                     [
                         NS(commands=[NS(action="go_to", location_to_go="sofa")]),
@@ -474,43 +576,36 @@ class CacheTests(unittest.TestCase):
                 ["a", "b", "c", "d", -1],
                 ["a", "b", "c", "d", 3],
             ]
-            path.write_text(json.dumps({"version": 1, "digest": "x", "areas": {}, "pairs": rows}))
+            data = {"version": 2, "digest": "x", "saved_at": 1.0, "areas": {}, "pairs": rows}
+            path.write_text(json.dumps(data))
             self.assertEqual(STORE.load_path_cache(str(path))[2], {(("a", "b"), ("c", "d")): 3.0})
+            # Old /tmp-era files (version 1, no saved_at) are not trusted
+            path.write_text(json.dumps(dict(data, version=1)))
+            self.assertIsNone(STORE.load_path_cache(str(path)))
+            path.write_text(json.dumps({k: v for k, v in data.items() if k != "saved_at"}))
+            self.assertIsNone(STORE.load_path_cache(str(path)))
+
+    def test_cache_file_is_per_map_in_a_created_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = STORE.path_cache_file(f"{tmp}/new/path_cache", "arena")
+            self.assertTrue(path.endswith("/new/path_cache/arena.json"))
+            STORE.save_path_cache(path, "d", LIVE, {}, map_name="arena", saved_at=5.0)
+            self.assertEqual(STORE.load_path_cache(path)[3:], (5.0, "arena"))
 
     def test_batch_cleanup_discards_its_snapshot_not_navigation_cache(self):
         tm = gpsr()
-        named = {(AREAS[0], AREAS[1]): 6}
-        tm._path_cache = dict(named)
-        tm._path_cache[(None, AREAS[0])] = 10
-        tm._origin_pose = pose(10)
-        tm._plan_origin = (10, 0)
-        tm._completed = set()
         tm.batched_commands = [NS(), NS(), NS()]
-        tm._ensure_plan_origin = Mock()
-        tm._load_batch_path_costs = Mock()
-        tm._spoken_merged_plan = Mock(return_value="Visit the kitchen")
-        tm.subtask_manager.hri = Mock()
-        tm.gpsr_tasks = tm.gpsr_individual_tasks = NS()
-        tm._on_action_start = tm._on_action_complete = Mock()
-        plan = NS(actions=[], fallback=[])
-        root = NS(status="SUCCESS")
-        tree = NS(setup=Mock(), tick=Mock())
-        with patch.dict(
-            GPSR._execute_interleaved_batch.__globals__,
-            {
-                "merge": Mock(return_value=plan),
-                "build_tree": Mock(return_value=root),
-                "render_tree_ascii": lambda _: "tree",
-                "GLOBAL_BUDGET_S": 100,
-                "ANSWER_PUBLISHER": "/answers",
-                "GPSR_TASK_STEP_TOPIC": "/gpsr/step",
-                "py_trees": NS(
-                    trees=NS(BehaviourTree=lambda _: tree),
-                    common=NS(Status=NS(SUCCESS="SUCCESS", FAILURE="FAILURE", INVALID="INVALID")),
-                ),
-            },
-        ):
-            tm._execute_interleaved_batch()
+        tm._refresh_robot_paths = Mock()
+        tm._load_batch_path_costs = Mock(return_value=[])
+
+        def snapshot(_):
+            tm._path_cache = {(AREAS[0], AREAS[1]): 6, (None, AREAS[0]): 10}
+            tm._origin_pose = pose(10)
+            tm._plan_origin = (10, 0)
+
+        tm._refresh_robot_paths.side_effect = snapshot
+        run_batch(tm)
+        tm._refresh_robot_paths.assert_called_once_with([])
         self.assertEqual(tm._path_cache, {})
         self.assertIsNone(tm._areas)
         self.assertIsNone(tm._plan_origin)
@@ -553,20 +648,62 @@ class MatrixServerTests(unittest.TestCase):
             self.assertEqual(nav._location_path_cache[(AREAS[0], AREAS[1])], 8)
             self.assertTrue(nav.nav2_paused)
 
-    def test_warmup_retries_then_stops_its_timer_when_ready(self):
+    def test_cache_pairs_service_refuses_until_ready_then_warms(self):
         nav, _ = server()
-        timer = Mock()
-        nav._path_cache_warmup_timer = timer
-        nav.destroy_timer = Mock()
         nav._static_grid = None
-        nav._try_warm_path_cache()
-        timer.reset.assert_called_once()
+        response = nav.cache_pairs_callback(None, NS())
+        self.assertFalse(response.success)
+        self.assertIn("not ready", response.message)
         nav._compute_path.assert_not_called()
         nav._static_grid = grid()
-        nav._try_warm_path_cache()
-        nav.destroy_timer.assert_called_once_with(timer)
-        self.assertIsNone(nav._path_cache_warmup_timer)
+        response = nav.cache_pairs_callback(None, NS())
+        self.assertTrue(response.success)
+        self.assertIn("Cached 4/4 named pairs", response.message)
+        self.assertIn("(complete)", response.message)
         self.assertEqual(len(nav._location_path_cache), 4)
+        self.assertTrue(nav.nav2_paused)
+
+    def test_cache_pairs_service_rebuilds_stale_pairs(self):
+        nav, _ = server()
+        nav._sync_path_cache()
+        nav._location_path_cache[(AREAS[0], AREAS[1])] = 99
+        self.assertTrue(nav.cache_pairs_callback(None, NS()).success)
+        self.assertEqual(nav._location_path_cache[(AREAS[0], AREAS[1])], 4)
+
+    def test_cache_pairs_service_retries_budget_cut_rounds_and_reports_incomplete(self):
+        nav, _ = server()
+        nav.get_parameter = lambda _: NS(value=0.05)
+        # (delay, path): round 1 ends past the budget, round 2 too but adds nothing
+        steps = iter([(0.03, None), (0.03, 4), (0.06, None)])
+
+        def planner(*_):
+            delay, path = next(steps)
+            time.sleep(delay)
+            return path
+
+        nav._compute_path.side_effect = planner
+        response = nav.cache_pairs_callback(None, NS())
+        self.assertFalse(response.success)
+        self.assertIn("Cached 3/4 named pairs", response.message)
+        self.assertIn("incomplete: 1 unsolved", response.message)
+
+    def test_cache_pairs_service_reports_planner_failure(self):
+        nav, _ = server()
+        nav.compute_path_client.server_is_ready.return_value = False
+        response = nav.cache_pairs_callback(None, NS())
+        self.assertFalse(response.success)
+        self.assertIn("warmup failed", response.message)
+        self.assertIn("planner not ready", response.message)
+
+    def test_named_area_list_excludes_metadata(self):
+        nav, _ = server()
+        nav.areas_data = dict(
+            LIVE,
+            metadata="arena",
+            polygons={"bounds": [[0, 0], [1, 1]]},
+            invalid={"pose": [float("nan")] * 7},
+        )
+        self.assertEqual(nav._named_area_list(), AREAS)
 
     def test_readiness_timeout_cancels_pending_state_requests(self):
         nav, _ = server()
@@ -585,7 +722,7 @@ class MatrixServerTests(unittest.TestCase):
             self.assertFalse(nav._refresh_path_cache())
             nav._compute_path.assert_not_called()
 
-    def test_setup_warms_once_after_navigation_and_initial_pose(self):
+    def test_setup_restores_and_reports_cache_without_warming(self):
         nav, _ = server()
         nav._setup_done = False
         nav._setup_timer = object()
@@ -600,14 +737,15 @@ class MatrixServerTests(unittest.TestCase):
         nav.start_slam = lambda: events.append("slam")
         nav.load_nav2 = lambda: events.append("nav2")
         nav._wait_for_initial_pose = lambda: events.append("pose")
-        nav._refresh_path_cache = Mock(side_effect=lambda **_: events.append("warm") or True)
+        nav._refresh_path_cache = Mock()
         nav._setup()
         nav._setup()
-        nav._refresh_path_cache.assert_not_called()
-        nav._try_warm_path_cache()
-        self.assertEqual(events, ["areas", "requirements", "slam", "nav2", "pose", "warm"])
+        self.assertEqual(events, ["areas", "requirements", "slam", "nav2", "pose"])
         self.assertTrue(nav.nodes_status)
-        nav._refresh_path_cache.assert_called_once()
+        nav._refresh_path_cache.assert_not_called()
+        nav._compute_path.assert_not_called()
+        self.assertIsNotNone(nav._path_cache_context)
+        self.assertTrue(any("--cache-pairs" in c.args[1] for c in nav.nav_logger.call_args_list))
 
     def test_navigation_warms_without_a_gpsr_process(self):
         nav, _ = server()
@@ -622,6 +760,7 @@ class MatrixServerTests(unittest.TestCase):
             nav, _ = server()
             setattr(nav, field, value)
             nav._refresh_path_cache()
+            self.assertFalse(nav.cache_pairs_callback(None, NS()).success)
             nav._hold_service_group.assert_not_called()
 
     def test_warmed_queries_reuse_directed_pairs_in_any_request_order(self):
@@ -682,6 +821,20 @@ class MatrixServerTests(unittest.TestCase):
             restarted.resume_nav2.assert_not_called()
             self.assertEqual(restarted._run_path_matrix(handle).distances, [0, 4, 4, 0])
 
+    def test_restart_ignores_cache_older_than_the_map_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            nav, _ = server()
+            nav._path_cache_file = f"{tmp}/cache.json"
+            nav._map_loaded_at = time.time() - 100
+            self.assertTrue(nav._refresh_path_cache(full=False))
+            Path(f"{tmp}/arena.posegraph").write_text("re-mapped")
+            restarted, _ = server()
+            restarted._path_cache_file = nav._path_cache_file
+            with patch.dict(SERVER._restore_path_cache.__globals__, {"NAV_MAPS_DIR": tmp}):
+                restarted._sync_path_cache()
+            self.assertEqual(restarted._location_path_cache, {})
+            self.assertEqual(STORE.load_path_cache(restarted._path_cache_file)[2], {})
+
     def test_saved_pairs_for_other_areas_are_not_restored(self):
         with tempfile.TemporaryDirectory() as tmp:
             nav, _ = server()
@@ -706,7 +859,7 @@ class MatrixServerTests(unittest.TestCase):
             moved.areas_data = json.loads(json.dumps(LIVE))
             moved.areas_data["kitchen"]["table"][0] = 8
             moved._sync_path_cache()
-            _, areas, pairs = STORE.load_path_cache(moved._path_cache_file)
+            _, areas, pairs, _, _ = STORE.load_path_cache(moved._path_cache_file)
             self.assertEqual(areas["kitchen"]["table"][0], 8)
             self.assertEqual(pairs, {})
 

@@ -12,6 +12,8 @@ parse_common_flags "" "${ARGS[@]}"
 #_________________________SETUP_________________________
 
 setup_common_env "integration" ""
+# GPSR finds navigation's saved path cache and the areas file by map name (same default as nav)
+add_or_update_variable .env "MAP_NAME" "$(resolve_map_name "lab_23_march.db")"
 
 case $ENV_TYPE in
   "cuda")

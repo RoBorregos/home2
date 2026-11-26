@@ -43,6 +43,7 @@ Tasks:
   --all            Start both stacks in the arena world (no objects to pick there)
   --tm             Run the pick-and-place task manager (foreground)
   --nav-tm         Run the navigation task manager (foreground)
+  --cache-pairs    Cache GPSR's location-pair distances in the running nav sim
   --rviz           Open RViz on the running sim
   --status         Show the running sim processes and their memory
   --kill           Kill the sim processes, keep the container
@@ -209,6 +210,13 @@ case $TASK in
   --manip|--nav|--all) start_all ;;
   --tm) in_container "ros2 run frida_gz_sim sim_pnp_task_manager.py" ;;
   --nav-tm) in_container "ros2 run frida_gz_sim sim_nav_task_manager.py" ;;
+  --cache-pairs)
+    # Without nav_central the call would wait for the service forever
+    in_container "ros2 service list | grep -qx /navigation/cache_pairs" || {
+      echo "Nav sim is not up (no /navigation/cache_pairs). Start it with ./run.sh simulation --nav." >&2
+      exit 1
+    }
+    in_container "ros2 service call /navigation/cache_pairs std_srvs/srv/Trigger {}" ;;
   --rviz) start_rviz ;;
   --status) docker exec home2-simulation bash -c "ps -eo pid,etime,rss,args --sort=-rss | grep -E 'gz sim|move_group|ros2|python3' | grep -v grep | cut -c1-160" ;;
   --kill) kill_sim ;;

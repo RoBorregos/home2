@@ -57,12 +57,14 @@ from frida_constants.navigation_constants import(
         FOLLOW_ACTION_SERVER_TIMEOUT,
         NAV_QUERY_SERVICE,
         NAV_QUERY_MATRIX_ACTION_SERVER,
+        NAV_CACHE_PAIRS_SERVICE,
         GO_TO_POSE_SERVICE,
         GET_ROBOT_POSE_SERVICE,
         COMPUTE_PATH_ACTION_SERVER,
         TIMEOUT_NAV_QUERY,
         TIMEOUT_NAV_QUERY_MATRIX,
-        NAV_PATH_CACHE_FILE,
+        NAV_MAPS_DIR,
+        NAV_PATH_CACHE_DIR,
         PATH_CACHE_SAVE_PERIOD,
         UNDOCK_SERVICE,
         DOCK_SERVICE,
@@ -84,7 +86,8 @@ from frida_interfaces.srv import (
         )
 from nav_main.semantic.areas import area_for_point
 from frida_interfaces.action import NavQueryMatrix
-from frida_constants.path_cache_store import load_path_cache, path_cache_digest, save_path_cache
+from frida_constants.path_cache_store import (
+        load_path_cache, map_files_changed_since, path_cache_digest, path_cache_file, save_path_cache)
 import tf2_ros
 import json
 import time as t
@@ -182,10 +185,15 @@ class Nav_Central(Node):
         self.areas_map_name = self.declare_parameter('areas_map_name', 'default_map').value
         self.areas_data = None
         self.declare_parameter('path_cache_warmup_seconds', 180.0)
-        self._path_cache_file = self.declare_parameter('path_cache_file', NAV_PATH_CACHE_FILE).value
+        # Persistent per-map file next to the maps; empty disables
+        self._path_cache_file = self.declare_parameter(
+            'path_cache_file', path_cache_file(NAV_PATH_CACHE_DIR, self.areas_map_name)).value
+        # Map servers start with this node: every pair it plans is on map files no newer than this
+        self._map_loaded_at = t.time()
         self._location_path_cache = {}
         self._path_cache_context = None
-        self._path_cache_warmup_timer = None
+        self._path_cache_warm_solved = -1
+        self._path_cache_warm_report = None
         self._path_cache_group = ReentrantCallbackGroup()
         self._path_state_clients = [
             self.create_client(GetState, service, callback_group=self._path_cache_group)
@@ -247,6 +255,10 @@ class Nav_Central(Node):
             execute_callback=self.query_path_matrix,
             cancel_callback=lambda _goal: CancelResponse.ACCEPT,
             callback_group=self.matrix_action_group)
+        # Own exclusive group: warming takes service_group itself, and two calls never overlap
+        self.cache_pairs_srv = self.create_service(
+            Trigger, NAV_CACHE_PAIRS_SERVICE, self.cache_pairs_callback,
+            callback_group=MutuallyExclusiveCallbackGroup())
         self.compute_path_client = ActionClient(self, ComputePathToPose, COMPUTE_PATH_ACTION_SERVER)
 
         # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
@@ -352,15 +364,15 @@ class Nav_Central(Node):
                 self._wait_for_initial_pose()
         else:
             self.nav_logger("info", "Nav2 not enabled, skipped")
+        if not self.mapping and self.use_nav2:
+            # Restore the saved pairs and report coverage; warming is ./run.sh navigation --cache-pairs
+            self._sync_path_cache()
         self.nav_logger("info", "Finished Setup, Starting monitoring ...")
         self.nodes_status = True
         self.baseline_tf_static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
         self.nav_logger("info", f"Baseline /tf_static publishers: {self.baseline_tf_static_publishers}")
         self._monitor_timer = self.create_timer(MONITOR_RATE, self._monitoring, callback_group=ReentrantCallbackGroup())
         self.nav_logger("info", "Monitor Started")
-        if not self.mapping and self.use_nav2:
-            self._path_cache_warmup_timer = self.create_timer(
-                2.0, self._try_warm_path_cache, callback_group=MutuallyExclusiveCallbackGroup())
 
     def _monitoring(self):
         """General topics and tf monitor """
@@ -1271,8 +1283,8 @@ class Nav_Central(Node):
         """Invalidate named pairs when the loaded map or location table changes,
         then restore the disk copy planned on the same map and areas.
 
-        After re-mapping or planner tuning, delete the cache file or call
-        _refresh_path_cache() so stale distances are not restored.
+        After re-mapping or planner tuning, run ./run.sh navigation --cache-pairs,
+        which rebuilds every pair, so stale distances are not kept.
         """
         context = (self.map_name, self.areas_map_name, self.config_path,
                    json.dumps(self.areas_data, sort_keys=True))
@@ -1282,6 +1294,13 @@ class Nav_Central(Node):
             self._restore_path_cache()
             # Rewrite now so GPSR never pairs the old file's distances with its own areas
             self._persist_path_cache()
+            total = len(self._named_area_list()) ** 2
+            cached = len(self._location_path_cache)
+            if cached < total:
+                self.nav_logger("warn", f"Path cache has {cached}/{total} named pairs; "
+                                        "run ./run.sh navigation --cache-pairs")
+            else:
+                self.nav_logger("info", f"Path cache complete: {cached}/{total} named pairs")
 
     def _restore_path_cache(self):
         if not self._path_cache_file:
@@ -1289,9 +1308,14 @@ class Nav_Central(Node):
         saved = load_path_cache(self._path_cache_file)
         if saved is None:
             return
-        digest, _, pairs = saved
+        digest, _, pairs, saved_at, _ = saved
         if digest != path_cache_digest(*self._path_cache_context):
             self.nav_logger("info", "Path cache file is for another map or areas; ignoring it")
+            return
+        changed = map_files_changed_since(NAV_MAPS_DIR, self.areas_map_name, saved_at)
+        if changed:
+            self.nav_logger("warn", f"Map files changed since the path cache was planned "
+                                    f"({', '.join(changed)}); ignoring it")
             return
         self._location_path_cache.update(pairs)
         self.nav_logger("info", f"Restored {len(pairs)} named pairs from {self._path_cache_file}")
@@ -1302,7 +1326,8 @@ class Nav_Central(Node):
             return
         try:
             save_path_cache(self._path_cache_file, path_cache_digest(*self._path_cache_context),
-                            self.areas_data, self._location_path_cache)
+                            self.areas_data, self._location_path_cache,
+                            map_name=self.areas_map_name, saved_at=self._map_loaded_at)
         except Exception as e:
             self.nav_logger("warn", f"Could not save path cache to {self._path_cache_file}: {e}")
 
@@ -1347,23 +1372,58 @@ class Nav_Central(Node):
                 if not future.done():
                     future.cancel()
 
-    def _try_warm_path_cache(self):
-        """Retry deferred warmup; cancel the timer while work is in progress."""
-        timer = self._path_cache_warmup_timer
-        timer.cancel()
-        if self._refresh_path_cache(full=False):
-            self.destroy_timer(timer)
-            self._path_cache_warmup_timer = None
-        else:
-            timer.reset()
+    def cache_pairs_callback(self, request, response):
+        """Trigger for ./run.sh navigation --cache-pairs: rebuild every named pair, then
+        retry budget-cut rounds while they still add pairs. Blocks until done."""
+        response.success = False
+        if self.mapping or not self.use_nav2:
+            response.message = "Path cache needs localization mode with nav2"
+            return response
+        if not self.nodes_status or not self._path_cache_inputs_ready():
+            response.message = ("Navigation not ready (setup, map, costmap or areas); "
+                                "try again once setup finishes")
+            return response
+        started = t.monotonic()
+        self._path_cache_warm_solved = -1
+        full = True
+        while True:
+            self._path_cache_warm_report = None
+            complete = self._refresh_path_cache(full=full)
+            full = False
+            report = self._path_cache_warm_report
+            if complete or report is None or not report["success"]:
+                break
+        elapsed = t.monotonic() - started
+        if report is None or not report["success"]:
+            error = report["error"] if report else "warmup did not run"
+            response.message = f"Path cache warmup failed after {elapsed:.1f}s: {error}"
+            return response
+        solved, total = report["solved"], report["total"]
+        state = "complete" if solved >= total else f"incomplete: {total - solved} unsolved"
+        response.success = solved >= total
+        response.message = f"Cached {solved}/{total} named pairs in {elapsed:.1f}s ({state})"
+        self.nav_logger("info" if response.success else "warn", f"Path cache -> {response.message}")
+        return response
+
+    def _named_area_list(self):
+        """(location, sublocation) of every valid 7-value pose in the areas table."""
+        areas = []
+        for location, subareas in (self.areas_data or {}).items():
+            if not isinstance(subareas, dict):
+                continue
+            for sublocation, coords in subareas.items():
+                if (isinstance(coords, (list, tuple)) and len(coords) == 7
+                        and all(isinstance(v, (int, float)) and math.isfinite(v) for v in coords)):
+                    areas.append((location, sublocation))
+        return areas
 
     def _refresh_path_cache(self, full=True):
-        """Warm all named pairs after setup, independently of GPSR's lifetime.
+        """One warmup round over all named pairs; True once no retry is useful.
         full=False keeps restored pairs and plans only the missing ones.
 
-        Also usable for a full refresh while idle after reloading map areas or
-        changing planner settings. The normal navigation lock protects both
-        invalidation and computation. Robot-origin distances are never retained.
+        The normal navigation lock protects both invalidation and computation.
+        Robot-origin distances are never retained. The round's counts are left in
+        _path_cache_warm_report for cache_pairs_callback.
         """
         if self.mapping or not self.use_nav2 or not self.nodes_status:
             return False
@@ -1377,14 +1437,7 @@ class Nav_Central(Node):
         goal = NavQueryMatrix.Goal()
         goal.mode = NavQueryMatrix.Goal.LOCATION_PAIRS
         goal.budget_seconds = budget
-        areas = []
-        for location, subareas in (self.areas_data or {}).items():
-            if not isinstance(subareas, dict):
-                continue
-            for sublocation, coords in subareas.items():
-                if (isinstance(coords, (list, tuple)) and len(coords) == 7
-                        and all(isinstance(v, (int, float)) and math.isfinite(v) for v in coords)):
-                    areas.append((location, sublocation))
+        areas = self._named_area_list()
         goal.locations = [loc for loc, _ in areas]
         goal.sublocations = [sub for _, sub in areas]
         # Reuse the matrix executor without sending an action to this same node.
@@ -1394,15 +1447,19 @@ class Nav_Central(Node):
             solved = sum(d >= 0.0 for d in result.distances)
             elapsed = t.monotonic() - started
             # A round cut by the budget retries the missing pairs while it still adds some
-            progressed = solved > getattr(self, "_path_cache_warm_solved", -1)
+            progressed = solved > self._path_cache_warm_solved
             self._path_cache_warm_solved = solved
             complete = result.success and (elapsed < budget or not progressed)
+            self._path_cache_warm_report = {"success": result.success, "solved": solved,
+                                            "total": len(areas) ** 2, "error": result.error}
             self.nav_logger("info" if complete else "warn",
                             f"Path cache warmup: {solved}/{len(areas) ** 2} named pairs "
                             f"in {elapsed:.1f}s{'' if complete else ', retrying'}; {result.error}")
             return complete
         except Exception as e:
-            # Path estimation must not prevent navigation from starting.
+            # Path estimation must not take navigation down.
+            self._path_cache_warm_report = {"success": False, "solved": 0,
+                                            "total": len(areas) ** 2, "error": str(e)}
             self.nav_logger("warn", f"Path cache warmup failed: {e}")
             return False
 

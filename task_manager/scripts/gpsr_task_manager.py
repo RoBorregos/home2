@@ -4,7 +4,9 @@
 Task Manager for GPSR task of Robocup @Home 2026
 """
 
+import json
 import math
+import os
 import time
 from datetime import datetime
 
@@ -14,8 +16,12 @@ from frida_constants.hri_constants import (
     GPSR_TASK_STEP_TOPIC,
     ANSWER_PUBLISHER,
 )
-from frida_constants.navigation_constants import NAV_PATH_CACHE_FILE
-from frida_constants.path_cache_store import load_path_cache
+from frida_constants.navigation_constants import NAV_MAPS_DIR, NAV_PATH_CACHE_DIR
+from frida_constants.path_cache_store import (
+    load_path_cache,
+    map_files_changed_since,
+    path_cache_file,
+)
 from frida_constants.vision_constants import IMAGE_ORIENTED_TOPIC
 from rclpy.duration import Duration
 from rclpy.node import Node
@@ -111,6 +117,8 @@ class GPSRTM(Node):
         self.declare_parameter("test_mode", False)
         self.declare_parameter("path_origin_translation_tolerance", 0.1)
         self.declare_parameter("path_origin_rotation_tolerance", math.radians(10.0))
+        # Picks navigation's saved path cache and areas file for this map
+        self.declare_parameter("map_name", os.environ.get("MAP_NAME", "").removesuffix(".db"))
         self.declare_parameter(
             "test_commands",
             [
@@ -142,7 +150,6 @@ class GPSRTM(Node):
         self._path_cache: dict[tuple, float] = {}
         self._plan_origin: tuple[float, float] | None = None
         self._origin_pose: PoseStamped | None = None
-        self._test_origin_initialized = False
         # Live area poses for coordinate fallback and location resolution.
         self._areas: dict | None = None
         # (source_cmd, source_idx) of actions that succeeded in the interleaved
@@ -205,8 +212,9 @@ class GPSRTM(Node):
         Reloaded before fetching each batch's named-pair distances.
 
         Prefers the live ``retrieve_areas`` service so poses reflect the
-        current map; falls back to the areas in navigation's saved path cache,
-        then the static ``nav.areas_backup`` (loaded from areas.json).
+        current map; falls back to this map's areas file on disk, then the
+        static ``nav.areas_backup``. Never the path cache's own copy, which is
+        what these poses validate.
         Returns ``{}`` when nothing usable is available, so the merger's
         locator degrades to unknown coordinates (LARGE_M) rather than raising.
         """
@@ -219,36 +227,62 @@ class GPSRTM(Node):
                 areas = data
             else:
                 self.get_logger().warning(
-                    f"retrieve_areas returned status={status}; using saved or backup areas"
+                    f"retrieve_areas returned status={status}; using the map's areas file"
                 )
         except Exception as e:  # noqa: BLE001
-            self.get_logger().warning(f"retrieve_areas failed: {e}; using saved or backup areas")
+            self.get_logger().warning(f"retrieve_areas failed: {e}; using the map's areas file")
         if areas is None:
-            saved, _ = self._saved_paths()
-            if isinstance(saved, dict) and saved:
-                self.get_logger().warning("Using areas from navigation's saved path cache")
-                areas = saved
+            areas = self._map_areas_file()
         if areas is None:
             backup = getattr(self.subtask_manager.nav, "areas_backup", None)
             areas = backup if isinstance(backup, dict) else {}
         self._areas = areas
         return areas
 
+    def _map_areas_file(self):
+        """This map's tagged areas read straight from disk, or None."""
+        map_name = self.get_parameter("map_name").value
+        if not map_name:
+            return None
+        path = os.path.join(NAV_MAPS_DIR, "areas", f"areas_{map_name}.json")
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except (OSError, ValueError) as e:
+            self.get_logger().warning(f"Could not read {path}: {e}")
+            return None
+        return data if isinstance(data, dict) and data else None
+
     def _saved_paths(self):
-        """Navigation's last disk copy of named pairs: (areas, pairs) or (None, {})."""
-        saved = load_path_cache(NAV_PATH_CACHE_FILE)
-        if saved is None:
+        """Navigation's saved named pairs for this map as (areas, pairs), or
+        (None, {}) when missing, for another map, or older than the map files."""
+        map_name = self.get_parameter("map_name").value
+        if not map_name:
+            self.get_logger().warning("MAP_NAME unknown; cannot find the saved path cache")
             return None, {}
-        _, areas, pairs = saved
+        path = path_cache_file(NAV_PATH_CACHE_DIR, map_name)
+        saved = load_path_cache(path)
+        if saved is None:
+            self.get_logger().warning(f"No saved path cache at {path}")
+            return None, {}
+        _, areas, pairs, saved_at, saved_map = saved
+        if saved_map != map_name:
+            self.get_logger().warning(f"Path cache {path} is for map '{saved_map}'; ignoring it")
+            return None, {}
+        changed = map_files_changed_since(NAV_MAPS_DIR, map_name, saved_at)
+        if changed:
+            self.get_logger().warning(
+                f"Map files changed since the path cache was planned ({', '.join(changed)}); "
+                "run ./run.sh navigation --cache-pairs"
+            )
+            return None, {}
         return areas, pairs
 
     def _saved_batch_pairs(self, areas):
         """Saved pairs among ``areas`` whose poses still match the current table."""
         saved_areas, pairs = self._saved_paths()
         if not pairs:
-            self.get_logger().warning(
-                f"No saved path cache at {NAV_PATH_CACHE_FILE}; using straight-line distances"
-            )
+            self.get_logger().warning("No usable saved path pairs; using straight-line distances")
             return {}
         current = self._get_areas()
 
@@ -300,21 +334,6 @@ class GPSRTM(Node):
         self._location_cache[location_name] = xy
         return xy
 
-    def _named_areas(self):
-        """Only navigable named poses, excluding area polygons/metadata."""
-        areas = []
-        for location, subareas in self._get_areas().items():
-            if not isinstance(subareas, dict):
-                continue
-            for sublocation, coords in subareas.items():
-                if (
-                    isinstance(coords, (list, tuple))
-                    and len(coords) == 7
-                    and all(isinstance(v, (int, float)) and math.isfinite(v) for v in coords)
-                ):
-                    areas.append((location, sublocation))
-        return areas
-
     def _query_paths(self, areas, **kwargs):
         """Fresh robot-origin distances from navigation; named pairs come from the file."""
         try:
@@ -330,18 +349,13 @@ class GPSRTM(Node):
         return status, matrix
 
     def _load_batch_path_costs(self, commands):
-        """Read this batch's named pairs from the file navigation saves.
-
-        Missing pairs use the scaled straight-line estimate. GPSR keeps only a
-        planning snapshot, not a process-wide baseline cache.
-        """
-        previous_areas = self._areas
+        """Read this batch's named pairs from the file navigation saves and return
+        the batch's go_to areas. Missing pairs use the scaled straight-line estimate."""
         self._areas = None
         self._location_cache.clear()
         self._area_cache.clear()
-        if self._get_areas() != previous_areas:
-            self._discard_robot_paths()
-        self._path_cache = {pair: d for pair, d in self._path_cache.items() if pair[0] is None}
+        self._discard_robot_paths()
+        self._path_cache = {}
         areas = []
         for cmd in commands:
             for action in getattr(cmd, "commands", []):
@@ -352,6 +366,7 @@ class GPSRTM(Node):
                     areas.append(area)
         if areas:
             self._path_cache.update(self._saved_batch_pairs(areas))
+        return areas
 
     def _discard_robot_paths(self):
         self._path_cache = {pair: d for pair, d in self._path_cache.items() if pair[0] is not None}
@@ -374,13 +389,13 @@ class GPSRTM(Node):
             and rotation <= self.get_parameter("path_origin_rotation_tolerance").value
         )
 
-    def _refresh_robot_paths(self):
-        """One origin snapshot for all goals; discard it if the robot moves."""
+    def _refresh_robot_paths(self, areas):
+        """Robot-to-area distances for this batch's areas only, from one pose
+        snapshot; discard them if the robot moves during the query."""
         self._discard_robot_paths()
         pose = self._current_robot_pose()
         if pose is None:
             return
-        areas = self._named_areas()
         if areas:
             status, matrix = self._query_paths(
                 areas, mode=NavQueryMatrix.Goal.ROBOT_ORIGIN, robot_start=pose
@@ -394,13 +409,6 @@ class GPSRTM(Node):
                 "Robot moved or TF unavailable during origin query; dropping origin costs"
             )
             self._discard_robot_paths()
-
-    def _ensure_plan_origin(self):
-        pose = self._current_robot_pose()
-        if pose is None:
-            self._discard_robot_paths()
-        elif not self._origin_matches(pose):
-            self._refresh_robot_paths()
 
     def _path_cost(self, from_name, to_name):
         """Merger distance: nav2 path length from _path_cache, else the scaled
@@ -497,8 +505,8 @@ class GPSRTM(Node):
     def _execute_interleaved_batch(self):
         """Plan + tick the py_trees tree for the current batch."""
         self._completed.clear()
-        self._load_batch_path_costs(self.batched_commands)
-        self._ensure_plan_origin()
+        # Robot row only for this batch's areas; the robot is still at the instruction point
+        self._refresh_robot_paths(self._load_batch_path_costs(self.batched_commands))
         plan = merge(
             self.batched_commands,
             origin=self._plan_origin,
@@ -601,10 +609,6 @@ class GPSRTM(Node):
     def run(self):
         """Finite State Machine"""
 
-        if self.interleave_enabled and self.test_mode and not self._test_origin_initialized:
-            self._test_origin_initialized = True
-            self._refresh_robot_paths()
-
         if self.current_state == GPSRTM.TaskStates.WAITING_FOR_BUTTON:
             self.subtask_manager.hri.publish_display_step(
                 "waiting_for_button", GPSR_TASK_STEP_TOPIC
@@ -625,9 +629,7 @@ class GPSRTM(Node):
             self._track_state_change(GPSRTM.TaskStates.START)
             status = self.subtask_manager.nav.check_door()
 
-            status = self.navigate_to("start_location", "", False)
-            if self.interleave_enabled and status == Status.EXECUTION_SUCCESS:
-                self._refresh_robot_paths()
+            self.navigate_to("start_location", "", False)
 
             self.subtask_manager.hri.say(
                 "Hi, my name is Frida and I am a general purpose robot. Please press the button on my screen to start telling me the commands one by one."
