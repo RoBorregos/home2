@@ -736,9 +736,9 @@ class HRITasks:
                     if self.negation_words.intersection(words) or self.keyword == "no":
                         # Keep listening: "No, I said Andres" carries the correction after the "no"
                         heard_no = True
-                    elif not heard_no and (
-                        self.affirmation_words.intersection(words) or self.keyword == "yes"
-                    ):
+                    # A partial "yes" can be Whisper hallucinating on noise ("Oh, okay."):
+                    # only the keyword spotter ends early, a text yes waits for the final.
+                    elif not heard_no and self.keyword == "yes":
                         self.cancel_hear_action()
                         return Status.EXECUTION_SUCCESS, "yes"
                     rclpy.spin_once(self.node, timeout_sec=0.1)
@@ -776,9 +776,7 @@ class HRITasks:
                     if self.negation_words.intersection(words):
                         self.cancel_hear_action()
                         return Status.EXECUTION_SUCCESS, "no"
-                    if contains_any(words, self.positive):
-                        self.cancel_hear_action()
-                        return Status.EXECUTION_SUCCESS, "yes"
+                    # Yes only from the final transcription below, not from a partial one
                     rclpy.spin_once(self.node, timeout_sec=0.1)
 
                 self.cancel_hear_action()
@@ -943,8 +941,9 @@ class HRITasks:
             Status: the status of the execution
             str: answer to the question
         """
+        places = ""  # set when the answer must be one of navigation's places
         if not hotwords and query == "location":
-            hotwords = self.location_hotwords()
+            hotwords = places = self.location_hotwords()
             # Whisper can echo a single injected place on silence with high confidence
             always_confirm = always_confirm or bool(hotwords)
         current_attempt = 0
@@ -981,6 +980,9 @@ class HRITasks:
                         target_info = " ".join(
                             w for w in target_info.split() if remove_punctuation(w) not in yes_no
                         )
+                        if places:
+                            # Only a known place is a destination: "The Kitt." must not become "Kitt"
+                            target_info = match_hotwords(target_info, places)
                         if s != Status.EXECUTION_SUCCESS or not target_info:
                             self.say("Sorry, I couldn't understand.")
                             continue
@@ -1052,6 +1054,8 @@ class HRITasks:
                         target_info, target_found, _, _ = self._match_answer(
                             confirmation, options, remap
                         )
+                        if places:
+                            target_info = match_hotwords(target_info, places)
                     except Exception as e:
                         print("Failed matching result:", e)
                         break
