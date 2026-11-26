@@ -190,12 +190,13 @@ frida_deps_for() {
 }
 
 # What's already installed: modules.txt if present, "all" for a pre-existing
-# install/ without one (old cache), or empty if there's no install at all.
+# install/frida_interfaces without one (old cache), or empty otherwise. Check
+# install/frida_interfaces, not install/, which mkdir -p always creates.
 frida_modules_installed() {
   local cache_dir="docker/frida_interfaces_cache"
   if [ -f "$cache_dir/modules.txt" ]; then
     cat "$cache_dir/modules.txt"
-  elif [ -d "$cache_dir/install" ]; then
+  elif [ -d "$cache_dir/install/frida_interfaces" ]; then
     echo "all"
   fi
 }
@@ -254,6 +255,7 @@ frida_build_modules() {
   if [ "$(frida_modules_installed)" != "$modules" ]; then
     rm -rf "docker/frida_interfaces_cache/build/frida_interfaces" \
            "docker/frida_interfaces_cache/install/frida_interfaces"
+    rm -f "docker/frida_interfaces_cache/modules.txt"
   fi
 
   mkdir -p "docker/frida_interfaces_cache/build" "docker/frida_interfaces_cache/install" "docker/frida_interfaces_cache/log"
