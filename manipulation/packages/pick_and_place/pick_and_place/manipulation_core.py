@@ -51,6 +51,7 @@ from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import default_profiles_path, load_profiles
 from pick_and_place.pipelines.strategies import PickOutcome, build_strategies
 from pick_and_place.robot.arm import RobotArm
+from pick_and_place.robot.base import Base
 from pick_and_place.robot.perception import Perception
 
 # Yaw angles swept when reaching towards a person's hand, in order.
@@ -92,6 +93,7 @@ class ManipulationCore(Node):
 
         self.arm = RobotArm(self)
         self.perception = Perception(self)
+        self.base = Base(self, self.arm.tf_buffer)
 
         # Loaded and validated here so a bad profile fails at launch rather than
         # mid-descent with the arm in cartesian-velocity mode.
@@ -259,7 +261,7 @@ class ManipulationCore(Node):
 
     def _run_open_door(self, request) -> bool:
         """Face the door handle, find it, grasp it, press the lever, push, else pull."""
-        return door_pipeline.execute(self.arm, self.perception)
+        return door_pipeline.execute(self.arm, self.perception, self.base)
 
     def _current_shelf(self):
         """The last scan while the base has not moved since, else None (and no boxes)."""

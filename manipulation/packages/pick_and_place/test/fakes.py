@@ -405,6 +405,33 @@ class _DoneFuture:
         return self._value
 
 
+class FakeBase:
+    """Integrates each body-frame velocity for ``dt`` seconds into an odom pose."""
+
+    def __init__(self, x=0.0, y=0.0, yaw=0.0, dt=0.05):
+        self.state = np.array([x, y, yaw], dtype=float)
+        self.dt = dt
+        self.sent = []
+        self.stops = 0
+
+    def pose(self):
+        return self.state.copy()
+
+    def send(self, vx, vy, wz):
+        self.sent.append((vx, vy, wz))
+        yaw = self.state[2]
+        self.state += self.dt * np.array(
+            [
+                vx * np.cos(yaw) - vy * np.sin(yaw),
+                vx * np.sin(yaw) + vy * np.cos(yaw),
+                wz,
+            ]
+        )
+
+    def stop(self):
+        self.stops += 1
+
+
 class FakePerception:
     """Scripted perception replies."""
 

@@ -1,4 +1,4 @@
-"""OPEN_DOOR: find the handle, grasp it, press the lever, push, else pull."""
+"""OPEN_DOOR: find the handle, grasp it, press the lever, push, else pull and swing the door open with the base."""
 
 import copy
 import math
@@ -18,6 +18,7 @@ from frida_constants.manipulation_constants import (
 from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Rotation
 
+from pick_and_place.pipelines import door_swing
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.robot.geometry import offset_along_approach, set_quaternion
 
@@ -83,8 +84,12 @@ APPROACH_GUARD = replace(
 )
 
 
-def execute(arm, perception) -> bool:
-    """Go to the door handle stare pose, find the handle and open the door with it."""
+# m the gripper backs off the lever after letting go of a swung door
+RETREAT_DISTANCE = 0.08
+
+
+def execute(arm, perception, base=None) -> bool:
+    """Go to the door handle stare pose, find the handle and open the door with it (swung with ``base``)."""
     arm.set_context("open_door")
     with arm.phase("door_handle_stare"):
         if not arm.move_to_named_position(
@@ -106,7 +111,7 @@ def execute(arm, perception) -> bool:
     if handle is None:
         return False
     arm.logger.info(f"Door handle {describe(handle)}")
-    return pick_handle(arm, handle)
+    return pick_handle(arm, handle, base)
 
 
 def vision_point(perception):
@@ -123,8 +128,8 @@ def vision_point(perception):
     return point
 
 
-def pick_handle(arm, handle) -> bool:
-    """Grasp straight on (-y), press the lever, push (-y), else pull (+y), let go."""
+def pick_handle(arm, handle, base=None) -> bool:
+    """Grasp straight on (-y), press the lever, push (-y), else pull (+y) and swing with ``base``, let go."""
     poses = grasp_poses(arm, handle)
     if not poses:
         arm.logger.error("Door grasp: no TF from the handle to link_base")
@@ -171,7 +176,28 @@ def pick_handle(arm, handle) -> bool:
                 f"Door pull: {pull * 1000:.0f} mm straight (hinge {hinge * 1000:.0f} mm away, {HINGE_TOLERANCE * 1000:.0f} mm off the arc)"
             )
             opened = pull_open(arm, unpress, pull)
+        if opened and base is not None:
+            return swing(arm, base, handle)
     return let_go(arm, opened)
+
+
+def swing(arm, base, handle) -> bool:
+    """Turn the base about the hinge holding the lever, then let go and back off it."""
+    with arm.phase("swing_door"):
+        hinge = door_swing.odom_hinge(arm, handle)
+        if hinge is None:
+            arm.logger.error("Door swing: no TF from the handle to odom")
+            return let_go(arm, False)
+        turned = door_swing.swing_open(arm, base, hinge)
+    let_go(arm, True)
+    with arm.phase("retreat_from_door"):
+        if not arm.cartesian_approach(PULL, RETREAT_DISTANCE, PULL_SPEED):
+            arm.logger.warn("Door: backing off the lever did not complete")
+    opened = turned >= door_swing.SWING_ANGLE - 5.0
+    arm.logger.info(
+        f"Door {'open' if opened else 'only partly open'}: swung {turned:.0f} deg"
+    )
+    return opened
 
 
 def grasp_poses(arm, handle) -> list:
@@ -408,4 +434,5 @@ __all__ = [
     "press_lever",
     "pull_open",
     "pull_distance",
+    "swing",
 ]

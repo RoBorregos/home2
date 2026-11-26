@@ -21,6 +21,7 @@ from scipy.spatial.transform import Rotation
 
 from fakes import (
     FakeArm,
+    FakeBase,
     FakeGenerateGraspsResponse,
     FakeLogger,
     FakePerception,
@@ -48,6 +49,7 @@ from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import shelf as shelf_pipeline
 from pick_and_place.pipelines import (
     door as door_pipeline,
+    door_swing,
     follow as follow_pipeline,
     pick as pick_pipeline,
     place as place_pipeline,
@@ -1669,10 +1671,97 @@ def test_open_door_measures_the_handle_then_hands_it_to_the_pick(monkeypatch):
     monkeypatch.setattr(
         door_pipeline,
         "pick_handle",
-        lambda arm, handle: picked.append(handle) or False,
+        lambda arm, handle, base=None: picked.append(handle) or False,
     )
     arm, perception = FakeArm(), FakePerception(door_handle=_door_handle())
     assert door_pipeline.execute(arm, perception) is False
     assert arm.named_positions == ["door_handle_stare"]
     assert picked and picked[0].length == 0.108
     assert "door yaw 5.0 deg" in door_pipeline.describe(picked[0])
+
+
+class _SwingArm:
+    def __init__(self, efforts=lambda n: [0.0] * 8):
+        self.logger = FakeLogger()
+        self._efforts = efforts
+        self.reads = 0
+
+    def check_abort(self):
+        pass
+
+    @property
+    def joint_state(self):
+        self.reads += 1
+        return SimpleNamespace(effort=self._efforts(self.reads))
+
+
+def test_door_hinge_is_on_the_door_face_toward_the_lever_tip():
+    handle = SimpleNamespace(
+        center=make_point(0.7, 0.0, 1.0),
+        door_normal=SimpleNamespace(x=-1.0, y=0.0, z=0.0),
+        length=0.12,
+        standoff=0.07,
+    )
+    reach = door_swing.DOOR_WIDTH - door_swing.LEVER_PIVOT_INSET - 0.06
+    # base_link -y is the robot's right
+    assert door_swing.hinge_point(handle, "right") == pytest.approx([0.77, -reach])
+    assert door_swing.hinge_point(handle, "left") == pytest.approx([0.77, reach])
+
+
+def test_door_swing_twist_keeps_the_hinge_still():
+    for hinge, rate in (([0.8, -0.6], 0.12), ([-0.3, 0.9], -0.05)):
+        vx, vy, wz = door_swing.base_twist(np.array(hinge), rate)
+        # Velocity of the base-frame point at the hinge: v + w z x h
+        assert vx - wz * hinge[1] == pytest.approx(0.0)
+        assert vy + wz * hinge[0] == pytest.approx(0.0)
+
+
+def test_door_swing_turns_the_base_about_the_hinge(monkeypatch):
+    monkeypatch.setattr(door_swing.time, "sleep", lambda s: None)
+    base = FakeBase(x=0.75, y=-0.25, yaw=np.pi)
+    hinge = make_point(0.0, 0.403, 0.0, frame="odom")
+    turned = door_swing.swing_open(_SwingArm(), base, hinge, "right")
+    assert turned >= door_swing.SWING_ANGLE
+    assert turned < door_swing.SWING_ANGLE + 1.0
+    start = np.hypot(0.75, -0.25 - 0.403)
+    assert np.hypot(base.state[0], base.state[1] - 0.403) == pytest.approx(
+        start, abs=0.01
+    )
+    assert base.stops == 1
+
+
+def test_door_swing_stops_when_the_arm_strains(monkeypatch):
+    monkeypatch.setattr(door_swing.time, "sleep", lambda s: None)
+    limit = door_swing.EFFORT_LIMIT
+    arm = _SwingArm(lambda n: [0.0, 0.0, limit + 1.0 if n > 200 else 0.0] + [0.0] * 5)
+    turned = door_swing.swing_open(
+        arm, FakeBase(yaw=np.pi), make_point(-0.8, 0.6, 0.0), "right"
+    )
+    assert 0.0 < turned < door_swing.SWING_ANGLE
+
+
+def test_door_pull_swings_with_the_base_then_backs_off(monkeypatch):
+    swings = []
+    monkeypatch.setattr(
+        door_swing,
+        "swing_open",
+        lambda arm, base, hinge: swings.append(hinge) or door_swing.SWING_ANGLE,
+    )
+    arm = FakeArm(
+        link_pose=make_pose(),
+        contact_results=[
+            ContactResult(contact=False, descended_m=0.08),
+            ContactResult(contact=True, descended_m=0.016),
+        ],
+    )
+    handle = SimpleNamespace(
+        center=make_point(0.58, 0.23, 0.97),
+        door_normal=SimpleNamespace(x=-1.0, y=0.0, z=0.0),
+        length=0.12,
+        standoff=0.043,
+        hinge_distance=0.75,
+    )
+    assert door_pipeline.pick_handle(arm, handle, FakeBase()) is True
+    assert len(swings) == 1 and swings[0].header.frame_id == "odom"
+    retreat = [a for a in arm.approaches if a[1] == door_pipeline.RETREAT_DISTANCE]
+    assert len(retreat) == 1 and list(retreat[0][0]) == [0.0, 1.0, 0.0]
