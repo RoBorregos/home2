@@ -6,12 +6,10 @@ Navigation Area SubTask Manager
 """
 
 import json
-import os
 import math
 import copy
 import rclpy
 from rclpy.node import Node
-from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped, Quaternion, PointStamped, Point
 import tf2_ros
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
@@ -121,6 +119,16 @@ class NavigationTasks:
                 },
                 "plan_patrol_srv": {"client": self.plan_patrol_srv, "type": "service"},
             },
+            Task.FINALS: {
+                "plan_patrol_srv": {"client": self.plan_patrol_srv, "type": "service"},
+                "get_area_for_point_srv": {
+                    "client": self.get_area_for_point_srv,
+                    "type": "service",
+                },
+                "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
+                "approach_point_srv": {"client": self.approach_point_srv, "type": "service"},
+                "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
+            },
             Task.RESTAURANT: {
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
                 "get_robot_pose_srv": {"client": self.get_robot_pose_srv, "type": "service"},
@@ -137,8 +145,9 @@ class NavigationTasks:
     def setup_backup_map(self):
         """Load backup map info"""
         try:
-            package_share_directory = get_package_share_directory("frida_constants")
-            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+            file_path = (
+                "/workspace/src/navigation/packages/map_context/maps/areas/area_default_map.json"
+            )
             with open(file_path, "r") as file:
                 data = json.load(file)
             if data is not None:

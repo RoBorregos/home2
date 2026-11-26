@@ -1,4 +1,5 @@
 import os
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
@@ -72,6 +73,10 @@ def launch_function(context, *args, **kwargs):
         print(f"[general_navigation] keepout mask '{keepout_mask_value}' "
               f"exists={keepout_exists} -> use_keepout={use_keepout_default}")
 
+    semantic_nav_file = os.path.join(pkg_file_route, 'config', 'semantic_nav.yaml')
+    with open(semantic_nav_file) as f:
+        semantic_params = yaml.safe_load(f)['semantic_nav']['ros__parameters']
+
     nav_central_node = Node(
         package='nav_main',
         executable='nav_central.py',
@@ -86,6 +91,7 @@ def launch_function(context, *args, **kwargs):
             'rtab_mapping_config': rtab_params,
             'default_base': default_base,
             'nav_type': nav_type,
+            'viewpoint_probe_distance': semantic_params['viewpoint_probe_distance'],
         }],
     )
 
@@ -183,8 +189,7 @@ def launch_function(context, *args, **kwargs):
         output='screen',
         emulate_tty=True,
         parameters=[
-            os.path.join(
-                get_package_share_directory('nav_main'), 'config', 'semantic_nav.yaml'),
+            semantic_nav_file,
             {'map_name': areas_map_name},
         ],
     )

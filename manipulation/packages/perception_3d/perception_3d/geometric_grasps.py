@@ -48,7 +48,7 @@ assert len(OBJECT_GRASP_CLASS) == sum(
 DEFORMABLE_OBJECTS = frozenset({"clothes", "bread", "chip_bag", "towel", "plush_toy"})
 
 MIN_POINTS_FOR_PCA = 10
-ELONGATION_MIN_RATIO = 2.0
+ELONGATION_MIN_RATIO = 1.4
 
 FLAT_TABLE_PERCENTILE = 85
 FLAT_HEIGHT_BAND = (0.001, 0.05)
@@ -301,10 +301,10 @@ def flat(scene: Scene) -> tuple:
     xy = points[:, :2]
     center = xy.mean(axis=0)
     eigenvalues, eigenvectors = principal_axes(xy)
+    ratio = eigenvalues[1] / eigenvalues[0] if eigenvalues[0] > 1e-9 else -1.0
     require(
-        eigenvalues[0] > 1e-9
-        and eigenvalues[1] / eigenvalues[0] >= ELONGATION_MIN_RATIO,
-        "not elongated enough for a reliable long axis",
+        eigenvalues[0] > 1e-9 and ratio >= ELONGATION_MIN_RATIO,
+        f"not elongated enough for a reliable long axis (ratio={ratio:.2f})",
     )
     long_axis = np.append(eigenvectors[:, 1], 0.0)
     long_axis /= np.linalg.norm(long_axis)

@@ -1,4 +1,4 @@
-"""Person tracking model: YOLO + ByteTrack + ReID + PoseDetection — no ROS dependencies."""
+"""Person tracking: YOLO + ByteTrack + ReID."""
 
 import cv2
 import torch
@@ -27,10 +27,10 @@ class TrackerModel:
         # a background thread) instead of at startup.
         self.reid = None
 
-    def load(self) -> None:
-        """Load the per-frame models (YOLO + pose). ReID is loaded separately."""
+    def load(self, pose: PoseDetection) -> None:
+        """Load YOLO and keep the pose client."""
         self.yolo = load_yolo_trt("yolov8n.pt")
-        self.pose = PoseDetection()
+        self.pose = pose
 
     def load_reid(self) -> None:
         """Build + load the SWIN ReID model. Takes several seconds — never call

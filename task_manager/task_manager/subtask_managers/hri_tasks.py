@@ -280,6 +280,7 @@ class HRITasks:
             Task.DOING_LAUNDRY: all_services,
             Task.DEMO: all_services,
             Task.RESTAURANT: all_services,
+            Task.FINALS: all_services,
             Task.DEBUG: all_services,
         }
 
@@ -1194,7 +1195,7 @@ class HRITasks:
                 steps.append("answer a question from the person")
             elif action == "follow_person_until":
                 destination = getattr(cmd, "destination", "cancelled")
-                if destination == "cancelled":
+                if destination in ("", "cancelled", "canceled"):
                     steps.append("follow the person until told to stop")
                 else:
                     steps.append(f"follow the person to {destination}")

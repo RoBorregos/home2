@@ -52,11 +52,43 @@ class ForceGuardProfile:
     jump_trip: float  # N
     jump_sustain: int  # consecutive samples
     hard_ceiling: float  # N
+    # mm/s, used until fast_until; 0 disables the fast phase.
+    fast_descent_speed: float = 0.0
+    # m; depth at which descent_speed is fully reached. 0 => min_contact_descent.
+    fast_until: float = 0.0
+    # m; distance before fast_until over which speed ramps down smoothly.
+    ramp_distance: float = 0.0
 
     def validate(self, profile_name: str) -> None:
         _require_positive(
             self.descent_speed, f"{profile_name}.force_guard.descent_speed"
         )
+        if self.fast_descent_speed < 0.0:
+            raise ProfileError(
+                f"{profile_name}.force_guard.fast_descent_speed must be >= 0, "
+                f"got {self.fast_descent_speed}"
+            )
+        if self.fast_descent_speed and self.fast_descent_speed <= self.descent_speed:
+            raise ProfileError(
+                f"{profile_name}.force_guard.fast_descent_speed "
+                f"({self.fast_descent_speed}) must be greater than descent_speed "
+                f"({self.descent_speed}), otherwise there's no point"
+            )
+        if self.fast_until < 0.0:
+            raise ProfileError(
+                f"{profile_name}.force_guard.fast_until must be >= 0, "
+                f"got {self.fast_until}"
+            )
+        if self.ramp_distance < 0.0:
+            raise ProfileError(
+                f"{profile_name}.force_guard.ramp_distance must be >= 0, "
+                f"got {self.ramp_distance}"
+            )
+        if self.ramp_distance > (self.fast_until or self.min_contact_descent):
+            raise ProfileError(
+                f"{profile_name}.force_guard.ramp_distance "
+                f"({self.ramp_distance}) must not exceed fast_until"
+            )
         _require_positive(self.timeout, f"{profile_name}.force_guard.timeout")
         _require_positive(self.jump_window, f"{profile_name}.force_guard.jump_window")
         _require_positive(self.jump_trip, f"{profile_name}.force_guard.jump_trip")
@@ -220,6 +252,12 @@ class PickProfile:
                     f"{self.name}: force_guard.min_contact_descent "
                     f"({self.force_guard.min_contact_descent} m) exceeds pre_grasp_height "
                     f"({self.pre_grasp_height} m), so contact could never be honored"
+                )
+            if self.force_guard.fast_until > self.pre_grasp_height:
+                raise ProfileError(
+                    f"{self.name}: force_guard.fast_until "
+                    f"({self.force_guard.fast_until} m) exceeds pre_grasp_height "
+                    f"({self.pre_grasp_height} m)"
                 )
 
 
