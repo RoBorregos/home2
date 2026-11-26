@@ -47,6 +47,7 @@ class VisionRuntime(Node):
         debug_name: str = None,
         active_name: str = None,
         active_node: bool = True,
+        image_callback_group=None,
     ):
         super().__init__(node_name)
 
@@ -66,7 +67,8 @@ class VisionRuntime(Node):
             image_topic,
             self._image_callback,
             qos,
-            callback_group=self.callback_group,
+            # Pass a MutuallyExclusiveCallbackGroup to never handle two frames at once.
+            callback_group=image_callback_group or self.callback_group,
         )
 
         self.depth_image = None
