@@ -7,6 +7,8 @@ bool scan_environment
 ---
 #result definition
 int32 success
+ShelfLevel[] shelf_levels  # SCAN_SHELF: the levels, each with the objects seen on it
+int32 shelf_level          # PICK from_shelf: the level the object was picked from
 ---
 #feedback
 string execution_state

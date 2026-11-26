@@ -55,10 +55,7 @@ fi
 echo "" > .env
 
 # CycloneDDS interface from host
-if [ -f /etc/cyclonedds.env ]; then
-    source /etc/cyclonedds.env
-fi
-add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+add_or_update_variable .env "CYCLONE_INTERFACE" "$(resolve_cyclone_interface)"
 # Default SHM on for Jetson (l4t), off otherwise
 if [ -z "${CYCLONE_SHM:-}" ]; then
     if [ -f /etc/nv_tegra_release ]; then
@@ -122,7 +119,7 @@ case $TASK in
     "--mapping")
         RUN="ros2 launch nav_main mapping.launch.py"
         ;;
-    "--hric" | "--ppc" | "--dlc" | "--gpsr" | "--safety" )
+    "--hric" | "--ppc" | "--dlc" | "--gpsr" | "--safety" | "--finals" )
         RUN="ros2 launch nav_main general_navigation.launch.py"
         ;;
     "--restaurant")

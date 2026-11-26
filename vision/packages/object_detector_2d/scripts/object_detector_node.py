@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo services."""
+"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo/pose services."""
 
 import copy
 import json
@@ -8,6 +8,7 @@ import os
 import cv2 as cv
 import rclpy
 from ament_index_python.packages import get_package_share_directory
+from rclpy.time import Time
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
     DETECTIONS_3D_TOPIC,
@@ -15,15 +16,27 @@ from frida_constants.vision_constants import (
     DETECTIONS_IMAGE_TOPIC,
     DETECTIONS_POSES_TOPIC,
     DETECTIONS_TOPIC,
+    GALLERY_DETECTIONS_TOPIC,
+    POSE_DETECTION_SERVICE,
     TRASH_SERVICE_CATEGORY,
     YOLO_DETECTION_TOPIC,
     YOLO_DETECTIONS_PUBLISHER_TOPIC,
 )
-from frida_interfaces.msg import Detection, ObjectDetectionArray
-from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
+from frida_interfaces.msg import (
+    Detection,
+    ObjectDetectionArray,
+    PersonPose,
+)
+from frida_interfaces.srv import (
+    DetectionHandler,
+    DetectPose,
+    SetTrashCategory,
+    YoloDetect,
+)
 from sensor_msgs.msg import Image
 from detectors.registry import ModelRegistry
-from detectors.utils import iou_deduplicate
+from detectors.utils import iou_deduplicate, iou_msg
+from utils.trt_utils import load_yolo_trt
 from base_detector_node import BaseDetectorNode
 
 
@@ -39,13 +52,23 @@ class ObjectDetectorNode(BaseDetectorNode):
             fixed_active_topic="/vision/object_detector/active",
         )
 
+        # models: [""] runs no model here (gallery only)
         model_names = self.declare_param(
-            "models", ["yolo_v26_finetuned"]
+            "models", ["yolo_finetuned"]
         ).string_array_value
 
-        self.models = [ModelRegistry.get(name) for name in model_names if name]
+        self.models = [ModelRegistry.get(n) for n in model_names if n]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
         self.yolo_service_model = ModelRegistry.get("yolo_generic")
+        # Shared by all nodes via DetectPose
+        self.pose_model = load_yolo_trt("yolo11m-pose.pt", task="pose")
+
+        # Latest GalleryDetect2D output, merged into our detections while fresh
+        self.gallery_max_age = self.declare_param("GALLERY_MAX_AGE", 3.5).double_value
+        self.gallery = []
+        self.create_subscription(
+            ObjectDetectionArray, GALLERY_DETECTIONS_TOPIC, self.gallery_cb, 5
+        )
 
         self.category = None
         try:
@@ -69,9 +92,25 @@ class ObjectDetectorNode(BaseDetectorNode):
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV, self.detection_handler
         )
         self.create_service(YoloDetect, YOLO_DETECTION_TOPIC, self.yolo_detect)
+        self.create_service(DetectPose, POSE_DETECTION_SERVICE, self.detect_pose)
 
     def box_color(self, det):
         return (0, 0, 255) if det.label_text.startswith("trash/") else (0, 255, 0)
+
+    def gallery_cb(self, msg):
+        self.gallery = msg.detections
+
+    def fresh_gallery(self, detections, stamp):
+        """Gallery detections younger than GALLERY_MAX_AGE that don't overlap ours."""
+        now = Time.from_msg(stamp)
+        fresh = []
+        for g in self.gallery:
+            age = (now - Time.from_msg(g.point3d.header.stamp)).nanoseconds / 1e9
+            if age > self.gallery_max_age:
+                continue
+            if not any(iou_msg(g, d) > 0.6 for d in detections):
+                fresh.append(g)
+        return fresh
 
     # ------------------------------------------------------------------ services
 
@@ -148,9 +187,42 @@ class ObjectDetectorNode(BaseDetectorNode):
         response.detections = ros_dets
         return response
 
+    def detect_pose(self, request, response):
+        try:
+            frame = self.bridge.imgmsg_to_cv2(request.image, "bgr8")
+        except Exception as e:
+            self.get_logger().error(f"Invalid image in DetectPose request: {e}")
+            response.success = False
+            return response
+
+        results = self.pose_model(frame, verbose=False, conf=request.conf or 0.25)
+        response.people = self._pose_to_msgs(results[0] if results else None)
+        response.success = True
+        return response
+
+    @staticmethod
+    def _pose_to_msgs(result) -> list:
+        if result is None or result.boxes is None or result.keypoints is None:
+            return []
+        boxes = result.boxes.xyxy.int().tolist()
+        points = result.keypoints.xyn.tolist()
+        confs = result.keypoints.conf
+        confs = confs.tolist() if confs is not None else [[1.0] * 17] * len(boxes)
+        return [
+            PersonPose(
+                x1=b[0],
+                y1=b[1],
+                x2=b[2],
+                y2=b[3],
+                keypoints=[v for p in pts for v in p],
+                keypoints_conf=c,
+            )
+            for b, pts, c in zip(boxes, points, confs)
+        ]
+
     # ------------------------------------------------------------------ inference
 
-    def run(self, frame):
+    def run(self, frame, depth_image, stamp):
         if self.flip_image:
             frame = cv.rotate(frame, cv.ROTATE_180)
         visual = copy.deepcopy(frame)
@@ -169,7 +241,7 @@ class ObjectDetectorNode(BaseDetectorNode):
                     1 - det.bbox_.x2,
                 )
 
-        all_detections = self.extract_3d(merged)
+        all_detections = self.extract_3d(merged, depth_image)
         all_detections = self.filter_by_distance(all_detections)
 
         self.publish_3d_markers(all_detections)
@@ -177,7 +249,8 @@ class ObjectDetectorNode(BaseDetectorNode):
 
         ros_detections = self.to_ros(all_detections)
         for det in ros_detections:
-            det.point3d.header.stamp = self.curr_clock
+            det.point3d.header.stamp = stamp
+        ros_detections += self.fresh_gallery(ros_detections, stamp)
 
         self.latest_detections = ros_detections
 
@@ -189,7 +262,9 @@ class ObjectDetectorNode(BaseDetectorNode):
                 d.label_text = f"trash/{d.label_text}"
             published.append(d)
 
-        self.pub_detections.publish(ObjectDetectionArray(detections=published))
+        self.pub_detections.publish(
+            ObjectDetectionArray(header=self.run_header, detections=published)
+        )
         self.detections_frame = self.visualize(visual, published)
 
         if self.verbose:

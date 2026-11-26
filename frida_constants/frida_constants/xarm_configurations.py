@@ -194,6 +194,32 @@ LOOK_SIDE_LOW_STARE = {
     "degrees": True,
 }
 
+# Shelf survey (sim, shelf 15-20 cm away): HIGH sees the upper boards and the underside of
+# one above the camera; LOW sees the low compartments. See manipulation/packages/pick_and_place/SHELF.md.
+SHELF_SURVEY_HIGH = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -45.0,
+        "joint3": -90.0,
+        "joint4": 0.0,
+        "joint5": 20.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
+SHELF_SURVEY_LOW = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -105.0,
+        "joint3": 0.0,
+        "joint4": 0.0,
+        "joint5": 15.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
@@ -211,4 +237,6 @@ XARM_CONFIGURATIONS = {
     "scan_floor_carry_bag_pose": SCAN_FLOOR_CARRY_BAG_POSE,
     "look_side_stare": LOOK_SIDE_STARE,
     "look_side_low_stare": LOOK_SIDE_LOW_STARE,
+    "shelf_survey_high": SHELF_SURVEY_HIGH,
+    "shelf_survey_low": SHELF_SURVEY_LOW,
 }

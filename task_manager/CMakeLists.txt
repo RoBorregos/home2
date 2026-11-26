@@ -11,7 +11,7 @@ find_package(frida_constants REQUIRED)
 find_package(nav2_msgs REQUIRED)
 
 #Install directories
-install(DIRECTORY
+install(DIRECTORY config
   DESTINATION share/${PROJECT_NAME})
 
 ######################### Python  #########################
@@ -46,7 +46,7 @@ install(PROGRAMS ${MISC_NODES}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch scripts
+install(DIRECTORY scripts
   DESTINATION share/${PROJECT_NAME})
 
 # Install python config

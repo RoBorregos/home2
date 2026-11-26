@@ -4,8 +4,11 @@ from typing import List, Union
 
 import rclpy
 from frida_motion_planning.utils.Planner import Planner
+from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_pymoveit2.robots import xarm6
 from geometry_msgs.msg import PoseStamped
+from moveit_msgs.msg import PlanningSceneComponents
+from moveit_msgs.srv import GetPlanningScene
 from pymoveit2 import GripperInterface, MoveIt2, MoveIt2State
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
@@ -18,6 +21,24 @@ from frida_constants.manipulation_constants import (
 )
 
 PYMOVEIT_FUTURE_TIMEOUT = 3
+RATE_MAX_PERIOD = 0.01
+CARTESIAN_MAX_STEP = 0.005  # m between the IK waypoints of a straight-line plan
+CARTESIAN_MIN_FRACTION = 0.8
+CARTESIAN_REVOLUTE_JUMP = 0.5  # rad between waypoints; more is an IK branch flip
+
+
+class _ThreadRate:
+    """Drop-in for rclpy Rate that sleeps the calling thread instead of adding an executor timer."""
+
+    def __init__(self, frequency: float, clock=None):
+        # Polls at least every 10 ms: pymoveit2's 10 Hz future polling added up to 100 ms per plan/FK/IK
+        self._period = min(1.0 / frequency, RATE_MAX_PERIOD)
+
+    def sleep(self) -> None:
+        time.sleep(self._period)
+
+    def destroy(self) -> None:
+        pass
 
 
 # A class to handle planning with MoveIt
@@ -33,6 +54,8 @@ class MoveItPlanner(Planner):
     ):
         # Create callback group
         self.node = node
+        # pymoveit2 Rates are executor timers (1 kHz at init, a leaked 10 Hz one per plan/FK/IK), so use thread sleeps
+        self.node.create_rate = _ThreadRate
         # Create MoveIt 2 interface
         self.moveit2 = MoveIt2(
             node=node,
@@ -42,6 +65,9 @@ class MoveItPlanner(Planner):
             group_name=xarm6.MOVE_GROUP_ARM,
             callback_group=callback_group,
         )
+        # pymoveit2 checks hasattr(self, "__compute_fk_client") without name mangling, so it made a new FK client per call
+        self.moveit2._MoveIt2__init_compute_fk()
+        setattr(self.moveit2, "__compute_fk_client", True)
         self.joint_states_topic = "/joint_states"
         # create listener
         self.joint_states_sub = self.node.create_subscription(
@@ -72,6 +98,9 @@ class MoveItPlanner(Planner):
         self.moveit2.max_velocity = max_velocity
         self.moveit2.max_acceleration = max_acceleration
         self.moveit2.planner_id = planner_id
+        # KDL restarts from random seeds near a singularity; this cuts the path there.
+        self.moveit2.cartesian_revolute_jump_threshold = CARTESIAN_REVOLUTE_JUMP
+        self.moveit2.cartesian_avoid_collisions = True  # the request defaults to False
 
     def set_velocity(self, velocity: float) -> None:
         self.moveit2.max_velocity = velocity
@@ -203,8 +232,8 @@ class MoveItPlanner(Planner):
         tolerance_orientation: float = 0.05,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
-        cartesian_max_step: float = 0.05,
-        cartesian_fraction_threshold: float = 0.8,
+        cartesian_max_step: float = CARTESIAN_MAX_STEP,
+        cartesian_fraction_threshold: float = CARTESIAN_MIN_FRACTION,
     ) -> Union[bool, Future]:
         return self.moveit2.plan(
             position=[pose.pose.position.x, pose.pose.position.y, pose.pose.position.z],
@@ -406,11 +435,20 @@ class MoveItPlanner(Planner):
     def update_planning_scene(self) -> None:
         self.moveit2.update_planning_scene()
 
-    def get_planning_scene(self) -> None:
-        self.update_planning_scene()  # check the pymoveit2 library
-        return (
-            self.moveit2.planning_scene
-        )  # Return the current planning scene after the update
+    def get_planning_scene(self):
+        # Skip the octomap: serializing it races the octomap updater and segfaults move_group
+        request = GetPlanningScene.Request()
+        request.components.components = (
+            PlanningSceneComponents.WORLD_OBJECT_NAMES
+            | PlanningSceneComponents.WORLD_OBJECT_GEOMETRY
+        )
+        # Async with a timeout: a blocking call can deadlock when every executor thread waits
+        client = self.moveit2._get_planning_scene_service
+        future = client.call_async(request)
+        if not wait_for_future(future, timeout=PYMOVEIT_FUTURE_TIMEOUT):
+            client.remove_pending_request(future)
+            return None
+        return future.result().scene
 
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)
@@ -420,6 +458,8 @@ class MoveItPlanner(Planner):
             self.moveit2.detach_all_collision_objects()
         time.sleep(1e-03)
         planning_scene = self.get_planning_scene()
+        if planning_scene is None:
+            return
         for collision_object in planning_scene.world.collision_objects:
             print("Found collision object: ", collision_object.id)
             time.sleep(1e-09)

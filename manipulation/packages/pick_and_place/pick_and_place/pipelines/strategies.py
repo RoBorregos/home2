@@ -15,6 +15,7 @@ from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
     PICK_STRATEGY_FLAT,
     PICK_STRATEGY_GEOMETRIC,
+    PICK_STRATEGY_SHELF,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_RIM,
@@ -285,6 +286,7 @@ STRATEGIES = {
     PICK_STRATEGY_BOWL: FixedDistanceDescentPick,
     PICK_STRATEGY_PEAK: FixedDistanceDescentPick,
     PICK_STRATEGY_GEOMETRIC: CartesianApproachPick,
+    PICK_STRATEGY_SHELF: CartesianApproachPick,
     PICK_STRATEGY_GPD: DirectGraspPick,
 }
 
