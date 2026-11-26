@@ -28,7 +28,6 @@ from frida_constants.manipulation_constants import (
     RIM_NAMES,
     TOP_GRASP_DEPTH,
     TRASH_BIN_NAME,
-    ZED_DEPTH_SCALE,
 )
 
 GRASP_CLASS_OBJECTS = {
@@ -48,7 +47,7 @@ assert len(OBJECT_GRASP_CLASS) == sum(
 DEFORMABLE_OBJECTS = frozenset({"clothes", "bread", "chip_bag", "towel", "plush_toy"})
 
 MIN_POINTS_FOR_PCA = 10
-ELONGATION_MIN_RATIO = 2.0
+ELONGATION_MIN_RATIO = 1.4
 
 FLAT_TABLE_PERCENTILE = 85
 FLAT_HEIGHT_BAND = (0.001, 0.05)
@@ -167,7 +166,6 @@ class Scene:
 
     def deproject(self, u, v, z) -> np.ndarray:
         u, v, z = map(np.atleast_1d, (u, v, z))
-        z = z * ZED_DEPTH_SCALE
         k = self.intrinsics
         cam = np.column_stack(
             ((u - k.cx) * z / k.fx, (v - k.cy) * z / k.fy, z, np.ones_like(z))
