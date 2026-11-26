@@ -123,8 +123,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4677e3a92dd4994579c6f3c33685c338"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a4677e3a92dd4994579c6f3c33685c338">run</a> (self)</td></tr>
 <tr class="separator:a4677e3a92dd4994579c6f3c33685c338"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classvision__runtime_1_1VisionRuntime"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classvision__runtime_1_1VisionRuntime')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classvision__runtime_1_1VisionRuntime.html">vision_runtime.VisionRuntime</a></td></tr>
-<tr class="memitem:ace43d8c2f09a3d5e477e704146a9df1b inherit pub_methods_classvision__runtime_1_1VisionRuntime"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#ace43d8c2f09a3d5e477e704146a9df1b">__init__</a> (self, str node_name, *str image_topic=IMAGE_ORIENTED_TOPIC, bool use_depth=False, bool use_camera_info=False, bool use_tf=False, bool track_rotation=False, str debug_topic=None, str debug_name=None, str active_name=None, bool active_node=True)</td></tr>
-<tr class="separator:ace43d8c2f09a3d5e477e704146a9df1b inherit pub_methods_classvision__runtime_1_1VisionRuntime"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5bdc32e0206bbe38e5b682aab628c04f inherit pub_methods_classvision__runtime_1_1VisionRuntime"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#a5bdc32e0206bbe38e5b682aab628c04f">__init__</a> (self, str node_name, *str image_topic=IMAGE_ORIENTED_TOPIC, bool use_depth=False, bool use_camera_info=False, bool use_tf=False, bool track_rotation=False, str debug_topic=None, str debug_name=None, str active_name=None, bool active_node=True, image_callback_group=None)</td></tr>
+<tr class="separator:a5bdc32e0206bbe38e5b682aab628c04f inherit pub_methods_classvision__runtime_1_1VisionRuntime"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af49efb4dbcc5f7a52c80d9bf78c95079 inherit pub_methods_classvision__runtime_1_1VisionRuntime"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#af49efb4dbcc5f7a52c80d9bf78c95079">publish_debug</a> (self, frame)</td></tr>
 <tr class="separator:af49efb4dbcc5f7a52c80d9bf78c95079 inherit pub_methods_classvision__runtime_1_1VisionRuntime"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac971bb8391549c9bd2763a9db36b7b52 inherit pub_methods_classvision__runtime_1_1VisionRuntime"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#ac971bb8391549c9bd2763a9db36b7b52">call_service</a> (self, client, request, float timeout)</td></tr>
@@ -134,6 +134,8 @@ Public Member Functions</h2></td></tr>
 Public Attributes</h2></td></tr>
 <tr class="memitem:ae68e6b625622ec28bd4b0983f85745ca"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ae68e6b625622ec28bd4b0983f85745ca">pbar</a></td></tr>
 <tr class="separator:ae68e6b625622ec28bd4b0983f85745ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3dc4145d88c1458ca5359639c2cc733b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a3dc4145d88c1458ca5359639c2cc733b">is_talking_client</a></td></tr>
+<tr class="separator:a3dc4145d88c1458ca5359639c2cc733b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7f29e7f2c646cbbe1b641ab330849a9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ad7f29e7f2c646cbbe1b641ab330849a9">follow_publisher</a></td></tr>
 <tr class="separator:ad7f29e7f2c646cbbe1b641ab330849a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6e33c30678b712b750ae93698b22919"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#aa6e33c30678b712b750ae93698b22919">view_pub</a></td></tr>
@@ -156,12 +158,24 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a8d46ce7421ec2d1fed9d86f9675e0ae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa76a1177deb3d08b6f25ee831f624683"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#aa76a1177deb3d08b6f25ee831f624683">active</a></td></tr>
 <tr class="separator:aa76a1177deb3d08b6f25ee831f624683"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a504afb97880386bf8c4c21b6bfe7a0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a4a504afb97880386bf8c4c21b6bfe7a0">is_processing</a></td></tr>
-<tr class="separator:a4a504afb97880386bf8c4c21b6bfe7a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ebe3eca5bfeec791c1e65fec6681cd7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a4ebe3eca5bfeec791c1e65fec6681cd7">id</a></td></tr>
 <tr class="separator:a4ebe3eca5bfeec791c1e65fec6681cd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2694555d14a68eb83c8f756d40b842c5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a2694555d14a68eb83c8f756d40b842c5">processing_id</a></td></tr>
 <tr class="separator:a2694555d14a68eb83c8f756d40b842c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae68c332aeeebceff1ea3479973f96b21"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ae68c332aeeebceff1ea3479973f96b21">last_talker</a></td></tr>
+<tr class="separator:ae68c332aeeebceff1ea3479973f96b21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a9520c0251c39d1d1d77a4a06eb860f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a7a9520c0251c39d1d1d77a4a06eb860f">talker_gen</a></td></tr>
+<tr class="separator:a7a9520c0251c39d1d1d77a4a06eb860f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5024f00da12101919e59e708733f9f69"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a5024f00da12101919e59e708733f9f69">area_target</a></td></tr>
+<tr class="separator:a5024f00da12101919e59e708733f9f69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5457e60bc97849754da1a1b3836f4a3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ab5457e60bc97849754da1a1b3836f4a3">last_detect</a></td></tr>
+<tr class="separator:ab5457e60bc97849754da1a1b3836f4a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9c923dd914274a481ff7e5105afbd92"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ac9c923dd914274a481ff7e5105afbd92">last_crop</a></td></tr>
+<tr class="separator:ac9c923dd914274a481ff7e5105afbd92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d65eae72d65a6e0e1b99e454f2180f1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a5d65eae72d65a6e0e1b99e454f2180f1">talk_pending</a></td></tr>
+<tr class="separator:a5d65eae72d65a6e0e1b99e454f2180f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42a9e14db74ce56af557136e075cf952"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a42a9e14db74ce56af557136e075cf952">talk_tracks</a></td></tr>
+<tr class="separator:a42a9e14db74ce56af557136e075cf952"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9f9e0648535695b5543ba80957541b2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#aa9f9e0648535695b5543ba80957541b2">curr_faces</a></td></tr>
 <tr class="separator:aa9f9e0648535695b5543ba80957541b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af04ab1be04bbcd49d219f1dad6dff549"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#af04ab1be04bbcd49d219f1dad6dff549">prev_faces</a></td></tr>
@@ -192,8 +206,22 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
+<tr class="memitem:acdf44107101a45ed28d5c1ae826ebd7c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#acdf44107101a45ed28d5c1ae826ebd7c">_track_faces</a> (self, faces, now)</td></tr>
+<tr class="separator:acdf44107101a45ed28d5c1ae826ebd7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e6fa9d5dc1d9cfe0b13d1f5f0d9f428"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a7e6fa9d5dc1d9cfe0b13d1f5f0d9f428">_add_talk_crops</a> (self, frame)</td></tr>
+<tr class="separator:a7e6fa9d5dc1d9cfe0b13d1f5f0d9f428"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accf62534d2bda67d2f346608731ed413"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#accf62534d2bda67d2f346608731ed413">_update_talking</a> (self, now)</td></tr>
+<tr class="separator:accf62534d2bda67d2f346608731ed413"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a176dc4e3c242f069503a6e39ddd51062"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a176dc4e3c242f069503a6e39ddd51062">_reset_talking</a> (self)</td></tr>
+<tr class="separator:a176dc4e3c242f069503a6e39ddd51062"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f26574d8696062effb94e221d448827"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a2f26574d8696062effb94e221d448827">_set_last_talker</a> (self, track)</td></tr>
+<tr class="separator:a2f26574d8696062effb94e221d448827"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe77226dcd11859a88fb0ed9adbae798"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#afe77226dcd11859a88fb0ed9adbae798">_image_callback</a> (self, msg)</td></tr>
+<tr class="separator:afe77226dcd11859a88fb0ed9adbae798"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd65ba62fba2e95831e1ce472840193d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#abd65ba62fba2e95831e1ce472840193d">_run_inference</a> (self, frame)</td></tr>
 <tr class="separator:abd65ba62fba2e95831e1ce472840193d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fe3ab01f72e85c59656e6beb12ac85d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a1fe3ab01f72e85c59656e6beb12ac85d">_find_talker</a> (self, faces)</td></tr>
+<tr class="separator:a1fe3ab01f72e85c59656e6beb12ac85d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa2699e13ba0cd4fc415603af1ad366f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#afa2699e13ba0cd4fc415603af1ad366f">_publish_follow_face</a> (self, xc, yc, name, center)</td></tr>
 <tr class="separator:afa2699e13ba0cd4fc415603af1ad366f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classvision__runtime_1_1VisionRuntime"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classvision__runtime_1_1VisionRuntime')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classvision__runtime_1_1VisionRuntime.html">vision_runtime.VisionRuntime</a></td></tr>
@@ -225,11 +253,121 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Reimplemented from <a class="el" href="classvision__runtime_1_1VisionRuntime.html#ace43d8c2f09a3d5e477e704146a9df1b">vision_runtime.VisionRuntime</a>.</p>
+<p>Reimplemented from <a class="el" href="classvision__runtime_1_1VisionRuntime.html#a5bdc32e0206bbe38e5b682aab628c04f">vision_runtime.VisionRuntime</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a7e6fa9d5dc1d9cfe0b13d1f5f0d9f428" name="a7e6fa9d5dc1d9cfe0b13d1f5f0d9f428"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e6fa9d5dc1d9cfe0b13d1f5f0d9f428">&#9670;&#160;</a></span>_add_talk_crops()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node.FaceRecognition._add_talk_crops </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>frame</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Crop every live track from its last box, even if the last detection missed it.</pre> 
+</div>
+</div>
+<a id="a1fe3ab01f72e85c59656e6beb12ac85d" name="a1fe3ab01f72e85c59656e6beb12ac85d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1fe3ab01f72e85c59656e6beb12ac85d">&#9670;&#160;</a></span>_find_talker()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node.FaceRecognition._find_talker </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>faces</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Face matching the last talker (by name, else by position); refreshes it.</pre> 
+</div>
+</div>
+<a id="afe77226dcd11859a88fb0ed9adbae798" name="afe77226dcd11859a88fb0ed9adbae798"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe77226dcd11859a88fb0ed9adbae798">&#9670;&#160;</a></span>_image_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node.FaceRecognition._image_callback </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>msg</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classvision__runtime_1_1VisionRuntime.html#a599057efcb81885d58cce35497724f0d">vision_runtime.VisionRuntime</a>.</p>
+
+</div>
+</div>
 <a id="afa2699e13ba0cd4fc415603af1ad366f" name="afa2699e13ba0cd4fc415603af1ad366f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afa2699e13ba0cd4fc415603af1ad366f">&#9670;&#160;</a></span>_publish_follow_face()</h2>
 
@@ -284,6 +422,32 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a176dc4e3c242f069503a6e39ddd51062" name="a176dc4e3c242f069503a6e39ddd51062"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a176dc4e3c242f069503a6e39ddd51062">&#9670;&#160;</a></span>_reset_talking()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node.FaceRecognition._reset_talking </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="abd65ba62fba2e95831e1ce472840193d" name="abd65ba62fba2e95831e1ce472840193d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abd65ba62fba2e95831e1ce472840193d">&#9670;&#160;</a></span>_run_inference()</h2>
 
@@ -318,6 +482,120 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a2f26574d8696062effb94e221d448827" name="a2f26574d8696062effb94e221d448827"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f26574d8696062effb94e221d448827">&#9670;&#160;</a></span>_set_last_talker()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node.FaceRecognition._set_last_talker </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>track</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="acdf44107101a45ed28d5c1ae826ebd7c" name="acdf44107101a45ed28d5c1ae826ebd7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acdf44107101a45ed28d5c1ae826ebd7c">&#9670;&#160;</a></span>_track_faces()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node.FaceRecognition._track_faces </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>faces</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>now</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Match this detection's faces to the talking tracks (nearest, else new).</pre> 
+</div>
+</div>
+<a id="accf62534d2bda67d2f346608731ed413" name="accf62534d2bda67d2f346608731ed413"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#accf62534d2bda67d2f346608731ed413">&#9670;&#160;</a></span>_update_talking()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node.FaceRecognition._update_talking </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>now</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Collect is_talking answers and send full buffers.</pre> 
 </div>
 </div>
 <a id="aa5a8228529de5301d634985c50de4e37" name="aa5a8228529de5301d634985c50de4e37"></a>
@@ -481,6 +759,20 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a5024f00da12101919e59e708733f9f69" name="a5024f00da12101919e59e708733f9f69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5024f00da12101919e59e708733f9f69">&#9670;&#160;</a></span>area_target</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">face_recognition_node.FaceRecognition.area_target</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aa9f9e0648535695b5543ba80957541b2" name="aa9f9e0648535695b5543ba80957541b2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa9f9e0648535695b5543ba80957541b2">&#9670;&#160;</a></span>curr_faces</h2>
 
@@ -565,14 +857,56 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a4a504afb97880386bf8c4c21b6bfe7a0" name="a4a504afb97880386bf8c4c21b6bfe7a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a504afb97880386bf8c4c21b6bfe7a0">&#9670;&#160;</a></span>is_processing</h2>
+<a id="a3dc4145d88c1458ca5359639c2cc733b" name="a3dc4145d88c1458ca5359639c2cc733b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3dc4145d88c1458ca5359639c2cc733b">&#9670;&#160;</a></span>is_talking_client</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">face_recognition_node.FaceRecognition.is_processing</td>
+          <td class="memname">face_recognition_node.FaceRecognition.is_talking_client</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac9c923dd914274a481ff7e5105afbd92" name="ac9c923dd914274a481ff7e5105afbd92"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9c923dd914274a481ff7e5105afbd92">&#9670;&#160;</a></span>last_crop</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">face_recognition_node.FaceRecognition.last_crop</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab5457e60bc97849754da1a1b3836f4a3" name="ab5457e60bc97849754da1a1b3836f4a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5457e60bc97849754da1a1b3836f4a3">&#9670;&#160;</a></span>last_detect</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">face_recognition_node.FaceRecognition.last_detect</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae68c332aeeebceff1ea3479973f96b21" name="ae68c332aeeebceff1ea3479973f96b21"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae68c332aeeebceff1ea3479973f96b21">&#9670;&#160;</a></span>last_talker</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">face_recognition_node.FaceRecognition.last_talker</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -657,6 +991,48 @@ Protected Member Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">face_recognition_node.FaceRecognition.processing_id</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5d65eae72d65a6e0e1b99e454f2180f1" name="a5d65eae72d65a6e0e1b99e454f2180f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d65eae72d65a6e0e1b99e454f2180f1">&#9670;&#160;</a></span>talk_pending</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">face_recognition_node.FaceRecognition.talk_pending</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a42a9e14db74ce56af557136e075cf952" name="a42a9e14db74ce56af557136e075cf952"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a42a9e14db74ce56af557136e075cf952">&#9670;&#160;</a></span>talk_tracks</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">face_recognition_node.FaceRecognition.talk_tracks</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7a9520c0251c39d1d1d77a4a06eb860f" name="a7a9520c0251c39d1d1d77a4a06eb860f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a9520c0251c39d1d1d77a4a06eb860f">&#9670;&#160;</a></span>talker_gen</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">face_recognition_node.FaceRecognition.talker_gen</td>
         </tr>
       </table>
 </div><div class="memdoc">

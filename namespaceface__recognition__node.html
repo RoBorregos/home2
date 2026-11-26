@@ -105,6 +105,16 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a4c29a7b5e780b312a287005b321501a0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a4c29a7b5e780b312a287005b321501a0">_talker_fields</a> (face)</td></tr>
+<tr class="separator:a4c29a7b5e780b312a287005b321501a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a397f18bcb34afa983787f4173ad8c4a2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a397f18bcb34afa983787f4173ad8c4a2">_box_center</a> (box)</td></tr>
+<tr class="separator:a397f18bcb34afa983787f4173ad8c4a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9650144963750b85da80e5ccb327a950"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a9650144963750b85da80e5ccb327a950">_nearest</a> (faces, x, y, threshold=None)</td></tr>
+<tr class="separator:a9650144963750b85da80e5ccb327a950"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab26701279ffc4adab687fa2607753cce"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#ab26701279ffc4adab687fa2607753cce">_same_person</a> (a, b)</td></tr>
+<tr class="separator:ab26701279ffc4adab687fa2607753cce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a0df76b032d60fdb45c2b8a66ec0c4d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a4a0df76b032d60fdb45c2b8a66ec0c4d">_draw_face</a> (img, box, name, color)</td></tr>
+<tr class="separator:a4a0df76b032d60fdb45c2b8a66ec0c4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe2d04ddc5e2378a7b776a096ca9c278"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#abe2d04ddc5e2378a7b776a096ca9c278">main</a> (args=None)</td></tr>
 <tr class="separator:abe2d04ddc5e2378a7b776a096ca9c278"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -119,6 +129,190 @@ Variables</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Face recognition ROS2 node. Model logic lives in models.face_recognition.</pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="a397f18bcb34afa983787f4173ad8c4a2" name="a397f18bcb34afa983787f4173ad8c4a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a397f18bcb34afa983787f4173ad8c4a2">&#9670;&#160;</a></span>_box_center()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node._box_center </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>box</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4a0df76b032d60fdb45c2b8a66ec0c4d" name="a4a0df76b032d60fdb45c2b8a66ec0c4d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a0df76b032d60fdb45c2b8a66ec0c4d">&#9670;&#160;</a></span>_draw_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node._draw_face </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>img</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>box</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>color</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9650144963750b85da80e5ccb327a950" name="a9650144963750b85da80e5ccb327a950"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9650144963750b85da80e5ccb327a950">&#9670;&#160;</a></span>_nearest()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node._nearest </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>faces</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>threshold</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Closest face to (x, y) within threshold (default: the face's own width).</pre> 
+</div>
+</div>
+<a id="ab26701279ffc4adab687fa2607753cce" name="ab26701279ffc4adab687fa2607753cce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab26701279ffc4adab687fa2607753cce">&#9670;&#160;</a></span>_same_person()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node._same_person </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4c29a7b5e780b312a287005b321501a0" name="a4c29a7b5e780b312a287005b321501a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c29a7b5e780b312a287005b321501a0">&#9670;&#160;</a></span>_talker_fields()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def face_recognition_node._talker_fields </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>face</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="abe2d04ddc5e2378a7b776a096ca9c278" name="abe2d04ddc5e2378a7b776a096ca9c278"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abe2d04ddc5e2378a7b776a096ca9c278">&#9670;&#160;</a></span>main()</h2>
 

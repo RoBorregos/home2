@@ -1,6 +1,6 @@
 var classvision__runtime_1_1VisionRuntime =
 [
-    [ "__init__", "classvision__runtime_1_1VisionRuntime.html#ace43d8c2f09a3d5e477e704146a9df1b", null ],
+    [ "__init__", "classvision__runtime_1_1VisionRuntime.html#a5bdc32e0206bbe38e5b682aab628c04f", null ],
     [ "_active_callback", "classvision__runtime_1_1VisionRuntime.html#a697c9bd116fed15ee1969efdd2138258", null ],
     [ "_camera_info_callback", "classvision__runtime_1_1VisionRuntime.html#a5870c740713d001476cb3edcd99f56d0", null ],
     [ "_depth_callback", "classvision__runtime_1_1VisionRuntime.html#aaa674a1507053873956a0b8e6ab4c861", null ],

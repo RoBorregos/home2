@@ -116,8 +116,8 @@ Inheritance diagram for vision_runtime.VisionRuntime:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ace43d8c2f09a3d5e477e704146a9df1b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#ace43d8c2f09a3d5e477e704146a9df1b">__init__</a> (self, str node_name, *str image_topic=IMAGE_ORIENTED_TOPIC, bool use_depth=False, bool use_camera_info=False, bool use_tf=False, bool track_rotation=False, str debug_topic=None, str debug_name=None, str active_name=None, bool active_node=True)</td></tr>
-<tr class="separator:ace43d8c2f09a3d5e477e704146a9df1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5bdc32e0206bbe38e5b682aab628c04f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#a5bdc32e0206bbe38e5b682aab628c04f">__init__</a> (self, str node_name, *str image_topic=IMAGE_ORIENTED_TOPIC, bool use_depth=False, bool use_camera_info=False, bool use_tf=False, bool track_rotation=False, str debug_topic=None, str debug_name=None, str active_name=None, bool active_node=True, image_callback_group=None)</td></tr>
+<tr class="separator:a5bdc32e0206bbe38e5b682aab628c04f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af49efb4dbcc5f7a52c80d9bf78c95079"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#af49efb4dbcc5f7a52c80d9bf78c95079">publish_debug</a> (self, frame)</td></tr>
 <tr class="separator:af49efb4dbcc5f7a52c80d9bf78c95079"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac971bb8391549c9bd2763a9db36b7b52"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__runtime_1_1VisionRuntime.html#ac971bb8391549c9bd2763a9db36b7b52">call_service</a> (self, client, request, float timeout)</td></tr>
@@ -163,8 +163,8 @@ Protected Member Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Base class for vision_general's per-task nodes.</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ace43d8c2f09a3d5e477e704146a9df1b" name="ace43d8c2f09a3d5e477e704146a9df1b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace43d8c2f09a3d5e477e704146a9df1b">&#9670;&#160;</a></span>__init__()</h2>
+<a id="a5bdc32e0206bbe38e5b682aab628c04f" name="a5bdc32e0206bbe38e5b682aab628c04f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bdc32e0206bbe38e5b682aab628c04f">&#9670;&#160;</a></span>__init__()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -233,7 +233,13 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>active_node</em> = <code>True</code>&#160;</td>
+          <td class="paramname"><em>active_node</em> = <code>True</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>image_callback_group</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -390,7 +396,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classfinals__commands_1_1FinalsCommandsNode.html#a9b328889e3a32020f0e6ff3fa6731e33">finals_commands.FinalsCommandsNode</a>.</p>
+<p>Reimplemented in <a class="el" href="classface__recognition__node_1_1FaceRecognition.html#afe77226dcd11859a88fb0ed9adbae798">face_recognition_node.FaceRecognition</a>, and <a class="el" href="classfinals__commands_1_1FinalsCommandsNode.html#a9b328889e3a32020f0e6ff3fa6731e33">finals_commands.FinalsCommandsNode</a>.</p>
 
 </div>
 </div>
