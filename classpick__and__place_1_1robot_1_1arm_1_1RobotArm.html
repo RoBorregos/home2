@@ -230,8 +230,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:ab2aa9f51e4b80ecc021ef5ff02972035"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a623a174e0177978fe49c7ecc6d304a64"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a623a174e0177978fe49c7ecc6d304a64">_send_cartesian_velocity</a> (self, float speed_mm_s, str label, direction=(0.0, 0.0, 1.0))</td></tr>
 <tr class="separator:a623a174e0177978fe49c7ecc6d304a64"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a70f03e46043ed18693143f3ca0c6b66c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a70f03e46043ed18693143f3ca0c6b66c">_sample_effort_baseline</a> (self, str label, int required=5)</td></tr>
-<tr class="separator:a70f03e46043ed18693143f3ca0c6b66c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54bcb704ec9d0ef0d6ae42c36238eaed"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a54bcb704ec9d0ef0d6ae42c36238eaed">_sample_effort_baseline</a> (self, str label, int required=5, int samples=10)</td></tr>
+<tr class="separator:a54bcb704ec9d0ef0d6ae42c36238eaed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7739db107d252b9d7028a7cce7c9d757"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a7739db107d252b9d7028a7cce7c9d757">_monitor_for_contact</a> (self, <a class="el" href="classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html">ForceGuardProfile</a> guard, baseline, str label)</td></tr>
 <tr class="separator:a7739db107d252b9d7028a7cce7c9d757"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc925bd1b306750bed019b68cc74e2b0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#abc925bd1b306750bed019b68cc74e2b0">_set_mode_and_state</a> (self, int mode, bool reset_controller=False)</td></tr>
@@ -388,7 +388,10 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<pre class="fragment">Watch joint effort at 50 Hz. Returns (contact, metres descended).</pre> 
+<pre class="fragment">Watch joint effort at 50 Hz. Returns (contact, metres descended).
+
+Ramps from ``fast_descent_speed`` down to ``descent_speed`` near ``fast_until``.
+</pre> 
 </div>
 </div>
 <a id="ab2aa9f51e4b80ecc021ef5ff02972035" name="ab2aa9f51e4b80ecc021ef5ff02972035"></a>
@@ -649,8 +652,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a70f03e46043ed18693143f3ca0c6b66c" name="a70f03e46043ed18693143f3ca0c6b66c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a70f03e46043ed18693143f3ca0c6b66c">&#9670;&#160;</a></span>_sample_effort_baseline()</h2>
+<a id="a54bcb704ec9d0ef0d6ae42c36238eaed" name="a54bcb704ec9d0ef0d6ae42c36238eaed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54bcb704ec9d0ef0d6ae42c36238eaed">&#9670;&#160;</a></span>_sample_effort_baseline()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -674,7 +677,13 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int &#160;</td>
-          <td class="paramname"><em>required</em> = <code>5</code>&#160;</td>
+          <td class="paramname"><em>required</em> = <code>5</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &#160;</td>
+          <td class="paramname"><em>samples</em> = <code>10</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

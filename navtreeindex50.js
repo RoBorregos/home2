@@ -1,5 +1,6 @@
 var NAVTREEINDEX50 =
 {
+"namespacevamp_1_1utils.html#a54f335179785be70ca7bf8a33886a937":[41,0,176,13,4],
 "namespacevamp_1_1utils.html#a8b2f5b40624da7b8af593ebf11196327":[41,0,176,13,5],
 "namespacevamp_1_1utils.html#aaf94b168033ba3ae749fe2e7f007c473":[41,0,176,13,3],
 "namespacevamp_1_1utils.html#ad981cceba22773eb47af56ec8cac4c01":[41,0,176,13,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX50 =
 "perception__utils_8py.html#a906076edfe03facab943fe84636d2f69":[43,0,3,1,5,1,2,2,2],
 "person__goal__smoother_8py.html":[43,0,4,0,2,2,5],
 "person__goal__smoother_8py.html#a04a09d13c5f825a79655b1d3d7074fe8":[43,0,4,0,2,2,5,8],
-"person__goal__smoother_8py.html#a21d6f1e748d5b0ce8c8783483c5d6094":[43,0,4,0,2,2,5,5],
-"person__goal__smoother_8py.html#a3ca7c135ff4f834238e8cfc54e67ed08":[43,0,4,0,2,2,5,2]
+"person__goal__smoother_8py.html#a21d6f1e748d5b0ce8c8783483c5d6094":[43,0,4,0,2,2,5,5]
 };

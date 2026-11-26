@@ -243,7 +243,6 @@ var namespacefrida__constants =
     [ "vision_enums", "namespacefrida__constants_1_1vision__enums.html", "namespacefrida__constants_1_1vision__enums" ],
     [ "xarm_configurations", "namespacefrida__constants_1_1xarm__configurations.html", [
       [ "CARRY_POSE", "namespacefrida__constants_1_1xarm__configurations.html#a40724ca8949bf6768bc309e32f3b284f", null ],
-      [ "FLAT_STARE", "namespacefrida__constants_1_1xarm__configurations.html#afd2bde4d96a97dd999bd8e1ec175b2ce", null ],
       [ "FRONT_LOW_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a2f3850b75849b6bc32e08235fe99d81c", null ],
       [ "FRONT_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd", null ],
       [ "FRONT_STARE_CARRY_BAG", "namespacefrida__constants_1_1xarm__configurations.html#a11fb9768bb78ea1ba4ea84e0e587de48", null ],

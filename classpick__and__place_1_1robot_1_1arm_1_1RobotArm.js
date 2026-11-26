@@ -9,7 +9,7 @@ var classpick__and__place_1_1robot_1_1arm_1_1RobotArm =
     [ "_on_robot_state", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a405f59be64c12f3c13fca55c27c61ae6", null ],
     [ "_publish_feedback", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a18d7709b20908f6474699d0a17592387", null ],
     [ "_restore_mode1", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#aff9a02f77d67483449d19699284b5e8b", null ],
-    [ "_sample_effort_baseline", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a70f03e46043ed18693143f3ca0c6b66c", null ],
+    [ "_sample_effort_baseline", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a54bcb704ec9d0ef0d6ae42c36238eaed", null ],
     [ "_send_cartesian_velocity", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a623a174e0177978fe49c7ecc6d304a64", null ],
     [ "_set_mode_and_state", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#abc925bd1b306750bed019b68cc74e2b0", null ],
     [ "_set_xarm_mode", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html#a2244efe06aaaac2721c494fd106e09f0", null ],

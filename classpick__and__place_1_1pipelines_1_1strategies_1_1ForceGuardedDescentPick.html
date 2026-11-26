@@ -131,8 +131,8 @@ Forks, plates and sponges are too thin to descend onto by position: the
 perceived height is not accurate to the millimetre, so a fixed descent
 either stops short or drives into the table.
 
-The pre-grasp is a plain pose goal (top-down and unobstructed, so nearest-IK
-seeding buys nothing) and the arm lifts back to it afterwards.
+The pre-grasp seeds IK from the current joints, to avoid a flipped-wrist
+solution that would hit the table on descent.
 </pre> </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="ab420feeb3dc443ac1f2b8f3a1c233ac4" name="ab420feeb3dc443ac1f2b8f3a1c233ac4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab420feeb3dc443ac1f2b8f3a1c233ac4">&#9670;&#160;</a></span>attempt()</h2>

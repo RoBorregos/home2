@@ -1,5 +1,6 @@
 var NAVTREEINDEX47 =
 {
+"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a9b9a56e7c7574157b1a411cf05adbd04":[41,0,145,1,4,4],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#aaab6a244ded3f187cd3d2623d2fd0f18":[41,0,145,1,4,6],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ab459dbc3d7e2da19e0024efbc1b1dbc2":[41,0,145,1,4,17],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ad1aa144235ceaa598ba03d1f5a343823":[41,0,145,1,4,7],
@@ -248,6 +249,5 @@ var NAVTREEINDEX47 =
 "namespacetest__pick__and__place.html#a294ada1cd4731cd196d53ef28299124c":[41,0,166,56],
 "namespacetest__pick__and__place.html#a2d64ee4042d9c5251c1f6de2486ead0f":[41,0,166,18],
 "namespacetest__pick__and__place.html#a308c6e58501bde444361e547df28eeb6":[41,0,166,84],
-"namespacetest__pick__and__place.html#a34433b8be82374dfbd72358063b4008e":[41,0,166,30],
-"namespacetest__pick__and__place.html#a3c0e9ccaca0bba260802e5b3ed104360":[41,0,166,107]
+"namespacetest__pick__and__place.html#a34433b8be82374dfbd72358063b4008e":[41,0,166,30]
 };

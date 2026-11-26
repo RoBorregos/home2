@@ -1,6 +1,5 @@
 var NAVTREEINDEX44 =
 {
-"namespacemodels_1_1face__recognition.html#a9bde02e1c3cf1cec03b6e5c1f440e08c":[41,0,92,0,3],
 "namespacemodels_1_1mediapipe__detector.html":[41,0,92,1],
 "namespacemodels_1_1mediapipe__detector.html#acac159582d35f5a57a1495ff048a645f":[41,0,92,1,1],
 "namespacemodels_1_1pose__detection.html":[41,0,92,2],
@@ -249,5 +248,6 @@ var NAVTREEINDEX44 =
 "namespaceperception__3d_1_1geometric__grasps.html#aeccc82bfb1722464ee2b251a84c53cbe":[41,0,108,0,72],
 "namespaceperception__3d_1_1geometric__grasps.html#aee5a773e13e3343ec76ac9b5929fa609":[41,0,108,0,12],
 "namespaceperception__3d_1_1geometric__grasps.html#aeebf5189707bd3637ff3aef4e608affc":[41,0,108,0,79],
-"namespaceperception__3d_1_1geometric__grasps.html#af19360dae29e3556b7340ba7d1e3d062":[41,0,108,0,71]
+"namespaceperception__3d_1_1geometric__grasps.html#af19360dae29e3556b7340ba7d1e3d062":[41,0,108,0,71],
+"namespaceperception__3d_1_1geometric__grasps.html#af1ad2986561d7db651d53dfc76730a31":[41,0,108,0,25]
 };

@@ -115,6 +115,8 @@ Functions</h2></td></tr>
 <tr class="separator:a16276e6499ca12f2fa7f9b88e8c574ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a660eeeb82671d61c2c525c4ffb154aec"><td class="memItemLeft" align="right" valign="top">Tuple[bool, <a class="el" href="classpick__and__place_1_1pipelines_1_1strategies_1_1PickOutcome.html">PickOutcome</a>]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1pick.html#a660eeeb82671d61c2c525c4ffb154aec">_fall_back_or_fail</a> (arm, perception, <a class="el" href="classpick__and__place_1_1pipelines_1_1pick_1_1PickRequest.html">PickRequest</a> request, strategies, strategy, fitted=None)</td></tr>
 <tr class="separator:a660eeeb82671d61c2c525c4ffb154aec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8de52f9467e54a484f911a235de640b0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1pick.html#a8de52f9467e54a484f911a235de640b0">_already_at</a> (arm, str named)</td></tr>
+<tr class="separator:a8de52f9467e54a484f911a235de640b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9dd8a94dff986bd9a489a2936ac6f4d6"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1pick.html#a9dd8a94dff986bd9a489a2936ac6f4d6">_move_to_stare_pose</a> (arm, str strategy_key)</td></tr>
 <tr class="separator:a9dd8a94dff986bd9a489a2936ac6f4d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92f05684a54e1e633e7be155c70cf310"><td class="memItemLeft" align="right" valign="top">Optional[<a class="el" href="classpick__and__place_1_1pipelines_1_1pick_1_1Perceived.html">Perceived</a>]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1pick.html#a92f05684a54e1e633e7be155c70cf310">_perceive</a> (arm, perception, <a class="el" href="classpick__and__place_1_1pipelines_1_1pick_1_1PickRequest.html">PickRequest</a> request, str strategy_key)</td></tr>
@@ -157,8 +159,8 @@ Functions</h2></td></tr>
 <tr class="separator:aa12e73b9ddcca97f093178bb59a8c2c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af50020fd0eb7c238cc9dadd59e8adb0f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1pick.html#af50020fd0eb7c238cc9dadd59e8adb0f">_shelf_exit</a> (arm, shelf)</td></tr>
 <tr class="separator:af50020fd0eb7c238cc9dadd59e8adb0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4622330de01424a4f73d9b2842dd1eec"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1pick.html#a4622330de01424a4f73d9b2842dd1eec">_return_to_carry_pose</a> (arm, str strategy_key, bool is_shelf)</td></tr>
-<tr class="separator:a4622330de01424a4f73d9b2842dd1eec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0041fe5ab581ccb2bdacbfbb96f8d8b"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1pick.html#ad0041fe5ab581ccb2bdacbfbb96f8d8b">_return_to_carry_pose</a> (arm, str strategy_key)</td></tr>
+<tr class="separator:ad0041fe5ab581ccb2bdacbfbb96f8d8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -176,6 +178,8 @@ Variables</h2></td></tr>
 <tr class="separator:a13821c6e3c466f02464d735b1a8bf10f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a750133556028c7985279665f1072e97e"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1pick.html#a750133556028c7985279665f1072e97e">DEFAULT_STARE_POSE</a> = &quot;table_stare&quot;</td></tr>
 <tr class="separator:a750133556028c7985279665f1072e97e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10b0ae8368c6cec6fb64ad95cb7bbdb4"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1pipelines_1_1pick.html#a10b0ae8368c6cec6fb64ad95cb7bbdb4">POSE_TOLERANCE_DEG</a> = 5.0</td></tr>
+<tr class="separator:a10b0ae8368c6cec6fb64ad95cb7bbdb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">The pick pipeline, start to finish.
@@ -219,6 +223,42 @@ Read this file top to bottom and you have the whole pick.
 </table>
 </div><div class="memdoc">
 <pre class="fragment">Interleave each grasp with its 180 deg twin, capped at 5.</pre> 
+</div>
+</div>
+<a id="a8de52f9467e54a484f911a235de640b0" name="a8de52f9467e54a484f911a235de640b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8de52f9467e54a484f911a235de640b0">&#9670;&#160;</a></span>_already_at()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool pick_and_place.pipelines.pick._already_at </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>arm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>named</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">True if every joint is already within tolerance of the named pose.</pre> 
 </div>
 </div>
 <a id="a68a5302387544ae28d891c6d697e2f4c" name="a68a5302387544ae28d891c6d697e2f4c"></a>
@@ -574,7 +614,10 @@ keeps the camera higher.
   </tr>
 </table>
 </div><div class="memdoc">
-<pre class="fragment">Point the camera where this kind of object lives.</pre> 
+<pre class="fragment">Point the camera where this kind of object lives.
+
+Skipped if the arm is already there, e.g. back-to-back flat picks.
+</pre> 
 </div>
 </div>
 <a id="a92f05684a54e1e633e7be155c70cf310" name="a92f05684a54e1e633e7be155c70cf310"></a>
@@ -817,8 +860,8 @@ object, which makes MoveIt reject every near-table path.
 <pre class="fragment">Shelf picks want a frontal grasp; top-down hits the compartment ceiling.</pre> 
 </div>
 </div>
-<a id="a4622330de01424a4f73d9b2842dd1eec" name="a4622330de01424a4f73d9b2842dd1eec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4622330de01424a4f73d9b2842dd1eec">&#9670;&#160;</a></span>_return_to_carry_pose()</h2>
+<a id="ad0041fe5ab581ccb2bdacbfbb96f8d8b" name="ad0041fe5ab581ccb2bdacbfbb96f8d8b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0041fe5ab581ccb2bdacbfbb96f8d8b">&#9670;&#160;</a></span>_return_to_carry_pose()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -836,13 +879,7 @@ object, which makes MoveIt reject every near-table path.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">str&#160;</td>
-          <td class="paramname"><em>strategy_key</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>is_shelf</em>&#160;</td>
+          <td class="paramname"><em>strategy_key</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1274,6 +1311,20 @@ object, which makes MoveIt reject every near-table path.
 
 </div>
 </div>
+<a id="a10b0ae8368c6cec6fb64ad95cb7bbdb4" name="a10b0ae8368c6cec6fb64ad95cb7bbdb4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a10b0ae8368c6cec6fb64ad95cb7bbdb4">&#9670;&#160;</a></span>POSE_TOLERANCE_DEG</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float pick_and_place.pipelines.pick.POSE_TOLERANCE_DEG = 5.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ab8dc38e02e1e362c3aff562df976a813" name="ab8dc38e02e1e362c3aff562df976a813"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab8dc38e02e1e362c3aff562df976a813">&#9670;&#160;</a></span>SHELF_CFG_PATHS</h2>
 
@@ -1309,7 +1360,7 @@ object, which makes MoveIt reject every near-table path.
 <b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
 <div class="line"><span class="lineno">    2</span>    PICK_STRATEGY_RIM: <span class="stringliteral">&quot;look_side_stare&quot;</span>,</div>
 <div class="line"><span class="lineno">    3</span>    PICK_STRATEGY_PEAK: <span class="stringliteral">&quot;look_side_stare&quot;</span>,</div>
-<div class="line"><span class="lineno">    4</span>    PICK_STRATEGY_FLAT: <span class="stringliteral">&quot;flat_stare&quot;</span>,</div>
+<div class="line"><span class="lineno">    4</span>    PICK_STRATEGY_FLAT: <span class="stringliteral">&quot;pick_stare_at_table&quot;</span>,</div>
 <div class="line"><span class="lineno">    5</span>}</div>
 </div><!-- fragment -->
 </div>
