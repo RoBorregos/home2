@@ -105,6 +105,19 @@
     </plugin>
   </gazebo>
 
+  <!-- Wrist wrench, mapped to joint efforts by joint_effort_sim.py for the force guards -->
+  <gazebo reference="joint6">
+    <sensor name="wrist_ft" type="force_torque">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <topic>/sim/wrist_ft</topic>
+      <force_torque>
+        <frame>child</frame>
+        <measure_direction>child_to_parent</measure_direction>
+      </force_torque>
+    </sensor>
+  </gazebo>
+
   <!-- Firmware-like gravity compensation on the arm -->
   <xacro:macro name="no_gravity" params="link">
     <gazebo reference="${link}">

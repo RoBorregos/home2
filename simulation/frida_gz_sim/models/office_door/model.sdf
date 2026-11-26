@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <!-- Wall plane at x = 0, the opening side (pull) is +x; hinge on +y, lever pivot near -y with its tip toward the hinge -->
+  <model name="office_door">
+    <joint name="anchor" type="fixed">
+      <parent>world</parent>
+      <child>frame</child>
+    </joint>
+
+    <link name="frame">
+      <inertial><mass>50</mass></inertial>
+      <collision name="jamb_left">
+        <pose>-0.06 -0.43 1.05 0 0 0</pose>
+        <geometry><box><size>0.12 0.05 2.1</size></box></geometry>
+      </collision>
+      <visual name="jamb_left">
+        <pose>-0.06 -0.43 1.05 0 0 0</pose>
+        <geometry><box><size>0.12 0.05 2.1</size></box></geometry>
+        <material><ambient>0.45 0.32 0.2 1</ambient><diffuse>0.5 0.36 0.22 1</diffuse></material>
+      </visual>
+      <collision name="jamb_right">
+        <pose>-0.06 0.43 1.05 0 0 0</pose>
+        <geometry><box><size>0.12 0.05 2.1</size></box></geometry>
+      </collision>
+      <visual name="jamb_right">
+        <pose>-0.06 0.43 1.05 0 0 0</pose>
+        <geometry><box><size>0.12 0.05 2.1</size></box></geometry>
+        <material><ambient>0.45 0.32 0.2 1</ambient><diffuse>0.5 0.36 0.22 1</diffuse></material>
+      </visual>
+      <collision name="header">
+        <pose>-0.06 0 2.05 0 0 0</pose>
+        <geometry><box><size>0.12 0.91 0.1</size></box></geometry>
+      </collision>
+      <visual name="header">
+        <pose>-0.06 0 2.05 0 0 0</pose>
+        <geometry><box><size>0.12 0.91 0.1</size></box></geometry>
+        <material><ambient>0.45 0.32 0.2 1</ambient><diffuse>0.5 0.36 0.22 1</diffuse></material>
+      </visual>
+          </link>
+
+    <!-- Leaf frame on the hinge axis at floor height -->
+    <link name="leaf">
+      <pose>0 0.403 0 0 0 0</pose>
+      <inertial>
+        <pose>-0.02 -0.40 1.005 0 0 0</pose>
+        <mass>20</mass>
+        <inertia><ixx>7.65</ixx><iyy>6.6</iyy><izz>1.05</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+      </inertial>
+      <collision name="panel">
+        <pose>-0.02 -0.40 1.005 0 0 0</pose>
+        <geometry><box><size>0.04 0.794 1.99</size></box></geometry>
+      </collision>
+      <visual name="panel">
+        <pose>-0.02 -0.40 1.005 0 0 0</pose>
+        <geometry><box><size>0.04 0.794 1.99</size></box></geometry>
+        <material><ambient>0.62 0.46 0.3 1</ambient><diffuse>0.68 0.5 0.32 1</diffuse></material>
+      </visual>
+      <collision name="rose">
+        <pose>0.005 -0.733 1.0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.028</radius><length>0.01</length></cylinder></geometry>
+      </collision>
+      <visual name="rose">
+        <pose>0.005 -0.733 1.0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.028</radius><length>0.01</length></cylinder></geometry>
+        <material><ambient>0.6 0.6 0.62 1</ambient><diffuse>0.75 0.75 0.78 1</diffuse><specular>0.5 0.5 0.5 1</specular></material>
+      </visual>
+    </link>
+
+    <joint name="hinge" type="revolute">
+      <parent>frame</parent>
+      <child>leaf</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit><lower>0</lower><upper>1.75</upper></limit>
+        <dynamics><damping>2.0</damping></dynamics>
+      </axis>
+    </joint>
+
+    <!-- Lever frame on its pivot, the bar runs +y toward the hinge, 6 cm off the door; visual only, door_sim.py emulates the grip -->
+    <link name="lever">
+      <pose relative_to="leaf">0 -0.733 1.0 0 0 0</pose>
+      <inertial>
+        <pose>0.05 0.05 0 0 0 0</pose>
+        <mass>0.3</mass>
+        <inertia><ixx>0.0005</ixx><iyy>0.0002</iyy><izz>0.0005</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+      </inertial>
+      <visual name="shaft">
+        <pose>0.035 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.008</radius><length>0.05</length></cylinder></geometry>
+        <material><ambient>0.6 0.6 0.62 1</ambient><diffuse>0.75 0.75 0.78 1</diffuse><specular>0.5 0.5 0.5 1</specular></material>
+      </visual>
+      <visual name="bar">
+        <pose>0.06 0.055 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.13</length></cylinder></geometry>
+        <material><ambient>0.6 0.6 0.62 1</ambient><diffuse>0.75 0.75 0.78 1</diffuse><specular>0.5 0.5 0.5 1</specular></material>
+      </visual>
+    </link>
+
+    <!-- Turning the tip down is negative -->
+    <joint name="lever_joint" type="revolute">
+      <parent>leaf</parent>
+      <child>lever</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit><lower>-0.75</lower><upper>0</upper></limit>
+        <dynamics><damping>0.05</damping></dynamics>
+      </axis>
+    </joint>
+
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>/sim/door/joint_state</topic>
+    </plugin>
+    <!-- door_sim.py drives both joints: the latch, the lever spring and a firm grip are emulated there -->
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>hinge</joint_name>
+      <topic>/sim/door/cmd/hinge</topic>
+      <p_gain>800</p_gain>
+      <d_gain>40</d_gain>
+      <i_gain>0</i_gain>
+      <cmd_max>2000</cmd_max>
+      <cmd_min>-2000</cmd_min>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>lever_joint</joint_name>
+      <topic>/sim/door/cmd/lever</topic>
+      <p_gain>20</p_gain>
+      <d_gain>0.5</d_gain>
+      <i_gain>0</i_gain>
+      <cmd_max>50</cmd_max>
+      <cmd_min>-50</cmd_min>
+    </plugin>
+  </model>
+</sdf>

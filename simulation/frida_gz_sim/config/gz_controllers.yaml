@@ -12,6 +12,11 @@ controller_manager:
     xarm_gripper_traj_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
+# joint_effort_sim.py republishes these on /joint_states with the arm efforts filled in
+joint_state_broadcaster:
+  ros__parameters:
+    use_local_topics: true
+
 xarm6_traj_controller:
   ros__parameters:
     use_sim_time: true

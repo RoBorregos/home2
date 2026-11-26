@@ -26,6 +26,7 @@ for arg in "${ARGS[@]}"; do
     --manip) AREA=manip ;;
     --nav) AREA=nav ;;
     --all) AREA=all ;;
+    --door) AREA=door ;;
     --headless) GUI=false ;;
     --no-rviz) RVIZ_VIEW=false ;;
     --moveit-rviz) MOVEIT_RVIZ=true ;;
@@ -41,6 +42,7 @@ Tasks:
   --manip          Start the pick-and-place sim (pnp_table world, static base)
   --nav            Start the navigation sim (arena from the robocup2026_1 map)
   --all            Start both stacks in the arena world (no objects to pick there)
+  --door           Start the manipulation stack on the mobile base in front of a pull door
   --task <name>    Run a real task manager on a seeded rulebook scenario and score it
                    (ppc; flags: --seed N, --gui). Report in docker/simulation/logs/runs/
   --scenario <f>   Replay a saved scenario.json
@@ -151,6 +153,10 @@ sim_args() {
       # Nothing consumes the ZED stream here, so render it slowly and leave the CPU to physics
       echo "gui:=$GUI world:=arena_robocup2026_1.sdf mobile_base:=true grasp_assist:=false" \
            "camera_rate:=2 spawn_x:=4.1776 spawn_y:=-11.6974 spawn_z:=0.02 spawn_yaw:=-1.9890" ;;
+    door)
+      # Facing the door from 1 m, the lever ahead of the arm
+      echo "gui:=$GUI world:=door_house.sdf mobile_base:=true grasp_assist:=false door:=true" \
+           "spawn_x:=${DOOR_SPAWN_X:-1.0} spawn_y:=${DOOR_SPAWN_Y:-0.0} spawn_z:=0.02 spawn_yaw:=${DOOR_SPAWN_YAW:-3.1416}" ;;
     all)
       # Both stacks on one machine: half the camera rate so nav2 keeps its control loop
       echo "gui:=$GUI world:=arena_robocup2026_1.sdf mobile_base:=true grasp_assist:=false" \
@@ -168,7 +174,7 @@ start_all() {
   in_background sim "ros2 launch frida_gz_sim sim.launch.py $(sim_args)"
   wait_for_logs "sim:activated xarm6_traj_controller"
 
-  if [ "$AREA" = manip ] || [ "$AREA" = all ]; then
+  if [ "$AREA" = manip ] || [ "$AREA" = all ] || [ "$AREA" = door ]; then
     in_background manipulation "ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=$MOVEIT_RVIZ"
     in_background vision "ros2 launch frida_gz_sim sim_vision.launch.py"
   fi
@@ -181,6 +187,7 @@ start_all() {
   [ "$AREA" = manip ] || READY_TIMEOUT=${READY_TIMEOUT:-420}
   case $AREA in
     manip) wait_for_logs "sim:Grasp attach ready" "manipulation:Manipulation core started" "vision:Loaded models" ;;
+    door) wait_for_logs "sim:Door sim ready" "manipulation:Manipulation core started" "vision:Loaded models" ;;
     nav) wait_for_logs "navigation:Finished Setup, Starting monitoring" ;;
     all) wait_for_logs "manipulation:Manipulation core started" "vision:Loaded models" "navigation:Finished Setup, Starting monitoring" ;;
   esac
@@ -224,7 +231,7 @@ if [ "$BUILD" == "true" ]; then
 fi
 
 case $TASK in
-  --manip|--nav|--all) start_all ;;
+  --manip|--nav|--all|--door) start_all ;;
   --task|--scenario)
     kill_sim
     in_container "ros2 run frida_task_sim run_scenario.py ${HARNESS_ARGS[*]}" ;;

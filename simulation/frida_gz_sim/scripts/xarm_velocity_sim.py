@@ -2,9 +2,9 @@
 """Stands in for the xArm driver's mode and velocity API the pick pipeline drives directly.
 
 Serves set_mode / set_state / vc_set_cartesian_velocity and publishes robot_states with
-the TCP pose in the arm base frame. A cartesian velocity becomes a straight MoveIt path
-along that direction, timed at the commanded speed and sent to the trajectory controller
-until the velocity is zeroed or the mode changes.
+the TCP pose in the arm base frame. A cartesian twist becomes a straight MoveIt path
+(rotating at the commanded angular rate), timed at the commanded speed and sent to the
+trajectory controller until the velocity is zeroed or the mode changes.
 """
 
 import time
@@ -25,6 +25,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from rclpy.time import Time
+from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from xarm_msgs.msg import RobotMsg
@@ -39,6 +40,8 @@ RATE = 20.0
 # Longest straight line planned for one velocity command (m) and its resolution
 MAX_TRAVEL = 0.30
 PATH_STEP = 0.005
+# Longest rotation planned for a pure angular command (rad)
+MAX_TURN = 1.0
 
 
 class XArmVelocitySim(Node):
@@ -50,6 +53,7 @@ class XArmVelocitySim(Node):
         self.rtf = 1.0
         self._last_tick = None
         self.velocity = np.zeros(3)
+        self.angular = np.zeros(3)
         self.joints: dict[str, float] = {}
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -94,8 +98,9 @@ class XArmVelocitySim(Node):
 
     def _set_mode(self, request, response):
         self.mode = int(request.data)
-        if self.mode != CARTESIAN_VELOCITY_MODE and self.velocity.any():
+        if self.mode != CARTESIAN_VELOCITY_MODE and self._moving():
             self.velocity = np.zeros(3)
+            self.angular = np.zeros(3)
             self._hold()
         response.ret = 0
         return response
@@ -107,12 +112,16 @@ class XArmVelocitySim(Node):
             response.message = "not in cartesian velocity mode"
             return response
         self.velocity = np.array(request.speeds[:3]) / 1000.0
-        if self.velocity.any():
+        self.angular = np.array(request.speeds[3:6], dtype=float)
+        if self._moving():
             self._start_line()
         else:
             self._hold()
         response.ret = 0
         return response
+
+    def _moving(self) -> bool:
+        return bool(self.velocity.any() or self.angular.any())
 
     def tcp(self):
         """TCP pose in the arm base frame, as the xArm controller reports it."""
@@ -146,10 +155,8 @@ class XArmVelocitySim(Node):
         self.states_pub.publish(state)
 
     def _start_line(self):
-        """Plan a straight TCP line along the commanded velocity and stream it."""
+        """Plan a straight TCP line along the commanded twist and stream it."""
         tcp = self.tcp()
-        # The pick pipeline times its moves on the wall clock; the controller runs on sim time
-        speed = float(np.linalg.norm(self.velocity)) / self.rtf
         if (
             tcp is None
             or len(self.joints) < len(JOINTS)
@@ -157,41 +164,59 @@ class XArmVelocitySim(Node):
         ):
             self.get_logger().warn("Cannot start a cartesian velocity move yet")
             return
-        direction = self.velocity / np.linalg.norm(self.velocity)
+        speed = float(np.linalg.norm(self.velocity))
+        # Seconds of motion planned: MAX_TRAVEL of line, else MAX_TURN of pure rotation
+        horizon = (
+            MAX_TRAVEL / speed
+            if speed > 0.0
+            else MAX_TURN / float(np.linalg.norm(self.angular))
+        )
         request = GetCartesianPath.Request()
         request.header.frame_id = ARM_BASE_FRAME
         request.group_name = "xarm6"
         request.link_name = TCP_FRAME
         request.start_state.joint_state.name = JOINTS
         request.start_state.joint_state.position = [self.joints[j] for j in JOINTS]
-        goal = Pose(orientation=tcp.rotation)
+        q = tcp.rotation
+        start = Rotation.from_quat([q.x, q.y, q.z, q.w])
+        # Angular velocity is about the base axes, so it premultiplies the TCP rotation
+        end_rotation = Rotation.from_rotvec(self.angular * horizon) * start
+        goal = Pose()
+        (
+            goal.orientation.x,
+            goal.orientation.y,
+            goal.orientation.z,
+            goal.orientation.w,
+        ) = map(float, end_rotation.as_quat())
         end = np.array([tcp.translation.x, tcp.translation.y, tcp.translation.z])
-        end = end + direction * MAX_TRAVEL
+        end = end + self.velocity * horizon
         goal.position.x, goal.position.y, goal.position.z = map(float, end)
         request.waypoints = [goal]
         request.max_step = PATH_STEP
         request.avoid_collisions = False
         future = self.path.call_async(request)
-        future.add_done_callback(lambda f: self._on_path(f, speed))
+        # The pick pipeline times its moves on the wall clock; the controller runs on sim time
+        future.add_done_callback(lambda f: self._on_path(f, horizon * self.rtf))
 
-    def _on_path(self, future, speed: float):
+    def _on_path(self, future, horizon: float):
+        """Stream the planned path, ``horizon`` sim seconds for the full line."""
         result = future.result()
-        if result is None or not self.velocity.any():
+        if result is None or not self._moving():
             return
         points = result.solution.joint_trajectory.points
         if len(points) < 2:
             self.get_logger().warn("No straight-line path for the velocity command")
             return
+        duration = result.fraction * horizon
         self.get_logger().info(
-            f"Straight line: {len(points)} points, {result.fraction * MAX_TRAVEL * 1000:.0f} mm "
-            f"at {speed * 1000:.0f} mm/s sim (rtf {self.rtf:.2f})"
+            f"Straight line: {len(points)} points, {result.fraction * 100:.0f} % "
+            f"over {duration:.1f} s sim (rtf {self.rtf:.2f})"
         )
         names = result.solution.joint_trajectory.joint_names
         order = [names.index(j) for j in JOINTS]
-        travelled = result.fraction * MAX_TRAVEL
         trajectory = JointTrajectory(joint_names=JOINTS)
         for i, point in enumerate(points[1:], start=1):
-            seconds = travelled * i / (len(points) - 1) / speed
+            seconds = duration * i / (len(points) - 1)
             step = JointTrajectoryPoint(positions=[point.positions[k] for k in order])
             step.time_from_start = Duration(
                 sec=int(seconds), nanosec=int((seconds % 1.0) * 1e9)

@@ -54,6 +54,7 @@ def launch_setup(context, *args, **kwargs):
     lidar_rate = int(LaunchConfiguration("lidar_rate").perform(context))
     objects_file = LaunchConfiguration("objects_file").perform(context)
     grasp_max_gap = float(LaunchConfiguration("grasp_max_gap").perform(context))
+    door = LaunchConfiguration("door").perform(context).lower() == "true"
 
     robot_description = build_robot_description(
         image_width=width,
@@ -170,11 +171,25 @@ def launch_setup(context, *args, **kwargs):
         parameters=[sim_time],
     )
 
+    joint_effort = Node(
+        package="frida_gz_sim",
+        executable="joint_effort_sim.py",
+        output="screen",
+        parameters=[sim_time],
+    )
+
     grasp_attach = Node(
         package="frida_gz_sim",
         executable="grasp_attach.py",
         output="screen",
         parameters=[sim_time, {"objects_file": objects_file, "max_gap": grasp_max_gap}],
+    )
+
+    door_sim = Node(
+        package="frida_gz_sim",
+        executable="door_sim.py",
+        output="screen",
+        parameters=[sim_time, {"world": os.path.splitext(os.path.basename(world))[0]}],
     )
 
     return (
@@ -186,9 +201,10 @@ def launch_setup(context, *args, **kwargs):
             spawn,
         ]
         + bridges
-        + [clock_relay, controllers, cloud_fix, xarm_bridge]
+        + [clock_relay, controllers, joint_effort, cloud_fix, xarm_bridge]
         + ([grasp_attach] if grasp_assist else [])
         + ([cmd_vel_relay] if mobile_base else [])
+        + ([door_sim] if door else [])
     )
 
 
@@ -210,6 +226,8 @@ def generate_launch_description():
             # The chassis collision dips 12 mm below base_link; lift it clear of the floor
             DeclareLaunchArgument("spawn_z", default_value="0.0"),
             DeclareLaunchArgument("lidar_rate", default_value="10"),
+            # Latch, lever grip and ground truth for the office_door model
+            DeclareLaunchArgument("door", default_value="false"),
             # Graspable objects of a generated world (JSON); empty = the pnp_table set
             DeclareLaunchArgument("objects_file", default_value=""),
             # Largest finger-to-object gap grasp assist still welds (m)
