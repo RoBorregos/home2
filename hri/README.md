@@ -284,7 +284,9 @@ amixer -D pulse sset Master 100%
 
 ### Database
 
-Truncate each table that has a corresponding JSON file (where the filename matches the table name) in /workspace/src/hri/packages/embeddings/embeddings/dataframes/ and frida_constants/data/. Then, generate new embeddings/SQL dumps and insert them to restore or upgrade the DB.
+Truncate each table that has a corresponding JSON file (where the filename matches the table name) in /workspace/src/hri/packages/embeddings/embeddings/dataframes/. Then, generate new embeddings/SQL dumps and insert them to restore or upgrade the DB.
+
+The locations table is populated via `AREAS_SERVICE`, falling back to `navigation/packages/map_context/maps/areas/areas_<MAP_NAME>.json` if offline, or left unchanged if neither is available.
 
 ```bash
 ./run.sh hri --regenerate-db

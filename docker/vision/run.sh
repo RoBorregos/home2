@@ -91,7 +91,8 @@ if [ "$CLEAN" == "true" ]; then
   clean_directories .
 fi
 
-mkdir -p install build log
+# trt_cache/clip pre-created so docker doesn't make it root-owned.
+mkdir -p install build log trt_cache/clip
 
 #_________________________RUN_________________________
 

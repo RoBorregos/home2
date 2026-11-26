@@ -44,7 +44,7 @@ MAIN_CTX="${LLAMA_CTX_SIZE:-2048}"
 # target Jetson; set LLAMA_CACHE_TYPE=q8_0 for that A/B comparison.
 CACHE_TYPE="${LLAMA_CACHE_TYPE:-f16}"
 
-if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] || [ "$ROLE" = "bench" ]; then
+if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] || [ "$ROLE" = "bench" ] || [ "$ROLE" = "finals" ]; then
     if [ ! -s "$MODELS_DIR/$MAIN_MODEL" ]; then
         echo "ERROR: model not found or empty: $MODELS_DIR/$MAIN_MODEL"
         exit 1
@@ -71,18 +71,19 @@ fi
 if [ "$ROLE" = "gpsr" ]; then
     debug_log "Starting rbrgs on port 11435..."
     llama-server \
-        --model "$MODELS_DIR/rbrgs.F16.gguf" \
+        --model "$MODELS_DIR/command-interpreter-qwen3.5-4b-q8_0.gguf" \
         --host 0.0.0.0 \
         --port 11435 \
         --ctx-size 4096 \
         -ngl 99 \
         --flash-attn on \
         --parallel 1 \
+        --jinja \
+        --reasoning off \
         --alias rbrgs \
-        --temp 1.5 \
-        --min-p 0.1 \
+        --temp 0 \
         &
-    wait_for_server 11435 rbrgs rbrgs.F16.gguf
+    wait_for_server 11435 rbrgs command-interpreter-qwen3.5-4b-q8_0.gguf
 fi
 
 wait

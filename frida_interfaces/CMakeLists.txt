@@ -121,6 +121,7 @@ set(vision_files
   "vision/msg/ShelfArray.msg"
   "vision/msg/ShelfDetection.msg"
   "vision/msg/Detection.msg"
+  "vision/msg/PersonPose.msg"
   "vision/srv/BeverageLocation.srv"
   "vision/srv/CountByColor.srv"
   "vision/srv/CountByPose.srv"
@@ -155,6 +156,7 @@ set(vision_files
   "vision/srv/IsTalking.srv"
   "vision/srv/EmbedText.srv"
   "vision/srv/EmbedCrops.srv"
+  "vision/srv/DetectPose.srv"
 )
 
 set(frida_interfaces_valid_modules hri manipulation navigation task_manager vision)
