@@ -17,6 +17,8 @@ find_package(rosidl_default_runtime REQUIRED)
 
 # Comma-separated modules to build (hri,manipulation,navigation,task_manager,vision), or "all".
 set(FRIDA_MODULES "all" CACHE STRING "Comma-separated frida_interfaces modules to build, or 'all'")
+set(_frida_modules "${FRIDA_MODULES}")
+unset(FRIDA_MODULES CACHE)  # Not sticky: a build without -D always builds all
 
 set(hri_files
   "hri/action/SpeechStream.action"
@@ -161,10 +163,10 @@ set(vision_files
 
 set(frida_interfaces_valid_modules hri manipulation navigation task_manager vision)
 
-if(FRIDA_MODULES STREQUAL "" OR FRIDA_MODULES STREQUAL "all")
+if(_frida_modules STREQUAL "" OR _frida_modules STREQUAL "all")
   set(frida_interfaces_requested_modules ${frida_interfaces_valid_modules})
 else()
-  string(REPLACE "," ";" frida_interfaces_requested_modules "${FRIDA_MODULES}")
+  string(REPLACE "," ";" frida_interfaces_requested_modules "${_frida_modules}")
 endif()
 
 set(interface_files "")
@@ -174,18 +176,13 @@ foreach(module ${frida_interfaces_requested_modules})
     message(FATAL_ERROR "Unknown frida_interfaces module '${module}'. Valid modules: ${frida_interfaces_valid_modules}")
   endif()
   list(APPEND interface_files ${${module}_files})
+  install(DIRECTORY ${module} DESTINATION share/${PROJECT_NAME})
 endforeach()
 
 # Generate interfaces only keep the necessary runtimes (python, c++)
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${interface_files}
   DEPENDENCIES std_msgs unique_identifier_msgs action_msgs geometry_msgs sensor_msgs shape_msgs
-)
-
-# Installation configurations
-install(
-  DIRECTORY hri manipulation navigation task_manager vision
-  DESTINATION share/${PROJECT_NAME}
 )
 
 # Export dependencies for other packages
