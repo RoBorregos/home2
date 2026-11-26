@@ -44,7 +44,7 @@ MAIN_CTX="${LLAMA_CTX_SIZE:-2048}"
 # target Jetson; set LLAMA_CACHE_TYPE=q8_0 for that A/B comparison.
 CACHE_TYPE="${LLAMA_CACHE_TYPE:-f16}"
 
-if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] || [ "$ROLE" = "bench" ]; then
+if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] || [ "$ROLE" = "bench" ] || [ "$ROLE" = "finals" ]; then
     if [ ! -s "$MODELS_DIR/$MAIN_MODEL" ]; then
         echo "ERROR: model not found or empty: $MODELS_DIR/$MAIN_MODEL"
         exit 1

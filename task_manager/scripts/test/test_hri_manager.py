@@ -23,7 +23,7 @@ from _merger_helpers import (
     evaluate_expectations,
     make_locator,
 )
-from task_manager.subtask_managers.hri_tasks import HRITasks
+from task_manager.subtask_managers.hri_tasks import HRITasks, format_transcription, match_hotwords
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
@@ -90,7 +90,6 @@ TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
-TEST_MAP = False
 TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
@@ -105,6 +104,10 @@ TEST_MERGER = False
 TEST_FALLBACK_RESUME = False
 TEST_MERGED_PLAN_SPEECH = False
 TEST_DOOR = False
+TEST_EXTRACT_DATA_LIVE = False
+
+EXTRACT_DATA_LIVE_ROUNDS = 3
+HOT_DRINKS = "fanta, water, lipton, coca-cola, soda, lemonade, pepsi, orange juice, milk, sidral mundet, iced tea, coke, red bull, soju"
 
 MERGED_PLAN_SPEECH_CASES = [
     {
@@ -239,9 +242,6 @@ class TestHriManager(Node):
         if TEST_STREAMING:
             self.test_streaming()
 
-        if TEST_MAP:
-            self.test_map()
-
         if TEST_OBJECT_LOCATION:
             self.test_object_location()
 
@@ -283,6 +283,9 @@ class TestHriManager(Node):
 
         if TEST_DOOR:
             self.test_door()
+
+        if TEST_EXTRACT_DATA_LIVE:
+            self.test_extract_data_live()
 
         exit(0)
 
@@ -382,6 +385,56 @@ class TestHriManager(Node):
         if word_confidences:
             avg_confidence = sum(word_confidences.values()) / len(word_confidences)
             self.get_logger().info(f"Average confidence: {avg_confidence:.4f}")
+
+    def test_extract_data_live(self):
+        """Spoken answers through hear -> hotword match -> extract_data, timed against LLM-only."""
+        cases = [
+            ("What is your name?", "name", self.hri_manager.names_hotwords),
+            ("What is your favorite drink?", "LLM_drink", HOT_DRINKS),
+        ]
+        rows = []
+        for question, query, hotwords in cases:
+            context = f"The question '{question}' was asked, full_text corresponds to the response."
+            for _ in range(EXTRACT_DATA_LIVE_ROUNDS):
+                self.hri_manager.say(question, wait=True)
+                s, text, _ = self.hri_manager.hear(
+                    hotwords=hotwords, initial_prompt=f"The question '{question}' was asked"
+                )
+                if s != Status.EXECUTION_SUCCESS:
+                    self.get_logger().warn("No speech detected.")
+                    continue
+
+                t = time.perf_counter()
+                negated = (self.hri_manager.negation_words | {"dont", "never"}).intersection(
+                    format_transcription(text)
+                )
+                hotword = "" if negated else match_hotwords(text, hotwords)
+                t_hotword = time.perf_counter() - t
+
+                t = time.perf_counter()
+                _, extracted = self.hri_manager.extract_data(query, text, context)
+                t_extract = time.perf_counter() - t
+
+                llm_query = query if query.startswith("LLM_") else f"LLM_{query}"
+                t = time.perf_counter()
+                _, llm = self.hri_manager.extract_data(llm_query, text, context)
+                t_llm = time.perf_counter() - t
+
+                answer, t_used = (hotword, t_hotword) if hotword else (extracted, t_extract)
+                rows.append((t_used, t_llm))
+                self.get_logger().info(
+                    f"[{query}] heard={text!r} hotword={hotword!r} extract={extracted!r} "
+                    f"({1000 * t_extract:.0f} ms) llm={llm!r} ({1000 * t_llm:.0f} ms) "
+                    f"=> {answer!r} via {'hotword' if hotword else 'extract_data'} "
+                    f"in {1000 * t_used:.0f} ms"
+                )
+
+        if rows:
+            avg_used = 1000 * sum(r[0] for r in rows) / len(rows)
+            avg_llm = 1000 * sum(r[1] for r in rows) / len(rows)
+            self.get_logger().info(
+                f"Extract data live: {len(rows)} answers, avg {avg_used:.0f} ms vs {avg_llm:.0f} ms LLM only"
+            )
 
     def test_take_order(self):
         self.get_logger().info("Running take_order test")
@@ -518,24 +571,6 @@ class TestHriManager(Node):
         # Test original functionality
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
-
-    def test_map(self):
-        """
-        Test the map functionality of the HRITasks.
-        """
-        self.get_logger().info("Testing map functionality...")
-
-        # Show the map with a specific item
-        self.hri_manager.show_map(name="Phone")
-        time.sleep(5)
-
-        # Clear the map
-        self.hri_manager.show_map(clear_map=True)
-        time.sleep(2)
-
-        # Show the map again to verify it is cleared
-        self.hri_manager.show_map(name="Mug")
-        time.sleep(5)
 
     def test_object_location(self):
         object_name = "cheese"

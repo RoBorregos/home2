@@ -21,9 +21,6 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-install(DIRECTORY map_areas
-  DESTINATION share/${PROJECT_NAME})
-
 install(DIRECTORY data
   DESTINATION share/${PROJECT_NAME})
   

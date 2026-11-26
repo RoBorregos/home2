@@ -43,7 +43,6 @@ ADD_ENTRY_SERVICE = "/hri/embeddings/add_entry"
 QUERY_ENTRY_SERVICE = "/hri/embeddings/query_entry"
 FIND_CLOSEST_SERVICE = "/hri/embeddings/find_closest"
 DISPLAY_IMAGE_TOPIC = "/hri/display/change_video"
-DISPLAY_MAP_TOPIC = "/hri/display/map"
 DISPLAY_PUBLISHER = "/hri/display/frida_questions"
 ANSWER_PUBLISHER = "/hri/display/answers"
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
@@ -111,6 +110,8 @@ CATEGORIZE_IDK_THRESHOLD = 0.01
 # STT
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 DEFAULT_HOTWORDS = "Frida, RoBorregos"
+# Finals command phase: biases STT towards the command verbs
+FINALS_HOTWORDS = "where is bring find look stop"
 
 
 # Fundamental frequency range for human voice (Hz)

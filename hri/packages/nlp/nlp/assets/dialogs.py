@@ -35,8 +35,10 @@ def get_extract_data_args(full_text, data_to_extract, context=None):
 - Return the MOST RELEVANT WORD OR PHRASE that best corresponds to `extract_data`, considering its contextual meaning within the sentence.
 - Do NOT return the target word (`extract_data`) itself unless it is the best available answer.
 - If multiple possible matches exist, return the MOST CONTEXTUALLY RELEVANT one (e.g., a noun or phrase describing the requested information).
-- If no relevant match is found, return an empty string (`""`).
-- If `full_text` is missing, empty, or consists of only a single word or short phrase that directly corresponds to `extract_data`, return `full_text` as the result.
+- Return ONLY the words that answer `extract_data` (usually 1 to 3 words). NEVER return the whole sentence.
+- If no relevant match is found, return an empty string (`""`). This includes replies that do not give the information, such as not knowing, asking to repeat the question, or just greeting.
+- A reply phrased as a question or request still answers when it contains the information.
+- If `full_text` is only the answer itself (e.g. just a name or an item), return it unchanged.
 - If present, use the `explanation` to help clarify ambiguous cases.
 
 ### Examples:
@@ -100,7 +102,43 @@ def get_extract_data_args(full_text, data_to_extract, context=None):
 </extract_data>
 
 **OUTPUT:**
-{ExtractedData(data="Elis").model_dump_json()}  
+{ExtractedData(data="Elis").model_dump_json()}
+
+#### Example 6:
+**INPUT:**
+<full_text>
+    Hmm, I'm not really sure, could you ask me again?
+</full_text>
+<extract_data>
+    favorite food
+</extract_data>
+
+**OUTPUT:**
+{ExtractedData(data="").model_dump_json()}
+
+#### Example 7:
+**INPUT:**
+<full_text>
+    Mostly hot cocoa, but tea is also nice
+</full_text>
+<extract_data>
+    drink
+</extract_data>
+
+**OUTPUT:**
+{ExtractedData(data="hot cocoa").model_dump_json()}
+
+#### Example 8:
+**INPUT:**
+<full_text>
+    Could you bring me to the laundry room?
+</full_text>
+<extract_data>
+    location
+</extract_data>
+
+**OUTPUT:**
+{ExtractedData(data="laundry room").model_dump_json()}
 
 Ensure that the extracted data is always **the most contextually relevant** answer, not simply the target term itself.""",
             },

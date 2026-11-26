@@ -6,12 +6,10 @@ Navigation Area SubTask Manager
 """
 
 import json
-import os
 import math
 import copy
 import rclpy
 from rclpy.node import Node
-from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped, Quaternion, PointStamped, Point
 import tf2_ros
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
@@ -121,6 +119,16 @@ class NavigationTasks:
                 },
                 "plan_patrol_srv": {"client": self.plan_patrol_srv, "type": "service"},
             },
+            Task.FINALS: {
+                "plan_patrol_srv": {"client": self.plan_patrol_srv, "type": "service"},
+                "get_area_for_point_srv": {
+                    "client": self.get_area_for_point_srv,
+                    "type": "service",
+                },
+                "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
+                "approach_point_srv": {"client": self.approach_point_srv, "type": "service"},
+                "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
+            },
             Task.RESTAURANT: {
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
                 "get_robot_pose_srv": {"client": self.get_robot_pose_srv, "type": "service"},
@@ -137,8 +145,9 @@ class NavigationTasks:
     def setup_backup_map(self):
         """Load backup map info"""
         try:
-            package_share_directory = get_package_share_directory("frida_constants")
-            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+            file_path = (
+                "/workspace/src/navigation/packages/map_context/maps/areas/area_default_map.json"
+            )
             with open(file_path, "r") as file:
                 data = json.load(file)
             if data is not None:
@@ -549,7 +558,9 @@ class NavigationTasks:
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def approach_point(self, point, standoff: float = 0.65):
+    def approach_point(
+        self, point, standoff: float = 0.65, align: str = "", final_distance: float = 0.0
+    ):
         """Approach a person or free-standing object seen by vision (e.g. GPSR
         "go to the person", approaching a bag on the floor).
 
@@ -569,6 +580,8 @@ class NavigationTasks:
             request.target.header.frame_id = "map"
             request.target.point.x, request.target.point.y = xy
         request.standoff = float(standoff)
+        request.align = str(align)
+        request.final_distance = float(final_distance)
         CLog.nav(self.node, "MOVE", "Requesting approach to point")
         future = self.approach_point_srv.call_async(request)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)

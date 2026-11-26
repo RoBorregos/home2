@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""YOLO-pose model: PoseDetection class and TensorRT-aware loader."""
+"""Pose logic on YOLO keypoints; PoseDetection is the DetectPose client."""
+
+import threading
 
 import cv2
 import numpy as np
+import rclpy
+from cv_bridge import CvBridge
+from rclpy.executors import MultiThreadedExecutor
+from frida_constants.vision_constants import POSE_DETECTION_SERVICE
 from frida_constants.vision_enums import Gestures
+from frida_interfaces.srv import DetectPose
 from math import degrees, acos
-from utils.trt_utils import load_yolo_trt
 
 # ── YOLO COCO keypoint indices ──
 NOSE = 0
@@ -22,52 +28,66 @@ RIGHT_KNEE = 14
 LEFT_ANKLE = 15
 RIGHT_ANKLE = 16
 
+NUM_KEYPOINTS = 17
 KP_CONF = 0.3
-
-
-def load_yolo_pose(model_name="yolo11m-pose.pt"):
-    return load_yolo_trt(model_name, task="pose")
+DEFAULT_TIMEOUT = 3.0  # s
 
 
 class PoseDetection:
-    def __init__(self):
-        self.yolo_pose = load_yolo_pose()
-        print("Pose Detection Ready (YOLO TensorRT)")
+    def __init__(self, node, callback_group=None, timeout: float = DEFAULT_TIMEOUT):
+        """DetectPose client; use from a MultiThreadedExecutor."""
+        self.node = node
+        self.timeout = timeout
+        self.bridge = CvBridge()
+        self.client = node.create_client(
+            DetectPose, POSE_DETECTION_SERVICE, callback_group=callback_group
+        )
+
+    @staticmethod
+    def _person_dict(person) -> dict:
+        kp_conf = np.asarray(person.keypoints_conf, dtype=np.float32)
+        if kp_conf.size != NUM_KEYPOINTS:
+            kp_conf = np.ones(NUM_KEYPOINTS, dtype=np.float32)
+        return {
+            "bbox": (person.x1, person.y1, person.x2, person.y2),
+            "keypoints": np.asarray(person.keypoints, dtype=np.float32).reshape(-1, 2),
+            "kp_conf": kp_conf,
+        }
 
     # ── Full-image detection ──
 
     def detect_people(self, image, conf=0.4):
-        """Run YOLO pose on full image. Returns list of dicts with
-        'bbox' (x1,y1,x2,y2), 'confidence', 'keypoints' (17,2 normalized), 'kp_conf' (17,)."""
-        results = self.yolo_pose(image, verbose=False, conf=conf)
-        if not results or results[0].boxes is None:
+        """One dict per person, [] on failure."""
+        if image is None or image.size == 0:
+            return []
+        if not self.client.service_is_ready():
+            self.node.get_logger().warn(
+                f"Pose service {POSE_DETECTION_SERVICE} not available",
+                throttle_duration_sec=5.0,
+            )
             return []
 
-        people = []
-        boxes = results[0].boxes
-        kps = results[0].keypoints
+        request = DetectPose.Request()
+        request.image = self.bridge.cv2_to_imgmsg(np.ascontiguousarray(image), "bgr8")
+        request.conf = float(conf)
 
-        for i in range(len(boxes)):
-            x1, y1, x2, y2 = [int(v) for v in boxes.xyxy[i].tolist()]
-            box_conf = float(boxes.conf[i].item())
+        done = threading.Event()
 
-            points = kps.xyn[i].cpu().numpy() if kps is not None else None
-            kp_conf = (
-                kps.conf[i].cpu().numpy()
-                if kps is not None and kps.conf is not None
-                else np.ones(17, dtype=np.float32)
-            )
+        def waiting4object_detector(_future):
+            """Wake detect_people."""
+            done.set()
 
-            people.append(
-                {
-                    "bbox": (x1, y1, x2, y2),
-                    "confidence": box_conf,
-                    "keypoints": points,
-                    "kp_conf": kp_conf,
-                }
-            )
-
-        return people
+        future = self.client.call_async(request)
+        future.add_done_callback(waiting4object_detector)
+        if not done.wait(self.timeout):
+            self.client.remove_pending_request(future)
+            self.node.get_logger().warn("Pose service call timed out")
+            return []
+        response = future.result()
+        if response is None or not response.success:
+            self.node.get_logger().warn("Pose service call failed")
+            return []
+        return [self._person_dict(p) for p in response.people]
 
     def is_waving_from_keypoints(self, points, conf):
         """Check if person has a hand raised using pre-computed keypoints."""
@@ -121,29 +141,35 @@ class PoseDetection:
     # ── Core keypoint extraction ──
 
     def _get_keypoints(self, image):
-        """Run YOLO pose on image, return (points, conf) for first person.
-        points: (17, 2) normalized coords, conf: (17,) confidence scores.
-        Returns (None, None) if no person detected."""
-        results = self.yolo_pose(image, verbose=False)
-        if (
-            not results
-            or results[0].keypoints is None
-            or results[0].keypoints.xy is None
-            or len(results[0].keypoints.xy) == 0
-        ):
+        """First person's (points, conf), or (None, None)."""
+        people = self.detect_people(image, conf=0.0)
+        if not people:
             return None, None
+        return people[0]["keypoints"], people[0]["kp_conf"]
 
-        points = results[0].keypoints.xyn[0].cpu().numpy()
-        conf = (
-            results[0].keypoints.conf[0].cpu().numpy()
-            if results[0].keypoints.conf is not None
-            else np.ones(17, dtype=np.float32)
+    def gesture_side(self, image, gesture: str):
+        """Return the person's own side used for a raising or pointing gesture, or None."""
+        points, conf = self._get_keypoints(image)
+        if points is None:
+            return None
+        arms = {
+            side: (shoulder, wrist)
+            for side, shoulder, wrist in (
+                ("left", LEFT_SHOULDER, LEFT_WRIST),
+                ("right", RIGHT_SHOULDER, RIGHT_WRIST),
+            )
+            if conf[shoulder] >= KP_CONF and conf[wrist] >= KP_CONF
+        }
+        if not arms:
+            return None
+        if gesture == "raising":
+            # Image y grows downwards, so the raised wrist is the one highest above its shoulder
+            return min(
+                arms, key=lambda s: points[arms[s][1]][1] - points[arms[s][0]][1]
+            )
+        return max(
+            arms, key=lambda s: abs(points[arms[s][1]][0] - points[arms[s][0]][0])
         )
-        return points, conf
-
-    def detect(self, frame):
-        """Run pose detection, return raw YOLO results."""
-        return self.yolo_pose(frame, verbose=False)
 
     # ── Geometry helpers ──
 
@@ -417,7 +443,13 @@ class PoseDetection:
 
 
 def main():
-    pose_detection = PoseDetection()
+    """Webcam demo; needs object_detector_node.py."""
+    rclpy.init()
+    node = rclpy.create_node("pose_detection_demo")
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+    threading.Thread(target=executor.spin, daemon=True).start()
+    pose_detection = PoseDetection(node)
     cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
@@ -450,6 +482,9 @@ def main():
 
     cap.release()
     cv2.destroyAllWindows()
+    executor.shutdown()
+    node.destroy_node()
+    rclpy.shutdown()
 
 
 if __name__ == "__main__":

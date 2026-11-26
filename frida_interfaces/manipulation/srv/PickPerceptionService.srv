@@ -1,4 +1,7 @@
 geometry_msgs/PointStamped point
 bool add_collision_objects
+# Optional height band forwarded to ClusterObjectFromPoint (0 = default).
+float32 min_height
+float32 max_height
 ---
 sensor_msgs/PointCloud2 cluster_result

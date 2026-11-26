@@ -68,6 +68,9 @@ case $TASK in
     "--dlc")
         RUN="ros2 run task_manager doing_laundry_task_manager.py"
         ;;
+    "--finals")
+        RUN="ros2 run task_manager finals_task_manager.py"
+        ;;
     "--safety")
         RUN="ros2 run task_manager safety_task_manager.py"
         ;;

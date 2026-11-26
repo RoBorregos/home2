@@ -34,7 +34,7 @@ Requires 2 terminals minimum (3 if using pose/color detection via moondream).
     zed
 
 --- Terminal 3 (optional): Moondream vision model (required for poses/color) ---
-    ros2 run vision_general moondream_node
+    ros2 run vlm_run vlm_node.py
 """
 
 import cv2
@@ -76,6 +76,7 @@ from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
+from models.pose_detection import PoseDetection
 from models.tracker import TrackerModel
 from std_msgs.msg import Bool, Int16
 
@@ -252,12 +253,10 @@ class SingleTracker(Node):
         self._draw_debug = False
         pbar = tqdm.tqdm(total=2, desc="Loading models")
 
-        # Detection/tracking/ReID all live in the model class; YOLO (TensorRT on
-        # the Orin AGX) and pose load now, the heavy SWIN ReID on demand.
-        self.model = TrackerModel()
-        self.model.load()
+        self.pose_detection = PoseDetection(self, self.callback_group)
         pbar.update(1)
-        self.pose_detection = self.model.pose
+        self.model = TrackerModel()
+        self.model.load(self.pose_detection)
         pbar.update(1)
 
         # Stage 0: per-frame tracking is ultralytics ByteTrack (TrackerModel.track)

@@ -21,7 +21,6 @@ from frida_constants.hri_constants import (
     DEFAULT_HOTWORDS,
     DISPLAY_CAPTURE_TOPIC,
     DISPLAY_IMAGE_TOPIC,
-    DISPLAY_MAP_TOPIC,
     DISPLAY_PUBLISHER,
     EXTRACT_DATA_SERVICE,
     FIND_CLOSEST_SERVICE,
@@ -71,7 +70,6 @@ from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
     CommandHistory,
     FindClosestResult,
-    HandItem,
     Location,
 )
 from task_manager.utils.baml_client.sync_client import b
@@ -155,6 +153,27 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
+def match_hotwords(text: str, hotwords: str, exclude: str = "") -> str:
+    """Return the only hotword (comma-separated list) said in text, "" if none or several.
+
+    Hyphens and punctuation count as spaces so "coca-cola" matches "coca cola", and a hotword
+    contained in a longer matched one ("tea" in "iced tea") is not counted twice.
+    """
+
+    def words(s: str) -> str:
+        return " ".join(re.sub(r"[^\w\s]", " ", s.lower()).split())
+
+    said = f" {words(text)} "
+    excluded = words(exclude)
+    found = {}
+    for hotword in hotwords.split(","):
+        key = words(hotword)
+        if key and key != excluded and f" {key} " in said:
+            found[key] = hotword.strip()
+    keys = [k for k in found if not any(k != o and f" {k} " in f" {o} " for o in found)]
+    return found[keys[0]] if len(keys) == 1 else ""
+
+
 class HRITasks:
     """Class to manage the HRI tasks"""
 
@@ -182,7 +201,6 @@ class HRITasks:
         self.display_capture_publisher = self.node.create_publisher(
             String, DISPLAY_CAPTURE_TOPIC, 10
         )
-        self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
         self.add_entry_service = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
@@ -259,6 +277,7 @@ class HRITasks:
             Task.DOING_LAUNDRY: all_services,
             Task.DEMO: all_services,
             Task.RESTAURANT: all_services,
+            Task.FINALS: all_services,
             Task.DEBUG: all_services,
         }
 
@@ -271,10 +290,6 @@ class HRITasks:
             self.negation_words = set(json.load(file)["negations"])
         # Phrases like "thats right" never equal a single word, so they are harmless here
         self.affirmation_words = set(self.positive)
-
-        file_path = os.path.join(package_share_directory, "data/hand_items.json")
-        with open(file_path, "r") as file:
-            self.hand_items = json.load(file)
 
         file_path = os.path.join(package_share_directory, "data/objects.json")
         with open(file_path, "r") as file:
@@ -767,6 +782,10 @@ class HRITasks:
         if not words or self.negation_words.issuperset(words):
             return keyword
 
+        corrected = match_hotwords(text, hotwords, exclude=target)
+        if corrected:
+            return corrected
+
         s, value = self.extract_data(query, text, context)
         value = value.strip() if s == Status.EXECUTION_SUCCESS else ""
         yes_no = self.negation_words | self.affirmation_words
@@ -886,7 +905,15 @@ class HRITasks:
                 try:
                     # If no options provided, directly extract the data without looking for matches
                     if not skip_extract_data and not options:
-                        s, target_info = self.extract_data(query, interpreted_text, context)
+                        # A single hotword said without negation ("I don't like coke") is the answer, no LLM needed
+                        negated = (self.negation_words | {"dont", "never"}).intersection(
+                            format_transcription(interpreted_text)
+                        )
+                        matched = "" if negated else match_hotwords(interpreted_text, hotwords)
+                        if matched:
+                            s, target_info = Status.EXECUTION_SUCCESS, matched
+                        else:
+                            s, target_info = self.extract_data(query, interpreted_text, context)
                         yes_no = self.negation_words | self.affirmation_words
                         target_info = " ".join(
                             w for w in target_info.split() if remove_punctuation(w) not in yes_no
@@ -1456,19 +1483,6 @@ class HRITasks:
         raw = self._call_query_entry(collection="items", query_texts=[], top_k=10000)
         return [json.loads(r)["text"] for r in raw]
 
-    def get_hand_items(self, query: str) -> tuple[list[HandItem], list[HandItem]]:
-        """
-        Query hand_items from postgres service.
-        Returns:
-            tuple: (by_name, by_description) lists of HandItem objects.
-        """
-        raw = self._call_query_entry(collection="hand_items", query_texts=[query], top_k=10000)
-        if len(raw) < 2:
-            return [], []
-        by_name = [HandItem(**item) for item in json.loads(raw[0])]
-        by_description = [HandItem(**item) for item in json.loads(raw[1])]
-        return by_name, by_description
-
     # TODO: Make async
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_llm_answer"))
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -1700,28 +1714,6 @@ class HRITasks:
         except Exception as e:
             self.node.get_logger().error(f"Error finding closest object: {e}")
             return "unknown"
-
-    @mockable()
-    def show_map(self, name="", clear_map: bool = False):
-        """
-        Method to show the map on the display.
-        """
-        show_items = self.hand_items.copy()
-
-        if clear_map:
-            show_items["image_path"] = ""
-            Logger.info(self.node, "Map cleared on the screen.")
-        else:
-            filtered_items = []
-
-            # Filter items to only include those matching the specified name
-            for item in show_items["markers"]:
-                if name == "" or item["name"].strip().lower() == name.strip().lower():
-                    filtered_items.append(item)
-
-            show_items["markers"] = filtered_items
-
-        self.display_map_publisher.publish(String(data=json.dumps(show_items)))
 
     @mockable(return_value=True)
     def send_display_answer(self, answer: str) -> bool:

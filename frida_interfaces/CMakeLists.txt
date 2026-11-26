@@ -79,6 +79,7 @@ set(msg_files
   "manipulation/msg/PlaceParams.msg"
   "manipulation/msg/GripperGraspState.msg"
   "manipulation/msg/PourParams.msg"
+  "manipulation/msg/ShelfLevel.msg"
   "vision/msg/CustomerTable.msg"
   "vision/msg/ObjectDetectionArray.msg"
   "vision/msg/ObjectDetection.msg"
@@ -88,6 +89,7 @@ set(msg_files
   "vision/msg/ShelfArray.msg"
   "vision/msg/ShelfDetection.msg"
   "vision/msg/Detection.msg"
+  "vision/msg/PersonPose.msg"
   "navigation/msg/NodeStatus.msg"
   "navigation/msg/MonitorReport.msg"
   )
@@ -115,6 +117,7 @@ set(srv_files
   "manipulation/srv/AddPickPrimitives.srv"
   "manipulation/srv/AttachCollisionObject.srv"
   "manipulation/srv/ClusterObjectFromPoint.srv"
+  "manipulation/srv/DetectShelf.srv"
   "manipulation/srv/GetCollisionObjects.srv"
   "manipulation/srv/GetJoints.srv"
   "manipulation/srv/GetOptimalPositionForPlane.srv"
@@ -184,6 +187,7 @@ set(srv_files
   "vision/srv/IsTalking.srv"
   "vision/srv/EmbedText.srv"
   "vision/srv/EmbedCrops.srv"
+  "vision/srv/DetectPose.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

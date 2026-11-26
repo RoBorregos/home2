@@ -108,6 +108,7 @@ PERSON_POSTURE_TOPIC = "/vision/person_posture"
 QUERY_TOPIC = "/vision/query"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 CROP_QUERY_TOPIC = "/vision/crop_query"
+LFM_CROP_QUERY_TOPIC = "/vision/lfm_crop_query"
 OBJECT_POINTS_TOPIC = "/vision/object_points"
 MOONDREAM_DETECTION_TOPIC = "/vision/moondream_detection"
 
@@ -152,6 +153,9 @@ SHOW_DETECTION_TOPIC = "/vision/show_detection"
 # Yolo detection node
 YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
 YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
+
+# Shared pose model (ObjectDetect2D)
+POSE_DETECTION_SERVICE = "/vision/pose/detect"
 
 # Chair removal
 CHAIRS_TO_REMOVE_SERVICE = "/vision/chairs_to_remove"
