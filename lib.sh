@@ -175,27 +175,156 @@ clean_directories() {
   local target="${1:-.}"
   echo "Cleaning build/log/install in: $target"
   rm -rf "$target/build" "$target/log" "$target/install"
+  rm -f "$target/modules.txt"
 }
 
-run_frida_interfaces() {
-  local compose_yaml
-  if [ -f "docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml" ]; then
-    compose_yaml="docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml"
+# Modules an area/task/flag needs when launched; NOT transitive. Update if
+# an area starts importing another module's interfaces.
+frida_deps_for() {
+  case "$1" in
+    navigation) echo "navigation,task_manager" ;;
+    hri)        echo "hri,navigation" ;;
+    vision)     echo "vision,navigation" ;;
+    *)          echo "all" ;;
+  esac
+}
+
+# What's already installed: modules.txt if present, "all" for a pre-existing
+# install/ without one (old cache), or empty if there's no install at all.
+frida_modules_installed() {
+  local cache_dir="docker/frida_interfaces_cache"
+  if [ -f "$cache_dir/modules.txt" ]; then
+    cat "$cache_dir/modules.txt"
+  elif [ -d "$cache_dir/install" ]; then
+    echo "all"
+  fi
+}
+
+# Union of comma-separated module lists; "all" absorbs everything else.
+frida_modules_union() {
+  local set m result=()
+  for set in "$@"; do
+    [ "$set" = "all" ] && { echo "all"; return; }
+    IFS=',' read -ra parts <<< "$set"
+    for m in "${parts[@]}"; do
+      [ -n "$m" ] && result+=("$m")
+    done
+  done
+  [ ${#result[@]} -eq 0 ] && return
+  printf '%s\n' "${result[@]}" | sort -u | paste -sd, -
+}
+
+# Translate --hri/--vision/--manipulation/--navigation/--task-manager/--all
+# into a comma-separated module list; no flags means "all".
+frida_parse_module_flags() {
+  local modules=() all_requested=false
+  for arg in "$@"; do
+    case "$arg" in
+      --hri)           modules+=("hri") ;;
+      --vision)        modules+=("vision") ;;
+      --manipulation)  modules+=("manipulation") ;;
+      --navigation)    modules+=("navigation") ;;
+      --task-manager)  modules+=("task_manager") ;;
+      --all)           all_requested=true ;;
+      *)
+        echo "Unknown frida_interfaces flag: $arg" >&2
+        echo "Valid flags: --hri --vision --manipulation --navigation --task-manager --all" >&2
+        return 1
+        ;;
+    esac
+  done
+  if [ "$all_requested" = true ] || [ ${#modules[@]} -eq 0 ]; then
+    echo "all"
   else
+    printf '%s\n' "${modules[@]}" | sort -u | paste -sd, -
+  fi
+}
+
+# Build the given modules (comma list or "all"); wipes frida_interfaces'
+# build/install first if the module set is changing, to drop stale files.
+# Only on success does it record the set in modules.txt.
+frida_build_modules() {
+  local modules="$1"
+  local compose_yaml="docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml"
+  if [ ! -f "$compose_yaml" ]; then
     echo "frida_interfaces cache compose file not found for env=${ENV_TYPE}" >&2
     return 1
   fi
 
-  echo "Running frida_interfaces_cache to build frida_interfaces (using $compose_yaml)"
+  if [ "$(frida_modules_installed)" != "$modules" ]; then
+    rm -rf "docker/frida_interfaces_cache/build/frida_interfaces" \
+           "docker/frida_interfaces_cache/install/frida_interfaces"
+  fi
+
   mkdir -p "docker/frida_interfaces_cache/build" "docker/frida_interfaces_cache/install" "docker/frida_interfaces_cache/log"
-  export GID=$(id -g) && docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
+  export FRIDA_MODULES="$modules"
+  export GID=$(id -g)
+  if docker compose -f "$compose_yaml" run --rm frida_interfaces_cache; then
+    echo "$modules" > docker/frida_interfaces_cache/modules.txt
+  else
+    echo "frida_interfaces build failed; modules.txt left unchanged" >&2
+    return 1
+  fi
+}
+
+run_frida_interfaces() {
+  local requested
+  requested=$(frida_parse_module_flags "$@") || return 1
+
+  local installed
+  installed=$(frida_modules_installed)
+
+  local deps_union="$requested"
+  if [ "$requested" != "all" ]; then
+    local m sets=()
+    IFS=',' read -ra req_modules <<< "$requested"
+    for m in "${req_modules[@]}"; do
+      sets+=("$(frida_deps_for "$m")")
+    done
+    deps_union=$(frida_modules_union "${sets[@]}")
+  fi
+
+  local to_compile
+  to_compile=$(frida_modules_union "$installed" "$deps_union")
+
+  echo "Instalados: ${installed:-(ninguno)} | Pedidos: $requested | Compilando: $to_compile"
+  frida_build_modules "$to_compile"
+}
+
+# Make sure modules.txt already covers what $1 (area or task) needs; if not,
+# rebuild the union. Skips entirely when already covered.
+ensure_frida_modules() {
+  local name="$1"
+  local needed installed
+  needed=$(frida_deps_for "$name")
+  installed=$(frida_modules_installed)
+
+  if [ "$installed" = "all" ]; then
+    return 0
+  fi
+
+  if [ "$needed" != "all" ]; then
+    local missing=() m
+    IFS=',' read -ra need_list <<< "$needed"
+    IFS=',' read -ra have_list <<< "$installed"
+    for m in "${need_list[@]}"; do
+      if ! printf '%s\n' "${have_list[@]}" | grep -qx "$m"; then
+        missing+=("$m")
+      fi
+    done
+    [ ${#missing[@]} -eq 0 ] && return 0
+  fi
+
+  local to_compile
+  to_compile=$(frida_modules_union "$installed" "$needed")
+  echo "frida_interfaces: '$name' needs modules not yet installed. Instalados: ${installed:-(ninguno)} | Compilando: $to_compile"
+  frida_build_modules "$to_compile"
 }
 
 run_area() {
   # simulation builds frida_interfaces itself inside its own workspace
-  if [ "$INPUT" != "zed" ] && [ "$INPUT" != "simulation" ] && [ ! -d "docker/frida_interfaces_cache/build" ]; then
-    echo "Cache directory missing. Building frida_interfaces_cache first..."
-    run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
+  if [ "$INPUT" != "zed" ] && [ "$INPUT" != "simulation" ]; then
+    ensure_frida_modules "$INPUT" || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi
 
   # Auto-detect Jetson for SHM default
@@ -293,6 +422,8 @@ control() {
 }
 
 run_task() {
+  ensure_frida_modules "$1" || { echo "frida_interfaces cache build failed" >&2; return 1; }
+
   SESSION_NAME="frida"
 
   # Kill existing sessions to start fresh
