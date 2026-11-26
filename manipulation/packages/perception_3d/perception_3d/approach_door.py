@@ -22,15 +22,15 @@ class HandleParams:
     door_planes: int = 4  # largest vertical planes tried as the door
     door_tolerance: float = 0.01
     door_sample: int = 20000  # points the door planes are fitted on
-    proud_min: float = 0.02  # off the door (cuts the lever from its neck)
+    proud_min: float = 0.008  # off the door (far levers read only ~1-3 cm proud)
     proud_max: float = 0.18  # above standoff_max + bar depth
     depth_jump: float = 0.01  # blobs are also cut at depth jumps this big
-    min_pixels: int = 20
-    length_min: float = 0.06  # lever width along the door
+    min_pixels: int = 5
+    length_min: float = 0.015  # visible lever along the door (at ~1 m only the tip reads)
     length_max: float = 0.60  # above long pull bars (~45 cm)
-    height_min: float = 0.012  # bar height
+    height_min: float = 0.005  # bar height
     height_max: float = GRIPPER_MAX_APERTURE  # the gripper must close on it
-    standoff_min: float = 0.03  # median blob distance off the door
+    standoff_min: float = 0.01  # median blob distance off the door (reads short when far)
     standoff_max: float = 0.15  # above deep levers (~9 cm)
     face_window: float = 0.15  # door face refitted this far around the blob
     min_face_points: int = 50
@@ -206,13 +206,16 @@ def find_handles(
     seed: int = 0,
     rejections: Optional[Counter] = None,
     detected: Optional[np.ndarray] = None,
+    origin: Optional[np.ndarray] = None,
 ) -> list:
-    """Lever-sized blobs standing off a door plane; with ``detected``, only those at it."""
+    """Lever-sized blobs standing off a door plane; with ``detected``, only those at it (seen from ``origin``)."""
     rng = np.random.default_rng(seed)
     rejections = Counter() if rejections is None else rejections
     with np.errstate(invalid="ignore"):
         ok = np.isfinite(points).all(axis=-1) & (points[..., 0] <= p.max_x)
     planes = door_planes(points[ok], p, rng)
+    if detected is not None and origin is not None:
+        detected = snap_to_door(detected, origin, planes, p.standoff_max)
     if detected is not None:
         # Also the plane around the seed: the door may not look door-sized.
         with np.errstate(invalid="ignore"):
@@ -283,10 +286,28 @@ def find_handles(
                 rejections["beside the reach"] += 1
             else:
                 handle = measure(pts, normal, face_point, residual)
-                # The same lever can stand off two of the planes.
-                if all(np.linalg.norm(handle.center - h.center) > 0.05 for h in found):
+                # The same lever can stand off two of the planes, or split in pieces: keep the longest.
+                near = [
+                    h for h in found if np.linalg.norm(handle.center - h.center) <= 0.05
+                ]
+                if all(h.length < handle.length for h in near):
+                    found = [h for h in found if not any(h is n for n in near)]
                     found.append(handle)
     return found
+
+
+def snap_to_door(
+    detected: np.ndarray, origin: np.ndarray, planes: list, behind: float
+) -> np.ndarray:
+    """``detected`` moved along the camera ray onto the last door plane at most ``behind`` m past it (its depth can come through the glass)."""
+    ray = detected - origin
+    hits = [
+        ((point - origin) @ normal) / (ray @ normal)
+        for normal, point in planes
+        if abs(ray @ normal) > 1e-6
+    ]
+    hits = [t for t in hits if 0.0 < t < 1.0 + behind / np.linalg.norm(ray)]
+    return origin + ray * max(hits) if hits else detected
 
 
 def detect_handle(
@@ -295,11 +316,29 @@ def detect_handle(
     p: HandleParams = HandleParams(),
     seed: int = 0,
     detected: Optional[np.ndarray] = None,
+    origin: Optional[np.ndarray] = None,
 ) -> DoorHandle:
-    """The lever at ``detected`` (else nearest the base), or HandleNotFound."""
+    """The lever at ``detected`` seen from ``origin`` (else nearest the base), or HandleNotFound."""
     rejections = Counter()
-    found = find_handles(points, depth, p, seed, rejections, detected)
+    found = find_handles(points, depth, p, seed, rejections, detected, origin)
+    # A short blob within a longer one's span is a piece of it (its neck, its rose).
+    found = [
+        h
+        for h in found
+        if not any(
+            o.length > h.length
+            and np.linalg.norm(o.center - h.center) < o.length / 2 + 0.03
+            for o in found
+        )
+    ]
     if found:
+        if detected is not None and origin is not None:
+            ray = (detected - origin) / np.linalg.norm(detected - origin)
+            # Nearest the camera ray through the seed: its pixel is right, its depth may not be.
+            return min(
+                found,
+                key=lambda h: float(np.linalg.norm(np.cross(h.center - origin, ray))),
+            )
         target = np.zeros(3) if detected is None else np.asarray(detected)
         axes = slice(0, 2) if detected is None else slice(0, 3)
         return min(

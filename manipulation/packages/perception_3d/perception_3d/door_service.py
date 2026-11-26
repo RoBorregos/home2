@@ -123,7 +123,15 @@ class DoorService:
                 image, intrinsics, cam_to_base, float(self._param("depth_scale"))
             )
             try:
-                handles.append(detect_handle(points, image, params, detected=detected))
+                handles.append(
+                    detect_handle(
+                        points,
+                        image,
+                        params,
+                        detected=detected,
+                        origin=cam_to_base[:3, 3],
+                    )
+                )
             except HandleNotFound as why:
                 # Count frames per reason, not pieces.
                 rejections[str(why).split(" (x")[0]] += 1
