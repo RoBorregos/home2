@@ -41,6 +41,7 @@ from frida_constants.hri_constants import (
     TASK_STEP_TOPIC,
     TIMEOUT,
     KEYWORD_TOPIC,
+    LOCATION_HOTWORDS_RETRY,
     DISPLAY_KEYWORD_TOPIC,
     EI_DETECTION_TOPIC,
     DOORBELL_ARMED_TOPIC,
@@ -320,6 +321,7 @@ class HRITasks:
         # Set by SubtaskManager; navigation's areas are the source of truth for location hotwords.
         self.nav = None
         self._location_hotwords = ""
+        self._location_hotwords_expiry = 0.0  # when to ask nav again; inf once nav answered
 
         if not self.mock_data:
             self.setup_services()
@@ -492,11 +494,19 @@ class HRITasks:
 
     def location_hotwords(self) -> str:
         """Area and sublocation names from navigation's areas (rooms first, so they survive the STT budget)."""
-        if self._location_hotwords or self.nav is None:
+        if self.nav is None:
+            return self._location_hotwords
+        now = time.monotonic()
+        if now < self._location_hotwords_expiry:
+            retry = self._location_hotwords_expiry - now
+            Logger.info(
+                self.node,
+                "Location hotwords cached"
+                + ("" if retry == float("inf") else f", asking nav again in {retry:.0f}s"),
+            )
             return self._location_hotwords
         status, areas = self.nav.retrieve_areas()
-        if not isinstance(areas, dict):
-            return ""
+        areas = areas if isinstance(areas, dict) else {}
         places = [
             sub
             for subs in areas.values()
@@ -504,12 +514,19 @@ class HRITasks:
             for sub in subs
             if sub not in ("safe_place", "polygon", "description")
         ]
-        hotwords = ", ".join(dict.fromkeys(n.replace("_", " ") for n in [*areas, *places]))
-        if (
-            status == Status.EXECUTION_SUCCESS
-        ):  # don't cache the areas.json fallback; retry nav next time
-            self._location_hotwords = hotwords
-        return hotwords
+        self._location_hotwords = ", ".join(
+            dict.fromkeys(n.replace("_", " ") for n in [*areas, *places])
+        )
+        # Nav down costs ~2 s of silence before the question, so keep the areas.json fallback
+        # for a while instead of waiting again on every location question.
+        self._location_hotwords_expiry = (
+            float("inf")
+            if status == Status.EXECUTION_SUCCESS
+            else time.monotonic() + LOCATION_HOTWORDS_RETRY
+        )
+        source = "nav" if status == Status.EXECUTION_SUCCESS else "areas.json fallback"
+        Logger.info(self.node, f"Location hotwords from {source} in {time.monotonic() - now:.1f}s")
+        return self._location_hotwords
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked speech", {}))
     @service_check("_action_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)
