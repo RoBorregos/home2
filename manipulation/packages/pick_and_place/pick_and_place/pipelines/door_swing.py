@@ -26,6 +26,11 @@ LOOP_PERIOD = 0.05  # s
 EFFORT_LIMIT = 15.0
 EFFORT_SAMPLES = 10
 SWING_TIMEOUT = 40.0  # s
+# Where the base lines up for the grasp: handle centre in base_link, door square on
+HANDLE_AHEAD = 0.69  # m
+HANDLE_SIDE = 0.03  # m, + to the robot's left
+ALIGN_TOLERANCE = 0.015  # m
+ALIGN_HEADING_TOLERANCE = math.radians(2.0)
 
 
 def hinge_point(handle, side: str = HINGE_SIDE) -> np.ndarray:
@@ -50,6 +55,52 @@ def base_twist(hinge_xy: np.ndarray, rate: float) -> tuple:
     """(vx, vy, wz) in the base frame turning the base at ``rate`` about ``hinge_xy`` (base frame)."""
     # v = w z x (0 - h)
     return rate * hinge_xy[1], -rate * hinge_xy[0], rate
+
+
+def alignment(handle) -> np.ndarray:
+    """(dx, dy, dyaw) in the base frame that puts the handle at the grasp spot with the door square on."""
+    c, n = handle.center.point, handle.door_normal
+    # Turning by the door yaw points the door normal straight back at the robot
+    yaw = math.atan2(-n.y, -n.x)
+    cos, sin = math.cos(yaw), math.sin(yaw)
+    centre = np.array([cos * c.x + sin * c.y, -sin * c.x + cos * c.y])
+    shift = centre - np.array([HANDLE_AHEAD, HANDLE_SIDE])
+    return np.array(
+        [cos * shift[0] - sin * shift[1], sin * shift[0] + cos * shift[1], yaw]
+    )
+
+
+def alignment_needed(handle) -> bool:
+    """Whether the handle is off the grasp spot by more than the alignment tolerances."""
+    move = alignment(handle)
+    return bool(
+        np.linalg.norm(move[:2]) >= ALIGN_TOLERANCE
+        or abs(move[2]) >= ALIGN_HEADING_TOLERANCE
+    )
+
+
+def align(arm, base, handle) -> bool:
+    """Drive the base so the handle sits at the grasp spot; False when it could not."""
+    move = alignment(handle)
+    pose = base.pose()
+    if pose is None:
+        return False
+    cos, sin = math.cos(pose[2]), math.sin(pose[2])
+    target = np.array(
+        [
+            pose[0] + cos * move[0] - sin * move[1],
+            pose[1] + sin * move[0] + cos * move[1],
+            pose[2] + move[2],
+        ]
+    )
+    arm.logger.info(
+        f"Door: lining the base up by ({move[0] * 1000:.0f}, {move[1] * 1000:.0f}) mm, {math.degrees(move[2]):.1f} deg"
+    )
+    return base.move_to(
+        target,
+        tolerance=ALIGN_TOLERANCE / 2,
+        heading_tolerance=ALIGN_HEADING_TOLERANCE / 2,
+    )
 
 
 def odom_hinge(arm, handle, side: str = HINGE_SIDE):
@@ -139,6 +190,9 @@ def swing_open(arm, base, hinge, side: str = HINGE_SIDE, angle: float = SWING_AN
 
 
 __all__ = [
+    "align",
+    "alignment",
+    "alignment_needed",
     "base_twist",
     "hinge_point",
     "odom_hinge",

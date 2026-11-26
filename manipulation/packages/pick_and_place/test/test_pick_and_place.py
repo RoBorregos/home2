@@ -1765,3 +1765,32 @@ def test_door_pull_swings_with_the_base_then_backs_off(monkeypatch):
     assert len(swings) == 1 and swings[0].header.frame_id == "odom"
     retreat = [a for a in arm.approaches if a[1] == door_pipeline.RETREAT_DISTANCE]
     assert len(retreat) == 1 and list(retreat[0][0]) == [0.0, 1.0, 0.0]
+
+
+def test_door_alignment_puts_the_handle_on_the_grasp_spot():
+    for x, y, yaw in ((0.79, 0.03, 0.0), (0.74, -0.08, 0.08), (0.62, 0.11, -0.06)):
+        handle = SimpleNamespace(
+            center=make_point(x, y, 1.0),
+            door_normal=SimpleNamespace(x=-np.cos(yaw), y=-np.sin(yaw), z=0.0),
+        )
+        dx, dy, dyaw = door_swing.alignment(handle)
+        assert dyaw == pytest.approx(yaw)
+        # The handle seen from the moved base
+        offset = np.array([x - dx, y - dy])
+        seen = Rotation.from_euler("z", -dyaw).apply([*offset, 0.0])[:2]
+        assert seen == pytest.approx([door_swing.HANDLE_AHEAD, door_swing.HANDLE_SIDE])
+
+
+def test_door_lines_the_base_up_then_measures_the_handle_again(monkeypatch):
+    picked = []
+    monkeypatch.setattr(
+        door_pipeline,
+        "pick_handle",
+        lambda arm, handle, base=None: picked.append(handle) or False,
+    )
+    monkeypatch.setattr(door_pipeline.time, "sleep", lambda s: None)
+    perception = FakePerception(door_handle=_door_handle())
+    base = FakeBase()
+    door_pipeline.execute(FakeArm(), perception, base)
+    assert perception.calls.count("detect_door_handle") == 2
+    assert len(base.moves) == 1

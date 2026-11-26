@@ -111,7 +111,29 @@ def execute(arm, perception, base=None) -> bool:
     if handle is None:
         return False
     arm.logger.info(f"Door handle {describe(handle)}")
+    if base is not None:
+        handle = line_up(arm, perception, base, handle)
+        if handle is None:
+            return False
     return pick_handle(arm, handle, base)
+
+
+def line_up(arm, perception, base, handle):
+    """Move the base to the grasp spot in front of the handle and measure it again; None on failure."""
+    with arm.phase("line_up_base"):
+        if door_swing.alignment_needed(handle) and not door_swing.align(
+            arm, base, handle
+        ):
+            arm.logger.error("Door: could not line the base up with the handle")
+            return None
+    if not door_swing.alignment_needed(handle):
+        return handle
+    time.sleep(SHELF_SURVEY_SETTLE)
+    with arm.phase("detect_door_handle"):
+        again = perception.detect_door_handle()
+    if again is not None:
+        arm.logger.info(f"Door handle after lining up {describe(again)}")
+    return again
 
 
 def vision_point(perception):

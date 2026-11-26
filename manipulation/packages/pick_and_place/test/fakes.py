@@ -413,6 +413,7 @@ class FakeBase:
         self.dt = dt
         self.sent = []
         self.stops = 0
+        self.moves = []
 
     def pose(self):
         return self.state.copy()
@@ -430,6 +431,11 @@ class FakeBase:
 
     def stop(self):
         self.stops += 1
+
+    def move_to(self, target, tolerance=0.01, heading_tolerance=0.02, timeout=20.0):
+        self.moves.append(np.array(target, dtype=float))
+        self.state = np.array(target, dtype=float)
+        return True
 
 
 class FakePerception:
