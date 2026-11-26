@@ -9,7 +9,9 @@ import math
 import time
 
 import rclpy
-from frida_interfaces.action import ManipulationAction
+from frida_constants.manipulation_constants import MOVE_JOINTS_ACTION_SERVER
+from frida_constants.xarm_configurations import NAV_POSE
+from frida_interfaces.action import ManipulationAction, MoveJoints
 from frida_interfaces.msg import ManipulationTask
 from rclpy.action import ActionClient
 from rclpy.node import Node
@@ -36,6 +38,7 @@ class SimDoorTM(Node):
         self.manipulation = ActionClient(
             self, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
+        self.move_joints = ActionClient(self, MoveJoints, MOVE_JOINTS_ACTION_SERVER)
         self.hinge = 0.0
         self.create_subscription(
             JointState,
@@ -63,6 +66,20 @@ class SimDoorTM(Node):
         result = self.wait_future(handle.get_result_async(), 300.0)
         return bool(result is not None and result.result.success)
 
+    def tuck_arm(self) -> bool:
+        """Arm to the nav pose before driving through."""
+        if not self.move_joints.wait_for_server(timeout_sec=10.0):
+            return False
+        goal = MoveJoints.Goal()
+        goal.joint_names = list(NAV_POSE["joints"])
+        goal.joint_positions = [math.radians(v) for v in NAV_POSE["joints"].values()]
+        goal.velocity = 0.3
+        handle = self.wait_future(self.move_joints.send_goal_async(goal), 10.0)
+        if handle is None or not handle.accepted:
+            return False
+        result = self.wait_future(handle.get_result_async(), 60.0)
+        return bool(result is not None and result.result.success)
+
     def drive(self, location: str, sublocation: str) -> bool:
         status, error = self.navigation.move_to_location(location, sublocation)
         ok = status == Status.EXECUTION_SUCCESS
@@ -75,6 +92,7 @@ class SimDoorTM(Node):
         steps = [
             ("drive to the door", lambda: self.drive(*self.before)),
             ("open the door", self.open_door),
+            ("tuck the arm", self.tuck_arm),
             ("drive through", lambda: self.drive(*self.after)),
         ]
         for name, step in steps:

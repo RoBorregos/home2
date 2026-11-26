@@ -27,6 +27,7 @@ for arg in "${ARGS[@]}"; do
     --nav) AREA=nav ;;
     --all) AREA=all ;;
     --door) AREA=door ;;
+    --door-nav) AREA=door_nav ;;
     --headless) GUI=false ;;
     --no-rviz) RVIZ_VIEW=false ;;
     --moveit-rviz) MOVEIT_RVIZ=true ;;
@@ -43,6 +44,8 @@ Tasks:
   --nav            Start the navigation sim (arena from the robocup2026_1 map)
   --all            Start both stacks in the arena world (no objects to pick there)
   --door           Start the manipulation stack on the mobile base in front of a pull door
+  --door-nav       The door world with the manipulation and navigation stacks (door_house map)
+  --door-tm        Drive to the door, open it and drive through (needs --door-nav)
   --task <name>    Run a real task manager on a seeded rulebook scenario and score it
                    (ppc; flags: --seed N, --gui). Report in docker/simulation/logs/runs/
   --scenario <f>   Replay a saved scenario.json
@@ -153,16 +156,21 @@ sim_args() {
       # Nothing consumes the ZED stream here, so render it slowly and leave the CPU to physics
       echo "gui:=$GUI world:=arena_robocup2026_1.sdf mobile_base:=true grasp_assist:=false" \
            "camera_rate:=2 spawn_x:=4.1776 spawn_y:=-11.6974 spawn_z:=0.02 spawn_yaw:=-1.9890" ;;
-    door)
-      # Facing the door from 1 m, the lever ahead of the arm
+    door|door_nav)
+      # Facing the door, the lever ahead of the arm
       echo "gui:=$GUI world:=door_house.sdf mobile_base:=true grasp_assist:=false door:=true" \
-           "spawn_x:=${DOOR_SPAWN_X:-1.0} spawn_y:=${DOOR_SPAWN_Y:-0.0} spawn_z:=0.02 spawn_yaw:=${DOOR_SPAWN_YAW:-3.1416}" ;;
+           "spawn_x:=$DOOR_X spawn_y:=$DOOR_Y spawn_z:=0.02 spawn_yaw:=$DOOR_YAW" ;;
     all)
       # Both stacks on one machine: half the camera rate so nav2 keeps its control loop
       echo "gui:=$GUI world:=arena_robocup2026_1.sdf mobile_base:=true grasp_assist:=false" \
            "camera_rate:=5 spawn_x:=4.1776 spawn_y:=-11.6974 spawn_z:=0.02 spawn_yaw:=-1.9890" ;;
   esac
 }
+
+# The door_house map is built from this spawn pose (mapper_params_door.yaml)
+DOOR_X=${DOOR_SPAWN_X:-0.75}
+DOOR_Y=${DOOR_SPAWN_Y:--0.25}
+DOOR_YAW=${DOOR_SPAWN_YAW:-3.1416}
 
 start_all() {
   kill_sim
@@ -174,20 +182,24 @@ start_all() {
   in_background sim "ros2 launch frida_gz_sim sim.launch.py $(sim_args)"
   wait_for_logs "sim:activated xarm6_traj_controller"
 
-  if [ "$AREA" = manip ] || [ "$AREA" = all ] || [ "$AREA" = door ]; then
+  if [ "$AREA" = manip ] || [ "$AREA" = all ] || [ "$AREA" = door ] || [ "$AREA" = door_nav ]; then
     in_background manipulation "ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=$MOVEIT_RVIZ"
     in_background vision "ros2 launch frida_gz_sim sim_vision.launch.py"
   fi
   if [ "$AREA" = nav ] || [ "$AREA" = all ]; then
     in_background navigation "ros2 launch frida_gz_sim sim_nav.launch.py"
   fi
+  if [ "$AREA" = door_nav ]; then
+    in_background navigation "ros2 launch frida_gz_sim sim_nav.launch.py map_name:=door_house spawn_x:=$DOOR_X spawn_y:=$DOOR_Y spawn_yaw:=$DOOR_YAW mapper_params_file:=/workspace/install/frida_gz_sim/share/frida_gz_sim/config/mapper_params_door.yaml"
+  fi
 
   echo "waiting for the stack to come up..."
   # slam_toolbox loading the pose graph and nav2 activating take longer than manipulation
-  [ "$AREA" = manip ] || READY_TIMEOUT=${READY_TIMEOUT:-420}
+  [ "$AREA" = manip ] || [ "$AREA" = door ] || READY_TIMEOUT=${READY_TIMEOUT:-420}
   case $AREA in
     manip) wait_for_logs "sim:Grasp attach ready" "manipulation:Manipulation core started" "vision:Loaded models" ;;
     door) wait_for_logs "sim:Door sim ready" "manipulation:Manipulation core started" "vision:Loaded models" ;;
+    door_nav) wait_for_logs "sim:Door sim ready" "manipulation:Manipulation core started" "vision:Loaded models" "navigation:Finished Setup, Starting monitoring" ;;
     nav) wait_for_logs "navigation:Finished Setup, Starting monitoring" ;;
     all) wait_for_logs "manipulation:Manipulation core started" "vision:Loaded models" "navigation:Finished Setup, Starting monitoring" ;;
   esac
@@ -231,7 +243,8 @@ if [ "$BUILD" == "true" ]; then
 fi
 
 case $TASK in
-  --manip|--nav|--all|--door) start_all ;;
+  --manip|--nav|--all|--door|--door-nav) start_all ;;
+  --door-tm) in_container "ros2 run frida_gz_sim sim_door_task_manager.py" ;;
   --task|--scenario)
     kill_sim
     in_container "ros2 run frida_task_sim run_scenario.py ${HARNESS_ARGS[*]}" ;;
