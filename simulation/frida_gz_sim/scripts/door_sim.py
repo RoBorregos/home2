@@ -3,8 +3,8 @@
 
 Contact and welds on a lever deep in a joint chain are not usable in Gazebo's DART, so the
 door joints are position-driven from here:
-- A gripper closed around the bar holds it firmly: it may slide along the bar, sit up to
-  ``depth_slack`` deeper between the pads and turn about the bar, nothing else.
+- A gripper closed around the bar holds it firmly: it may slide along the bar, push it up to
+  ``depth_slack`` deeper once the push beats the pads' friction (which then keeps it there) and turn about the bar.
 - The lever turns with the grip (spring back to 0 when free); past ``unlatch_angle`` the
   latch lets the leaf go, and the leaf then swings with the grip. A shut door latches again.
 - Whatever the grip cannot follow becomes a spring force on the gripper
@@ -57,14 +57,17 @@ class DoorSim(Node):
         super().__init__("door_sim")
         self.world = self.declare_parameter("world", "door_house").value
         self.unlatch_angle = self.declare_parameter("unlatch_angle", -0.35).value
-        self.relatch_angle = self.declare_parameter("relatch_angle", 0.02).value
+        self.relatch_angle = self.declare_parameter("relatch_angle", 0.005).value
         self.max_gap = self.declare_parameter("max_gap", 0.03).value
         self.close_delay = self.declare_parameter("close_delay", 0.8).value
-        self.depth_slack = self.declare_parameter("depth_slack", 0.04).value
+        self.depth_slack = self.declare_parameter("depth_slack", 0.015).value
         self.stiffness = self.declare_parameter("stiffness", 1500.0).value
+        # N the pads hold before the bar slips deeper between them
+        self.slip_force = self.declare_parameter("slip_force", 15.0).value
         # N per m/s of the grip along the swing, like a door closer's damper
         self.swing_damping = self.declare_parameter("swing_damping", 15.0).value
         self.lose_distance = self.declare_parameter("lose_distance", 0.05).value
+        self.lose_height = self.declare_parameter("lose_height", 0.12).value
         door_pose = self.declare_parameter("door_pose", [0.0, 0.0, 0.0]).value
         self.door_origin = np.array([door_pose[0], door_pose[1], 0.0])
         self.door_rotation = _rot_z(door_pose[2])
@@ -86,6 +89,7 @@ class DoorSim(Node):
         self._close_at = None
         self._shut_since = None
         self._last_hinge = (time.monotonic(), 0.0)
+        self._last_report = 0.0
 
         self.gz = GzNode()
         self.hinge_pub = self.gz.advertise("/sim/door/cmd/hinge", Double)
@@ -198,7 +202,7 @@ class DoorSim(Node):
             self._try_grip(grasp_door)
 
         if self.grip_depth is not None and grasp_door is not None:
-            x_range = (self.grip_depth - self.depth_slack, self.grip_depth)
+            x_range = (self.grip_floor, self.grip_depth)
             hinge = self.hinge_cmd
             if not self.latched:
                 leaf = self._to_leaf(grasp_door, hinge)
@@ -206,7 +210,12 @@ class DoorSim(Node):
                     target = float(np.clip(leaf[0], *x_range))
                     hinge = self._swing_to(grasp_door - HINGE, target, hinge)
             leaf = self._to_leaf(grasp_door, hinge)
-            nearest, angle = self._nearest_on_bar(leaf, x_range)
+            # Pads pushed deeper slip once the push beats their friction, then stay there
+            slipped = leaf[0] + self.slip_force / self.stiffness
+            self.grip_depth = float(np.clip(slipped, self.grip_floor, self.grip_depth))
+            nearest, angle = self._nearest_on_bar(
+                leaf, (self.grip_floor, self.grip_depth)
+            )
             error_leaf = leaf - nearest
             self.hinge_cmd, self.lever_cmd = hinge, angle
             error = _rot_z(hinge).apply(error_leaf)
@@ -217,9 +226,20 @@ class DoorSim(Node):
             radius_vec = grasp_door - HINGE
             tangent = np.cross([0.0, 0.0, 1.0], radius_vec)
             force_door = force_door - self.swing_damping * rate * tangent
-            if float(np.linalg.norm(error)) > self.lose_distance:
+            # In the lever frame: x off the door face, y along the bar, z across it
+            depth, along, across = _rot_x(-angle).apply(error_leaf)
+            if now - self._last_report > 1.0:
+                self._last_report = now
+                self.get_logger().info(
+                    f"grip: hinge {math.degrees(hinge):.1f} deg, lever {math.degrees(angle):.0f} deg, error deep {depth * 1000:.0f} along {along * 1000:.0f} across {across * 1000:.0f} mm, slack {(self.grip_depth - self.grip_floor) * 1000:.0f} mm"
+                )
+            # Pressing past the lever stop slides the pads round the bar, so across gets more room
+            if (
+                max(abs(depth), abs(along)) > self.lose_distance
+                or abs(across) > self.lose_height
+            ):
                 self._release(
-                    f"grip lost: {np.linalg.norm(error) * 1000:.0f} mm off the bar"
+                    f"grip lost: {depth * 1000:.0f} mm deep, {along * 1000:.0f} mm along, {across * 1000:.0f} mm across the bar"
                 )
                 force_door = np.zeros(3)
         elif self.grip_depth is None:
@@ -266,6 +286,7 @@ class DoorSim(Node):
             )
             return
         self.grip_depth = float(leaf[0])
+        self.grip_floor = self.grip_depth - self.depth_slack
         self.hinge_cmd = self.hinge
         self.attached_pub.publish(Bool(data=True))
         self.object_pub.publish(String(data="door_lever"))

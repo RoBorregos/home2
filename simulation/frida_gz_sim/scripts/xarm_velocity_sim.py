@@ -54,6 +54,8 @@ class XArmVelocitySim(Node):
         self._last_tick = None
         self.velocity = np.zeros(3)
         self.angular = np.zeros(3)
+        # Wall time the streamed line runs out, to plan the next one while the twist holds
+        self._line_end = None
         self.joints: dict[str, float] = {}
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -142,6 +144,13 @@ class XArmVelocitySim(Node):
 
     def _step(self):
         self._update_rtf()
+        if (
+            self._moving()
+            and self._line_end is not None
+            and time.monotonic() > self._line_end
+        ):
+            self._line_end = None
+            self._start_line()
         tcp = self.tcp()
         if tcp is None:
             return
@@ -223,9 +232,12 @@ class XArmVelocitySim(Node):
             )
             trajectory.points.append(step)
         self.traj_pub.publish(trajectory)
+        # A short line (a joint limit, an IK branch change) is planned again from where it ends
+        self._line_end = time.monotonic() + duration / max(self.rtf, 0.05)
 
     def _hold(self):
         """Stop where the arm is."""
+        self._line_end = None
         if len(self.joints) < len(JOINTS):
             return
         point = JointTrajectoryPoint(positions=[self.joints[j] for j in JOINTS])

@@ -114,8 +114,8 @@
     <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
       <joint_name>hinge</joint_name>
       <topic>/sim/door/cmd/hinge</topic>
-      <p_gain>800</p_gain>
-      <d_gain>40</d_gain>
+      <p_gain>4000</p_gain>
+      <d_gain>150</d_gain>
       <i_gain>0</i_gain>
       <cmd_max>2000</cmd_max>
       <cmd_min>-2000</cmd_min>
