@@ -4,6 +4,7 @@
 Task Manager for GPSR task of Robocup @Home 2026
 """
 
+from math import isfinite
 import time
 from datetime import datetime
 
@@ -21,8 +22,9 @@ from tf2_ros import Buffer, TransformListener
 import py_trees
 
 from task_manager.gpsr.bt_builder import build_tree, render_tree_ascii
-from task_manager.gpsr.merger import merge
-from task_manager.gpsr.timeouts import GLOBAL_BUDGET_S
+from task_manager.gpsr.merger import merge, replan_remaining
+from task_manager.gpsr.recovery import ExecutionHooks, RecoveryPolicy
+from task_manager.gpsr.timeouts import ACTION_TIMEOUTS, GLOBAL_BUDGET_S, timeout_for
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
@@ -101,6 +103,21 @@ class GPSRTM(Node):
         self.declare_parameter("interleave_enabled", True)
         self.declare_parameter("batch_size", BATCH_SIZE)
         self.declare_parameter("test_mode", False)
+        self.recovery_policy = RecoveryPolicy(
+            self.declare_parameter("recovery_policy", RecoveryPolicy.SKIP_DEFER.value).value
+        )
+        self.replan_on_failure = self.declare_parameter("replan_on_failure", False).value
+        self.use_nav_paths = self.declare_parameter("use_nav_paths", True).value
+        self.holding_penalty = self.declare_parameter("holding_penalty", 0.0).value
+        self.navigation_overhead = self.declare_parameter("navigation_overhead_m", 0.0).value
+        self.nominal_speed = self.declare_parameter("speed_m_s", 1.0).value
+        self.skill_durations = {
+            kind: self.declare_parameter(f"skill_duration_s.{kind}", 0.0).value
+            for kind in ACTION_TIMEOUTS
+        }
+        self.trial_deadline = None
+        self._facts = {}
+        self._path_cache = {}
         self.declare_parameter(
             "test_commands",
             [
@@ -125,7 +142,9 @@ class GPSRTM(Node):
             self.current_state = GPSRTM.TaskStates.WAITING_FOR_COMMAND
 
         self.batched_commands: list = []
-        self._location_cache: dict[str, tuple[float, float] | None] = {}
+        # The instruction point is known only after a successful navigation there.
+        self._at_instruction_point = False
+        self._location_cache: dict[str, tuple[tuple[float, float] | None, str | None, str]] = {}
         # Live areas table (poses) fetched once per planning session via the
         # retrieve_areas service; falls back to nav.areas_backup when the
         # service is unavailable. Reset alongside _location_cache.
@@ -213,26 +232,109 @@ class GPSRTM(Node):
         self._areas = areas
         return areas
 
-    def _resolve_xy(self, location_name: str):
-        """Resolve a free-text location to (x, y) using query_location +
-        the live areas table (see _get_areas). Memoized per planning session."""
+    def _resolve_location(self, location_name: str):
+        """Resolve both the map coordinates and containing room once per batch."""
         if not location_name:
-            return None
-        if location_name in self._location_cache:
-            return self._location_cache[location_name]
-        xy = None
+            return None, None, ""
+        key = location_name.strip().lower().replace("_", " ")
+        if key in self._location_cache:
+            return self._location_cache[key]
+        xy, room, subarea = None, None, ""
         try:
             hits = self.subtask_manager.hri.query_location(location_name, top_k=1)
             if hits:
                 hit = hits[0]
-                areas = self._get_areas()
-                pose = areas.get(hit.area, {}).get(hit.subarea or "safe_place")
+                room, subarea = hit.area, hit.subarea or ""
+                pose = self._get_areas().get(room, {}).get(hit.subarea or "safe_place")
                 if pose and len(pose) >= 2:
                     xy = (float(pose[0]), float(pose[1]))
         except Exception as e:  # noqa: BLE001
             self.get_logger().warning(f"Location resolve failed for '{location_name}': {e}")
-        self._location_cache[location_name] = xy
-        return xy
+        self._location_cache[key] = xy, room, subarea
+        return xy, room, subarea
+
+    def _resolve_xy(self, location_name: str):
+        return self._resolve_location(location_name)[0]
+
+    def _resolve_room(self, location_name: str):
+        return self._resolve_location(location_name)[1]
+
+    def _path_distance(self, start, end):
+        # Named legs remain valid for the batch. A current-pose leg must be
+        # queried again after the robot moves.
+        if start is not None and start == end:
+            return 0.0
+        key = start, end
+        if start is not None and key in self._path_cache:
+            return self._path_cache[key]
+        _, area, sub = self._resolve_location(end)
+        _, src_area, src_sub = self._resolve_location(start)
+        if not area or (start is not None and not src_area):
+            return None
+        if not self.subtask_manager.nav.nav_query_srv.service_is_ready():
+            return None
+        status, info = self.subtask_manager.nav.get_path_info(area, sub, src_area or "", src_sub)
+        if status != Status.EXECUTION_SUCCESS:
+            return None
+        distance = info.get("distance") if isinstance(info, dict) else None
+        if not isinstance(distance, (float, int)) or not isfinite(distance) or distance < 0:
+            return None
+        if start is not None:
+            self._path_cache[key] = distance
+        return distance
+
+    def _planner_options(self):
+        nav_paths = self.use_nav_paths and self.subtask_manager.nav.nav_query_srv.service_is_ready()
+        return dict(
+            locator=self._resolve_xy,
+            room_of=self._resolve_room,
+            origin=self._current_robot_xy(),
+            distance=self._path_distance if nav_paths else None,
+            holding_penalty=self.holding_penalty,
+            navigation_overhead=self.navigation_overhead,
+            speed_m_s=self.nominal_speed,
+            skill_durations_s=self.skill_durations,
+        )
+
+    def _estimate_revisit(self, steps):
+        # Reserve a full navigation timeout for each drive and the return,
+        # and the skill timeout for each observation/report. Require a known
+        # route home from every intermediate stop in case the revisit fails.
+        if not steps and self._at_instruction_point:
+            return 0.0
+        place = None
+        estimate = timeout_for("go_to")
+        if self._path_distance(place, "start_location") is None:
+            return None
+        for step in steps:
+            kind = step.action.action
+            if kind == "go_to":
+                target = step.action.location_to_go
+                if self._path_distance(place, target) is None:
+                    return None
+                place = target
+                if self._path_distance(place, "start_location") is None:
+                    return None
+            estimate += timeout_for(kind)
+        return estimate
+
+    def _return_to_start(self, deadline):
+        if time.monotonic() >= deadline:
+            return False
+        self.subtask_manager.hri.say(
+            "I have finished executing your commands. I will return to the start position.",
+            wait=False,
+        )
+        return self.navigate_to("start_location", "", False) == Status.EXECUTION_SUCCESS
+
+    def _report_failure(self, action, status, deadline):
+        if time.monotonic() >= deadline:
+            return False
+        message = f"Command {action.source_cmd + 1}: I could not complete {action.action.action}."
+        return self.subtask_manager.hri.say(message) == Status.EXECUTION_SUCCESS
+
+    def _replan(self, pending, holder):
+        return replan_remaining(pending, initial_holder=holder, **self._planner_options())
 
     def _current_robot_xy(self):
         """Look up the robot's (x, y) in the map frame, or None on failure."""
@@ -246,6 +348,13 @@ class GPSRTM(Node):
             return None
 
     def _on_action_start(self, plan_action):
+        self.gpsr_individual_tasks.batch_history = [
+            value
+            for (cmd, idx), value in sorted(self._facts.items())
+            if cmd == plan_action.source_cmd and idx < plan_action.source_idx
+        ]
+        self.gpsr_tasks.quiet_observation = plan_action.purpose == "deferred"
+        self.gpsr_individual_tasks.quiet_observation = self.gpsr_tasks.quiet_observation
         kind = getattr(plan_action.action, "action", "?")
         self.subtask_manager.hri.publish_display_step(f"executing:{kind}", GPSR_TASK_STEP_TOPIC)
 
@@ -259,8 +368,11 @@ class GPSRTM(Node):
         )
 
     def _on_action_complete(self, plan_action, status, result):
-        if status == Status.EXECUTION_SUCCESS:
-            self._completed.add((plan_action.source_cmd, plan_action.source_idx))
+        if status == Status.EXECUTION_SUCCESS and plan_action.purpose in ("plan", "deferred"):
+            key = plan_action.source_cmd, plan_action.source_idx
+            self._completed.add(key)
+            if plan_action.source_idx >= 0:
+                self._facts[key] = plan_action.action.action, result
         self._capture_command(plan_action.action, status, result)
         try:
             self.subtask_manager.hri.add_command_history(plan_action.action, result, status)
@@ -304,12 +416,16 @@ class GPSRTM(Node):
 
     def _execute_interleaved_batch(self):
         """Plan + tick the py_trees tree for the current batch."""
+        if self.trial_deadline is None:
+            self.trial_deadline = time.monotonic() + GLOBAL_BUDGET_S
         self._completed.clear()
+        self._facts.clear()
         plan = merge(
             self.batched_commands,
-            locator=self._resolve_xy,
-            origin=self._current_robot_xy(),
+            **self._planner_options(),
+            origin_name="start_location" if self._at_instruction_point else None,
         )
+        self._at_instruction_point = False
         self.get_logger().info(
             f"Merged {len(self.batched_commands)} commands → "
             f"{len(plan.actions)} interleaved actions"
@@ -338,6 +454,16 @@ class GPSRTM(Node):
             plan,
             subtask_handlers=[self.gpsr_tasks, self.gpsr_individual_tasks],
             on_action_complete=self._on_action_complete,
+            recovery_policy=self.recovery_policy,
+            execution_hooks=ExecutionHooks(
+                deadline=self.trial_deadline,
+                room_of=self._resolve_room,
+                estimate_deferred=self._estimate_revisit,
+                return_to_start=self._return_to_start,
+                report_failure=self._report_failure,
+                failure_report_s=timeout_for("say_with_context"),
+                replan=self._replan if self.replan_on_failure else None,
+            ),
             retry_count=2,
             global_budget_s=GLOBAL_BUDGET_S,
             on_fallback_entry=_announce_fallback,
@@ -364,9 +490,13 @@ class GPSRTM(Node):
             rclpy.spin_once(self, timeout_sec=0.0)
             time.sleep(0.1)
 
-        self.get_logger().info(f"Batch tree finished with status={root.status}")
-        self._location_cache.clear()
-        self._areas = None
+        if not hasattr(root, "returned"):
+            return False  # Middleware shut down before the first tick.
+        self.get_logger().info(
+            f"Batch status={root.status}, returned={root.returned}, skipped={root.skipped}, "
+            f"failures={[(f.action.source_cmd, f.action.source_idx, f.status.name, f.deferred) for f in root.failures]}"
+        )
+        return root.returned is True
 
     def _execute_sequential_fallback(self, batched_commands):
         """Last-ditch path when py_trees is unavailable."""
@@ -396,6 +526,9 @@ class GPSRTM(Node):
             self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+        self._at_instruction_point = (
+            location == "start_location" and not sublocation and result == Status.EXECUTION_SUCCESS
+        )
         return result
 
     def timeout(self, timeout: int = 2):
@@ -423,6 +556,8 @@ class GPSRTM(Node):
         elif self.current_state == GPSRTM.TaskStates.START:
             self._track_state_change(GPSRTM.TaskStates.START)
             status = self.subtask_manager.nav.check_door()
+            if self.interleave_enabled:
+                self.trial_deadline = time.monotonic() + GLOBAL_BUDGET_S
 
             self.navigate_to("start_location", "", False)
 
@@ -524,14 +659,20 @@ class GPSRTM(Node):
         elif self.current_state == GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH:
             self._track_state_change(GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH)
             batch_count = len(self.batched_commands)
-            self._execute_interleaved_batch()
+            try:
+                returned = self._execute_interleaved_batch()
+            finally:
+                self._location_cache.clear()
+                self._path_cache.clear()
+                self._areas = None
+                self.gpsr_individual_tasks.batch_history = None
+                self.gpsr_individual_tasks.quiet_observation = False
+                self.gpsr_tasks.quiet_observation = False
             self.executed_commands += batch_count
             self.batched_commands = []
-            self.subtask_manager.hri.say(
-                "I have finished executing your commands. I will return to the start position.",
-                wait=False,
-            )
-            self.navigate_to("start_location", "", False)
+            if not returned:
+                # The tree's return was skipped or failed: go back anyway.
+                self.navigate_to("start_location", "", False)
             self.subtask_manager.manipulation.move_to_position("front_stare")
             self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
 

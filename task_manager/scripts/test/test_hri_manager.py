@@ -1029,27 +1029,10 @@ class TestHriManager(Node):
         self.get_logger().info(f"Saved to {output_file}")
 
     def test_fallback_resume(self):
-        """Unit-test the interleaved->sequential resume safeguard. Pure-Python,
-        no ROS services. Builds a per-command fallback plan, marks some actions
-        as already completed by the interleaved branch, ticks a
-        SequentialFallbackLeaf, and asserts it resumes (skips completed non-go_to
-        actions) rather than restarting from the beginning."""
-        from task_manager.gpsr.leaf_behaviours import SequentialFallbackLeaf
+        """Drive the real batch tree through a failure after a successful pick."""
+        import py_trees
+        from task_manager.gpsr.bt_builder import build_tree
         from task_manager.gpsr.merger import merge
-
-        class RecordingHandler:
-            """Stub handler whose every attribute is a callable that records the
-            action kind it was invoked with and reports success."""
-
-            def __init__(self, calls):
-                self._calls = calls
-
-            def __getattr__(self, name):
-                def _call(action):
-                    self._calls.append(getattr(action, "action", name))
-                    return Status.EXECUTION_SUCCESS, None
-
-                return _call
 
         commands = build_commands(
             [
@@ -1062,48 +1045,40 @@ class TestHriManager(Node):
             ]
         )
         plan = merge(commands)
-        per_cmd = plan.fallback[0]
+        calls = []
+        phase = "merged"
 
-        def run_leaf(completed):
-            """Tick a fallback leaf whose completed set is ``completed`` (a set
-            of (source_cmd, source_idx)); return the action kinds it dispatched."""
-            calls = []
-            is_completed = (
-                None
-                if completed is None
-                else (lambda pa: (pa.source_cmd, pa.source_idx) in completed)
-            )
-            leaf = SequentialFallbackLeaf(
-                per_cmd,
-                [RecordingHandler(calls)],
-                is_completed=is_completed,
-            )
-            leaf.update()
-            return calls
+        def on_fallback():
+            nonlocal phase
+            phase = "fallback"
 
-        # The pick (idx 1) finished in the interleaved branch; the place (idx 3)
-        # did not. Resume must run only the living_room trip + place, and must
-        # NOT drive to the kitchen (its only work, the pick, is already done).
-        partial = run_leaf({(0, 1)})
-        # Every action finished: resume should do nothing at all (no wasted trips).
-        all_done = run_leaf({(0, 1), (0, 3)})
-        # No completion info: the full command runs from the beginning.
-        full = run_leaf(None)
+        class Handler:
+            def go_to(self, action):
+                calls.append((phase, action.location_to_go))
+                if phase == "merged" and action.location_to_go == "living_room":
+                    return Status.EXECUTION_ERROR, None
+                return Status.EXECUTION_SUCCESS, None
 
-        failures = []
-        if partial != ["go_to", "place_object"]:
-            failures.append(
-                f"partial resume should skip the wasted kitchen trip + pick, got {partial}"
-            )
-        if all_done != []:
-            failures.append(f"fully-completed command should run nothing, got {all_done}")
-        if full != ["go_to", "pick_object", "go_to", "place_object"]:
-            failures.append(f"default (is_completed=None) must run all actions: {full}")
+            def pick_object(self, action):
+                calls.append((phase, "pick"))
+                return Status.EXECUTION_SUCCESS, "apple"
 
-        if failures:
-            self.get_logger().error(f"  FAIL: {'; '.join(failures)}")
-        else:
-            self.get_logger().info(f"  PASS (partial={partial}, all_done={all_done}, full={full})")
+            def place_object(self, action):
+                calls.append((phase, "place"))
+                return Status.EXECUTION_SUCCESS, "apple"
+
+        tree = build_tree(
+            plan, [Handler()], is_completed=lambda pa: False, on_fallback_entry=on_fallback
+        )
+        # The tree tracks successful actions internally.
+        for _ in range(25):
+            tree.tick_once()
+            if tree.status != py_trees.common.Status.RUNNING:
+                break
+        assert tree.status == py_trees.common.Status.SUCCESS
+        assert [kind for branch, kind in calls if branch == "fallback"] == ["living_room", "place"]
+        assert calls.count(("merged", "pick")) == 1
+        self.get_logger().info(f"PASS fallback resume: {calls}")
 
     def test_merged_plan_speech(self):
         """Test the merged-plan announcement on its own, without running a batch.

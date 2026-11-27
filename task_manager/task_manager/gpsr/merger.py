@@ -7,19 +7,27 @@ order that:
 
   * preserves intra-command sequencing,
   * keeps the gripper invariant (one item at a time, drop before pick),
-  * minimizes 2-D travel between locations using a precedence-constrained
-    Held-Karp DP at the *segment* granularity, allowing gripper-neutral
-    segments of any command to interleave inside another command's atomic
-    block,
+  * keeps conflicting segments of different commands in issue order, except
+    that observations of the scene run before another command changes it,
+  * minimizes travel between locations (2-D Euclidean by default, or any
+    caller-supplied ``distance`` such as a planner's path length) using a
+    precedence-constrained
+    DP over per-command progress vectors at the *segment* granularity,
+    allowing gripper-neutral segments of any command to interleave inside
+    another command's atomic block,
+  * prices each hop from where the previous segment *ends* (an escort's
+    destination) and runs actions before a command's first ``go_to`` at the
+    robot's start position (driving back there when ``origin_name`` is given),
   * dedups back-to-back same-location ``go_to`` actions in the final plan.
 
 Pipeline:
   1. Decompose each command into go_to-led segments.
-  2. Held-Karp DP over the segments with two-part eligibility:
-       - per-command prefix order (cmd k's segments scheduled in their
-         original positions),
+  2. DP over progress vectors k = (k_0, ..., k_{n-1}), k_c = how many of
+     command c's segments are done, with two-part eligibility:
+       - per-command prefix order (implicit in k),
        - gripper-state check (only neutral segments may interleave while
-         another command is mid-block).
+         another command is mid-block),
+       - cross-command dependencies (see _build_needs).
   3. Walk the schedule back into a flat PlanAction list, then collapse
      consecutive same-location go_tos.
 
@@ -27,26 +35,43 @@ The merger is intentionally framework-free: it talks to BAML objects via
 ``getattr`` so unit tests can pass simple stand-ins.
 """
 
-from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Sequence, Tuple
+from dataclasses import dataclass, field, replace
+from math import isfinite
+from types import SimpleNamespace
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    Iterator,
+    Mapping,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 # Action-kind classifications.
 _GRIPPER_ACQUIRES = frozenset({"pick_object"})
 _GRIPPER_RELEASES = frozenset({"give_object", "place_object"})
-
+# Escorts end at their destination: kind -> field holding it.
+_ESCORT_DESTINATION = {
+    "follow_person_until": "destination",
+    "guide_person_to": "destination_room",
+}
+# Stands for the robot's start position in the cost matrix.
+_ORIGIN = object()
 # Sentinel cost for any edge touching an unresolved (None) coordinate. Well
 # above any realistic indoor navigation distance, so the DP avoids unknown
 # locations unless the per-command prefix forces them into a slot.
 LARGE_M = 1000.0
 
-# Cap on the number of segments before we fall back to per-command
-# sequential. Held-Karp is O(2^M * M^2); 16 keeps the worst case sub-second.
-_M_CAP = 16
+# Max DP states (n * prod(L_c + 1)) before falling back to sequential.
+_STATE_CAP = 200_000
 
-# Tiebreaker weight: tiny per-cross-command-switch penalty so equal-cost
-# schedules prefer per-command sequential order. Must stay well below any
-# real distance difference.
-_TIEBREAK_EPSILON = 1e-6
+
+class InfeasibleResidual(ValueError):
+    """A legal residual schedule could not be produced within the planning bound."""
 
 
 @dataclass
@@ -59,15 +84,24 @@ class PlanAction:
     location: Optional[str]
     requires_gripper: bool
     releases_gripper: bool
+    purpose: str = "plan"
+    navigation_goals: Tuple[Tuple[int, int], ...] = ()
 
 
 @dataclass
 class InterleavedPlan:
     actions: List[PlanAction]
     fallback: List[List[PlanAction]]
+    origin_name: Optional[str] = None
 
 
 Locator = Callable[[str], Optional[Tuple[float, float]]]
+# (from_location or None for the robot origin, to_location) -> meters, or None
+# if unknown. A non-finite return (unreachable) also costs LARGE_M.
+DistanceFn = Callable[[Optional[str], str], Optional[float]]
+# location name -> containing room ("couch" -> "living room"), or None.
+RoomFn = Callable[[str], Optional[str]]
+_Var = Tuple[str, Optional[str]]  # (domain, place)
 
 
 @dataclass
@@ -75,40 +109,76 @@ class _Segment:
     cmd: int
     indices: List[int]  # action indices within the source command
     location: Optional[str]  # the navigation target (from a leading go_to)
-    # Gripper state after the segment's last gripper action; None if it has none.
+    # Gripper state after the segment, set by its *last* gripper action
+    # (True = held, False = empty); None if it has no gripper action,
+    # i.e. the segment is gripper-neutral.
     ends_holding: Optional[bool] = None
+    # Where the robot stands after the segment if an escort moved it.
+    exit: Optional[str] = None
+    # True for actions before the command's first go_to: they run at the origin.
+    at_origin: bool = False
+    # Escorts with a destination, in order: (gripper state set earlier in the
+    # segment, None if the segment's start state still holds; destination).
+    escorts: List[Tuple[Optional[bool], str]] = field(default_factory=list)
+    held_dwell_m: Tuple[float, float] = (0.0, 0.0)
+    reads: FrozenSet[_Var] = frozenset()
+    writes: FrozenSet[_Var] = frozenset()
 
 
 def _kind(action: Any) -> str:
     return getattr(action, "action", "") or ""
 
 
-def _decompose(cmd_idx: int, command: Any) -> List[_Segment]:
+def _decompose(
+    cmd_idx: int, command: Any, dwell_m: Optional[Mapping[str, float]] = None
+) -> List[_Segment]:
     """Split a command's action list into go_to-led segments."""
     actions = list(getattr(command, "commands", []))
     segments: List[_Segment] = []
     cur_loc: Optional[str] = None
     cur_indices: List[int] = []
     cur_end: Optional[bool] = None
+    cur_exit: Optional[str] = None
+    cur_escorts: List[Tuple[Optional[bool], str]] = []
+    seen_go_to = False
 
     def flush() -> None:
-        nonlocal cur_indices, cur_loc, cur_end
+        nonlocal cur_indices, cur_end, cur_exit, cur_escorts
         if cur_indices:
+            held_dwell = [0.0, 0.0]
+            if dwell_m:
+                for initial in (0, 1):
+                    held = bool(initial)
+                    for idx in cur_indices:
+                        kind = _kind(actions[idx])
+                        if held and kind != "go_to":
+                            held_dwell[initial] += dwell_m.get(kind, 0.0)
+                        if kind in _GRIPPER_ACQUIRES:
+                            held = True
+                        elif kind in _GRIPPER_RELEASES:
+                            held = False
             segments.append(
                 _Segment(
                     cmd=cmd_idx,
                     indices=list(cur_indices),
                     location=cur_loc,
                     ends_holding=cur_end,
+                    exit=cur_exit,
+                    at_origin=not seen_go_to,
+                    escorts=cur_escorts,
+                    held_dwell_m=tuple(held_dwell),
                 )
             )
         cur_indices = []
         cur_end = None
+        cur_exit = None
+        cur_escorts = []
 
     for i, action in enumerate(actions):
         kind = _kind(action)
         if kind == "go_to":
             flush()
+            seen_go_to = True
             cur_loc = getattr(action, "location_to_go", None)
             cur_indices.append(i)
         else:
@@ -117,8 +187,176 @@ def _decompose(cmd_idx: int, command: Any) -> List[_Segment]:
                 cur_end = True
             if kind in _GRIPPER_RELEASES:
                 cur_end = False
+            if kind in _ESCORT_DESTINATION:
+                dest = getattr(action, _ESCORT_DESTINATION[kind], None)
+                if isinstance(dest, str) and dest.strip():
+                    cur_exit = dest
+                    cur_escorts.append((cur_end, dest))
     flush()
     return segments
+
+
+# Object and person poses are keyed by place. Attention is a single shared
+# variable: finding someone at any place changes whom the robot attends to.
+_OBJECTS = "objects"
+_PEOPLE = "people"
+_ATTENTION = "attention"
+
+# kind -> (domains read, domains written) at the current place.
+# Unlisted kinds touch no shared state.
+_EFFECTS = {
+    "pick_object": ({_OBJECTS}, {_OBJECTS}),
+    "place_object": (set(), {_OBJECTS}),
+    "give_object": ({_PEOPLE}, {_OBJECTS}),
+    "count": ({_OBJECTS, _PEOPLE}, set()),
+    "get_visual_info": ({_OBJECTS}, set()),
+    "find_person": ({_PEOPLE}, {_ATTENTION}),
+    "find_person_by_name": ({_PEOPLE}, {_ATTENTION}),
+    "get_person_info": ({_PEOPLE, _ATTENTION}, set()),
+    # Escorts also write the destination; see _action_effects.
+    "follow_person_until": ({_PEOPLE, _ATTENTION}, {_PEOPLE}),
+    "guide_person_to": ({_PEOPLE, _ATTENTION}, {_PEOPLE}),
+}
+
+
+def _norm_location(loc: Any) -> Optional[str]:
+    if not isinstance(loc, str):
+        return None
+    loc = loc.strip().lower().replace("_", " ")
+    return loc or None
+
+
+def _count_domains(action: Any) -> set:
+    """Same person/object split as GPSRTask.count; both when the target is missing."""
+    target = getattr(action, "target_to_count", None)
+    if not isinstance(target, str) or not target.strip():
+        return {_OBJECTS, _PEOPLE}
+    target = target.lower()
+    return {_PEOPLE} if "person" in target or "people" in target else {_OBJECTS}
+
+
+def _action_effects(action: Any, here: Optional[str]) -> Tuple[set, set, Optional[str]]:
+    """``(reads, writes, here_after)`` for one action performed at ``here``."""
+    kind = _kind(action)
+    if kind == "go_to":
+        return set(), set(), _norm_location(getattr(action, "location_to_go", None))
+    read_domains, write_domains = _EFFECTS.get(kind, (set(), set()))
+    if kind == "count":
+        read_domains = _count_domains(action)
+    reads = {(d, None if d == _ATTENTION else here) for d in read_domains}
+    writes = {(d, None if d == _ATTENTION else here) for d in write_domains}
+    here_after = here
+    if kind in _ESCORT_DESTINATION:
+        here_after = _norm_location(getattr(action, _ESCORT_DESTINATION[kind], None))
+        writes.add((_PEOPLE, here_after))
+    return reads, writes, here_after
+
+
+def _annotate_effects(
+    segments: Sequence[_Segment], command: Any, start: Optional[str] = None
+) -> None:
+    """Read/write sets per segment; actions before the first go_to act at ``start``."""
+    actions = list(getattr(command, "commands", []))
+    here: Optional[str] = _norm_location(start)
+    for seg in segments:
+        reads: set = set()
+        writes: set = set()
+        for i in seg.indices:
+            r, w, here = _action_effects(actions[i], here)
+            reads |= r
+            writes |= w
+        seg.reads = frozenset(reads)
+        seg.writes = frozenset(writes)
+
+
+def _room_table(
+    segments: Sequence[_Segment], room_of: Optional[RoomFn]
+) -> Dict[str, Optional[str]]:
+    places = {v[1] for seg in segments for v in seg.reads | seg.writes if v[1] is not None}
+    if room_of is None:
+        return {p: None for p in places}
+    return {p: _norm_location(room_of(p)) for p in places}
+
+
+def _places_overlap(a: Optional[str], b: Optional[str], room: Dict[str, Optional[str]]) -> bool:
+    if a is None or b is None or a == b:
+        return True
+    return room.get(a) == b or room.get(b) == a
+
+
+def _clash(
+    writes: FrozenSet[_Var], others: FrozenSet[_Var], room: Dict[str, Optional[str]]
+) -> bool:
+    return any(w[0] == o[0] and _places_overlap(w[1], o[1], room) for w in writes for o in others)
+
+
+def _scene_reads(
+    seg: _Segment, earlier: Sequence[_Segment], room: Dict[str, Optional[str]]
+) -> FrozenSet[_Var]:
+    """Reads of the scene as it was when the commands were given: object/person
+    reads at places the segment's own command has not changed yet."""
+    written = frozenset(w for prev in earlier for w in prev.writes)
+    return frozenset(
+        r for r in seg.reads if r[0] != _ATTENTION and not _clash(written, frozenset([r]), room)
+    )
+
+
+_Seg = Tuple[int, int]  # (command, segment index)
+
+
+def _runs_after(before: Mapping[_Seg, set], a: _Seg, b: _Seg) -> bool:
+    """Whether ``b`` is already required (transitively) to run before ``a``."""
+    stack, seen = [a], set()
+    while stack:
+        for prev in before[stack.pop()]:
+            if prev == b:
+                return True
+            if prev not in seen:
+                seen.add(prev)
+                stack.append(prev)
+    return False
+
+
+def _build_needs(
+    segments_per_cmd: Sequence[Sequence[_Segment]],
+    room: Dict[str, Optional[str]],
+    observations_first: bool = True,
+) -> List[List[Tuple[Tuple[int, int], ...]]]:
+    """``needs[c][j]`` = ``((d, m), ...)``: segment j of command c waits until command d did m segments.
+    Conflicts keep issue order, but scene observations go before changes unless that makes a cycle."""
+    before: Dict[_Seg, set] = {}
+    for c, chain in enumerate(segments_per_cmd):
+        for j in range(len(chain)):
+            before[(c, j)] = {(c, j - 1)} if j else set()
+
+    flips = []
+    for c, chain in enumerate(segments_per_cmd):
+        for j, t in enumerate(chain):
+            scene = _scene_reads(t, chain[:j], room) if observations_first else frozenset()
+            for d in range(c):
+                for i, s in enumerate(segments_per_cmd[d]):
+                    if _clash(s.writes, t.writes | (t.reads - scene), room) or _clash(
+                        t.writes, s.reads, room
+                    ):
+                        before[(c, j)].add((d, i))
+                    elif _clash(s.writes, scene, room):
+                        flips.append(((d, i), (c, j)))
+    # Issue-order edges are acyclic; add each flip only if it keeps them so.
+    for writer, reader in flips:
+        if not _runs_after(before, reader, writer):
+            before[writer].add(reader)
+
+    needs: List[List[Tuple[Tuple[int, int], ...]]] = []
+    for c, chain in enumerate(segments_per_cmd):
+        per_cmd = []
+        for j in range(len(chain)):
+            req: Dict[int, int] = {}
+            for d, i in before[(c, j)]:
+                if d != c:
+                    req[d] = max(req.get(d, 0), i + 1)
+            per_cmd.append(tuple(sorted(req.items())))
+        needs.append(per_cmd)
+    return needs
 
 
 def _euclidean(a: Optional[Tuple[float, float]], b: Optional[Tuple[float, float]]) -> float:
@@ -129,14 +367,78 @@ def _euclidean(a: Optional[Tuple[float, float]], b: Optional[Tuple[float, float]
     return (dx * dx + dy * dy) ** 0.5
 
 
-def _segment_xy(seg: _Segment, locator: Locator) -> Optional[Tuple[float, float]]:
-    if seg.location is None:
-        return None
-    return locator(seg.location)
+def _euclidean_distance(locator: Locator, origin: Optional[Tuple[float, float]]) -> DistanceFn:
+    def dist(a: Optional[str], b: str) -> float:
+        return _euclidean(origin if a is None else locator(a), locator(b))
+
+    return dist
+
+
+def _pricer(distance: DistanceFn, has_origin: bool) -> Callable[[Any, Any], float]:
+    """``cost(a, b)`` between names or ``_ORIGIN``, querying ``distance`` once per
+    distinct pair. Unresolved or unreachable locations cost LARGE_M."""
+    memo: dict = {}
+
+    def cost(a: Any, b: Any) -> float:
+        if a is None or b is None:
+            return LARGE_M
+        if a == b:
+            return 0.0
+        if a is _ORIGIN or b is _ORIGIN:
+            if not has_origin:
+                # Unknown origin: leaving it is free, returning to it is not.
+                return 0.0 if a is _ORIGIN else LARGE_M
+            a, b = None, (b if a is _ORIGIN else a)
+        if (a, b) not in memo:
+            d = distance(a, b)
+            memo[(a, b)] = LARGE_M if d is None or not d < LARGE_M else d
+        return memo[(a, b)]
+
+    return cost
+
+
+def _cost_matrix(
+    segments: Sequence[_Segment],
+    distance: DistanceFn,
+    has_origin: bool,
+    origin_name: Optional[str] = None,
+) -> Tuple[List[float], List[List[float]]]:
+    """Seed costs and segment-to-segment costs."""
+    cost = _pricer(distance, has_origin)
+    M = len(segments)
+    start = _ORIGIN if origin_name is None else origin_name
+    entry = [start if seg.at_origin else seg.location for seg in segments]
+    leave = [entry[u] if seg.exit is None else seg.exit for u, seg in enumerate(segments)]
+    seed = [
+        cost(_ORIGIN, entry[u]) if has_origin and not seg.at_origin else 0.0
+        for u, seg in enumerate(segments)
+    ]
+    edge = [[cost(leave[a], entry[b]) for b in range(M)] for a in range(M)]
+    return seed, edge
+
+
+def _carried_inside(
+    segments: Sequence[_Segment], cost: Callable[[Any, Any], float], start: Any
+) -> List[Tuple[float, float]]:
+    """Per segment, escort metres driven while holding: (starting empty, starting
+    held). Actions before the first go_to start at ``start``; unknown legs count 0."""
+    out = []
+    for seg in segments:
+        here = start if seg.at_origin else seg.location
+        carried = [0.0, 0.0]
+        for held_now, dest in seg.escorts:
+            d = cost(here, dest)
+            for start_held in (0, 1):
+                if (start_held if held_now is None else held_now) and d < LARGE_M:
+                    carried[start_held] += d
+            here = dest
+        out.append((carried[0], carried[1]))
+    return out
 
 
 def _build_holding_after(
     segments_per_cmd: Sequence[Sequence[_Segment]],
+    initial_holder: Optional[int] = None,
 ) -> List[List[bool]]:
     """For each command c, ``holding_after[c][p]`` is True iff scheduling
     ``p`` segments of cmd c (in source order) leaves the gripper held.
@@ -144,9 +446,9 @@ def _build_holding_after(
     p ranges 0..len(segments_per_cmd[c]).
     """
     result: List[List[bool]] = []
-    for segs in segments_per_cmd:
-        held = False
-        ha = [False]
+    for cmd, segs in enumerate(segments_per_cmd):
+        held = cmd == initial_holder
+        ha = [held]
         for seg in segs:
             # Order within the segment matters: "place, pick" ends held.
             if seg.ends_holding is not None:
@@ -157,136 +459,195 @@ def _build_holding_after(
 
 
 def _gripper_holder(
-    S: int,
-    n_cmds: int,
-    cmd_seg_mask: Sequence[int],
+    k: Sequence[int],
     holding_after: Sequence[Sequence[bool]],
 ) -> Optional[int]:
-    """Return the cmd currently holding the gripper given subset S, or None.
-
-    By the single-item invariant, at most one command can be the holder at
-    any time, so we return the first match.
-    """
-    for c in range(n_cmds):
-        p = (S & cmd_seg_mask[c]).bit_count()
-        if holding_after[c][p]:
+    """The command holding the gripper at progress vector ``k``, or None."""
+    for c, kc in enumerate(k):
+        if holding_after[c][kc]:
             return c
     return None
 
 
-def _optimal_schedule(
+def _state_count(seg_lens: Sequence[int]) -> int:
+    """Upper bound on DP states: n * prod(L_c + 1)."""
+    total = 1
+    for length in seg_lens:
+        total *= length + 1
+    return total * max(len(seg_lens), 1)
+
+
+_Needs = Optional[Sequence[Sequence[Sequence[Tuple[int, int]]]]]
+_Expand = Callable[[Tuple[int, ...], int], Iterator[Tuple[int, float]]]
+
+
+def _expander(
     segments: Sequence[_Segment],
-    seg_cmd: Sequence[int],
-    seg_pos: Sequence[int],
-    cmd_seg_mask: Sequence[int],
+    seg_ids: Sequence[Sequence[int]],
     holding_after: Sequence[Sequence[bool]],
-    n_cmds: int,
-    locator: Locator,
-    origin: Optional[Tuple[float, float]],
-) -> List[int]:
-    """Held-Karp DP at segment granularity.
+    distance: DistanceFn,
+    has_origin: bool,
+    needs: _Needs = None,
+    origin_name: Optional[str] = None,
+    holding_penalty: float = 0.0,
+    navigation_overhead: float = 0.0,
+) -> _Expand:
+    """``expand(k, last)`` yields ``(c, step_cost)`` for each eligible next segment.
 
-    State (S, last):
-        S    — bitmask of segments already scheduled
-        last — index of the most recently scheduled segment
-
-    Eligibility for adding segment u to S:
-      1. Per-command prefix: bin(S & cmd_seg_mask[seg_cmd[u]]).count("1")
-         must equal seg_pos[u].
-      2. Gripper-state: if some command c' currently holds the gripper and
-         c' != seg_cmd[u], then segment u must be gripper-neutral
-         (segments[u].ends_holding is None).
-
-    Cost: f(S|{u}, u) = f(S, last) + dist(seg_xy[last], seg_xy[u])
-                       + epsilon * (seg_cmd[u] != seg_cmd[last]).
-    Seed: f({u}, u) = dist(origin, seg_xy[u]) + epsilon * seg_cmd[u].
-
-    The epsilon term breaks ties (e.g. all-unknown locations where every
-    edge costs LARGE_M) toward per-command sequential order. It is small
-    enough to never override a real distance difference.
-
-    Complexity: O(2^M · M²). M is capped at _M_CAP by the caller.
+    Until the robot moves, steps cost ``seed``. Every metre driven while
+    holding, on a hop or escorting inside a segment, costs ``holding_penalty`` extra.
     """
-    M = len(segments)
-    if M == 0:
-        return []
+    seed, edge = _cost_matrix(segments, distance, has_origin, origin_name)
+    cost = _pricer(distance, has_origin)
+    inside = _carried_inside(segments, cost, _ORIGIN if origin_name is None else origin_name)
+    inside_unmoved = _carried_inside(segments, cost, _ORIGIN)
+    still = (
+        {u for u, seg in enumerate(segments) if seg.at_origin and seg.exit is None}
+        if origin_name is not None
+        else set()
+    )
+    seg_lens = [len(ids) for ids in seg_ids]
+    n = len(seg_lens)
 
-    seg_xy = [_segment_xy(segments[u], locator) for u in range(M)]
-
-    INF = float("inf")
-    full = (1 << M) - 1
-
-    f = [[INF] * M for _ in range(1 << M)]
-    parent = [[-1] * M for _ in range(1 << M)]
-
-    for u in range(M):
-        if seg_pos[u] != 0:
-            continue
-        seed = 0.0 if origin is None else _euclidean(origin, seg_xy[u])
-        f[1 << u][u] = seed + _TIEBREAK_EPSILON * seg_cmd[u]
-        parent[1 << u][u] = -1
-
-    for S in range(1, 1 << M):
-        holder = _gripper_holder(S, n_cmds, cmd_seg_mask, holding_after)
-        for last in range(M):
-            if not (S >> last) & 1:
+    def expand(k: Tuple[int, ...], last: int) -> Iterator[Tuple[int, float]]:
+        holder = _gripper_holder(k, holding_after)
+        here = seg_ids[last][k[last] - 1] if last >= 0 else -1
+        unmoved = here < 0 or (
+            here in still
+            and all(k[d] == 0 or (k[d] == 1 and seg_ids[d][0] in still) for d in range(n))
+        )
+        row = seed if unmoved else edge[here]
+        carried = inside_unmoved if unmoved else inside
+        for c in range(n):
+            if k[c] == seg_lens[c]:
                 continue
-            cur_cost = f[S][last]
-            if cur_cost == INF:
+            u = seg_ids[c][k[c]]
+            if holder is not None and holder != c and segments[u].ends_holding is not None:
                 continue
-            for u in range(M):
-                if (S >> u) & 1:
-                    continue
-                cnt = (S & cmd_seg_mask[seg_cmd[u]]).bit_count()
-                if cnt != seg_pos[u]:
-                    continue
-                if holder is not None and holder != seg_cmd[u]:
-                    if segments[u].ends_holding is not None:
-                        continue
-                cand = (
-                    cur_cost
-                    + _euclidean(seg_xy[last], seg_xy[u])
-                    + (_TIEBREAK_EPSILON if seg_cmd[u] != seg_cmd[last] else 0.0)
-                )
-                new_S = S | (1 << u)
-                if cand < f[new_S][u]:
-                    f[new_S][u] = cand
-                    parent[new_S][u] = last
+            if needs is not None and any(k[d] < m for d, m in needs[c][k[c]]):
+                continue
+            step = row[u]
+            if navigation_overhead and 0 < row[u] < LARGE_M:
+                step += navigation_overhead
+            if holder is not None:
+                step += holding_penalty * row[u]
+            step += holding_penalty * (
+                carried[u][holder is not None] + segments[u].held_dwell_m[holder is not None]
+            )
+            yield c, step
 
-    best_last = -1
-    best_cost = INF
-    for u in range(M):
-        if f[full][u] < best_cost:
-            best_cost = f[full][u]
-            best_last = u
+    return expand
 
-    if best_last < 0:
-        # Pathological — DP could not realise the full schedule.
-        # Per-command sequential order is always feasible.
-        return _sequential_schedule(seg_cmd, seg_pos)
 
+def _tie_cost(
+    cur: Tuple[float, int, int], c: int, last: int, step: float
+) -> Tuple[float, int, int]:
+    """Cost tuple: distance first; on a tie prefer issue order and fewer switches."""
+    switched = int(last >= 0 and c != last)
+    return cur[0] + step, cur[1] + (c if last < 0 else switched), cur[2] + switched
+
+
+def _walk_back(parent: Mapping, state: Any, seg_ids: Sequence[Sequence[int]]) -> List[int]:
+    """Flat segment order ending at ``state`` (states start with ``(k, last)``)."""
     schedule: List[int] = []
-    S = full
-    last = best_last
-    while last != -1:
-        schedule.append(last)
-        prev = parent[S][last]
-        S ^= 1 << last
-        last = prev
+    while state is not None and state[1] >= 0:
+        k, last = state[0], state[1]
+        schedule.append(seg_ids[last][k[last] - 1])
+        state = parent[state]
     schedule.reverse()
     return schedule
 
 
-def _sequential_schedule(seg_cmd: Sequence[int], seg_pos: Sequence[int]) -> List[int]:
+def _optimal_schedule(
+    segments: Sequence[_Segment],
+    seg_ids: Sequence[Sequence[int]],
+    holding_after: Sequence[Sequence[bool]],
+    distance: DistanceFn,
+    has_origin: bool,
+    needs: _Needs = None,
+    origin_name: Optional[str] = None,
+    holding_penalty: float = 0.0,
+    *,
+    navigation_overhead: float = 0.0,
+) -> Optional[List[int]]:
+    """DP over per-command progress vectors; None if no order meets the constraints.
+
+    State (k, last): k[c] = segments of command c done, last = command that
+    ran the latest segment (-1 at the start). ``seg_ids[c][j]`` is the flat
+    index of command c's j-th segment. States are expanded in layers of equal
+    sum(k). O(n^2 * prod(L_c + 1)).
+    """
+    M = len(segments)
+    if M == 0:
+        return []
+    expand = _expander(
+        segments,
+        seg_ids,
+        holding_after,
+        distance,
+        has_origin,
+        needs,
+        origin_name,
+        holding_penalty,
+        navigation_overhead,
+    )
+    n = len(seg_ids)
+
+    INF = (float("inf"), 0, 0)
+    start = (tuple([0] * n), -1)
+    f = {start: (0.0, 0, 0)}
+    parent: dict = {start: None}
+
+    layer = [start]
+    for _ in range(M):
+        next_layer: dict = {}  # insertion-ordered set of states in layer + 1
+        for state in layer:
+            k, last = state
+            for c, step in expand(k, last):
+                nxt = (k[:c] + (k[c] + 1,) + k[c + 1 :], c)
+                cand = _tie_cost(f[state], c, last, step)
+                if cand < f.get(nxt, INF):
+                    f[nxt] = cand
+                    parent[nxt] = state
+                    next_layer[nxt] = None
+        layer = list(next_layer)
+
+    full = tuple(len(ids) for ids in seg_ids)
+    best = None
+    best_cost = INF
+    for c in range(n):
+        total = f.get((full, c), INF)
+        if total < best_cost:
+            best_cost = total
+            best = (full, c)
+
+    if best is None:
+        return None  # merge() retries with looser constraints
+    return _walk_back(parent, best, seg_ids)
+
+
+def _sequential_schedule(segments: Sequence[_Segment]) -> List[int]:
     """Per-command sequential order — feasible by construction (preserves
-    each command's prefix and never interleaves across atomic blocks)."""
-    return sorted(range(len(seg_cmd)), key=lambda u: (seg_cmd[u], seg_pos[u]))
+    each command's prefix and never interleaves across atomic blocks).
+    The sort is stable, so each command keeps its own segment order."""
+    return sorted(range(len(segments)), key=lambda u: segments[u].cmd)
 
 
 def merge(
     commands: Sequence[Any],
     locator: Optional[Locator] = None,
     origin: Optional[Tuple[float, float]] = None,
+    distance: Optional[DistanceFn] = None,
+    dependencies: bool = True,
+    room_of: Optional[RoomFn] = None,
+    origin_name: Optional[str] = None,
+    holding_penalty: float = 0.0,
+    *,
+    navigation_overhead: float = 0.0,
+    skill_durations_s: Optional[Mapping[str, float]] = None,
+    speed_m_s: float = 1.0,
+    initial_holder: Optional[int] = None,
+    scheduler: Optional[Callable[..., List[int]]] = None,
 ) -> InterleavedPlan:
     """Merge N parsed commands into one interleaved plan.
 
@@ -296,61 +657,179 @@ def merge(
     ``origin`` is the robot's current ``(x, y)`` at planning time; pass
     ``None`` to seed the DP with no origin edge (avoids the misleading
     bias toward the SLAM map origin when the real pose is unavailable).
+    ``distance`` overrides the straight-line cost (e.g. a planner's path
+    length) and takes location names, ``None`` meaning the robot origin;
+    it is only asked about the origin when ``origin`` is not None.
+    ``dependencies=False`` disables cross-command conflict ordering.
+    ``room_of`` maps a location to its room, so a room overlaps the places
+    inside it; without it only identical names conflict.
+    ``origin_name`` names the robot's start; a ``go_to`` to it is inserted
+    before actions that precede a command's first ``go_to``, and it prices
+    the origin when ``origin`` is None. It is ignored if ``distance`` cannot
+    reach it.
+    ``holding_penalty`` (the paper's lambda) makes every metre driven while
+    holding an object cost ``1 + holding_penalty``; 0 minimises plain travel.
+    ``navigation_overhead`` adds a nonnegative distance-equivalent cost to
+    each reachable, positive-distance go_to hop in the command plan.
+    skill_durations_s models stationary skill time. An action changes possession
+    at completion. Multiply occupied seconds by speed_m_s to price them in metres.
+    initial_holder identifies a verified carry at the start of a residual plan.
+    scheduler replaces _optimal_schedule (same arguments, None if infeasible);
+    benchmarks use it.
     """
-    loc_fn: Locator = locator if locator is not None else (lambda _: None)
+    if not isfinite(speed_m_s) or speed_m_s <= 0:
+        raise ValueError("speed_m_s must be finite and positive")
+    dwell_m = {}
+    for kind, duration in (skill_durations_s or {}).items():
+        if not isfinite(duration) or duration < 0:
+            raise ValueError(f"invalid skill duration for {kind}")
+        dwell_m[kind] = duration * speed_m_s
+    if initial_holder is not None and not 0 <= initial_holder < len(commands):
+        raise ValueError("initial_holder must identify a command")
+    if not isfinite(navigation_overhead) or navigation_overhead < 0:
+        raise ValueError("navigation_overhead must be finite and nonnegative")
+    if distance is None:
+        loc_fn: Locator = locator if locator is not None else (lambda _: None)
+        distance = _euclidean_distance(loc_fn, origin)
+    if origin_name is not None and not _reachable(
+        origin_name, commands, distance, origin is not None
+    ):
+        origin_name = None
+    if origin is None and origin_name is not None:
+        base = distance
 
-    if not commands:
-        return InterleavedPlan(actions=[], fallback=[])
+        def distance(a: Optional[str], b: str) -> Optional[float]:
+            return base(origin_name if a is None else a, b)
+
+    has_origin = origin is not None or origin_name is not None
 
     flat_segments: List[_Segment] = []
     segments_per_cmd: List[List[_Segment]] = []
     for cmd_idx, command in enumerate(commands):
-        per_cmd = _decompose(cmd_idx, command)
+        per_cmd = _decompose(cmd_idx, command, dwell_m)
+        _annotate_effects(per_cmd, command, start=origin_name)
         segments_per_cmd.append(per_cmd)
         flat_segments.extend(per_cmd)
 
-    n_cmds = len(commands)
-    M = len(flat_segments)
-    if M == 0:
-        return InterleavedPlan(actions=[], fallback=_build_fallback(commands))
-    seg_cmd: List[int] = []
-    seg_pos: List[int] = []
-    cmd_seg_mask: List[int] = [0] * n_cmds
+    if not flat_segments:
+        return InterleavedPlan(actions=[], fallback=_build_fallback(commands, origin_name))
+
+    # seg_ids[c][j] = flat index of command c's j-th segment.
+    seg_ids: List[List[int]] = []
     gi = 0
-    for c, per_cmd in enumerate(segments_per_cmd):
-        for p in range(len(per_cmd)):
-            seg_cmd.append(c)
-            seg_pos.append(p)
-            cmd_seg_mask[c] |= 1 << gi
-            gi += 1
+    for per_cmd in segments_per_cmd:
+        seg_ids.append(list(range(gi, gi + len(per_cmd))))
+        gi += len(per_cmd)
 
-    holding_after = _build_holding_after(segments_per_cmd)
+    holding_after = _build_holding_after(segments_per_cmd, initial_holder)
+    room = _room_table(flat_segments, room_of)
+    # Observation-first flips can deadlock with the gripper; issue order cannot.
+    attempts: list = [None]
+    if dependencies:
+        flipped = _build_needs(segments_per_cmd, room)
+        strict = _build_needs(segments_per_cmd, room, observations_first=False)
+        attempts = [flipped] if flipped == strict else [flipped, strict]
 
-    if M > _M_CAP:
-        schedule = _sequential_schedule(seg_cmd, seg_pos)
+    if _state_count([len(ids) for ids in seg_ids]) > _STATE_CAP:
+        if initial_holder is not None:
+            raise InfeasibleResidual("residual DP exceeds the state bound")
+        schedule = _sequential_schedule(flat_segments)
     else:
-        schedule = _optimal_schedule(
-            flat_segments,
-            seg_cmd,
-            seg_pos,
-            cmd_seg_mask,
-            holding_after,
-            n_cmds,
-            loc_fn,
-            origin,
-        )
+        schedule = None
+        for needs in attempts:
+            schedule = (scheduler or _optimal_schedule)(
+                flat_segments,
+                seg_ids,
+                holding_after,
+                distance,
+                has_origin,
+                needs,
+                origin_name,
+                holding_penalty,
+                navigation_overhead=navigation_overhead,
+            )
+            if schedule is not None:
+                break
+        if schedule is None:
+            # Only when 2+ commands pick without ever releasing (a parse error).
+            schedule = _sequential_schedule(flat_segments)
 
+    actions = _flatten(schedule, flat_segments, commands, origin_name)
+    if initial_holder is not None:
+        owner = initial_holder
+        for step in actions:
+            if step.requires_gripper:
+                if owner is not None:
+                    raise InfeasibleResidual("remaining pick requires an empty gripper")
+                owner = step.source_cmd
+            elif step.releases_gripper:
+                if owner != step.source_cmd:
+                    raise InfeasibleResidual("remaining release requires its original holder")
+                owner = None
+    fallback = [_collapse_redundant_go_tos(per) for per in _build_fallback(commands, origin_name)]
+
+    return InterleavedPlan(actions=actions, fallback=fallback, origin_name=origin_name)
+
+
+def replan_remaining(commands: Sequence[Sequence[PlanAction]], **options) -> List[PlanAction]:
+    """Solve residual commands with explicit entry drives, retaining source identities."""
+    raw = [SimpleNamespace(commands=[step.action for step in command]) for command in commands]
+    plan = merge(raw, **options)
+    result = []
+    for step in plan.actions:
+        if step.source_idx < 0:
+            result.append(step)
+            continue
+        original = commands[step.source_cmd][step.source_idx]
+        goals = tuple(
+            goal
+            for cmd, idx in step.navigation_goals
+            for goal in commands[cmd][idx].navigation_goals
+        )
+        result.append(replace(original, navigation_goals=goals))
+    return result
+
+
+def _reachable(
+    origin_name: str, commands: Sequence[Any], distance: DistanceFn, has_pose: bool
+) -> bool:
+    """Whether ``distance`` can price a drive to ``origin_name``: from the robot's
+    pose if known, otherwise from the start to some place in the batch."""
+    if has_pose:
+        costs = [distance(None, origin_name)]
+    else:
+        places = {
+            getattr(a, "location_to_go", None)
+            for cmd in commands
+            for a in getattr(cmd, "commands", [])
+        }
+        costs = [
+            distance(origin_name, p) for p in places if isinstance(p, str) and p != origin_name
+        ]
+    return any(d is not None and d < LARGE_M for d in costs)
+
+
+def _flatten(
+    schedule: Sequence[int],
+    segments: Sequence[_Segment],
+    commands: Sequence[Any],
+    origin_name: Optional[str],
+) -> List[PlanAction]:
+    """Segments -> PlanActions, inserting go_to(origin_name) and collapsing go_tos."""
     actions: List[PlanAction] = []
     for si in schedule:
-        seg = flat_segments[si]
+        seg = segments[si]
+        if seg.at_origin and origin_name is not None:
+            actions.append(_go_to_origin(origin_name, seg.cmd))
         for ai in seg.indices:
-            action = commands[seg.cmd].commands[ai]
-            actions.append(_to_plan_action(action, seg.cmd, ai))
-
-    actions = _collapse_redundant_go_tos(actions)
-    fallback = [_collapse_redundant_go_tos(per) for per in _build_fallback(commands)]
-
-    return InterleavedPlan(actions=actions, fallback=fallback)
+            command = commands[seg.cmd].commands
+            pa = _to_plan_action(command[ai], seg.cmd, ai)
+            if _kind(pa.action) == "go_to" and (
+                ai + 1 == len(command) or _kind(command[ai + 1]) == "go_to"
+            ):
+                pa.navigation_goals = ((seg.cmd, ai),)
+            actions.append(pa)
+    return _collapse_redundant_go_tos(actions, start=origin_name)
 
 
 def _to_plan_action(action: Any, cmd_idx: int, action_idx: int) -> PlanAction:
@@ -365,11 +844,21 @@ def _to_plan_action(action: Any, cmd_idx: int, action_idx: int) -> PlanAction:
     )
 
 
-def _build_fallback(commands: Sequence[Any]) -> List[List[PlanAction]]:
+def _go_to_origin(origin_name: str, cmd_idx: int) -> PlanAction:
+    """Inserted ``go_to`` back to the start; ``source_idx=-1`` marks it."""
+    return _to_plan_action(SimpleNamespace(action="go_to", location_to_go=origin_name), cmd_idx, -1)
+
+
+def _build_fallback(
+    commands: Sequence[Any], origin_name: Optional[str] = None
+) -> List[List[PlanAction]]:
     out: List[List[PlanAction]] = []
     for cmd_idx, command in enumerate(commands):
         per_cmd: List[PlanAction] = []
-        for ai, action in enumerate(getattr(command, "commands", [])):
+        actions = list(getattr(command, "commands", []))
+        if origin_name is not None and actions and _kind(actions[0]) != "go_to":
+            per_cmd.append(_go_to_origin(origin_name, cmd_idx))
+        for ai, action in enumerate(actions):
             per_cmd.append(_to_plan_action(action, cmd_idx, ai))
         out.append(per_cmd)
     return out
@@ -377,16 +866,28 @@ def _build_fallback(commands: Sequence[Any]) -> List[List[PlanAction]]:
 
 def _collapse_redundant_go_tos(
     actions: Sequence[PlanAction],
+    start: Optional[str] = None,
 ) -> List[PlanAction]:
-    """Drop a leading ``go_to X`` whenever the previous action ended at X."""
-    last_loc: Optional[str] = None
+    """Drop a leading ``go_to X`` whenever the previous action ended at X
+    (``start`` is where the robot is before the first action)."""
+    last_loc: Optional[str] = start
+    last_drive = None
     out: List[PlanAction] = []
     for pa in actions:
+        if _kind(pa.action) in _ESCORT_DESTINATION:
+            last_loc = None  # the escort moved the robot
+            last_drive = None
         if _kind(pa.action) == "go_to":
             tgt = getattr(pa.action, "location_to_go", None)
             if tgt is not None and tgt == last_loc:
+                if pa.navigation_goals and last_drive is not None:
+                    prior = out[last_drive]
+                    out[last_drive] = replace(
+                        prior, navigation_goals=prior.navigation_goals + pa.navigation_goals
+                    )
                 continue
             if tgt is not None:
                 last_loc = tgt
+                last_drive = len(out)
         out.append(pa)
     return out

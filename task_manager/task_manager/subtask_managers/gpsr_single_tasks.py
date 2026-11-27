@@ -41,6 +41,8 @@ class GPSRSingleTask(GenericTask):
         """Initialize the class"""
         super().__init__(subtask_manager)
 
+        self.batch_history = None
+        self.quiet_observation = False
         self.last_location = ""  # furniture the robot last navigated to
         self._shelf_objects: dict[int, list[str]] = {}  # the scan's labels per level
         self.shelf_level_heights: dict[int, float] = {}  # measured, 1 = lowest
@@ -402,28 +404,39 @@ class GPSRSingleTask(GenericTask):
         context = command.previous_command_info[0]
 
         if context == "introduction":
-            self.subtask_manager.hri.say("Hello, I am Frida. Nice to meet you.")
-            return Status.EXECUTION_SUCCESS, "success"
+            greeting = "Hello, I am Frida. Nice to meet you."
+            return self.subtask_manager.hri.say(greeting), greeting
 
         if context in GPSR_COMMANDS:
-            s, history = self.subtask_manager.hri.query_command_history(
-                query=command.user_instruction,
-                action=command.previous_command_info[0],
-            )
-            last_command = history[0]
+            if self.batch_history is None:
+                s, history = self.subtask_manager.hri.query_command_history(
+                    query=command.user_instruction,
+                    action=context,
+                )
+                if s != Status.EXECUTION_SUCCESS or not history:
+                    return Status.TARGET_NOT_FOUND, ""
+                facts = str(history[0].result)
+            else:
+                matches = [
+                    f"{kind}: {value}"
+                    for kind, value in self.batch_history
+                    if kind in command.previous_command_info
+                ]
+                if not matches:
+                    return Status.TARGET_NOT_FOUND, ""
+                facts = "\n".join(matches)
             s, answer = self.subtask_manager.hri.answer_with_context(
                 command.user_instruction,
-                f"Result of executing {context} function on the context provided: {last_command.result}.",
+                facts,
             )
-            self.subtask_manager.hri.say(answer, wait=True)
-            return Status.EXECUTION_SUCCESS, "success"
+            if s != Status.EXECUTION_SUCCESS or not answer:
+                return Status.EXECUTION_ERROR, ""
+            return self.subtask_manager.hri.say(answer, wait=True), answer
         else:
-            s, response, score = self.subtask_manager.hri.answer_question(
-                command.previous_command_info[0]
-            )
-
-            self.subtask_manager.hri.say(response, wait=True)
-            return Status.EXECUTION_SUCCESS, "success"
+            status, response, _ = self.subtask_manager.hri.answer_question(context)
+            if status != Status.EXECUTION_SUCCESS or not response:
+                return Status.EXECUTION_ERROR, ""
+            return self.subtask_manager.hri.say(response, wait=True), response
 
     ## HRI
     def answer_question(self, command: AnswerQuestion):
@@ -516,6 +529,7 @@ class GPSRSingleTask(GenericTask):
             command.measure, command.object_category
         )
 
-        self.subtask_manager.hri.say(f"{result}", wait=False)
+        if not self.quiet_observation:
+            self.subtask_manager.hri.say(f"{result}", wait=False)
 
         return status, result

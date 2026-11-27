@@ -1177,10 +1177,16 @@
       "location_visit_counts": {
         "chairs": 1
       },
-      "go_to_location_source_cmd": {
-        "chairs": 0
-      },
-      "first_go_to_source_cmd": 0
+      "first_go_to_source_cmd": 1,
+      "go_to_source_cmds": [
+        1
+      ],
+      "source_cmd_order": [
+        1,
+        1,
+        0,
+        0
+      ]
     }
   },
   {
@@ -1601,6 +1607,262 @@
           "before": "find_person_by_name",
           "after": "guide_person_to"
         }
+      ]
+    }
+  },
+  {
+    "name": "read_angels_pose_before_finding_tom",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "couch"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Angel"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "side_table"
+        },
+        {
+          "action": "get_person_info",
+          "info_type": "pose"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "living_room"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Tom"
+        }
+      ]
+    ],
+    "coords": {
+      "couch": [
+        0,
+        0
+      ],
+      "living_room": [
+        1,
+        0
+      ],
+      "side_table": [
+        2,
+        0
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "expect": {
+      "source_cmd_order": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      "non_goto_preserved": true
+    }
+  },
+  {
+    "name": "count_people_before_earlier_command_guides_away",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "chairs"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "black blouse"
+        },
+        {
+          "action": "guide_person_to",
+          "destination_room": "bathroom"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "chairs"
+        },
+        {
+          "action": "count",
+          "target_to_count": "people wearing red"
+        }
+      ]
+    ],
+    "coords": {
+      "chairs": [
+        10,
+        0
+      ],
+      "bathroom": [
+        50,
+        50
+      ]
+    },
+    "origin": [
+      9,
+      0
+    ],
+    "expect": {
+      "non_goto_preserved": true,
+      "location_visit_counts": {
+        "chairs": 1
+      },
+      "source_cmd_order": [
+        1,
+        1,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "name": "count_cups_before_later_command_picks_there",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "bed"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "waving"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "table"
+        },
+        {
+          "action": "count",
+          "target_to_count": "cups"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "table"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "cup"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "kitchen"
+        },
+        {
+          "action": "place_object"
+        }
+      ]
+    ],
+    "coords": {
+      "table": [
+        0,
+        0
+      ],
+      "bed": [
+        10,
+        0
+      ],
+      "kitchen": [
+        10,
+        1
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "expect": {
+      "non_goto_preserved": true,
+      "gripper_invariant": true,
+      "source_cmd_order": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1
+      ]
+    }
+  },
+  {
+    "name": "count_flip_dropped_when_find_forces_issue_order",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "chairs"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "black blouse"
+        },
+        {
+          "action": "guide_person_to",
+          "destination_room": "bathroom"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "kitchen"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "waving"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "chairs"
+        },
+        {
+          "action": "count",
+          "target_to_count": "people wearing red"
+        }
+      ]
+    ],
+    "coords": {
+      "chairs": [
+        10,
+        0
+      ],
+      "bathroom": [
+        50,
+        50
+      ],
+      "kitchen": [
+        12,
+        0
+      ]
+    },
+    "origin": [
+      9,
+      0
+    ],
+    "expect": {
+      "non_goto_preserved": true,
+      "per_command_order": true,
+      "source_cmd_order": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1
       ]
     }
   }

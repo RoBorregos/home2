@@ -57,6 +57,7 @@ class GPSRTask(GenericTask):
     def __init__(self, subtask_manager):
         """Initialize the class"""
         super().__init__(subtask_manager)
+        self.quiet_observation = False
         # Angles are relative to current position
         self.pan_angles = [-35, 70]
         self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray", "green"]
@@ -136,9 +137,8 @@ class GPSRTask(GenericTask):
                 )
 
         self.subtask_manager.hri.say("I will now release the object.", wait=True)
-        self.subtask_manager.manipulation.open_gripper()
-
-        return Status.EXECUTION_SUCCESS, "object given"
+        status = self.subtask_manager.manipulation.open_gripper()
+        return status, "object given" if status == Status.EXECUTION_SUCCESS else ""
 
     def _teardown_follow(self):
         """Restore arm pose after a follow (camera flip stays cleared —
@@ -340,54 +340,57 @@ class GPSRTask(GenericTask):
 
         # Base + arm follow. Arm-follow (joint1 pan keeping the person centered)
         # keeps the person in frame as the base maneuvers, reducing losses.
-        self.subtask_manager.nav.follow_person(True)
-        self.subtask_manager.manipulation.follow_person(True)
+        try:
+            self.subtask_manager.nav.follow_person(True)
+            self.subtask_manager.manipulation.follow_person(True)
 
-        follow_start = time.time()
-        lost_since = None
-        stop_reason = "safety timeout"
-        while True:
-            status, _ = self.subtask_manager.hri.interpret_keyword(
-                FOLLOW_STOP_KEYWORDS, timeout=FOLLOW_LISTEN_TIMEOUT, play_chime=False
-            )
-            if status == Status.EXECUTION_SUCCESS:
-                stop_reason = "stop requested"
-                break
-
-            # Lost-person fallback: get_track_person reports whether the tracker
-            # currently has the target in frame (ReID re-acquisition included).
-            # Only after FOLLOW_LOST_TIMEOUT of continuous loss do we interrupt
-            # the follow and renegotiate — brief occlusions self-heal.
-            if self.subtask_manager.vision.get_track_person() == Status.EXECUTION_SUCCESS:
-                lost_since = None
-            else:
-                lost_since = lost_since or time.time()
-                if time.time() - lost_since > FOLLOW_LOST_TIMEOUT:
-                    if self._recover_lost_person():
-                        lost_since = None
-                    else:
-                        stop_reason = "person lost"
-                        break
-
-            if location is not None:
-                s, info = self.subtask_manager.nav.get_path_info(location.area, location.subarea)
-                if (
-                    s == Status.EXECUTION_SUCCESS
-                    and isinstance(info, dict)
-                    and info.get("distance", float("inf")) <= FOLLOW_ARRIVED_DISTANCE
-                ):
-                    stop_reason = f"arrived at {command.destination}"
-                    break
-            if time.time() - follow_start > FOLLOW_MAX_DURATION:
-                self.subtask_manager.hri.node.get_logger().warning(
-                    "follow_person_until: timed out without a stop condition"
+            follow_start = time.time()
+            lost_since = None
+            stop_reason = "safety timeout"
+            while True:
+                status, _ = self.subtask_manager.hri.interpret_keyword(
+                    FOLLOW_STOP_KEYWORDS, timeout=FOLLOW_LISTEN_TIMEOUT, play_chime=False
                 )
-                break
+                if status == Status.EXECUTION_SUCCESS:
+                    stop_reason = "stop requested"
+                    break
 
-        # Stop nav-follow, arm-follow AND the tracker, then restore camera/pose.
-        self.subtask_manager.nav.follow_person(False)
-        self.subtask_manager.manipulation.follow_person(False)
-        self.subtask_manager.vision.track_person(False)
+                # Lost-person fallback: get_track_person reports whether the tracker
+                # currently has the target in frame (ReID re-acquisition included).
+                # Only after FOLLOW_LOST_TIMEOUT of continuous loss do we interrupt
+                # the follow and renegotiate — brief occlusions self-heal.
+                if self.subtask_manager.vision.get_track_person() == Status.EXECUTION_SUCCESS:
+                    lost_since = None
+                else:
+                    lost_since = lost_since or time.time()
+                    if time.time() - lost_since > FOLLOW_LOST_TIMEOUT:
+                        if self._recover_lost_person():
+                            lost_since = None
+                        else:
+                            stop_reason = "person lost"
+                            break
+
+                if location is not None:
+                    s, info = self.subtask_manager.nav.get_path_info(
+                        location.area, location.subarea
+                    )
+                    if (
+                        s == Status.EXECUTION_SUCCESS
+                        and isinstance(info, dict)
+                        and info.get("distance", float("inf")) <= FOLLOW_ARRIVED_DISTANCE
+                    ):
+                        stop_reason = f"arrived at {command.destination}"
+                        break
+                if time.time() - follow_start > FOLLOW_MAX_DURATION:
+                    self.subtask_manager.hri.node.get_logger().warning(
+                        "follow_person_until: timed out without a stop condition"
+                    )
+                    break
+        finally:
+            # Stop nav-follow, arm-follow AND the tracker, then restore camera/pose.
+            self.subtask_manager.nav.follow_person(False)
+            self.subtask_manager.manipulation.follow_person(False)
+            self.subtask_manager.vision.track_person(False)
         self._teardown_follow()
 
         if stop_reason == "person lost":
@@ -448,6 +451,8 @@ class GPSRTask(GenericTask):
         self.subtask_manager.hri.say(f"Now we will go to the {pretty_target}.", wait=False)
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
 
+        if result != Status.EXECUTION_SUCCESS:
+            return result, error
         self.subtask_manager.hri.say(f"We have arrived to {command.destination_room}!", wait=True)
         return Status.EXECUTION_SUCCESS, "arrived to " + command.destination_room
 
@@ -499,9 +504,8 @@ class GPSRTask(GenericTask):
                 s, res = self.subtask_manager.vision.find_person_info(command.info_type)
 
                 if s == Status.EXECUTION_SUCCESS:
-                    self.subtask_manager.hri.say(
-                        f"The person is {res}.",
-                    )
+                    if not self.quiet_observation:
+                        self.subtask_manager.hri.say(f"The person is {res}.")
                     return s, res
                 person_retries += 1
 
@@ -514,9 +518,8 @@ class GPSRTask(GenericTask):
                 s, res = self.subtask_manager.vision.find_person_info(command.info_type)
 
                 if s == Status.EXECUTION_SUCCESS:
-                    self.subtask_manager.hri.say(
-                        f"The person is {res}.",
-                    )
+                    if not self.quiet_observation:
+                        self.subtask_manager.hri.say(f"The person is {res}.")
                     return s, res
                 person_retries += 1
 
@@ -599,12 +602,15 @@ class GPSRTask(GenericTask):
             # Back to the oriented live camera (the display default) — the raw
             # ZED topic is unrotated and has no detections drawn on it.
             self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
+            if status not in (Status.EXECUTION_SUCCESS, Status.TARGET_NOT_FOUND):
+                return status, ""
             return Status.TARGET_NOT_FOUND, f"0 ({object_name} counted)"
 
         # Use LLM to count matching objects from detections
         status, count = self.subtask_manager.hri.count_from_detections(labels, object_name)
         if status == Status.EXECUTION_SUCCESS:
-            self.subtask_manager.hri.say(f"I have counted {count} {object_name}.")
+            if not self.quiet_observation:
+                self.subtask_manager.hri.say(f"I have counted {count} {object_name}.")
         else:
             self.subtask_manager.hri.say(f"I couldn't determine how many {object_name} there are.")
 
@@ -698,16 +704,22 @@ class GPSRTask(GenericTask):
 
             if status == Status.EXECUTION_SUCCESS:
                 counter += count
-                self.subtask_manager.hri.say(f"I have counted {count} {command.target_to_count}.")
+                if not self.quiet_observation:
+                    self.subtask_manager.hri.say(
+                        f"I have counted {count} {command.target_to_count}."
+                    )
 
             elif status == Status.TARGET_NOT_FOUND:
                 self.subtask_manager.hri.say(
                     f"I didn't find any {command.target_to_count}.",
                 )
+            else:
+                return status, ""
 
-        self.subtask_manager.hri.say(
-            f"I have counted {counter} {command.target_to_count} in the room.",
-        )
+        if not self.quiet_observation:
+            self.subtask_manager.hri.say(
+                f"I have counted {counter} {command.target_to_count} in the room."
+            )
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
     def _iter_search_poses(self):
@@ -879,7 +891,9 @@ class GPSRTask(GenericTask):
                 "Please approach me.",
             )
 
-        return Status.EXECUTION_SUCCESS, "found" + command.attribute_value
+            return Status.TARGET_NOT_FOUND, command.attribute_value
+
+        return Status.EXECUTION_SUCCESS, "found " + command.attribute_value
 
     ## HRI, Manipulation, Nav, Vision
     def find_person_by_name(self, command: FindPersonByName):
