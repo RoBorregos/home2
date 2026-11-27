@@ -18,6 +18,7 @@ class SubtaskManager:
             node, task=task, mock_data=("manipulation" in mock_areas)
         )
         self.hri = HRITasks(node, task=task, mock_data=("hri" in mock_areas))
+        self.hri.nav = self.nav
         self.composite = CompositeTasks(node, self.vision, self.nav, self.manipulation, self.hri)
 
         self.mocked_areas = mock_areas
