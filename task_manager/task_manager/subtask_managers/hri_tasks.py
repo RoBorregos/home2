@@ -94,6 +94,7 @@ from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
+from task_manager.utils.time_budget import Priority
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -206,6 +207,8 @@ class HRITasks:
         self.door_event_detected = False
         self.last_door_event = ""
         self.keyword = ""
+        # TimeBudget set by the task manager; None = no deadline, nothing is ever skipped
+        self.budget = None
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
@@ -344,8 +347,14 @@ class HRITasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> Status:
-        """Method to publish directly text to the speech node"""
+    def say(
+        self, text: str, wait: bool = True, speed: float = 1.15, priority: Priority = Priority.MUST
+    ) -> Status:
+        """Method to publish directly text to the speech node. Non-MUST messages are dropped
+        when the time budget can no longer afford them (~15 chars per second of speech)."""
+        if self.budget and not self.budget.allows(priority, len(text) / 15):
+            Logger.warn(self.node, f"Out of time, skipping {priority.name} message: {text}")
+            return Status.EXECUTION_SUCCESS
         Logger.info(self.node, f"Sending to saying service: {text}")
         self.set_light_state(AudioStates.SAYING)
 
@@ -922,6 +931,7 @@ class HRITasks:
         initial_prompt: str = "",
         silence_time: float = 1.0,
         max_audio_length: float = 13.0,
+        priority: Priority = Priority.MUST,
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -937,6 +947,8 @@ class HRITasks:
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
             silence_time: the time to wait for silence before considering the speech complete
             max_audio_length: the maximum length of seconds to listen to the user
+            priority: with a time budget, non-MUST dialogs stop retrying (and skip the
+                confirmation when behind schedule) to save time for more important steps
         Returns:
             Status: the status of the execution
             str: answer to the question
@@ -947,7 +959,19 @@ class HRITasks:
             # Whisper can echo a single injected place on silence with high confidence
             always_confirm = always_confirm or bool(hotwords)
         current_attempt = 0
+        attempt_cost = 0.0  # duration of the last attempt, the estimate for the next one
+        start_time = self.node.get_clock().now()
         while current_attempt < retries:
+            if current_attempt:
+                attempt_cost = (self.node.get_clock().now() - start_time).nanoseconds / 1e9
+            # the first ask is the step itself, retries are extra work
+            if self.budget and not self.budget.allows(
+                priority, attempt_cost, extra=current_attempt > 0
+            ):
+                Logger.warn(self.node, f"Out of time, skipping {priority.name} dialog: {question}")
+                break
+            if self.budget and priority != Priority.MUST and self.budget.behind():
+                skip_confirmation = True
             current_attempt += 1
 
             start_time = self.node.get_clock().now()

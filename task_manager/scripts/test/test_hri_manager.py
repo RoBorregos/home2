@@ -42,6 +42,7 @@ from task_manager.utils.baml_client.types import (
 )
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
+from task_manager.utils.time_budget import Priority, Step, TimeBudget
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -105,8 +106,12 @@ TEST_FALLBACK_RESUME = False
 TEST_MERGED_PLAN_SPEECH = False
 TEST_DOOR = False
 TEST_EXTRACT_DATA_LIVE = False
+TEST_TIME_BUDGET = False
+TEST_HRIC_BUDGET = False
 
 EXTRACT_DATA_LIVE_ROUNDS = 3
+# TEST_HRIC_BUDGET: seconds from the start button; lower it to force skipping
+HRIC_BUDGET_TIME_LIMIT = 420.0
 HOT_DRINKS = "fanta, water, lipton, coca-cola, soda, lemonade, pepsi, orange juice, milk, sidral mundet, iced tea, coke, red bull, soju"
 
 MERGED_PLAN_SPEECH_CASES = [
@@ -287,6 +292,12 @@ class TestHriManager(Node):
         if TEST_EXTRACT_DATA_LIVE:
             self.test_extract_data_live()
 
+        if TEST_TIME_BUDGET:
+            self.test_time_budget()
+
+        if TEST_HRIC_BUDGET:
+            self.test_hric_budget()
+
         exit(0)
 
     def detect_door(self, timeout: float = 60.0) -> str:
@@ -435,6 +446,84 @@ class TestHriManager(Node):
             self.get_logger().info(
                 f"Extract data live: {len(rows)} answers, avg {avg_used:.0f} ms vs {avg_llm:.0f} ms LLM only"
             )
+
+    def test_time_budget(self):
+        """TimeBudget self-check with a fake clock."""
+        now = [0.0]
+        chain = [
+            Step("greet", 30, Priority.HIGH),
+            Step("nav", 40, Priority.MUST),
+            Step("chat", 20, Priority.LOW),
+            Step("intro", 30, Priority.MUST),
+        ]
+        b = TimeBudget(120, chain, clock=lambda: now[0])
+
+        assert b.enter("greet") == 0
+        assert b.reserve(Priority.LOW) == 70  # nav + intro (chat is not more important than LOW)
+        assert b.reserve(Priority.HIGH) == 70
+        assert b.allows(Priority.HIGH, cost=50)  # 120 - 50 >= 70
+        assert not b.allows(Priority.HIGH, cost=51)
+        assert b.allows(Priority.MUST, cost=1000)  # MUST is never skipped
+        assert not b.behind()
+
+        now[0] = 60  # greeting dialog dragged on
+        assert b.behind()  # 60s left < nav + chat + intro
+        assert not b.allows(Priority.HIGH, cost=10)  # another retry would eat into nav + intro
+
+        assert b.enter("nav") == 30  # 30s behind plan
+        assert b.enter("nav") == 30  # repeated state keeps the cursor
+        now[0] = 85
+        b.enter("chat")
+        assert not b.allows(Priority.LOW, cost=10)  # 35 - 10 < 30 reserved for intro
+        assert b.allows(Priority.LOW, cost=5)
+
+        # extra work (retries) also protects the steps as important as itself
+        now[0] = 0
+        b = TimeBudget(120, chain, clock=lambda: now[0])
+        b.enter("greet")
+        assert b.reserve(Priority.LOW, extra=True) == 90  # nav + chat + intro
+        assert b.allows(Priority.LOW, cost=31) and not b.allows(Priority.LOW, cost=31, extra=True)
+        assert b.affords("chat")  # 120 - 20 >= nav + intro
+        now[0] = 40
+        assert not b.affords("chat")  # 80 - 20 < 70: skip the whole LOW step
+        assert b.affords("intro") and b.affords("unknown")  # MUST and unplanned steps always run
+
+        # retrying a step that repeats later in the chain (SAVE_FACE per guest) keeps the cursor
+        now[0] = 0
+        two = [Step("save", 10, Priority.MUST), Step("nav", 40, Priority.MUST)] * 2
+        b = TimeBudget(200, two, clock=lambda: now[0])
+        b.enter("save")
+        b.enter("save")  # retry of guest 1
+        assert b.cursor == 0 and b.reserve(Priority.HIGH) == 90
+        b.enter("nav")
+        assert b.enter("save") == -50 and b.cursor == 2  # guest 2 still advances
+
+        self.get_logger().info("test_time_budget OK")
+
+    def test_hric_budget(self):
+        """Dry-run the HRIC task manager with real HRI only (vision, navigation and manipulation
+        mocked, start button pre-pressed) to time the dialogs without moving the robot.
+
+        Read the FINAL TIMING REPORT and the "Out of time, skipping" warnings in the log.
+        """
+        # hric_task_manager.py sits next to this file once installed, one level up in the source tree
+        here = os.path.dirname(os.path.abspath(__file__))
+        sys.path[:0] = [here, os.path.dirname(here)]
+        import hric_task_manager as hric
+        from task_manager.utils.subtask_manager import SubtaskManager
+
+        mocked = ["vision", "navigation", "manipulation"]
+        hric.SubtaskManager = lambda node, task, mock_areas=None: SubtaskManager(node, task, mocked)
+
+        node = hric.HRIC_TM()
+        node.subtask_manager.hri.start_button_clicked = True
+        node.time_limit = HRIC_BUDGET_TIME_LIMIT  # read when the budget starts, after the button
+        try:
+            while rclpy.ok() and node.running_task:
+                rclpy.spin_once(node, timeout_sec=0.1)
+                node.run()
+        finally:
+            node.destroy_node()
 
     def test_take_order(self):
         self.get_logger().info("Running take_order test")
