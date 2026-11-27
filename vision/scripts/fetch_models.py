@@ -23,7 +23,7 @@ from embedding_gallery.core.constants import GALLERY_DIRNAME  # noqa: E402
 
 # Standard ultralytics-hosted weights: name -> YOLO task (None = fetch only)
 STANDARD_MODELS = {
-    "yolo11m-pose.pt": "pose",  # hric_commands (wrists), tracker/gpsr/customer pose
+    "yolo11m-pose.pt": "pose",  # ObjectDetect2D
     "yolov8n.pt": "detect",  # tracker, moondream person crop
     "yolo26n.pt": "detect",  # object_detector yolo_generic
     "yoloe-11l-seg.pt": None,  # zero_shot (loads via its own YOLOE path)
@@ -242,6 +242,18 @@ def warmup(dest: Path):
         print("[warmup] embedding backbone(s) ready")
     except Exception as e:
         print(f"[warmup] embedding backbone warmup skipped: {e}")
+
+    try:
+        from frida_constants.vision_constants import CLIP_EMBEDDING_MODEL
+        from utils.models.image_embedder import ImageEmbedder
+
+        print(f"[warmup] fetching {CLIP_EMBEDDING_MODEL} for the semantic map ...")
+        ImageEmbedder(CLIP_EMBEDDING_MODEL).load()
+        print("[warmup] CLIP ready")
+    except Exception as e:
+        print(
+            f"[warmup] CLIP warmup FAILED, --finals needs internet on first start: {e}"
+        )
 
     try:
         import numpy as np

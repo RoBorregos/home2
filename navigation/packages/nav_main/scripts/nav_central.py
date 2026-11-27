@@ -183,6 +183,8 @@ class Nav_Central(Node):
 
 
         self.areas_map_name = self.declare_parameter('areas_map_name', 'default_map').value
+        # Same value semantic_nav uses (launch reads it from semantic_nav.yaml).
+        self.viewpoint_probe_distance = self.declare_parameter('viewpoint_probe_distance', 0.8).value
         self.areas_data = None
         self.declare_parameter('path_cache_warmup_seconds', 180.0)
         # Persistent per-map file next to the maps; empty disables
@@ -700,7 +702,7 @@ class Nav_Central(Node):
                         else SUBLOCATION_MAX_DISTANCE)
 
         area, names, distances, in_house = area_for_point(
-            self.areas_data, x, y, max_distance)
+            self.areas_data, x, y, max_distance, self.viewpoint_probe_distance)
         response.area = area
         response.sublocations = names
         response.distances = distances

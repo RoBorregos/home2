@@ -154,6 +154,9 @@ SHOW_DETECTION_TOPIC = "/vision/show_detection"
 YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
 YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 
+# Shared pose model (ObjectDetect2D)
+POSE_DETECTION_SERVICE = "/vision/pose/detect"
+
 # Chair removal
 CHAIRS_TO_REMOVE_SERVICE = "/vision/chairs_to_remove"
 CHAIR_REMOVAL_IMAGE_TOPIC = "/vision/chair_removal_image"
@@ -172,16 +175,26 @@ LOWER_LIP_LANDMARK = 14
 LEFT_MOUTH_LANDMARK = 61
 RIGHT_MOUTH_LANDMARK = 291
 
-# Talking detection tuning
-TALKING_HISTORY_FRAMES = 25
-TALKING_MIN_DELTA = 0.01
+# Talking detection tuning (MouthActivity, tuned for crops at TALKING_CROP_HZ)
+TALKING_HISTORY_FRAMES = 8
+TALKING_SMOOTHING_WINDOW = 2
+TALKING_MIN_DELTA = 0.015
+TALKING_MIN_MEAN_DELTA = 0.015
 TALKING_DIRECTION_CHANGE_THRESHOLD = 2
 TALKING_DEBOUNCE_ON_FRAMES = 3
 TALKING_DEBOUNCE_OFF_FRAMES = 5
 TALKING_RATIO_CEILING = 0.3
-TALKING_MIN_MEAN_DELTA = 0.01
-TALKING_SMOOTHING_WINDOW = 5
 TALKING_MAX_MISSED_FRAMES = 3
+
+# face_recognition -> is_talking requests
+FACE_RECOGNITION_HZ = 5  # InsightFace detections per second
+TALKING_CROP_HZ = 10  # face crops per second, cut from the last detected boxes
+TALKING_REQUEST_FRAMES = 20  # crops per request: one answer every 2 s per face
+TALKING_MIN_FACE_WIDTH = 30  # px; smaller (background) faces are skipped
+TALKING_CROP_MARGIN = 0.25
+TALKING_CROP_MAX_SIZE = 192  # px; keeps a request under the 8 MB iceoryx chunk
+TALKING_TRACK_GAP_SEC = 1.0  # a face undetected this long is dropped
+IS_TALKING_TIMEOUT = 5.0
 
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"

@@ -22,6 +22,7 @@ from frida_constants.manipulation_constants import (
     SLOW_VELOCITY,
     TOP_GRASP_DEPTH,
 )
+from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from geometry_msgs.msg import PointStamped, PoseStamped
 from perception_3d.geometric_grasps import compartment_band, shelf_frontal_grasps
 from scipy.spatial.transform import Rotation as R
@@ -87,7 +88,7 @@ ZED_OFFSET = np.array([-0.096, 0.0, 0.041])
 STARE_POSES = {
     PICK_STRATEGY_RIM: "look_side_stare",
     PICK_STRATEGY_PEAK: "look_side_stare",
-    PICK_STRATEGY_FLAT: "flat_stare",
+    PICK_STRATEGY_FLAT: "pick_stare_at_table",
 }
 DEFAULT_STARE_POSE = "table_stare"
 
@@ -204,7 +205,7 @@ def _pick(
     if request.is_shelf:
         _shelf_exit(arm, strategies[PICK_STRATEGY_SHELF].profile.shelf)
     if request.return_to_carry:
-        _return_to_carry_pose(arm, strategy_key, request.is_shelf)
+        _return_to_carry_pose(arm, strategy_key)
     log.info(f"[{strategy_key}] pick complete")
     return True, outcome
 
@@ -236,9 +237,30 @@ def _fall_back_or_fail(
 # ======================================================================
 
 
+POSE_TOLERANCE_DEG = 5.0
+
+
+def _already_at(arm, named: str) -> bool:
+    """True if every joint is already within tolerance of the named pose."""
+    target = XARM_CONFIGURATIONS.get(named)
+    if target is None:
+        return False
+    current = arm.get_joints(degrees=True)
+    current_joints = current.get("joints", {})
+    return all(
+        abs(current_joints.get(joint, 1e9) - deg) <= POSE_TOLERANCE_DEG
+        for joint, deg in target["joints"].items()
+    )
+
+
 def _move_to_stare_pose(arm, strategy_key: str) -> None:
-    """Point the camera where this kind of object lives."""
+    """Point the camera where this kind of object lives.
+
+    Skipped if the arm is already there, e.g. back-to-back flat picks.
+    """
     named = STARE_POSES.get(strategy_key, DEFAULT_STARE_POSE)
+    if _already_at(arm, named):
+        return
     with arm.phase(f"stare/{named}"):
         arm.move_to_named_position(named, velocity=0.75)
 
@@ -667,7 +689,7 @@ def _shelf_exit(arm, shelf) -> bool:
     return True
 
 
-def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
+def _return_to_carry_pose(arm, strategy_key: str) -> None:
     """Where the arm goes once it is holding the object."""
     log = arm.logger
     if strategy_key == PICK_STRATEGY_RIM:
@@ -676,13 +698,11 @@ def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
         return
 
     named = "look_side_stare" if strategy_key == PICK_STRATEGY_PEAK else "table_stare"
-    # The shelf boxes are still in the scene, so one planned move leaves the shelf.
-    velocity = FAST_VELOCITY if is_shelf else 0.5
     log.info(f"Returning to {named}")
     with arm.phase(f"return/{named}"):
         for _ in range(5):
             arm.clear_octomap()
-            if arm.move_to_named_position(named, velocity=velocity):
+            if arm.move_to_named_position(named, velocity=FAST_VELOCITY):
                 return
         log.warn(f"Could not return to {named} after 5 attempts")
 

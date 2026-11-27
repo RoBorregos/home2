@@ -41,6 +41,7 @@ from frida_constants.hri_constants import (
     TASK_STEP_TOPIC,
     TIMEOUT,
     KEYWORD_TOPIC,
+    LOCATION_HOTWORDS_RETRY,
     DISPLAY_KEYWORD_TOPIC,
     EI_DETECTION_TOPIC,
     DOORBELL_ARMED_TOPIC,
@@ -153,16 +154,33 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
+def _words(s: str) -> str:
+    return " ".join(re.sub(r"[^\w\s]", " ", s.lower()).split())
+
+
+def is_hotword_echo(text: str, hotwords: str) -> bool:
+    """True if text looks like Whisper echoing (part of) the hotword prompt on silence.
+
+    That is the full hotword string, or 2+ hotwords with no other words ("living room, office").
+    A single echoed hotword can't be told apart from the user saying it.
+    """
+    text, hotwords = text.strip(), hotwords.strip()
+    if not text or text == hotwords:
+        return bool(text)
+    keys = {_words(h) for h in hotwords.split(",")} - {""}
+    said = f" {_words(text)} "
+    found = [k for k in keys if f" {k} " in said]
+    vocab = {w for k in keys for w in k.split()}
+    return len(found) >= 2 and set(said.split()) <= vocab
+
+
 def match_hotwords(text: str, hotwords: str, exclude: str = "") -> str:
     """Return the only hotword (comma-separated list) said in text, "" if none or several.
 
     Hyphens and punctuation count as spaces so "coca-cola" matches "coca cola", and a hotword
     contained in a longer matched one ("tea" in "iced tea") is not counted twice.
     """
-
-    def words(s: str) -> str:
-        return " ".join(re.sub(r"[^\w\s]", " ", s.lower()).split())
-
+    words = _words
     said = f" {words(text)} "
     excluded = words(exclude)
     found = {}
@@ -277,6 +295,7 @@ class HRITasks:
             Task.DOING_LAUNDRY: all_services,
             Task.DEMO: all_services,
             Task.RESTAURANT: all_services,
+            Task.FINALS: all_services,
             Task.DEBUG: all_services,
         }
 
@@ -299,6 +318,10 @@ class HRITasks:
             self.names = json.load(file)["names"]
 
         self.names_hotwords = ", ".join(self.names)
+        # Set by SubtaskManager; navigation's areas are the source of truth for location hotwords.
+        self.nav = None
+        self._location_hotwords = ""
+        self._location_hotwords_expiry = 0.0  # when to ask nav again; inf once nav answered
 
         if not self.mock_data:
             self.setup_services()
@@ -469,6 +492,42 @@ class HRITasks:
         except Exception as e:
             self.node.get_logger().error(f"Error parsing door event JSON: {e}")
 
+    def location_hotwords(self) -> str:
+        """Area and sublocation names from navigation's areas (rooms first, so they survive the STT budget)."""
+        if self.nav is None:
+            return self._location_hotwords
+        now = time.monotonic()
+        if now < self._location_hotwords_expiry:
+            retry = self._location_hotwords_expiry - now
+            Logger.info(
+                self.node,
+                "Location hotwords cached"
+                + ("" if retry == float("inf") else f", asking nav again in {retry:.0f}s"),
+            )
+            return self._location_hotwords
+        status, areas = self.nav.retrieve_areas()
+        areas = areas if isinstance(areas, dict) else {}
+        places = [
+            sub
+            for subs in areas.values()
+            if isinstance(subs, dict)
+            for sub in subs
+            if sub not in ("safe_place", "polygon", "description")
+        ]
+        self._location_hotwords = ", ".join(
+            dict.fromkeys(n.replace("_", " ") for n in [*areas, *places])
+        )
+        # Nav down costs ~2 s of silence before the question, so keep the areas.json fallback
+        # for a while instead of waiting again on every location question.
+        self._location_hotwords_expiry = (
+            float("inf")
+            if status == Status.EXECUTION_SUCCESS
+            else time.monotonic() + LOCATION_HOTWORDS_RETRY
+        )
+        source = "nav" if status == Status.EXECUTION_SUCCESS else "areas.json fallback"
+        Logger.info(self.node, f"Location hotwords from {source} in {time.monotonic() - now:.1f}s")
+        return self._location_hotwords
+
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked speech", {}))
     @service_check("_action_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)
     def hear(
@@ -507,7 +566,7 @@ class HRITasks:
         result = goal_future.result().result
         # On silence or too-short audio the transcription can come back as the hotwords themselves.
         transcription = result.transcription.strip()
-        heard_text = "" if transcription == self.last_hotwords.strip() else transcription
+        heard_text = "" if is_hotword_echo(transcription, self.last_hotwords) else transcription
         execution_status = (
             Status.EXECUTION_SUCCESS if len(heard_text) > 0 else Status.TARGET_NOT_FOUND
         )
@@ -677,9 +736,9 @@ class HRITasks:
                     if self.negation_words.intersection(words) or self.keyword == "no":
                         # Keep listening: "No, I said Andres" carries the correction after the "no"
                         heard_no = True
-                    elif not heard_no and (
-                        self.affirmation_words.intersection(words) or self.keyword == "yes"
-                    ):
+                    # A partial "yes" can be Whisper hallucinating on noise ("Oh, okay."):
+                    # only the keyword spotter ends early, a text yes waits for the final.
+                    elif not heard_no and self.keyword == "yes":
                         self.cancel_hear_action()
                         return Status.EXECUTION_SUCCESS, "yes"
                     rclpy.spin_once(self.node, timeout_sec=0.1)
@@ -688,7 +747,7 @@ class HRITasks:
                 text = (
                     goal_future.result().result.transcription.strip() if goal_future.done() else ""
                 )
-                if text == self.last_hotwords.strip():
+                if is_hotword_echo(text, self.last_hotwords):
                     text = ""
                 keyword = "no" if heard_no else self.keyword
                 answer = self._interpret_confirmation(
@@ -717,9 +776,7 @@ class HRITasks:
                     if self.negation_words.intersection(words):
                         self.cancel_hear_action()
                         return Status.EXECUTION_SUCCESS, "no"
-                    if contains_any(words, self.positive):
-                        self.cancel_hear_action()
-                        return Status.EXECUTION_SUCCESS, "yes"
+                    # Yes only from the final transcription below, not from a partial one
                     rclpy.spin_once(self.node, timeout_sec=0.1)
 
                 self.cancel_hear_action()
@@ -728,8 +785,9 @@ class HRITasks:
                 if (
                     goal_future.done()
                     and len(goal_future.result().result.transcription.strip()) > 0
-                    and goal_future.result().result.transcription.strip()
-                    != self.last_hotwords.strip()
+                    and not is_hotword_echo(
+                        goal_future.result().result.transcription, self.last_hotwords
+                    )
                 ):
                     words = format_transcription(self.current_transcription)
                     if not self.negation_words.intersection(words) and (
@@ -766,7 +824,7 @@ class HRITasks:
             str: "yes", "no", "" (nothing heard or unclear, ask again) or the corrected value.
         """
         text = (text or "").strip()
-        if text == hotwords.strip():
+        if is_hotword_echo(text, hotwords):
             text = ""
         words = format_transcription(text) if text else []
 
@@ -883,6 +941,11 @@ class HRITasks:
             Status: the status of the execution
             str: answer to the question
         """
+        places = ""  # set when the answer must be one of navigation's places
+        if not hotwords and query == "location":
+            hotwords = places = self.location_hotwords()
+            # Whisper can echo a single injected place on silence with high confidence
+            always_confirm = always_confirm or bool(hotwords)
         current_attempt = 0
         while current_attempt < retries:
             current_attempt += 1
@@ -917,6 +980,9 @@ class HRITasks:
                         target_info = " ".join(
                             w for w in target_info.split() if remove_punctuation(w) not in yes_no
                         )
+                        if places:
+                            # Only a known place is a destination: "The Kitt." must not become "Kitt"
+                            target_info = match_hotwords(target_info, places)
                         if s != Status.EXECUTION_SUCCESS or not target_info:
                             self.say("Sorry, I couldn't understand.")
                             continue
@@ -988,6 +1054,8 @@ class HRITasks:
                         target_info, target_found, _, _ = self._match_answer(
                             confirmation, options, remap
                         )
+                        if places:
+                            target_info = match_hotwords(target_info, places)
                     except Exception as e:
                         print("Failed matching result:", e)
                         break
@@ -1170,7 +1238,7 @@ class HRITasks:
                 steps.append("answer a question from the person")
             elif action == "follow_person_until":
                 destination = getattr(cmd, "destination", "cancelled")
-                if destination == "cancelled":
+                if destination in ("", "cancelled", "canceled"):
                     steps.append("follow the person until told to stop")
                 else:
                     steps.append(f"follow the person to {destination}")

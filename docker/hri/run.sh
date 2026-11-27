@@ -80,6 +80,14 @@ fi
 # Regenerate database if requested
 if [ "$REGENERATE_DB" == "true" ]; then
   echo "Regenerating database..."
+  MAP_NAME="$(resolve_map_name "__unset__")"
+  if [ "$MAP_NAME" = "__unset__" ]; then
+    MAP_NAME=""
+    echo "regenerate-db: MAP_NAME not set; locations need navigation running (or ./run.sh --update-map <map>.db)"
+  else
+    echo "regenerate-db: MAP_NAME=$MAP_NAME"
+  fi
+  export MAP_NAME
   bash scripts/regenerate_db.sh "$ENV_TYPE"
 fi
 

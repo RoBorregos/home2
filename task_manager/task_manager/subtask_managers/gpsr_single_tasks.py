@@ -14,15 +14,13 @@ from task_manager.utils.baml_client.types import (
     SayWithContext,
 )
 from task_manager.utils.grasp_confirmation import count_by_class, picked_ok
-from task_manager.utils.shelf_pick_logic import levels_from_sorted_heights
+from task_manager.utils.shelf_pick_logic import MIN_REACHABLE_SHELF_Z, levels_from_sorted_heights
 from task_manager.utils.status import Status
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
 
 RETRIES = 1
 
-# The arm cannot pick or place below this base_link Z
-MIN_REACHABLE_SHELF_Z = 0.20
 # A pick/place location whose name contains one of these is treated as a shelf:
 SHELF_FURNITURE_HINTS = ("shelf", "cabinet", "rack", "pantry", "bookcase")
 
