@@ -21,6 +21,7 @@ class AudioCapturer(Node):
         super().__init__("audio_capturer")
 
         self.declare_parameter("RAW_AUDIO_TOPIC", "/hri/rawAudioChunk")
+        self.declare_parameter("MULTICHANNEL_AUDIO_TOPIC", "/hri/rawAudioMultichannel")
         self.declare_parameter("MIC_DEVICE_NAME", "default")
         self.declare_parameter("MIC_INPUT_CHANNELS", 32)
         self.declare_parameter("MIC_OUT_CHANNELS", 32)
@@ -34,6 +35,13 @@ class AudioCapturer(Node):
 
         self.publisher_ = self.create_publisher(
             AudioData, self.get_parameter("RAW_AUDIO_TOPIC").value, 20
+        )
+
+        mc_topic = self.get_parameter("MULTICHANNEL_AUDIO_TOPIC").value
+        self.mc_publisher = (
+            self.create_publisher(AudioData, mc_topic, 20)
+            if self.use_respeaker and mc_topic
+            else None
         )
 
         if self.use_respeaker:
@@ -85,6 +93,8 @@ class AudioCapturer(Node):
 
                 # If ReSpeaker, extract channel 0 (main microphone), otherwise publish raw bytes
                 if self.use_respeaker:
+                    if self.mc_publisher is not None:
+                        self.mc_publisher.publish(AudioData(data=data))
                     data = np.frombuffer(data, dtype=np.int16)[0::6].tobytes()
 
                 self.publisher_.publish(AudioData(data=data))
