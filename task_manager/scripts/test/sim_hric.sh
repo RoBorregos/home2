@@ -1,6 +1,6 @@
 #!/bin/bash
 # HRIC dialog simulation on the HRI Orin: real TTS/STT/LLM, a simulated guest that answers
-# through the STT pipeline (sim_guest.py), vision/navigation/manipulation mocked (nothing moves).
+# through the STT pipeline (hri/packages/speech/debug/sim_guest.py), vision/navigation/manipulation mocked (nothing moves).
 # Needs HRI up (./run.sh hri --hric). Run on the Orin host from any directory:
 #
 #   task_manager/scripts/test/sim_hric.sh run [answer_on_try] [time_limit]
@@ -34,7 +34,7 @@ case "${1:-run}" in
     docker exec $C bash -c "mkdir -p $LOGS && rm -f $LOGS/${TAG}_*.log"
     docker exec -d $C bash -c "source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
       export PYTHONPATH=$SRC/task_manager:$SRC/task_manager/scripts:\$PYTHONPATH
-      python3 -u $SRC/task_manager/scripts/test/sim_guest.py --ros-args -p answer_on_try:=$TRY > $LOGS/${TAG}_guest.log 2>&1 &
+      python3 -u $SRC/hri/packages/speech/debug/sim_guest.py --ros-args -p answer_on_try:=$TRY > $LOGS/${TAG}_guest.log 2>&1 &
       G=\$!; sleep 3
       timeout -s INT 1200 python3 -u $SRC/task_manager/scripts/test/test_hric_budget.py --ros-args -p time_limit:=$LIMIT.0 > $LOGS/${TAG}_tm.log 2>&1
       kill -INT \$G"
