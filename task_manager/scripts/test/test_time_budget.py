@@ -45,6 +45,16 @@ def test_time_budget():
     assert not b.affords("chat")  # 80 - 20 < 70: skip the whole LOW step
     assert b.affords("intro") and b.affords("unknown")  # MUST and unplanned steps always run
 
+    # retrying a step that repeats later in the chain (SAVE_FACE per guest) keeps the cursor
+    now[0] = 0
+    two = [Step("save", 10, Priority.MUST), Step("nav", 40, Priority.MUST)] * 2
+    b = TimeBudget(200, two, clock=lambda: now[0])
+    b.enter("save")
+    b.enter("save")  # retry of guest 1
+    assert b.cursor == 0 and b.reserve(Priority.HIGH) == 90
+    b.enter("nav")
+    assert b.enter("save") == -50 and b.cursor == 2  # guest 2 still advances
+
 
 if __name__ == "__main__":
     test_time_budget()

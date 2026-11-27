@@ -44,12 +44,14 @@ class TimeBudget:
 
     def enter(self, name: str) -> float:
         """Move to the next occurrence of `name` in the chain; returns the drift in seconds
-        (>0 = behind the plan). Unknown names (retries of the same state) keep the cursor."""
-        for i in range(self.cursor + 1, len(self.chain)):
-            if self.chain[i].name == name:
-                self.cursor = i
-                self.step_start = self.clock()
-                break
+        (>0 = behind the plan). Re-entering the current step (a retry) or an unknown name
+        keeps the cursor, so a retry never jumps to the same state of a later guest/command."""
+        if self.cursor < 0 or self.chain[self.cursor].name != name:
+            for i in range(self.cursor + 1, len(self.chain)):
+                if self.chain[i].name == name:
+                    self.cursor = i
+                    self.step_start = self.clock()
+                    break
         return self.elapsed() - sum(s.estimate for s in self.chain[: max(self.cursor, 0)])
 
     def reserve(self, priority: Priority, extra: bool = False) -> float:
