@@ -260,7 +260,8 @@ frida_build_modules() {
 
   mkdir -p "docker/frida_interfaces_cache/build" "docker/frida_interfaces_cache/install" "docker/frida_interfaces_cache/log"
   export FRIDA_MODULES="$modules"
-  export GID=$(id -g)
+  export LOCAL_USER_ID=$(id -u)
+  export LOCAL_GROUP_ID=$(id -g)
   if docker compose -f "$compose_yaml" run --rm frida_interfaces_cache; then
     echo "$modules" > docker/frida_interfaces_cache/modules.txt
   else
