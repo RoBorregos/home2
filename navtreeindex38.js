@@ -1,5 +1,16 @@
 var NAVTREEINDEX38 =
 {
+"manipulation__core_8py.html#a514658d21d46ed2364d0ea9e266e92d2":[43,0,3,1,5,1,9,2],
+"manipulation__core_8py.html#a8186701a4f2197fd8462d338e413ed97":[43,0,3,1,5,1,9,1],
+"manipulation__core_8py.html#aea5cebd50f27e2acec4e76711d70ac59":[43,0,3,1,5,1,9,3],
+"manipulation__core_8py.html#aead1614fba3c4bc4f148d9114cbf5706":[43,0,3,1,5,1,9,4],
+"manipulation__safeguard_8py.html":[43,0,3,1,3,1,1],
+"manipulation__safeguard_8py.html#a13b15f879be26bb8dce7f3569d263f0b":[43,0,3,1,3,1,1,2],
+"manipulation__safeguard_8py.html#a1d0b28bec98e0fd286d4ed58a6d79e5a":[43,0,3,1,3,1,1,3],
+"manipulation__safeguard_8py.html#aa073fcbf79e61e639a62c2e2b3fc7b89":[43,0,3,1,3,1,1,4],
+"manipulation__safeguard_8py.html#af9ad3bbe123afb742993119b2690e928":[43,0,3,1,3,1,1,1],
+"manipulation__tasks_8py.html":[43,0,6,1,1,8],
+"manipulation__tasks_8py.html#a07a6c4d03de63c4ef79a5fdec48a0a85":[43,0,6,1,1,8,2],
 "manipulation__tasks_8py.html#a141df0d860a32bb0d3e57e4a9e00965f":[43,0,6,1,1,8,8],
 "manipulation__tasks_8py.html#a15819095e4c3fb2c326672d8b2218181":[43,0,6,1,1,8,7],
 "manipulation__tasks_8py.html#a18354872259448ef2be580869d23dc72":[43,0,6,1,1,8,6],
@@ -238,16 +249,5 @@ var NAVTREEINDEX38 =
 "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md452":[40,6],
 "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md453":[40,7],
 "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md454":[40,8],
-"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md455":[40,9],
-"md_frida_interfaces_manipulation_msg_PlaceParamsSpecialRequest.html":[17],
-"md_frida_interfaces_manipulation_msg_PlaceParamsSpecialRequest.html#autotoc_md203":[17,0],
-"md_manipulation_README.html":[9],
-"md_manipulation_README.html#autotoc_md120":[9,0],
-"md_manipulation_README.html#autotoc_md122":[9,1],
-"md_manipulation_README.html#autotoc_md123":[9,1,0],
-"md_manipulation_README.html#autotoc_md124":[9,1,1],
-"md_manipulation_README.html#autotoc_md125":[9,1,2],
-"md_manipulation_README.html#autotoc_md127":[9,2],
-"md_manipulation_README.html#autotoc_md128":[9,2,0],
-"md_manipulation_README.html#autotoc_md130":[9,3]
+"md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md455":[40,9]
 };

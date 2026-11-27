@@ -513,7 +513,7 @@ var searchData=
   ['_5fwait_5fresult_510',['_wait_result',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a7f527fb7a93c43dad107731ff0caff3e',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks']]],
   ['_5fwalls_511',['_walls',['../namespaceperception__3d_1_1shelf__geometry.html#a178c7541a506ffb88c4c6f802e403a06',1,'perception_3d::shelf_geometry']]],
   ['_5fwhere_512',['_where',['../classfinals__task__manager_1_1FinalsTaskManager.html#a77e2063acd523e96efae8c11667d6aba',1,'finals_task_manager::FinalsTaskManager']]],
-  ['_5fwords_513',['_words',['../namespacetask__manager_1_1utils_1_1scene__memory.html#a211da157c862ec427096a574c1f269b9',1,'task_manager::utils::scene_memory']]],
+  ['_5fwords_513',['_words',['../namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ab63154db45d90f521e84b766840ec389',1,'task_manager.subtask_managers.hri_tasks._words()'],['../namespacetask__manager_1_1utils_1_1scene__memory.html#a211da157c862ec427096a574c1f269b9',1,'task_manager.utils.scene_memory._words()']]],
   ['_5fwrap_5faction_514',['_wrap_action',['../namespacetask__manager_1_1gpsr_1_1bt__builder.html#a70b9ef725acd7ee414ea9ed8745a7ae1',1,'task_manager::gpsr::bt_builder']]],
   ['_5fwrite_5fjson_515',['_write_json',['../namespacecore_1_1report.html#a7336ba020d7d59de2918eff303b45e6b',1,'core::report']]],
   ['_5fwrite_5fmap_5ffiles_516',['_write_map_files',['../classnav__ui_1_1NavRosNode.html#ac431fac90ac1a8850a287e2b758f2566',1,'nav_ui::NavRosNode']]],

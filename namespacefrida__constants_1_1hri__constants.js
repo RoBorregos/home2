@@ -28,6 +28,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "KEYWORD_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a99a70242344952dd09be65d3260da4a7", null ],
     [ "LLM_ALIAS", "namespacefrida__constants_1_1hri__constants.html#a525aef44a94c8118f4751b828e12883a", null ],
     [ "LLM_WRAPPER_SERVICE", "namespacefrida__constants_1_1hri__constants.html#ab7f90239db45986ae7bbd3da087ec35f", null ],
+    [ "LOCATION_HOTWORDS_RETRY", "namespacefrida__constants_1_1hri__constants.html#a444de20752e5af5c826d7d72cb741453", null ],
     [ "PROCESSED_AUDIO_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a65bd8cf37e345f847ad4d999afeba4f8", null ],
     [ "QUERY_ENTRY_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a8641c72f60bac81a60265b6b494950cd", null ],
     [ "RAG_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a36ae4fa83223f615cf521d31bd5c899e", null ],

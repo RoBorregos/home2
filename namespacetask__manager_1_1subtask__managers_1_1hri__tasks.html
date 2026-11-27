@@ -113,6 +113,10 @@ Functions</h2></td></tr>
 <tr class="separator:ad3289042cb213f59aa6594b68d43bd1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8351689b4ef9ecb6ec60607400d447b3"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a8351689b4ef9ecb6ec60607400d447b3">format_transcription</a> (str text)</td></tr>
 <tr class="separator:a8351689b4ef9ecb6ec60607400d447b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab63154db45d90f521e84b766840ec389"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ab63154db45d90f521e84b766840ec389">_words</a> (str s)</td></tr>
+<tr class="separator:ab63154db45d90f521e84b766840ec389"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a777191aced37b2e9d84283ee03b74eb2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a777191aced37b2e9d84283ee03b74eb2">is_hotword_echo</a> (str text, str hotwords)</td></tr>
+<tr class="separator:a777191aced37b2e9d84283ee03b74eb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5be58f8f40c0c8032fc87d8825022883"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a5be58f8f40c0c8032fc87d8825022883">match_hotwords</a> (str text, str hotwords, str exclude=&quot;&quot;)</td></tr>
 <tr class="separator:a5be58f8f40c0c8032fc87d8825022883"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -130,6 +134,32 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">HRI Subtask manager
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="ab63154db45d90f521e84b766840ec389" name="ab63154db45d90f521e84b766840ec389"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab63154db45d90f521e84b766840ec389">&#9670;&#160;</a></span>_words()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> str task_manager.subtask_managers.hri_tasks._words </td>
+          <td>(</td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="acb3de2e45c2ebfe133179c42b0b983e1" name="acb3de2e45c2ebfe133179c42b0b983e1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acb3de2e45c2ebfe133179c42b0b983e1">&#9670;&#160;</a></span>confirm_query()</h2>
 
@@ -210,6 +240,38 @@ Returns:
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Format the interpreted text to remove punctuation and convert to lowercase.</pre> 
+</div>
+</div>
+<a id="a777191aced37b2e9d84283ee03b74eb2" name="a777191aced37b2e9d84283ee03b74eb2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a777191aced37b2e9d84283ee03b74eb2">&#9670;&#160;</a></span>is_hotword_echo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool task_manager.subtask_managers.hri_tasks.is_hotword_echo </td>
+          <td>(</td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>text</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>hotwords</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">True if text looks like Whisper echoing (part of) the hotword prompt on silence.
+
+That is the full hotword string, or 2+ hotwords with no other words ("living room, office").
+A single echoed hotword can't be told apart from the user saying it.
+</pre> 
 </div>
 </div>
 <a id="a5be58f8f40c0c8032fc87d8825022883" name="a5be58f8f40c0c8032fc87d8825022883"></a>

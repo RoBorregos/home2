@@ -1,9 +1,11 @@
 var hri__tasks_8py =
 [
     [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks" ],
+    [ "_words", "hri__tasks_8py.html#ab63154db45d90f521e84b766840ec389", null ],
     [ "confirm_query", "hri__tasks_8py.html#acb3de2e45c2ebfe133179c42b0b983e1", null ],
     [ "contains_any", "hri__tasks_8py.html#a80eea2cd019132d5e097a50ba62f5a71", null ],
     [ "format_transcription", "hri__tasks_8py.html#a8351689b4ef9ecb6ec60607400d447b3", null ],
+    [ "is_hotword_echo", "hri__tasks_8py.html#a777191aced37b2e9d84283ee03b74eb2", null ],
     [ "match_hotwords", "hri__tasks_8py.html#a5be58f8f40c0c8032fc87d8825022883", null ],
     [ "remove_punctuation", "hri__tasks_8py.html#ad3289042cb213f59aa6594b68d43bd1a", null ],
     [ "InterpreterAvailableCommands", "hri__tasks_8py.html#a44f64af8d322961b668968e808f3d511", null ],
