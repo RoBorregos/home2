@@ -59,8 +59,18 @@ RESUME_NAV_SERVICE = "/navigation/resume_nav"
 
 ### Path query service (distance between two map areas without moving)
 NAV_QUERY_SERVICE = "/navigation/query_path"
+NAV_QUERY_MATRIX_ACTION_SERVER = "/navigation/query_path_matrix"
+# std_srvs/Trigger behind ./run.sh navigation --cache-pairs: warm every named pair
+NAV_CACHE_PAIRS_SERVICE = "/navigation/cache_pairs"
 COMPUTE_PATH_ACTION_SERVER = "/compute_path_to_pose"
 TIMEOUT_NAV_QUERY = 10.0  # seconds to wait for ComputePathToPose result
+# Budget for one matrix query, SLAM/nav2 resume included; unplanned pairs return -1.0
+TIMEOUT_NAV_QUERY_MATRIX = 25.0
+# Map files and tagged areas (repo mount, same path in nav, integration and sim)
+NAV_MAPS_DIR = "/workspace/src/navigation/packages/map_context/maps"
+# Named-pair cache, one <map>.json per map; persistent on the robot's disk
+NAV_PATH_CACHE_DIR = NAV_MAPS_DIR + "/path_cache"
+PATH_CACHE_SAVE_PERIOD = 20.0  # seconds between saves during a long warmup
 
 ### Table/shelf docking (perpendicular approach) — see table_docker.py
 DOCK_SERVICE = "/navigation/dock_to_surface"  # std_srvs/Trigger: align + approach
@@ -82,6 +92,8 @@ TIMEOUT_REQUIREMENTS = 0.8
 TIMEOUT_RTABMAP = 30.0
 TIMEOUT_RTAB_SERVICE = 5.0
 TIMEOUT_NAV2_LIFECYCLE = 10.0
+# Worst case for a SLAM + nav2 resume (or pause): readiness + call waits
+TIMEOUT_NAV_TOGGLE_WORST = 3 * TIMEOUT_RTAB_SERVICE + TIMEOUT_NAV2_LIFECYCLE
 RTAB_PAUSE_SERVICE = "/rtabmap/pause"
 RTAB_RESUME_SERVICE = "/rtabmap/resume"
 RTAB_CHECK_TOPIC = "/rtabmap/republish_node_data"
@@ -99,6 +111,10 @@ class SUBTASK_MANAGER(Enum):
     # Path query may resume nav2 (up to TIMEOUT_NAV2_LIFECYCLE), plan
     # (up to TIMEOUT_NAV_QUERY) and re-pause, so give it ample room
     NAV_QUERY_TIMEOUT = 30.0
+    # Wait for the matrix result before cancelling: budget plus a normal pause
+    NAV_QUERY_MATRIX_TIMEOUT = TIMEOUT_NAV_QUERY_MATRIX + 4.0
+    # After a cancel nav still runs its closing pause; nav frees its lock on its own timeouts
+    NAV_QUERY_MATRIX_CANCEL_TIMEOUT = TIMEOUT_NAV_TOGGLE_WORST
 
 
 # Follow person node constants

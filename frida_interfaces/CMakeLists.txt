@@ -62,6 +62,7 @@ set(action_files
   "manipulation/action/GoToHand.action"
   "manipulation/action/PickTask.action"
   "navigation/action/Move.action"
+  "navigation/action/NavQueryMatrix.action"
   "vision/action/ExampleAction.action"
   "vision/action/Xarmmove.action"
 )

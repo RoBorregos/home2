@@ -44,6 +44,28 @@ for arg in "${ARGS[@]}"; do
     esac
 done
 
+#_________________________CACHE PAIRS_________________________
+
+# Warm GPSR's named path pairs inside the running stack; never starts or reconfigures it
+if [ "$TASK" == "--cache-pairs" ]; then
+    if [ -z "$(docker ps -q -f name=^home2-navigation$)" ]; then
+        echo "Navigation is not running. Start it first (e.g. ./run.sh navigation --gpsr)." >&2
+        exit 1
+    fi
+    echo "Caching location pairs (blocks until warmup finishes)..."
+    CACHE_SETUP="source /opt/ros/jazzy/setup.bash && if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi && if [ -f install/setup.bash ]; then source install/setup.bash; fi && source /usr/local/bin/cyclonedds_setup.sh"
+    # Without nav_central the call would wait for the service forever
+    if ! docker compose exec -T navigation bash -c "$CACHE_SETUP && ros2 service list" | grep -qx "/navigation/cache_pairs"; then
+        echo "nav_central is not up yet (no /navigation/cache_pairs). Wait for navigation setup and retry." >&2
+        exit 1
+    fi
+    OUTPUT=$(docker compose exec -T navigation bash -c "$CACHE_SETUP && ros2 service call /navigation/cache_pairs std_srvs/srv/Trigger {}") || { echo "$OUTPUT"; exit 1; }
+    echo "$OUTPUT"
+    # The service answers success=False when not ready or incomplete
+    echo "$OUTPUT" | grep -q "success=True" || exit 1
+    exit 0
+fi
+
 #_________________________SETUP_________________________
 
 echo "Configuring USB devices for Navigation..."

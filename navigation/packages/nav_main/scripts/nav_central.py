@@ -2,7 +2,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
-from rclpy.action import ActionClient
+from rclpy.action import ActionClient, ActionServer, CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from rclpy.qos import qos_profile_sensor_data, QoSProfile, DurabilityPolicy
 from composition_interfaces.srv import LoadNode
@@ -16,6 +16,8 @@ from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger, SetBool
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped, TwistStamped
 from nav_msgs.msg import OccupancyGrid
+from lifecycle_msgs.srv import GetState
+from lifecycle_msgs.msg import State
 from tf2_geometry_msgs import do_transform_point
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
@@ -54,10 +56,16 @@ from frida_constants.navigation_constants import(
         FOLLOW_GOAL_UPDATE_TIMEOUT,
         FOLLOW_ACTION_SERVER_TIMEOUT,
         NAV_QUERY_SERVICE,
+        NAV_QUERY_MATRIX_ACTION_SERVER,
+        NAV_CACHE_PAIRS_SERVICE,
         GO_TO_POSE_SERVICE,
         GET_ROBOT_POSE_SERVICE,
         COMPUTE_PATH_ACTION_SERVER,
         TIMEOUT_NAV_QUERY,
+        TIMEOUT_NAV_QUERY_MATRIX,
+        NAV_MAPS_DIR,
+        NAV_PATH_CACHE_DIR,
+        PATH_CACHE_SAVE_PERIOD,
         UNDOCK_SERVICE,
         DOCK_SERVICE,
         DOCK_TABLE_SERVICE,
@@ -77,6 +85,9 @@ from frida_interfaces.srv import (
         GetAreaForPoint,
         )
 from nav_main.semantic.areas import area_for_point
+from frida_interfaces.action import NavQueryMatrix
+from frida_constants.path_cache_store import (
+        load_path_cache, map_files_changed_since, path_cache_digest, path_cache_file, save_path_cache)
 import tf2_ros
 import json
 import time as t
@@ -84,6 +95,7 @@ import math
 import statistics
 import yaml
 import re
+from types import SimpleNamespace
 
 
 # Seconds to wait between NavigateToPose retries when a goal is rejected or
@@ -174,6 +186,21 @@ class Nav_Central(Node):
         # Same value semantic_nav uses (launch reads it from semantic_nav.yaml).
         self.viewpoint_probe_distance = self.declare_parameter('viewpoint_probe_distance', 0.8).value
         self.areas_data = None
+        self.declare_parameter('path_cache_warmup_seconds', 180.0)
+        # Persistent per-map file next to the maps; empty disables
+        self._path_cache_file = self.declare_parameter(
+            'path_cache_file', path_cache_file(NAV_PATH_CACHE_DIR, self.areas_map_name)).value
+        # Map servers start with this node: every pair it plans is on map files no newer than this
+        self._map_loaded_at = t.time()
+        self._location_path_cache = {}
+        self._path_cache_context = None
+        self._path_cache_warm_solved = -1
+        self._path_cache_warm_report = None
+        self._path_cache_group = ReentrantCallbackGroup()
+        self._path_state_clients = [
+            self.create_client(GetState, service, callback_group=self._path_cache_group)
+            for service in ('/planner_server/get_state', '/global_costmap/global_costmap/get_state')
+        ]
 
         self.lidar_group = ReentrantCallbackGroup()
         self.service_group = MutuallyExclusiveCallbackGroup()
@@ -214,6 +241,19 @@ class Nav_Central(Node):
 
         # Path query service — distance/time between two areas without navigating
         self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
+        # Path matrix action: goal/cancel use their own group so a cancel lands even
+        # while the work holds service_group through matrix_group_token
+        self.matrix_action_group = ReentrantCallbackGroup()
+        self.matrix_group_token = self.create_guard_condition(lambda: None, callback_group=self.service_group)
+        self.nav_query_matrix_server = ActionServer(
+            self, NavQueryMatrix, NAV_QUERY_MATRIX_ACTION_SERVER,
+            execute_callback=self.query_path_matrix,
+            cancel_callback=lambda _goal: CancelResponse.ACCEPT,
+            callback_group=self.matrix_action_group)
+        # Own exclusive group: warming takes service_group itself, and two calls never overlap
+        self.cache_pairs_srv = self.create_service(
+            Trigger, NAV_CACHE_PAIRS_SERVICE, self.cache_pairs_callback,
+            callback_group=MutuallyExclusiveCallbackGroup())
         self.compute_path_client = ActionClient(self, ComputePathToPose, COMPUTE_PATH_ACTION_SERVER)
 
         # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
@@ -264,11 +304,11 @@ class Nav_Central(Node):
         self.create_subscription(
             OccupancyGrid, GLOBAL_COSTMAP_TOPIC,
             lambda msg: setattr(self, "_costmap_grid", msg), costmap_qos,
-            callback_group=self.service_group)
+            callback_group=self._path_cache_group)
         self.create_subscription(
             OccupancyGrid, MAP_TOPIC,
-            lambda msg: setattr(self, "_static_grid", msg), 1,
-            callback_group=self.service_group)
+            lambda msg: setattr(self, "_static_grid", msg), costmap_qos,
+            callback_group=self._path_cache_group)
 
         # Initial pose tracking
         self._initial_pose_set = False
@@ -319,6 +359,9 @@ class Nav_Central(Node):
                 self._wait_for_initial_pose()
         else:
             self.nav_logger("info", "Nav2 not enabled, skipped")
+        if not self.mapping and self.use_nav2:
+            # Restore the saved pairs and report coverage; warming is ./run.sh navigation --cache-pairs
+            self._sync_path_cache()
         self.nav_logger("info", "Finished Setup, Starting monitoring ...")
         self.nodes_status = True
         self.baseline_tf_static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
@@ -1107,9 +1150,15 @@ class Nav_Central(Node):
             total += math.hypot(p1.x - p0.x, p1.y - p0.y)
         return total
 
-    def _compute_path(self, goal_pose, start_pose=None):
+    def _compute_path(self, goal_pose, start_pose=None, deadline=None, cancelled=None):
         """Call nav2 ComputePathToPose action. Returns nav_msgs/Path or None.
-        If start_pose is None the planner uses the robot's current pose."""
+        If start_pose is None the planner uses the robot's current pose.
+        deadline (time.monotonic) or cancelled() cut every wait short, on top of TIMEOUT_NAV_QUERY."""
+        def expired():
+            if cancelled is not None and cancelled():
+                return True
+            return deadline is not None and t.monotonic() >= deadline
+
         goal_msg = ComputePathToPose.Goal()
         goal_msg.goal = goal_pose
         goal_msg.planner_id = "GridBased"
@@ -1117,12 +1166,20 @@ class Nav_Central(Node):
             goal_msg.start = start_pose
             goal_msg.use_start = True
 
-        if not self.compute_path_client.wait_for_server(timeout_sec=TIMEOUT_NAV_QUERY):
+        elapsed = 0.0
+        while not self.compute_path_client.server_is_ready() and elapsed < TIMEOUT_NAV_QUERY and not expired():
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.2))
+            elapsed += 0.2
+        if not self.compute_path_client.server_is_ready():
             self.nav_logger("error", "Query_Path -> ComputePathToPose server not available")
             return None
 
         send_future = self.compute_path_client.send_goal_async(goal_msg)
-        if not self._wait(send_future, TIMEOUT_NAV_QUERY):
+        elapsed = 0.0
+        while not send_future.done() and elapsed < TIMEOUT_NAV_QUERY and not expired():
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not send_future.done():
             self.nav_logger("error", "Query_Path -> Timeout sending goal to planner")
             return None
 
@@ -1132,7 +1189,11 @@ class Nav_Central(Node):
             return None
 
         result_future = goal_handle.get_result_async()
-        if not self._wait(result_future, TIMEOUT_NAV_QUERY):
+        elapsed = 0.0
+        while not result_future.done() and elapsed < TIMEOUT_NAV_QUERY and not expired():
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not result_future.done():
             goal_handle.cancel_goal_async()
             self.nav_logger("error", "Query_Path -> Timeout waiting for planner result")
             return None
@@ -1200,6 +1261,379 @@ class Nav_Central(Node):
             if was_paused:
                 self._set_paused(True)
         return response
+
+    def query_path_matrix(self, goal_handle):
+        """Action execute: requested named-pair/robot rows in one nav2 resume/pause.
+        The terminal state is set only after nav2 is restored and service_group freed."""
+        result = self._run_path_matrix(goal_handle)
+        if goal_handle.is_cancel_requested:
+            goal_handle.canceled()
+        elif result.success:
+            goal_handle.succeed()
+        else:
+            goal_handle.abort()
+        return result
+
+    def _sync_path_cache(self):
+        """Invalidate named pairs when the loaded map or location table changes,
+        then restore the disk copy planned on the same map and areas.
+
+        After re-mapping or planner tuning, run ./run.sh navigation --cache-pairs,
+        which rebuilds every pair, so stale distances are not kept.
+        """
+        context = (self.map_name, self.areas_map_name, self.config_path,
+                   json.dumps(self.areas_data, sort_keys=True))
+        if context != self._path_cache_context:
+            self._location_path_cache.clear()
+            self._path_cache_context = context
+            self._restore_path_cache()
+            # Rewrite now so GPSR never pairs the old file's distances with its own areas
+            self._persist_path_cache()
+            total = len(self._named_area_list()) ** 2
+            cached = len(self._location_path_cache)
+            if cached < total:
+                self.nav_logger("warn", f"Path cache has {cached}/{total} named pairs; "
+                                        "run ./run.sh navigation --cache-pairs")
+            else:
+                self.nav_logger("info", f"Path cache complete: {cached}/{total} named pairs")
+
+    def _restore_path_cache(self):
+        if not self._path_cache_file:
+            return
+        saved = load_path_cache(self._path_cache_file)
+        if saved is None:
+            return
+        digest, _, pairs, saved_at, _ = saved
+        if digest != path_cache_digest(*self._path_cache_context):
+            self.nav_logger("info", "Path cache file is for another map or areas; ignoring it")
+            return
+        changed = map_files_changed_since(NAV_MAPS_DIR, self.areas_map_name, saved_at)
+        if changed:
+            self.nav_logger("warn", f"Map files changed since the path cache was planned "
+                                    f"({', '.join(changed)}); ignoring it")
+            return
+        self._location_path_cache.update(pairs)
+        self.nav_logger("info", f"Restored {len(pairs)} named pairs from {self._path_cache_file}")
+
+    def _persist_path_cache(self):
+        """Disk copy for GPSR and nav restarts; failure only costs a rewarm."""
+        if not self._path_cache_file or self._path_cache_context is None:
+            return
+        try:
+            save_path_cache(self._path_cache_file, path_cache_digest(*self._path_cache_context),
+                            self.areas_data, self._location_path_cache,
+                            map_name=self.areas_map_name, saved_at=self._map_loaded_at)
+        except Exception as e:
+            self.nav_logger("warn", f"Could not save path cache to {self._path_cache_file}: {e}")
+
+    def _path_cache_inputs_ready(self):
+        """Require populated map-frame grids and at least one named pose."""
+        def grid_ready(grid):
+            return (grid is not None and grid.header.frame_id == 'map'
+                    and grid.info.width > 0 and grid.info.height > 0
+                    and math.isfinite(grid.info.resolution) and grid.info.resolution > 0.0
+                    and len(grid.data) == grid.info.width * grid.info.height
+                    and any(cell >= 0 for cell in grid.data))
+
+        return (grid_ready(self._static_grid) and grid_ready(self._costmap_grid)
+                and isinstance(self.areas_data, dict)
+                and any(isinstance(coords, (list, tuple)) and len(coords) == 7
+                        and all(isinstance(v, (int, float)) and math.isfinite(v) for v in coords)
+                        for subareas in self.areas_data.values() if isinstance(subareas, dict)
+                        for coords in subareas.values()))
+
+    def _path_planner_ready(self, deadline, cancelled):
+        """Action discovery alone is insufficient: both lifecycle nodes must be active."""
+        if not self.compute_path_client.server_is_ready():
+            return False
+        futures = []
+        try:
+            for client in self._path_state_clients:
+                if not client.service_is_ready():
+                    return False
+                futures.append(client.call_async(GetState.Request()))
+            while not all(future.done() for future in futures):
+                if cancelled() or t.monotonic() >= deadline:
+                    return False
+                t.sleep(0.05)
+            return all(future.result() is not None
+                       and future.result().current_state.id == State.PRIMARY_STATE_ACTIVE
+                       for future in futures)
+        except Exception as e:
+            self.nav_logger("warn", f"Path planner readiness check failed: {e}")
+            return False
+        finally:
+            for future in futures:
+                if not future.done():
+                    future.cancel()
+
+    def cache_pairs_callback(self, request, response):
+        """Trigger for ./run.sh navigation --cache-pairs: rebuild every named pair, then
+        retry budget-cut rounds while they still add pairs. Blocks until done."""
+        response.success = False
+        if self.mapping or not self.use_nav2:
+            response.message = "Path cache needs localization mode with nav2"
+            return response
+        if not self.nodes_status or not self._path_cache_inputs_ready():
+            response.message = ("Navigation not ready (setup, map, costmap or areas); "
+                                "try again once setup finishes")
+            return response
+        started = t.monotonic()
+        self._path_cache_warm_solved = -1
+        full = True
+        while True:
+            self._path_cache_warm_report = None
+            complete = self._refresh_path_cache(full=full)
+            full = False
+            report = self._path_cache_warm_report
+            if complete or report is None or not report["success"]:
+                break
+        elapsed = t.monotonic() - started
+        if report is None or not report["success"]:
+            error = report["error"] if report else "warmup did not run"
+            response.message = f"Path cache warmup failed after {elapsed:.1f}s: {error}"
+            return response
+        solved, total = report["solved"], report["total"]
+        state = "complete" if solved >= total else f"incomplete: {total - solved} unsolved"
+        response.success = solved >= total
+        response.message = f"Cached {solved}/{total} named pairs in {elapsed:.1f}s ({state})"
+        self.nav_logger("info" if response.success else "warn", f"Path cache -> {response.message}")
+        return response
+
+    def _named_area_list(self):
+        """(location, sublocation) of every valid 7-value pose in the areas table."""
+        areas = []
+        for location, subareas in (self.areas_data or {}).items():
+            if not isinstance(subareas, dict):
+                continue
+            for sublocation, coords in subareas.items():
+                if (isinstance(coords, (list, tuple)) and len(coords) == 7
+                        and all(isinstance(v, (int, float)) and math.isfinite(v) for v in coords)):
+                    areas.append((location, sublocation))
+        return areas
+
+    def _refresh_path_cache(self, full=True):
+        """One warmup round over all named pairs; True once no retry is useful.
+        full=False keeps restored pairs and plans only the missing ones.
+
+        The normal navigation lock protects both invalidation and computation.
+        Robot-origin distances are never retained. The round's counts are left in
+        _path_cache_warm_report for cache_pairs_callback.
+        """
+        if self.mapping or not self.use_nav2 or not self.nodes_status:
+            return False
+        if not self._path_cache_inputs_ready():
+            return False
+        started = t.monotonic()
+        budget = float(self.get_parameter('path_cache_warmup_seconds').value)
+        if not math.isfinite(budget) or budget <= 0.0:
+            self.nav_logger("warn", "Invalid path cache warmup budget; using 180 seconds")
+            budget = 180.0
+        goal = NavQueryMatrix.Goal()
+        goal.mode = NavQueryMatrix.Goal.LOCATION_PAIRS
+        goal.budget_seconds = budget
+        areas = self._named_area_list()
+        goal.locations = [loc for loc, _ in areas]
+        goal.sublocations = [sub for _, sub in areas]
+        # Reuse the matrix executor without sending an action to this same node.
+        job = SimpleNamespace(request=goal, is_cancel_requested=False, publish_feedback=lambda _: None)
+        try:
+            result = self._run_path_matrix(job, refresh_cache=full)
+            solved = sum(d >= 0.0 for d in result.distances)
+            elapsed = t.monotonic() - started
+            # A round cut by the budget retries the missing pairs while it still adds some
+            progressed = solved > self._path_cache_warm_solved
+            self._path_cache_warm_solved = solved
+            complete = result.success and (elapsed < budget or not progressed)
+            self._path_cache_warm_report = {"success": result.success, "solved": solved,
+                                            "total": len(areas) ** 2, "error": result.error}
+            self.nav_logger("info" if complete else "warn",
+                            f"Path cache warmup: {solved}/{len(areas) ** 2} named pairs "
+                            f"in {elapsed:.1f}s{'' if complete else ', retrying'}; {result.error}")
+            return complete
+        except Exception as e:
+            # Path estimation must not take navigation down.
+            self._path_cache_warm_report = {"success": False, "solved": 0,
+                                            "total": len(areas) ** 2, "error": str(e)}
+            self.nav_logger("warn", f"Path cache warmup failed: {e}")
+            return False
+
+    def _matrix_needs_planner(self, request, poses):
+        if request.mode != NavQueryMatrix.Goal.LOCATION_PAIRS and any(p is not None for p in poses):
+            return True
+        if request.mode == NavQueryMatrix.Goal.ROBOT_ORIGIN:
+            return False
+        areas = list(zip(request.locations, (sub or "safe_place" for sub in request.sublocations)))
+        return any(i != j and poses[i] is not None and poses[j] is not None
+                   and (src, dst) not in self._location_path_cache
+                   for i, src in enumerate(areas) for j, dst in enumerate(areas))
+
+    def _run_path_matrix(self, goal_handle, *, refresh_cache=False):
+        request = goal_handle.request
+        n = len(request.locations)
+        self.nav_logger("info", f"Query_Path_Matrix -> Goal received ({n} areas)")
+        result = NavQueryMatrix.Result()
+        result.success = False
+        result.distances = []
+        result.error = ""
+
+        if self.mapping:
+            result.error = "Not available in mapping mode"
+            return result
+        if self.areas_data is None:
+            self.nav_logger("error", "Query_Path_Matrix -> Areas not loaded")
+            result.error = "Areas not loaded"
+            return result
+        if len(request.sublocations) != n:
+            result.error = "locations and sublocations differ in length"
+            return result
+        if request.mode not in (NavQueryMatrix.Goal.FULL, NavQueryMatrix.Goal.LOCATION_PAIRS,
+                                NavQueryMatrix.Goal.ROBOT_ORIGIN):
+            result.error = "Unknown matrix mode"
+            return result
+        if not math.isfinite(request.budget_seconds) or request.budget_seconds < 0.0:
+            result.error = "Invalid matrix budget"
+            return result
+        if request.mode != NavQueryMatrix.Goal.LOCATION_PAIRS and request.robot_start.header.frame_id:
+            pose = request.robot_start.pose
+            values = (pose.position.x, pose.position.y, pose.position.z,
+                      pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
+            if (request.robot_start.header.frame_id != "map"
+                    or not all(math.isfinite(v) for v in values)
+                    or sum(v * v for v in values[3:]) < 1e-12):
+                result.error = "robot_start must be a finite map-frame pose with a valid quaternion"
+                return result
+
+        poses = []
+        for loc, sub in zip(request.locations, request.sublocations):
+            coords = self._fetch_area_coords(loc, sub or "safe_place")
+            poses.append(self._pose_from_coords(coords) if coords is not None else None)
+
+        if not self.rtabmap_loaded or not self.nodes_status:
+            self.nav_logger("error", "Query_Path_Matrix -> Navigation not initialized")
+            result.error = "Navigation not initialized"
+            return result
+
+        if not self._hold_service_group(goal_handle):
+            self.nav_logger("info", "Query_Path_Matrix -> Cancelled while queued, nav2 untouched")
+            result.error = "Cancelled before start"
+            return result
+        cached_before = None
+        try:
+            self._sync_path_cache()
+            cached_before = dict(self._location_path_cache)
+            # Budget starts before the resume so the whole query stays bounded
+            deadline = t.monotonic() + (request.budget_seconds or TIMEOUT_NAV_QUERY_MATRIX)
+            if not refresh_cache and not self._matrix_needs_planner(request, poses):
+                # A warmed named matrix does not need a Nav2 resume or robot TF.
+                result.distances = self._plan_matrix(goal_handle, poses, deadline)
+                result.success = True
+                return result
+            if not self._path_cache_inputs_ready():
+                result.error = "Map, global costmap, or named locations not ready"
+                return result
+            # Planner needs nav2 active; remember prior state to restore it after
+            was_paused = self.nav2_paused
+            try:
+                self._set_paused(False)
+                if self.nav2_paused:
+                    self.nav_logger("error", "Query_Path_Matrix -> Could not resume nav2")
+                    result.error = "Could not resume nav2"
+                    return result
+                if (not self._path_planner_ready(min(deadline, t.monotonic() + 2.0),
+                                                 lambda: goal_handle.is_cancel_requested)
+                        or not self._path_cache_inputs_ready()):
+                    result.error = "Map or planner not ready"
+                    return result
+                if refresh_cache:
+                    self._location_path_cache.clear()
+                robot_start = None
+                if request.mode != NavQueryMatrix.Goal.LOCATION_PAIRS:
+                    if request.robot_start.header.frame_id:
+                        robot_start = request.robot_start
+                    else:
+                        snapshot = self.get_robot_pose_callback(None, GetRobotPose.Response())
+                        if snapshot.success:
+                            robot_start = snapshot.pose
+                result.distances = self._plan_matrix(goal_handle, poses, deadline, robot_start)
+                result.success = True
+            finally:
+                if was_paused:
+                    self._set_paused(True)
+        finally:
+            if cached_before is not None and self._location_path_cache != cached_before:
+                self._persist_path_cache()
+            self._release_service_group()
+
+        solved = sum(1 for d in result.distances if d >= 0.0)
+        if goal_handle.is_cancel_requested:
+            note = " (cancelled)"
+        elif t.monotonic() >= deadline:
+            note = " (planning budget exhausted)"
+        else:
+            note = ""
+        self.nav_logger("info", f"Query_Path_Matrix -> {solved}/{len(result.distances)} pairs solved{note}")
+        return result
+
+    def _plan_matrix(self, goal_handle, poses, deadline, robot_start=None):
+        """Reuse named pairs; compute robot rows from one fixed pose every time."""
+        def cancelled():
+            return goal_handle.is_cancel_requested
+
+        n = len(poses)
+        feedback = NavQueryMatrix.Feedback()
+        mode = goal_handle.request.mode
+        starts = ([None] + list(range(n)) if mode == NavQueryMatrix.Goal.FULL else
+                  list(range(n)) if mode == NavQueryMatrix.Goal.LOCATION_PAIRS else [None])
+        areas = list(zip(goal_handle.request.locations,
+                         (sub or "safe_place" for sub in goal_handle.request.sublocations)))
+        feedback.pairs_total = len(starts) * n
+        distances = []
+        last_save = t.monotonic()
+        for i in starts:
+            for j in range(n):
+                if i == j:
+                    distances.append(0.0)
+                    if poses[i] is not None:
+                        self._location_path_cache[(areas[i], areas[j])] = 0.0
+                elif (poses[j] is None or (i is not None and poses[i] is None)
+                      or (i is None and robot_start is None)
+                      or cancelled()):
+                    distances.append(-1.0)
+                else:
+                    pair = (areas[i], areas[j]) if i is not None else None
+                    if pair is not None and pair in self._location_path_cache:
+                        distance = self._location_path_cache[pair]
+                    elif t.monotonic() >= deadline:
+                        distance = -1.0
+                    else:
+                        path = self._compute_path(poses[j], robot_start if i is None else poses[i], deadline, cancelled)
+                        distance = -1.0 if path is None else self._path_length(path)
+                        if pair is not None and math.isfinite(distance) and distance >= 0.0:
+                            self._location_path_cache[pair] = distance
+                            # GPSR reads the file, so share long warmups as they progress
+                            if t.monotonic() - last_save >= PATH_CACHE_SAVE_PERIOD:
+                                self._persist_path_cache()
+                                last_save = t.monotonic()
+                    distances.append(distance)
+                feedback.pairs_done = len(distances)
+                goal_handle.publish_feedback(feedback)
+        return distances
+
+    def _hold_service_group(self, goal_handle):
+        """Claim service_group like a service callback would (execute callbacks run
+        outside any group). Returns False if cancelled while waiting."""
+        while not self.service_group.beginning_execution(self.matrix_group_token):
+            if goal_handle.is_cancel_requested:
+                return False
+            t.sleep(0.05)
+        return True
+
+    def _release_service_group(self):
+        self.service_group.ending_execution(self.matrix_group_token)
+        # Wake the executor so service requests queued meanwhile run now
+        if self.executor is not None:
+            self.executor.wake()
 
     def check_for_topics(self, topics):
         # A topic counts only with a live source: /cmd_vel needs the base driver

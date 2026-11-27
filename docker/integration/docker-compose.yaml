@@ -29,6 +29,7 @@ services:
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      MAP_NAME: ${MAP_NAME:-}
     tty: true
     stdin_open: true    
     working_dir: /workspace

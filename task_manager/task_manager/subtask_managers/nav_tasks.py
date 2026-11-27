@@ -9,7 +9,9 @@ import json
 import math
 import copy
 import rclpy
+from rclpy.action import ActionClient
 from rclpy.node import Node
+from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped, Quaternion, PointStamped, Point
 import tf2_ros
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
@@ -19,6 +21,7 @@ from frida_constants.navigation_constants import (
     MOVE_LOCATION_SERVICE,
     FOLLOW_PERSON_NAV_SERVICE,
     NAV_QUERY_SERVICE,
+    NAV_QUERY_MATRIX_ACTION_SERVER,
     DOCK_TABLE_SERVICE,
     GO_TO_POSE_SERVICE,
     GET_ROBOT_POSE_SERVICE,
@@ -39,6 +42,7 @@ from frida_interfaces.srv import (
     GetAreaForPoint,
     PlanPatrol,
 )
+from frida_interfaces.action import NavQueryMatrix
 from std_srvs.srv import SetBool
 
 from task_manager.utils.decorators import mockable, service_check
@@ -87,6 +91,9 @@ class NavigationTasks:
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
         self.follow_person_srv = self.node.create_client(SetBool, FOLLOW_PERSON_NAV_SERVICE)
         self.nav_query_srv = self.node.create_client(NavQuery, NAV_QUERY_SERVICE)
+        self.nav_query_matrix_client = ActionClient(
+            self.node, NavQueryMatrix, NAV_QUERY_MATRIX_ACTION_SERVER
+        )
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
@@ -112,6 +119,10 @@ class NavigationTasks:
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
                 "follow_person_srv": {"client": self.follow_person_srv, "type": "service"},
                 "nav_query_srv": {"client": self.nav_query_srv, "type": "service"},
+                "nav_query_matrix_client": {
+                    "client": self.nav_query_matrix_client,
+                    "type": "action",
+                },
                 "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
                 "get_area_for_point_srv": {
                     "client": self.get_area_for_point_srv,
@@ -441,6 +452,100 @@ class NavigationTasks:
             f"Path to {location_b}: {result.distance_meters:.2f} m",
         )
         return (Status.EXECUTION_SUCCESS, {"distance": result.distance_meters})
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, {}), delay=1)
+    @service_check(
+        "nav_query_matrix_client",
+        (Status.EXECUTION_ERROR, "Action server not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def get_path_matrix(
+        self, areas, *, mode=NavQueryMatrix.Goal.FULL, robot_start=None, budget_seconds=0.0
+    ):
+        """Path distances (m) between every ordered pair of ``areas`` ((location,
+        sublocation) tuples) without moving. Returns (Status, {(start, goal): m}),
+        start None = robot pose; unsolved pairs omitted. ``mode`` can request
+        only named pairs or only the robot row, using an explicit map-frame
+        ``robot_start`` snapshot. Navigation reuses cached named pairs and always
+        computes the robot row fresh. Zero budget preserves the normal timeout.
+        A slow query is cancelled and returns what was solved, only once
+        nav_central confirms it stopped."""
+        areas = [(loc, sub or "safe_place") for loc, sub in areas]
+        if mode not in (
+            NavQueryMatrix.Goal.FULL,
+            NavQueryMatrix.Goal.LOCATION_PAIRS,
+            NavQueryMatrix.Goal.ROBOT_ORIGIN,
+        ):
+            return (Status.EXECUTION_ERROR, "Unknown matrix mode")
+        if not math.isfinite(budget_seconds) or budget_seconds < 0.0:
+            return (Status.EXECUTION_ERROR, "Invalid matrix budget")
+        n = len(areas)
+        if n == 0:
+            return (Status.EXECUTION_SUCCESS, {})
+        CLog.nav(self.node, "INFO", f"Querying path matrix for {n} areas")
+        goal = NavQueryMatrix.Goal()
+        goal.locations = [loc for loc, _ in areas]
+        goal.sublocations = [sub for _, sub in areas]
+        goal.mode = mode
+        goal.budget_seconds = float(budget_seconds)
+        if robot_start is not None:
+            goal.robot_start = robot_start
+        send_future = self.nav_query_matrix_client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(
+            self.node, send_future, timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+        )
+        goal_handle = send_future.result()
+        if goal_handle is None or not goal_handle.accepted:
+            CLog.nav(self.node, "ERROR", "Path matrix goal not accepted")
+            return (Status.EXECUTION_ERROR, "Goal not accepted")
+
+        result_future = goal_handle.get_result_async()
+        wait_seconds = (
+            budget_seconds + 4.0
+            if budget_seconds > 0.0
+            else SUBTASK_MANAGER.NAV_QUERY_MATRIX_TIMEOUT.value
+        )
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=wait_seconds)
+        if not result_future.done():
+            CLog.nav(
+                self.node,
+                "WARN",
+                f"Path matrix exceeded {wait_seconds:.0f}s, "
+                "cancelling and waiting for nav_central to stop",
+            )
+            goal_handle.cancel_goal_async()
+            rclpy.spin_until_future_complete(
+                self.node,
+                result_future,
+                timeout_sec=SUBTASK_MANAGER.NAV_QUERY_MATRIX_CANCEL_TIMEOUT.value,
+            )
+        if not result_future.done():
+            CLog.nav(self.node, "ERROR", "nav_central did not stop the path matrix after cancel")
+            return (Status.EXECUTION_ERROR, "Path matrix did not stop")
+
+        response = result_future.result()
+        result = response.result
+        if not result.success:
+            CLog.nav(self.node, "ERROR", f"Path matrix query failed: {result.error}")
+            return (Status.EXECUTION_ERROR, result.error)
+        starts = (
+            [None] + areas
+            if mode == NavQueryMatrix.Goal.FULL
+            else areas
+            if mode == NavQueryMatrix.Goal.LOCATION_PAIRS
+            else [None]
+        )
+        if len(result.distances) != len(starts) * n:
+            return (Status.EXECUTION_ERROR, "Malformed path matrix")
+        matrix = {}
+        for r, start in enumerate(starts):
+            for c, goal in enumerate(areas):
+                d = result.distances[r * n + c]
+                if math.isfinite(d) and d >= 0.0:
+                    matrix[(start, goal)] = d
+        partial = " (partial, cancelled)" if response.status == GoalStatus.STATUS_CANCELED else ""
+        CLog.nav(self.node, "SUCCESS", f"Path matrix: {len(matrix)} pairs solved{partial}")
+        return (Status.EXECUTION_SUCCESS, matrix)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
     @service_check(

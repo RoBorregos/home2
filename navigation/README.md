@@ -21,7 +21,8 @@ home2/
 │frida_interfaces/                      # Custom ROS interfaces
 ├── navigation/
 │   ├── action/
-│   │   └── Move.action
+│   │   ├── Move.action
+│   │   └── NavQueryMatrix.action
 │   ├── msg/
 │   │   ├── MonitorReport.msg
 │   │   └── NodeStatus.msg
@@ -244,6 +245,8 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 | `/navigation/approach_point` | `ApproachPoint` | Approach a point at a standoff distance |
 | `/navigation/get_robot_pose` | `GetRobotPose` | Current pose from TF (map → base_link) |
 | `/navigation/query_path` | `NavQuery` | Path distance between two areas (no motion) |
+| `/navigation/query_path_matrix` | `NavQueryMatrix` (action) | Full matrix, named pairs only, or robot-origin row; one nav2 resume/pause, cancellable with partial results |
+| `/navigation/cache_pairs` | `Trigger` | Warm every named path pair for GPSR (`./run.sh navigation --cache-pairs`) |
 | `/navigation/dock_table` | `DockTable` | Dock to the surface in front (with offset) |
 | `/navigation/is_door_open` | `CheckDoor` | Door open/closed via lidar |
 | `/navigation/areas_json` | `MapAreas` | Return `areas.json` as a string |
@@ -251,6 +254,80 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 | `/navigation/resume_nav` | `Empty` | Resume paused Nav2 |
 | `/navigation/get_area_for_point` | `GetAreaForPoint` | Which room and furniture a map point belongs to |
 | `/navigation/plan_patrol` | `PlanPatrol` | Ordered route over the tagged furniture poses (no motion) |
+
+### GPSR distance cache
+
+`nav_central` owns the named location-pair cache in memory. It never warms the
+cache by itself: with navigation already up (e.g. `./run.sh navigation --gpsr`),
+run
+
+```bash
+./run.sh navigation --cache-pairs     # robot
+./run.sh simulation --cache-pairs     # nav sim
+```
+
+This calls the `/navigation/cache_pairs` (`std_srvs/Trigger`) service and blocks
+until warmup ends, printing for example `Cached 625/625 named pairs in 143.2s
+(complete)`. It exits non-zero if navigation isn't running, if setup hasn't finished
+(map and global-costmap grids, named poses, initial pose), or if some pairs stayed
+unsolved. Each run rebuilds every pair from scratch, so stale distances after a
+re-map or planner retune are dropped. Warmup plans on the global costmap as it is,
+so clear the costmap first; leftover obstacle marks would end up in the saved
+distances. Each round has a `path_cache_warmup_seconds`
+budget (180 s); a round cut by the budget retries the missing pairs and stops once
+a round adds none. At startup navigation restores the saved file and logs its
+coverage, warning `run ./run.sh navigation --cache-pairs` when it is missing or
+incomplete. Mapping mode does not warm the cache.
+
+Navigation saves the cache, with its areas table, to `path_cache_file`. The default
+is `navigation/packages/map_context/maps/path_cache/<map>.json` (gitignored; empty
+disables). That is on the robot's disk under the repo, so it survives reboots, and
+the navigation, integration and simulation containers all mount it at `/workspace/src`.
+The file is written whenever the cache changes, and every 20 s during a long warmup.
+It records the map name and `saved_at`, the time navigation loaded the map it
+planned on. On restart, navigation restores the file only if it was planned on the
+same map name, areas file, SLAM config and area poses, and if none of the map's
+`.posegraph`, `.data`, `.yaml` or `.pgm` files was modified after `saved_at`.
+
+GPSR reads its named pairs only from this file, never through the action, so it
+works the same whether navigation is up or down. It finds the file through
+`MAP_NAME`, which `docker/integration/run.sh` passes in the same way navigation
+gets it (recreate the integration container once to pick it up). GPSR discards the
+whole file if it belongs to another map, or if any map file is newer than
+`saved_at`. It then keeps only the pairs whose two poses match the current areas
+table: live from navigation, or, with navigation down, this map's
+`maps/areas/areas_<map>.json` read from disk. It never checks the file against its
+own areas copy. A re-tagged location therefore drops only the pairs that touch it.
+
+Matrix queries reuse successful named pairs and compute only missing pairs within
+the query budget. A fully cached named-pair query does not resume/pause Nav2.
+Unsolved pairs are not cached as permanently unreachable. GPSR reads the subset
+needed by its three commands from the file just before merging and keeps it only
+for the batch. Missing pairs use its scaled straight-line estimate. GPSR never
+warms named pairs.
+
+Just before merging each batch (the robot is still at the instruction point),
+GPSR snapshots the robot's complete pose and requests its distances only to the
+batch's own `go_to` areas, e.g. 4 areas for 3 commands rather than every named
+location. If TF is missing, or the robot moves more than
+`path_origin_translation_tolerance` (0.1 m) or turns more than
+`path_origin_rotation_tolerance` (10 degrees) during the query, the origin costs are
+dropped. Navigation always computes robot-origin rows fresh and never caches them.
+
+`NavQueryMatrix` accepts `mode` (`FULL=0`, `LOCATION_PAIRS=1`, `ROBOT_ORIGIN=2`),
+an optional `robot_start` in the `map` frame, and `budget_seconds`. Zero budget
+keeps the normal 25 s calculation budget; `--cache-pairs` uses its longer
+warmup budget. An empty start frame snapshots TF once after navigation
+is acquired. Results are row-major `(n+1)×n`, `n×n`, or `1×n` respectively, with
+`-1` for unsolved pairs. The Python wrapper still returns a pair-to-distance dict.
+The action definition changed: rebuild `frida_interfaces` and its navigation,
+task-manager, and simulation consumers together.
+
+Restart navigation after changing the map, tags, or planner settings to reload
+them, then run `--cache-pairs`. Queries also invalidate stale entries when the
+loaded map identity or area table changes. Restarting GPSR does not rebuild the
+navigation cache. Temporary obstacles are handled by live navigation and do not
+rebuild the baseline cache.
 
 ### Example service calls
 

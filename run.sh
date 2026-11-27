@@ -68,6 +68,7 @@ Additional Flags:
 Examples:
   ./run.sh hri --receptionist
   ./run.sh simulation --nav
+  ./run.sh navigation --cache-pairs   (navigation must already be running)
   ./run.sh vision --build
   ./run.sh --gpsr --recreate
   ./run.sh --down

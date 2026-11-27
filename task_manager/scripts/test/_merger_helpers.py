@@ -115,6 +115,20 @@ def make_locator(coords: dict):
     return lambda name: table.get(name)
 
 
+def make_distance(table: dict):
+    """Build a merger ``distance`` fn from ``{from: {to: meters}}``; the robot
+    origin row is keyed ``"origin"``. Missing pairs fall back to the reverse
+    direction, then ``None`` (unknown)."""
+
+    def dist(a, b):
+        row = table.get("origin" if a is None else a, {})
+        if b in row:
+            return row[b]
+        return table.get(b, {}).get(a) if a is not None else None
+
+    return dist
+
+
 def _go_tos(plan: InterleavedPlan) -> List[PlanAction]:
     return [pa for pa in plan.actions if getattr(pa.action, "action", "") == "go_to"]
 

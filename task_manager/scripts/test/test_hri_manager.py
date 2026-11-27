@@ -21,6 +21,7 @@ from _merger_helpers import (
     build_commands,
     describe_plan,
     evaluate_expectations,
+    make_distance,
     make_locator,
 )
 from task_manager.subtask_managers.hri_tasks import HRITasks, format_transcription, match_hotwords
@@ -993,6 +994,8 @@ class TestHriManager(Node):
                 kwargs["locator"] = make_locator(sc["coords"])
             if "origin" in sc:
                 kwargs["origin"] = tuple(sc["origin"]) if sc["origin"] is not None else None
+            if "distances" in sc:
+                kwargs["distance"] = make_distance(sc["distances"])
 
             plan = None
             try:
