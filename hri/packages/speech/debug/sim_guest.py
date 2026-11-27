@@ -28,7 +28,9 @@ from std_msgs.msg import Bool, String
 
 CHUNK = 1024  # samples per message, like audio_capturer
 RATE = 16000
-VAD_SILENCE_LIMIT = 1.5  # voice_detection forwards this much silence before voice_activity=False
+VAD_SILENCE_LIMIT = (
+    1.5  # voice_detection forwards this much silence before voice_activity=False
+)
 
 
 def pick_answer(said: str, guest: int) -> str | None:
@@ -50,7 +52,9 @@ def pick_answer(said: str, guest: int) -> str | None:
 class SimGuest(Node):
     def __init__(self):
         super().__init__("sim_guest")
-        default_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sim_guest_wavs")
+        default_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "sim_guest_wavs"
+        )
         wav_dir = self.declare_parameter("wav_dir", default_dir).value
         self.answer_on_try = self.declare_parameter("answer_on_try", 1).value
         self.reply_delay = self.declare_parameter("reply_delay", 1.0).value
@@ -59,7 +63,9 @@ class SimGuest(Node):
             if f.endswith(".wav"):
                 with wave.open(os.path.join(wav_dir, f)) as w:
                     assert w.getframerate() == RATE and w.getnchannels() == 1, f
-                    self.wavs[f[:-4]] = np.frombuffer(w.readframes(w.getnframes()), np.int16)
+                    self.wavs[f[:-4]] = np.frombuffer(
+                        w.readframes(w.getnframes()), np.int16
+                    )
 
         self.guest = 1
         self.last_said = ""
@@ -71,7 +77,9 @@ class SimGuest(Node):
         self.create_subscription(String, "/speech/text_spoken", self._said, 10)
         self.create_subscription(String, "AudioState", self._state, 10)
         self.create_subscription(String, "/speech/raw_command", self._heard, 10)
-        self.log(f"ready, answer_on_try={self.answer_on_try}, clips={sorted(self.wavs)}")
+        self.log(
+            f"ready, answer_on_try={self.answer_on_try}, clips={sorted(self.wavs)}"
+        )
 
     def log(self, text: str):
         print(f"[{time.monotonic() - self.t0:6.1f}s] {text}", flush=True)
@@ -80,7 +88,9 @@ class SimGuest(Node):
         self.last_said = msg.data
         self.log(f"FRIDA : {msg.data}")
         if "nice to meet you" in msg.data.lower():
-            self.guest = min(self.guest + 1, 2)  # the next name/drink answers come from guest 2
+            self.guest = min(
+                self.guest + 1, 2
+            )  # the next name/drink answers come from guest 2
 
     def _heard(self, msg: String):
         if msg.data != self.last_heard:
@@ -103,7 +113,9 @@ class SimGuest(Node):
     def _speak(self, clip: str):
         time.sleep(self.reply_delay)  # LISTEN is published before the STT goal starts
         self.log(f"GUEST : <{clip}>")
-        audio = np.concatenate([self.wavs[clip], np.zeros(int(RATE * VAD_SILENCE_LIMIT), np.int16)])
+        audio = np.concatenate(
+            [self.wavs[clip], np.zeros(int(RATE * VAD_SILENCE_LIMIT), np.int16)]
+        )
         for i in range(0, len(audio), CHUNK):
             self.audio_pub.publish(AudioData(data=audio[i : i + CHUNK].tobytes()))
             time.sleep(CHUNK / RATE)
