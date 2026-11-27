@@ -28,9 +28,15 @@ class RecoveryPolicy(str, Enum):
     SKIP_DEFER = "skip-defer"
 
 
+class GripperState(Enum):
+    EMPTY = "empty"
+    OCCUPIED = "occupied"
+    UNCERTAIN = "uncertain"
+
+
 @dataclass
 class ExecutionHooks:
-    """Adapter for the clock and budgeted I/O. Gripper state comes from skill results.
+    """Adapter for the clock, physical state and budgeted I/O.
 
     All deadlines are absolute values in clock() units. estimate_deferred
     prices the supplied sequence from the current pose and includes return.
@@ -40,6 +46,7 @@ class ExecutionHooks:
     clock: Callable[[], float] = monotonic
     deadline: Optional[float] = None
     set_action_deadline: Optional[Callable[[Optional[float]], None]] = None
+    gripper_state: Optional[Callable[[], GripperState]] = None
     estimate_deferred: Optional[Callable[[Sequence[PlanAction]], Optional[float]]] = None
     return_to_start: Optional[Callable[[float], bool]] = None
     report_failure: Optional[Callable[[PlanAction, Status, float], bool]] = None
@@ -49,6 +56,7 @@ class ExecutionHooks:
     replan: Optional[
         Callable[[Sequence[Sequence[PlanAction]], Optional[int]], Sequence[PlanAction]]
     ] = None
+    verify_gripper: Optional[Callable[[GripperState, float], bool]] = None
 
 
 OK = Status.EXECUTION_SUCCESS
@@ -238,13 +246,21 @@ class ExecutionTree(py_trees.composites.Sequence):
         self.skipped = {}
         self._writes = []
         self._place = _norm_location(self._requirements.start)
-        self._holder = None  # key of the pick whose object is held, per skill results
+        self._gripper = (
+            GripperState.EMPTY
+            if self.policy == RecoveryPolicy.SEQUENTIAL_FALLBACK
+            else GripperState.UNCERTAIN
+        )
+        self._holder = None
         self.returned = None
         self._finished = False
         self._pending_information = []
 
     def _remaining(self):
         return self.deadline - self.hooks.clock()
+
+    def _gripper_state(self):
+        return self.hooks.gripper_state() if self.hooks.gripper_state else self._gripper
 
     def _set_phase(self, phase):
         self._phase = phase
@@ -262,12 +278,16 @@ class ExecutionTree(py_trees.composites.Sequence):
             return "prerequisite unavailable"
         if check_place and needs and needs.place and _norm_location(needs.place) != self._place:
             return "required location unavailable"
-        if pa.requires_gripper and self._holder is not None:
-            return "gripper is occupied"
+        gripper = self._gripper_state()
+        if pa.requires_gripper and gripper != GripperState.EMPTY:
+            return "gripper is occupied or uncertain"
         if pa.releases_gripper and (
-            not needs or not needs.pick or self._holder != _key(needs.pick)
+            gripper != GripperState.OCCUPIED
+            or not needs
+            or not needs.pick
+            or self._holder != _key(needs.pick)
         ):
-            return "no picked object for this release"
+            return "no verified object for this release"
         return None
 
     def _nav_needed(self, nav, following, resume):
@@ -297,6 +317,15 @@ class ExecutionTree(py_trees.composites.Sequence):
         limit = min(self.deadline, self.hooks.clock() + timeout_for(kind))
         if self.hooks.set_action_deadline:
             self.hooks.set_action_deadline(limit)
+        verify_success = None
+        if self.hooks.gripper_state and (pa.requires_gripper or pa.releases_gripper):
+            expected = GripperState.OCCUPIED if pa.requires_gripper else GripperState.EMPTY
+
+            def verify_success():
+                if self.hooks.verify_gripper is not None:
+                    return self.hooks.verify_gripper(expected, limit)
+                return self._gripper_state() == expected
+
         try:
             status = _dispatch(
                 pa,
@@ -305,6 +334,7 @@ class ExecutionTree(py_trees.composites.Sequence):
                 self.logger,
                 self._on_start,
                 is_late=lambda: self.hooks.clock() > limit,
+                verify_success=verify_success,
             )
         finally:
             if self.hooks.set_action_deadline:
@@ -314,9 +344,14 @@ class ExecutionTree(py_trees.composites.Sequence):
         self._writes.extend(writes)
         if kind == "go_to" or kind in ESCORT:
             self._place = next_place if status == OK else None
-        # A failed pick leaves the gripper empty; a failed release leaves it held.
-        if status == OK and (pa.requires_gripper or pa.releases_gripper):
-            self._holder = _key(pa) if pa.requires_gripper else None
+        if pa.requires_gripper or pa.releases_gripper:
+            if status == OK:
+                self._gripper = GripperState.OCCUPIED if pa.requires_gripper else GripperState.EMPTY
+                self._holder = _key(pa) if pa.requires_gripper else None
+            else:
+                self._gripper = GripperState.UNCERTAIN
+                if self._gripper_state() == GripperState.EMPTY:
+                    self._holder = None
         if status == OK and pa.purpose in ("plan", "deferred", "operator-return"):
             self.completed.add(_key(pa))
             self.skipped.pop(_key(pa), None)
@@ -436,22 +471,24 @@ class ExecutionTree(py_trees.composites.Sequence):
             ):
                 if kind == "go_to":
                     self.unreachable.add(_norm_location(pa.location))
-                holder = self._holder[0] if self._holder else None
-                pending = self._remaining_commands(actions[i + 1 :])
-                try:
-                    revised = self.hooks.replan(pending, holder)
-                except InfeasibleResidual:
-                    # Existing dependency and gripper guards still apply to the original tail.
-                    continue
-                self.replans.append(
-                    {
-                        "after": _key(pa),
-                        "holder": holder,
-                        "remaining_s": self._remaining(),
-                        "order": [_key(step) for step in revised],
-                    }
-                )
-                return (yield from self._run_order(revised))
+                state = self._gripper_state()
+                if state == GripperState.EMPTY or (state == GripperState.OCCUPIED and self._holder):
+                    holder = self._holder[0] if state == GripperState.OCCUPIED else None
+                    pending = self._remaining_commands(actions[i + 1 :])
+                    try:
+                        revised = self.hooks.replan(pending, holder)
+                    except InfeasibleResidual:
+                        # Existing dependency and gripper guards still apply to the original tail.
+                        continue
+                    self.replans.append(
+                        {
+                            "after": _key(pa),
+                            "holder": holder,
+                            "remaining_s": self._remaining(),
+                            "order": [_key(step) for step in revised],
+                        }
+                    )
+                    return (yield from self._run_order(revised))
             if not resume and (sequential or kind == "go_to"):
                 return False
         return True

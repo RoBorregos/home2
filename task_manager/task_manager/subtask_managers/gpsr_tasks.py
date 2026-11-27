@@ -58,6 +58,7 @@ class GPSRTask(GenericTask):
         """Initialize the class"""
         super().__init__(subtask_manager)
         self.quiet_observation = False
+        self.action_deadline = None
         # Angles are relative to current position
         self.pan_angles = [-35, 70]
         self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray", "green"]
@@ -127,6 +128,8 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.move_to_position(named_position="receive_object")
 
         while True:
+            if self.action_deadline is not None and time.monotonic() >= self.action_deadline:
+                return Status.TIMEOUT, "Handover budget expired"
             s, res = self.subtask_manager.hri.confirm("Have you grabbed the object?")
             if res == "yes":
                 break
@@ -137,6 +140,8 @@ class GPSRTask(GenericTask):
                 )
 
         self.subtask_manager.hri.say("I will now release the object.", wait=True)
+        if self.action_deadline is not None and time.monotonic() >= self.action_deadline:
+            return Status.TIMEOUT, "Handover budget expired before release"
         status = self.subtask_manager.manipulation.open_gripper()
         return status, "object given" if status == Status.EXECUTION_SUCCESS else ""
 
@@ -449,6 +454,8 @@ class GPSRTask(GenericTask):
         target = location.subarea if location.subarea else location.area
         pretty_target = target.replace("_", " ")
         self.subtask_manager.hri.say(f"Now we will go to the {pretty_target}.", wait=False)
+        if self.action_deadline is not None and time.monotonic() >= self.action_deadline:
+            return Status.TIMEOUT, "Navigation budget expired before dispatch"
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
 
         if result != Status.EXECUTION_SUCCESS:

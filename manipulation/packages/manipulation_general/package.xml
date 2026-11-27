@@ -22,6 +22,7 @@
   <depend>pick_and_place</depend>
   <depend>std_srvs</depend>
   <depend>xarm_msgs</depend>
+  <exec_depend>xarm_utils</exec_depend>
   <depend>controller_manager_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>

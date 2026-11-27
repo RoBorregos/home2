@@ -42,6 +42,7 @@ class GPSRSingleTask(GenericTask):
         super().__init__(subtask_manager)
 
         self.batch_history = None
+        self.action_deadline = None
         self.quiet_observation = False
         self.last_location = ""  # furniture the robot last navigated to
         self._shelf_objects: dict[int, list[str]] = {}  # the scan's labels per level
@@ -80,6 +81,8 @@ class GPSRSingleTask(GenericTask):
         pretty_target = target.replace("_", " ")
         self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
+        if self.action_deadline is not None and time.monotonic() >= self.action_deadline:
+            return Status.TIMEOUT, "Navigation budget expired before dispatch"
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
         self.last_location = target
         self._shelf_measured = False

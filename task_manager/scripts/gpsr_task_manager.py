@@ -4,7 +4,9 @@
 Task Manager for GPSR task of Robocup @Home 2026
 """
 
-from math import isfinite
+import json
+from math import dist, isfinite
+from pathlib import Path
 import time
 from datetime import datetime
 
@@ -14,7 +16,9 @@ from frida_constants.hri_constants import (
     GPSR_TASK_STEP_TOPIC,
     ANSWER_PUBLISHER,
 )
+from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
 from frida_constants.vision_constants import IMAGE_ORIENTED_TOPIC
+from frida_interfaces.msg import GripperGraspState
 from rclpy.duration import Duration
 from rclpy.node import Node
 from std_msgs.msg import Int32
@@ -22,8 +26,8 @@ from tf2_ros import Buffer, TransformListener
 import py_trees
 
 from task_manager.gpsr.bt_builder import build_tree, render_tree_ascii
-from task_manager.gpsr.merger import merge, replan_remaining
-from task_manager.gpsr.recovery import ExecutionHooks, RecoveryPolicy
+from task_manager.gpsr.merger import issued_order_plan, merge, replan_remaining
+from task_manager.gpsr.recovery import ExecutionHooks, GripperState, RecoveryPolicy
 from task_manager.gpsr.timeouts import ACTION_TIMEOUTS, GLOBAL_BUDGET_S, timeout_for
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from task_manager.subtask_managers.gpsr_tasks import GPSRTask
@@ -37,6 +41,8 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
 BATCH_SIZE = 3
+GRASP_MAX_AGE_S = 1.5
+GRASP_VERIFICATION_S = 1.25
 
 PLAN_REWRITE_INSTRUCTION = (
     "Rewrite this robot plan as one short spoken announcement, first person, "
@@ -115,7 +121,25 @@ class GPSRTM(Node):
             kind: self.declare_parameter(f"skill_duration_s.{kind}", 0.0).value
             for kind in ACTION_TIMEOUTS
         }
+        self.batch_order = self.declare_parameter("batch_order", "merged").value
+        self.plan_only = self.declare_parameter("plan_only", False).value
+        saved_batch_path = self.declare_parameter("parsed_batch_file", "").value
+        self.elapsed_before_batch_s = self.declare_parameter("elapsed_before_batch_s", 0.0).value
+        trace_path = self.declare_parameter("trial_log_file", "").value
+        self.return_tolerance_m = self.declare_parameter("return_tolerance_m", 0.30).value
+        if self.batch_order not in ("merged", "issued"):
+            raise ValueError("batch_order must be merged or issued")
+        if not 0 <= self.elapsed_before_batch_s < GLOBAL_BUDGET_S:
+            raise ValueError("elapsed_before_batch_s must be within the trial budget")
+        if self.elapsed_before_batch_s and not saved_batch_path:
+            raise ValueError("elapsed_before_batch_s requires parsed_batch_file")
+        if not isfinite(self.return_tolerance_m) or self.return_tolerance_m <= 0:
+            raise ValueError("return_tolerance_m must be finite and positive")
         self.trial_deadline = None
+        self._grasp_reading = None
+        self._grasp_subscription = self.create_subscription(
+            GripperGraspState, GRIPPER_GRASP_STATE_TOPIC, self._on_grasp_reading, 1
+        )
         self._facts = {}
         self._path_cache = {}
         self.declare_parameter(
@@ -138,10 +162,30 @@ class GPSRTM(Node):
             self.get_parameter("test_commands").get_parameter_value().string_array_value
         )
 
-        if self.test_mode:
+        if (
+            self.plan_only or saved_batch_path or self.batch_order == "issued"
+        ) and not self.interleave_enabled:
+            raise ValueError("experiment batch options require interleave_enabled=true")
+        if self.plan_only or self.test_mode:
             self.current_state = GPSRTM.TaskStates.WAITING_FOR_COMMAND
 
         self.batched_commands: list = []
+        self.saved_batch = bool(saved_batch_path)
+        if self.saved_batch:
+            raw = json.loads(Path(saved_batch_path).read_text())
+            if (
+                not isinstance(raw, list)
+                or len(raw) != BATCH_SIZE
+                or any(not isinstance(command, list) or not command for command in raw)
+            ):
+                raise ValueError(
+                    "parsed_batch_file must contain exactly three nonempty action lists"
+                )
+            self.batched_commands = [
+                CommandListLLM.model_validate({"commands": actions}) for actions in raw
+            ]
+            self.current_state = GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH
+        self.trial_log = Path(trace_path).open("x") if trace_path else None
         # The instruction point is known only after a successful navigation there.
         self._at_instruction_point = False
         self._location_cache: dict[str, tuple[tuple[float, float] | None, str | None, str]] = {}
@@ -318,14 +362,61 @@ class GPSRTM(Node):
             estimate += timeout_for(kind)
         return estimate
 
+    def _set_action_deadline(self, deadline):
+        self.gpsr_individual_tasks.action_deadline = deadline
+        self.gpsr_tasks.action_deadline = deadline
+
+    def _on_grasp_reading(self, message):
+        self._grasp_reading = time.monotonic(), message.object_detected
+
+    def _gripper_state(self):
+        if self._grasp_reading is None:
+            return GripperState.UNCERTAIN
+        received, occupied = self._grasp_reading
+        if time.monotonic() - received > GRASP_MAX_AGE_S:
+            return GripperState.UNCERTAIN
+        return GripperState.OCCUPIED if occupied else GripperState.EMPTY
+
+    def _verify_gripper(self, expected, deadline):
+        started = time.monotonic()
+        limit = min(deadline, started + GRASP_VERIFICATION_S)
+        while rclpy.ok() and (remaining := limit - time.monotonic()) > 0:
+            if self._grasp_reading is not None and self._grasp_reading[0] >= started:
+                if self._gripper_state() == expected:
+                    return True
+            rclpy.spin_once(self, timeout_sec=min(remaining, 0.05))
+        return False
+
+    def _at_start_pose(self):
+        target = self._get_areas().get("start_location", {}).get("safe_place")
+        observed = self._current_robot_xy()
+        return bool(
+            target
+            and len(target) >= 2
+            and observed is not None
+            and dist(target[:2], observed) <= self.return_tolerance_m
+        )
+
     def _return_to_start(self, deadline):
+        self._trace("return_start", deadline=deadline)
         if time.monotonic() >= deadline:
+            self._trace("return_end", returned=False, arrived=False, status=Status.TIMEOUT.name)
             return False
         self.subtask_manager.hri.say(
             "I have finished executing your commands. I will return to the start position.",
             wait=False,
         )
-        return self.navigate_to("start_location", "", False) == Status.EXECUTION_SUCCESS
+        status = self.navigate_to("start_location", "", False, deadline=deadline)
+        arrived = status == Status.EXECUTION_SUCCESS and self._at_start_pose()
+        returned = arrived and time.monotonic() < deadline
+        self._trace(
+            "return_end",
+            returned=returned,
+            arrived=arrived,
+            status=status.name,
+            pose=self._current_robot_xy(timeout_s=0) if self.trial_log else None,
+        )
+        return returned
 
     def _report_failure(self, action, status, deadline):
         if time.monotonic() >= deadline:
@@ -336,18 +427,48 @@ class GPSRTM(Node):
     def _replan(self, pending, holder):
         return replan_remaining(pending, initial_holder=holder, **self._planner_options())
 
-    def _current_robot_xy(self):
+    def _current_robot_xy(self, timeout_s=0.5):
         """Look up the robot's (x, y) in the map frame, or None on failure."""
         try:
             t = self.tf_buffer.lookup_transform(
-                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=0.5)
+                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=timeout_s)
             )
             return (t.transform.translation.x, t.transform.translation.y)
         except Exception as e:  # noqa: BLE001
-            self.get_logger().warning(f"current pose lookup failed: {e}")
+            if timeout_s:
+                self.get_logger().warning(f"current pose lookup failed: {e}")
             return None
 
+    def _trace(self, event, **data):
+        if self.trial_log is None:
+            return
+        row = dict(
+            event=event,
+            monotonic_s=time.monotonic(),
+            ros_ns=self.get_clock().now().nanoseconds,
+            **data,
+        )
+        print(json.dumps(row, default=str), file=self.trial_log, flush=True)
+
+    @staticmethod
+    def _describe_action(plan_action):
+        action = plan_action.action
+        fields = action.model_dump() if hasattr(action, "model_dump") else vars(action)
+        return dict(
+            cmd=plan_action.source_cmd,
+            idx=plan_action.source_idx,
+            purpose=plan_action.purpose,
+            action=fields,
+            navigation_goals=plan_action.navigation_goals,
+        )
+
     def _on_action_start(self, plan_action):
+        self._trace(
+            "action_start",
+            **self._describe_action(plan_action),
+            pose=self._current_robot_xy(timeout_s=0) if self.trial_log else None,
+            gripper=self._gripper_state().value,
+        )
         self.gpsr_individual_tasks.batch_history = [
             value
             for (cmd, idx), value in sorted(self._facts.items())
@@ -368,6 +489,14 @@ class GPSRTM(Node):
         )
 
     def _on_action_complete(self, plan_action, status, result):
+        self._trace(
+            "action_end",
+            **self._describe_action(plan_action),
+            status=status.name,
+            result=result,
+            pose=self._current_robot_xy(timeout_s=0) if self.trial_log else None,
+            gripper=self._gripper_state().value,
+        )
         if status == Status.EXECUTION_SUCCESS and plan_action.purpose in ("plan", "deferred"):
             key = plan_action.source_cmd, plan_action.source_idx
             self._completed.add(key)
@@ -417,7 +546,19 @@ class GPSRTM(Node):
     def _execute_interleaved_batch(self):
         """Plan + tick the py_trees tree for the current batch."""
         if self.trial_deadline is None:
-            self.trial_deadline = time.monotonic() + GLOBAL_BUDGET_S
+            self.trial_deadline = time.monotonic() + GLOBAL_BUDGET_S - self.elapsed_before_batch_s
+        self._trace(
+            "batch_start",
+            deadline=self.trial_deadline,
+            order=self.batch_order,
+            recovery=self.recovery_policy.value,
+            replanning=self.replan_on_failure,
+            nav_paths=self.use_nav_paths,
+            speed_m_s=self.nominal_speed,
+            holding_penalty=self.holding_penalty,
+            navigation_overhead_m=self.navigation_overhead,
+            skill_duration_s=self.skill_durations,
+        )
         self._completed.clear()
         self._facts.clear()
         plan = merge(
@@ -425,13 +566,23 @@ class GPSRTM(Node):
             **self._planner_options(),
             origin_name="start_location" if self._at_instruction_point else None,
         )
+        if self.batch_order == "issued":
+            plan = issued_order_plan(plan)
         self._at_instruction_point = False
-        self.get_logger().info(
-            f"Merged {len(self.batched_commands)} commands → "
-            f"{len(plan.actions)} interleaved actions"
+        self._trace(
+            "plan_ready", actions=[self._describe_action(action) for action in plan.actions]
         )
-        spoken = self._spoken_merged_plan(plan)
-        self.subtask_manager.hri.say(f"I will now execute the merged plan: {spoken}")
+        self.get_logger().info(
+            f"Planned {len(self.batched_commands)} commands in {self.batch_order} order "
+            f"with {len(plan.actions)} actions"
+        )
+        if time.monotonic() < self.trial_deadline:
+            spoken = self._spoken_merged_plan(plan)
+            if time.monotonic() < self.trial_deadline:
+                self.subtask_manager.hri.say(f"Here is my plan: {spoken}")
+                self._trace("plan_announced", announcement=spoken)
+        if self.plan_only:
+            return False
         self.subtask_manager.hri.publish_display_step("executing", GPSR_TASK_STEP_TOPIC)
 
         fallback_lines = ["Falling back to the sequential plan."]
@@ -457,7 +608,11 @@ class GPSRTM(Node):
             recovery_policy=self.recovery_policy,
             execution_hooks=ExecutionHooks(
                 deadline=self.trial_deadline,
+                set_action_deadline=self._set_action_deadline,
                 room_of=self._resolve_room,
+                gripper_state=self._gripper_state,
+                verify_gripper=self._verify_gripper,
+                on_phase=lambda phase: self._trace("phase", phase=phase),
                 estimate_deferred=self._estimate_revisit,
                 return_to_start=self._return_to_start,
                 report_failure=self._report_failure,
@@ -496,6 +651,24 @@ class GPSRTM(Node):
             f"Batch status={root.status}, returned={root.returned}, skipped={root.skipped}, "
             f"failures={[(f.action.source_cmd, f.action.source_idx, f.status.name, f.deferred) for f in root.failures]}"
         )
+        self._trace(
+            "batch_end",
+            returned=root.returned,
+            status=root.status.name,
+            skipped=[
+                dict(cmd=cmd, idx=idx, reason=reason) for (cmd, idx), reason in root.skipped.items()
+            ],
+            replans=root.replans,
+            failures=[
+                dict(
+                    cmd=f.action.source_cmd,
+                    idx=f.action.source_idx,
+                    status=f.status.name,
+                    deferred=f.deferred,
+                )
+                for f in root.failures
+            ],
+        )
         return root.returned is True
 
     def _execute_sequential_fallback(self, batched_commands):
@@ -515,8 +688,10 @@ class GPSRTM(Node):
                 except Exception as e:  # noqa: BLE001
                     self.get_logger().warning(f"Sequential fallback error on {command}: {e}")
 
-    def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
-        """Navigate to the location"""
+    def navigate_to(self, location: str, sublocation: str = "", say: bool = True, *, deadline=None):
+        """Navigate using the existing service and bound the dispatch time."""
+        if deadline is not None and time.monotonic() >= deadline:
+            return Status.TIMEOUT
         self.subtask_manager.manipulation.move_to_position("nav_pose")
 
         if say:
@@ -525,6 +700,8 @@ class GPSRTM(Node):
             CLog.nav(self, "MOVE", f"Moving to {target}")
             self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
+        if deadline is not None and time.monotonic() >= deadline:
+            return Status.TIMEOUT
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
         self._at_instruction_point = (
             location == "start_location" and not sublocation and result == Status.EXECUTION_SUCCESS
@@ -559,7 +736,7 @@ class GPSRTM(Node):
             if self.interleave_enabled:
                 self.trial_deadline = time.monotonic() + GLOBAL_BUDGET_S
 
-            self.navigate_to("start_location", "", False)
+            self.navigate_to("start_location", "", False, deadline=self.trial_deadline)
 
             self.subtask_manager.hri.say(
                 "Hi, my name is Frida and I am a general purpose robot. Please press the button on my screen to start telling me the commands one by one."
@@ -587,8 +764,9 @@ class GPSRTM(Node):
 
         elif self.current_state == GPSRTM.TaskStates.WAITING_FOR_COMMAND:
             self._track_state_change(GPSRTM.TaskStates.WAITING_FOR_COMMAND)
-            self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_to_position("front_stare")
+            if not self.plan_only:
+                self.subtask_manager.manipulation.follow_face(False)
+                self.subtask_manager.manipulation.move_to_position("front_stare")
 
             if self.test_mode:
                 if self.test_nl_commands:
@@ -613,6 +791,12 @@ class GPSRTM(Node):
                     hotwords=self.subtask_manager.hri.names_hotwords,
                 )
 
+            self._trace(
+                "command_heard",
+                status=s.name,
+                transcript=user_command,
+                cmd=len(self.batched_commands),
+            )
             if s != Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say("I am sorry, I could not understand you.")
                 self.current_hear_attempt += 1
@@ -628,6 +812,12 @@ class GPSRTM(Node):
                 )
                 s, self.commands = self.subtask_manager.hri.command_interpreter(user_command)
 
+                self._trace(
+                    "command_parsed",
+                    status=s.name,
+                    cmd=len(self.batched_commands),
+                    actions=[action.model_dump() for action in self.commands],
+                )
                 self.get_logger().info(
                     f"Interpreted command: {user_command} -> {str(self.commands)}"
                 )
@@ -659,6 +849,15 @@ class GPSRTM(Node):
         elif self.current_state == GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH:
             self._track_state_change(GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH)
             batch_count = len(self.batched_commands)
+            if self.saved_batch:
+                self._at_instruction_point = self._at_start_pose()
+                if not self.plan_only and not self._at_instruction_point:
+                    self.get_logger().error(
+                        "Place the robot at the instruction point before parsed replay"
+                    )
+                    self._trace("batch_rejected", reason="instruction point pose not verified")
+                    self.running_task = False
+                    return
             try:
                 returned = self._execute_interleaved_batch()
             finally:
@@ -670,10 +869,11 @@ class GPSRTM(Node):
                 self.gpsr_tasks.quiet_observation = False
             self.executed_commands += batch_count
             self.batched_commands = []
-            if not returned:
-                # The tree's return was skipped or failed: go back anyway.
-                self.navigate_to("start_location", "", False)
-            self.subtask_manager.manipulation.move_to_position("front_stare")
+            if self.plan_only or self.saved_batch:
+                self.running_task = False
+                return
+            if returned and time.monotonic() < self.trial_deadline:
+                self.subtask_manager.manipulation.move_to_position("front_stare")
             self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
 
         elif self.current_state == GPSRTM.TaskStates.EXECUTING_COMMAND:
@@ -761,6 +961,8 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
+        if node.trial_log is not None:
+            node.trial_log.close()
         node.destroy_node()
         rclpy.shutdown()
 

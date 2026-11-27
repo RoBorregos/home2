@@ -39,6 +39,7 @@ def _dispatch(
     logger: Any,
     on_start: Optional[Callable[[PlanAction], None]] = None,
     is_late: Optional[Callable[[], bool]] = None,
+    verify_success: Optional[Callable[[], bool]] = None,
 ) -> Status:
     """Call ``method(plan_action.action)``, fire ``on_complete``, return Status.
 
@@ -68,6 +69,11 @@ def _dispatch(
                 status = parsed_status
     if is_late is not None and is_late():
         status, result = Status.TIMEOUT, None
+    elif status == Status.EXECUTION_SUCCESS and verify_success is not None:
+        if not verify_success():
+            status, result = Status.EXECUTION_ERROR, None
+        if is_late is not None and is_late():
+            status, result = Status.TIMEOUT, None
     if on_complete is not None:
         try:
             on_complete(plan_action, status, result)

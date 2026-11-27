@@ -1175,17 +1175,19 @@
     "expect": {
       "non_goto_preserved": true,
       "location_visit_counts": {
-        "chairs": 1
+        "chairs": 2
       },
-      "first_go_to_source_cmd": 1,
+      "first_go_to_source_cmd": 0,
       "go_to_source_cmds": [
+        0,
         1
       ],
       "source_cmd_order": [
-        1,
-        1,
         0,
-        0
+        0,
+        0,
+        1,
+        1
       ]
     }
   },
@@ -1673,7 +1675,7 @@
     }
   },
   {
-    "name": "count_people_before_earlier_command_guides_away",
+    "name": "count_people_after_earlier_command_guides_away",
     "commands": [
       [
         {
@@ -1717,13 +1719,14 @@
     "expect": {
       "non_goto_preserved": true,
       "location_visit_counts": {
-        "chairs": 1
+        "chairs": 2
       },
       "source_cmd_order": [
-        1,
-        1,
         0,
-        0
+        0,
+        0,
+        1,
+        1
       ]
     }
   },
