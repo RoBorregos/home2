@@ -5,8 +5,9 @@ in front of the robot. It reads what FRIDA says (/speech/text_spoken), waits for
 listen (AudioState == "listening") and streams a recorded answer into the VAD audio topic that
 hear_streaming transcribes. It prints the conversation as it happens.
 
-    task_manager/scripts/test/sim_hric.sh run 1
-    (or: python3 sim_guest.py --ros-args -p answer_on_try:=1 -p wav_dir:=<dir>)
+    python3 sim_guest.py --ros-args -p answer_on_try:=1 -p wav_dir:=<dir>
+
+Pair it with TEST_HRIC_BUDGET in task_manager/scripts/test/test_hri_manager.py for an HRIC dry run.
 
 answer_on_try: 1 = answers at once, 3 = only on the 3rd time a question is asked (forces
 retries), 0 = never answers (silent guest). WAVs (16 kHz mono int16, not in git) default to
