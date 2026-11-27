@@ -70,3 +70,36 @@ class SileroVAD:
                 {"input": frame[None, :], "h": self._h, "c": self._c, "sr": self._sr},
             )
         return float(np.asarray(out).reshape(-1)[0])
+
+
+class VadGate:
+    def __init__(
+        self,
+        vad,
+        sample_rate: int = 16000,
+        on: float = 0.5,
+        off: float = 0.35,
+        hangover_sec: float = 0.3,
+    ) -> None:
+        self.vad = vad
+        self.on, self.off = on, off
+        self._hang = int(hangover_sec * sample_rate / FRAME_SAMPLES)
+        self._buf = np.zeros(0, dtype=np.float32)
+        self._off_frames = 0
+        self.speech = False
+
+    def update(self, mono: np.ndarray, saying: bool = False) -> bool:
+        self._buf = np.concatenate([self._buf, mono])
+        while self._buf.shape[0] >= FRAME_SAMPLES:
+            p = self.vad(self._buf[:FRAME_SAMPLES])
+            self._buf = self._buf[FRAME_SAMPLES:]
+            if p >= self.on:
+                self.speech = True
+                self._off_frames = 0
+            elif p < self.off and self.speech:
+                self._off_frames += 1
+                if self._off_frames > self._hang:
+                    self.speech = False
+        if saying:
+            self.speech = False
+        return self.speech

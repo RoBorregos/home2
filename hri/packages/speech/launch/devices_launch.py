@@ -6,6 +6,7 @@ from launch_ros.actions import Node
 from speech.speech_api_utils import SpeechApiUtils
 
 from frida_constants import ModuleNames, parse_ros_config
+from frida_constants.hri_constants import ARRAY_PROCESSED_AUDIO_TOPIC
 
 LOG_LEVEL = os.environ.get("HRI_LOG_LEVEL", "info")
 
@@ -48,6 +49,17 @@ def generate_launch_description():
         ),
         [ModuleNames.HRI.value],
     )["voice_detection"]["ros__parameters"]
+
+    respeaker_available = SpeechApiUtils.respeaker_available()
+    if respeaker_available:
+        voice_detection_config["speaker_id"]["AUDIO_TOPIC"] = (
+            ARRAY_PROCESSED_AUDIO_TOPIC
+        )
+
+    mic_array_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "mic_array.yaml"),
+        [ModuleNames.HRI.value],
+    )["mic_array"]["ros__parameters"]
 
     doorbell_detection_config = parse_ros_config(
         os.path.join(
@@ -167,7 +179,7 @@ def generate_launch_description():
             )
         )
 
-    if SpeechApiUtils.respeaker_available():
+    if respeaker_available:
         nodes.append(
             Node(
                 package="speech",
@@ -177,6 +189,17 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 parameters=[respeaker_config],
+            )
+        )
+        nodes.append(
+            Node(
+                package="speech",
+                executable="mic_array.py",
+                ros_arguments=["--log-level", f"mic_array:={LOG_LEVEL}"],
+                name="mic_array",
+                output="screen",
+                emulate_tty=True,
+                parameters=[mic_array_config],
             )
         )
 
