@@ -271,7 +271,9 @@ until warmup ends, printing for example `Cached 625/625 named pairs in 143.2s
 (complete)`. It exits non-zero if navigation isn't running, if setup hasn't finished
 (map and global-costmap grids, named poses, initial pose), or if some pairs stayed
 unsolved. Each run rebuilds every pair from scratch, so stale distances after a
-re-map or planner retune are dropped. Each round has a `path_cache_warmup_seconds`
+re-map or planner retune are dropped. Warmup plans on the global costmap as it is,
+so clear the costmap first; leftover obstacle marks would end up in the saved
+distances. Each round has a `path_cache_warmup_seconds`
 budget (180 s); a round cut by the budget retries the missing pairs and stops once
 a round adds none. At startup navigation restores the saved file and logs its
 coverage, warning `run ./run.sh navigation --cache-pairs` when it is missing or

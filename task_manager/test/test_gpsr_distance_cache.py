@@ -140,16 +140,7 @@ SERVER = load_methods(
         "_path_planner_ready",
         "cache_pairs_callback",
         "_named_area_list",
-        "_live_costmap_layers",
-        "_set_costmap_layers",
-        "_use_static_costmap",
     },
-    GetParameters=NS(Request=NS),
-    SetParameters=NS(Request=NS),
-    ClearEntireCostmap=NS(Request=NS),
-    make_param=lambda name, value: (name, value),
-    TIMEOUT_RTAB_SERVICE=5.0,
-    rclpy=NS(duration=NS(Duration=lambda seconds: seconds)),
     GetRobotPose=NS(Response=NS),
     GetState=NS(Request=NS),
     State=NS(PRIMARY_STATE_ACTIVE=3),
@@ -278,8 +269,6 @@ def server(mode=Goal.FULL, *, paused=True):
         side_effect=lambda goal, start, *_: abs(goal.pose.position.x - start.pose.position.x)
     )
     nav._path_length = lambda path: path
-    nav._use_static_costmap = Mock(return_value=[])
-    nav._set_costmap_layers = Mock(return_value=True)
     request = Goal()
     request.mode = mode
     handle = NS(request=request, is_cancel_requested=False, publish_feedback=Mock())
@@ -863,88 +852,13 @@ class MatrixServerTests(unittest.TestCase):
             self.assertEqual(areas["kitchen"]["table"][0], 8)
             self.assertEqual(pairs, {})
 
-    def test_warmup_plans_on_static_map_and_restores_layers(self):
+    def test_warmup_plans_on_costmap_as_is(self):
+        # The costmap is cleared before --cache-pairs, so warmup must not touch it
         nav, _ = server()
-        calls = []
-        nav._use_static_costmap = Mock(
-            side_effect=lambda: calls.append("static") or ["obstacle_layer"]
-        )
-        nav._compute_path.side_effect = lambda goal, start, *_: (
-            calls.append("plan") or abs(goal.pose.position.x - start.pose.position.x)
-        )
-        nav._set_costmap_layers.side_effect = (
-            lambda layers, on: calls.append(("layers", on)) or True
-        )
-        nav.pause_nav2.side_effect = lambda: calls.append("pause") or setattr(
-            nav, "nav2_paused", True
-        )
-        self.assertTrue(nav._refresh_path_cache(full=False))
-        self.assertEqual(calls[0], "static")
-        self.assertIn("plan", calls)
-        self.assertEqual(calls[-2:], [("layers", True), "pause"])
-        nav._set_costmap_layers.assert_called_once_with(["obstacle_layer"], True)
-
-    def test_planner_exception_still_restores_costmap_layers(self):
-        nav, _ = server()
-        nav._use_static_costmap = Mock(return_value=["obstacle_layer"])
-        nav._compute_path.side_effect = RuntimeError("planner failed")
-        nav._refresh_path_cache()
-        nav._set_costmap_layers.assert_called_once_with(["obstacle_layer"], True)
-
-    def test_gpsr_query_keeps_live_costmap(self):
-        nav, handle = server(Goal.ROBOT_ORIGIN)
-        self.assertTrue(nav._run_path_matrix(handle).success)
-        nav._use_static_costmap.assert_not_called()
-        nav._set_costmap_layers.assert_not_called()
-
-    def static_costmap_server(self, clear_ok=True):
-        nav, _ = server()
-        del nav._use_static_costmap, nav._set_costmap_layers
-        nav.global_costmap_get_params_client = nav.global_costmap_set_params_client = None
-        nav.clear_global_costmap_client = None
-        nav._call_service_with_timeout = Mock(return_value=clear_ok)
-        nav.get_clock = lambda: clock
-        clock = NS(sleep_for=Mock())
-        names = ["static_layer", "obstacle_layer", "rgbd_layer", "inflation_layer", "off_layer"]
-        kinds = [
-            "nav2_costmap_2d::StaticLayer",
-            "nav2_costmap_2d::ObstacleLayer",
-            "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer",
-            "nav2_costmap_2d::InflationLayer",
-            "nav2_costmap_2d::ObstacleLayer",
-        ]
-        values = [NS(string_value=k) for k in kinds] + [
-            NS(bool_value=on) for on in (True, True, True, True, False)
-        ]
-        ok = NS(result=lambda: NS(results=[NS(successful=True)] * 2))
-        nav._bounded_call = Mock(
-            side_effect=[
-                NS(result=lambda: NS(values=[NS(string_array_value=names), NS(double_value=2.0)])),
-                NS(result=lambda: NS(values=values)),
-                ok,
-                ok,
-            ]
-        )
-        return nav, clock
-
-    def test_static_costmap_disables_only_enabled_sensor_layers(self):
-        nav, clock = self.static_costmap_server()
-        self.assertEqual(nav._use_static_costmap(), ["obstacle_layer", "rgbd_layer"])
-        request = nav._bounded_call.call_args_list[2].args[1]
-        self.assertEqual(
-            request.parameters, [("obstacle_layer.enabled", False), ("rgbd_layer.enabled", False)]
-        )
-        nav._call_service_with_timeout.assert_called_once()
-        clock.sleep_for.assert_called_once_with(1.0)
-
-    def test_static_costmap_reenables_layers_when_clear_fails(self):
-        nav, clock = self.static_costmap_server(clear_ok=False)
-        self.assertEqual(nav._use_static_costmap(), [])
-        request = nav._bounded_call.call_args_list[3].args[1]
-        self.assertEqual(
-            request.parameters, [("obstacle_layer.enabled", True), ("rgbd_layer.enabled", True)]
-        )
-        clock.sleep_for.assert_not_called()
+        nav._call_service_with_timeout = Mock(return_value=True)
+        self.assertTrue(nav._refresh_path_cache(full=True))
+        nav._call_service_with_timeout.assert_not_called()
+        self.assertEqual(len(nav._location_path_cache), len(nav._named_area_list()) ** 2)
 
     def test_unwritable_cache_file_does_not_fail_warmup(self):
         with tempfile.NamedTemporaryFile() as blocker:
