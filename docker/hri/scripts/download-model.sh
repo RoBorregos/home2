@@ -24,6 +24,7 @@ echo "  4) nomic-embed-text (embeddings via Ollama)"
 echo "  5) DeepFilterNet3"
 echo "  6) ei-door          (Door detection)"
 echo "  7) ei-kws           (Keyword detection)"
+echo "  8) speaker-id       (WeSpeaker ResNet34 speaker embeddings, who is speaking)"
 echo "  a) all"
 echo "  n) none"
 printf "Enter choices separated by spaces [default: all]: "
@@ -86,6 +87,19 @@ if ask_for_model DeepFilterNet3 5; then
     else
         echo "DeepFilterNet3 model already exists. Skipping download."
     fi
+fi
+
+# Speaker embedding model for the speaker id in voice_detection.py (who is speaking).
+# WeSpeaker ResNet34-LM trained on VoxCeleb (CC-BY-4.0). Compared on FRIDA lab
+# recordings (hri/benchmarks/speaker_id): d' 9.5 at 57 ms per 3 s segment on the
+# Orin; CAM++ / ECAPA-1024 separate worse (7.7 / 6.8) and ResNet152 / ResNet293
+# only slightly better (9.9 / 10.1) at 3-5x the latency.
+SPEAKER_ID_DIR="../../hri/packages/speech/assets/downloads/speaker_id"
+if ask_for_model speaker-id 8; then
+    mkdir -p "$SPEAKER_ID_DIR/profiles"
+    download_gguf "speaker-id" \
+        "https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet34-LM/resolve/main/voxceleb_resnet34_LM.onnx" \
+        "$SPEAKER_ID_DIR/voxceleb_resnet34_LM.onnx"
 fi
 
 # ── Edge Impulse model downloads ──────────────────────────────────────────────
