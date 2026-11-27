@@ -25,7 +25,7 @@ services:
     stdin_open: true    
     working_dir: /workspace
     tty: true
-    user: ${UID}:${GID}
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     command: >
-      bash -c "source /opt/ros/jazzy/setup.bash && bash src/scripts/build_frida_constants.sh && colcon build --packages-select frida_interfaces xarm_msgs"
+      bash -c "source /opt/ros/jazzy/setup.bash && bash src/scripts/build_frida_constants.sh && colcon build --packages-select frida_interfaces xarm_msgs --cmake-args -DFRIDA_MODULES=${FRIDA_MODULES:-all}"

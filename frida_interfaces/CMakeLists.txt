@@ -14,88 +14,19 @@ find_package(action_msgs REQUIRED)
 find_package(shape_msgs REQUIRED)
 find_package(unique_identifier_msgs REQUIRED)
 find_package(rosidl_default_runtime REQUIRED)
-set(action_files "")
-set(srv_files "")
-set(msg_files "")
 
-# file(GLOB_RECURSE hri_action_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "hri/action/*.action")
-# file(GLOB_RECURSE hri_srv_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "hri/srv/*.srv")
-# file(GLOB_RECURSE hri_msg_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "hri/msg/*.msg")
-# list(APPEND action_files ${hri_action_files})
-# list(APPEND srv_files ${hri_srv_files})
-# list(APPEND msg_files ${hri_msg_files})
+# Comma-separated modules to build (hri,manipulation,navigation,task_manager,vision), or "all".
+set(FRIDA_MODULES "all" CACHE STRING "Comma-separated frida_interfaces modules to build, or 'all'")
+set(_frida_modules "${FRIDA_MODULES}")
+unset(FRIDA_MODULES CACHE)  # Not sticky: a build without -D always builds all
 
-# file(GLOB_RECURSE manip_action_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "manipulation/action/*.action")
-# file(GLOB_RECURSE manip_srv_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "manipulation/srv/*.srv")
-# file(GLOB_RECURSE manip_msg_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "manipulation/msg/*.msg")
-# list(APPEND action_files ${manip_action_files})
-# list(APPEND srv_files ${manip_srv_files})
-# list(APPEND msg_files ${manip_msg_files})
-
-# file(GLOB_RECURSE nav_action_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "navigation/action/*.action")
-# file(GLOB_RECURSE nav_srv_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "navigation/srv/*.srv")
-# file(GLOB_RECURSE nav_msg_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "navigation/msg/*.msg")
-# list(APPEND action_files ${nav_action_files})
-# list(APPEND srv_files ${nav_srv_files})
-# list(APPEND msg_files ${nav_msg_files})
-
-# file(GLOB_RECURSE tm_action_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "task_manager/action/*.action")
-# file(GLOB_RECURSE tm_srv_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "task_manager/srv/*.srv")
-# file(GLOB_RECURSE tm_msg_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "task_manager/msg/*.msg")
-# list(APPEND action_files ${tm_action_files})
-# list(APPEND srv_files ${tm_srv_files})
-# list(APPEND msg_files ${tm_msg_files})
-
-# file(GLOB_RECURSE vis_action_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "vision/action/*.action")
-# file(GLOB_RECURSE vis_srv_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "vision/srv/*.srv")
-# file(GLOB_RECURSE vis_msg_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "vision/msg/*.msg")
-# list(APPEND action_files ${vis_action_files})
-# list(APPEND srv_files ${vis_srv_files})
-# list(APPEND msg_files ${vis_msg_files})
-
-# Explicitly collect files by type
-set(action_files
+set(hri_files
   "hri/action/SpeechStream.action"
-  "manipulation/action/ManipulationAction.action"
-  "manipulation/action/MoveJoints.action"
-  "manipulation/action/MoveToPose.action"
-  "manipulation/action/GoToHand.action"
-  "manipulation/action/PickTask.action"
-  "navigation/action/Move.action"
-  "vision/action/ExampleAction.action"
-  "vision/action/Xarmmove.action"
-)
-
-set(msg_files
   "hri/msg/AudioData.msg"
   "hri/msg/AudioDataStamped.msg"
   "hri/msg/AudioInfo.msg"
   "hri/msg/CommandList.msg"
   "hri/msg/Command.msg"
-  "manipulation/msg/CollisionObject.msg"
-  "manipulation/msg/ManipulationTask.msg"
-  "manipulation/msg/Constraint.msg"
-  "manipulation/msg/PickParams.msg"
-  "manipulation/msg/PlaceParams.msg"
-  "manipulation/msg/GripperGraspState.msg"
-  "manipulation/msg/PourParams.msg"
-  "manipulation/msg/ShelfLevel.msg"
-  "vision/msg/CustomerTable.msg"
-  "vision/msg/ObjectDetectionArray.msg"
-  "vision/msg/ObjectDetection.msg"
-  "vision/msg/PersonList.msg"
-  "vision/msg/Person.msg"
-  "vision/msg/Point2D.msg"
-  "vision/msg/ShelfArray.msg"
-  "vision/msg/ShelfDetection.msg"
-  "vision/msg/Detection.msg"
-  "vision/msg/PersonPose.msg"
-  "navigation/msg/NodeStatus.msg"
-  "navigation/msg/MonitorReport.msg"
-  )
-
-set(srv_files
-  # "task_manager/srv/HearMultiThread.srv"
   "hri/srv/AnswerQuestion.srv"
   "hri/srv/AddEntry.srv"
   "hri/srv/AudioText.srv"
@@ -113,6 +44,22 @@ set(srv_files
   "hri/srv/Speak.srv"
   "hri/srv/STT.srv"
   "hri/srv/UpdateHotwords.srv"
+)
+
+set(manipulation_files
+  "manipulation/action/ManipulationAction.action"
+  "manipulation/action/MoveJoints.action"
+  "manipulation/action/MoveToPose.action"
+  "manipulation/action/GoToHand.action"
+  "manipulation/action/PickTask.action"
+  "manipulation/msg/CollisionObject.msg"
+  "manipulation/msg/ManipulationTask.msg"
+  "manipulation/msg/Constraint.msg"
+  "manipulation/msg/PickParams.msg"
+  "manipulation/msg/PlaceParams.msg"
+  "manipulation/msg/GripperGraspState.msg"
+  "manipulation/msg/PourParams.msg"
+  "manipulation/msg/ShelfLevel.msg"
   "manipulation/srv/AddCollisionObjects.srv"
   "manipulation/srv/AddPickPrimitives.srv"
   "manipulation/srv/AttachCollisionObject.srv"
@@ -136,12 +83,47 @@ set(srv_files
   "manipulation/srv/PlayTrayectory.srv"
   "manipulation/srv/GenerateGrasps.srv"
   "manipulation/srv/FixedDistanceMove.srv"
+  "manipulation/srv/DockToHandle.srv"
+)
+
+set(navigation_files
+  "navigation/action/Move.action"
+  "navigation/msg/NodeStatus.msg"
+  "navigation/msg/MonitorReport.msg"
+  "navigation/srv/MapAreas.srv"
+  "navigation/srv/MoveLocation.srv"
+  "navigation/srv/NavQuery.srv"
+  "navigation/srv/DockTable.srv"
+  "navigation/srv/GetRobotPose.srv"
+  "navigation/srv/GoToPose.srv"
+  "navigation/srv/ApproachPoint.srv"
+  "navigation/srv/GetAreaForPoint.srv"
+  "navigation/srv/PlanPatrol.srv"
+)
+
+set(task_manager_files
   "task_manager/srv/FollowFace.srv"
   "task_manager/srv/PointTransformation.srv"
   "task_manager/srv/ReturnLocation.srv"
   "task_manager/srv/CheckDoor.srv"
   "task_manager/srv/HearMultiThread.srv"
   "task_manager/srv/WaitForControllerInput.srv"
+  "task_manager/srv/PositionGet.srv"
+)
+
+set(vision_files
+  "vision/action/ExampleAction.action"
+  "vision/action/Xarmmove.action"
+  "vision/msg/CustomerTable.msg"
+  "vision/msg/ObjectDetectionArray.msg"
+  "vision/msg/ObjectDetection.msg"
+  "vision/msg/PersonList.msg"
+  "vision/msg/Person.msg"
+  "vision/msg/Point2D.msg"
+  "vision/msg/ShelfArray.msg"
+  "vision/msg/ShelfDetection.msg"
+  "vision/msg/Detection.msg"
+  "vision/msg/PersonPose.msg"
   "vision/srv/BeverageLocation.srv"
   "vision/srv/CountByColor.srv"
   "vision/srv/CountByPose.srv"
@@ -171,17 +153,6 @@ set(srv_files
   "vision/srv/YoloDetect.srv"
   "vision/srv/TrashcanDetection.srv"
   "vision/srv/SetTrashCategory.srv"
-  "navigation/srv/MapAreas.srv"
-  "navigation/srv/MoveLocation.srv"
-  "navigation/srv/NavQuery.srv"
-  "navigation/srv/DockTable.srv"
-  "navigation/srv/GetRobotPose.srv"
-  "navigation/srv/GoToPose.srv"
-  "navigation/srv/ApproachPoint.srv"
-  "navigation/srv/GetAreaForPoint.srv"
-  "navigation/srv/PlanPatrol.srv"
-  "manipulation/srv/DockToHandle.srv"
-  "task_manager/srv/PositionGet.srv"
   "vision/srv/PersonInside.srv"
   "vision/srv/PersonInsideReq.srv"
   "vision/srv/IsTalking.srv"
@@ -190,18 +161,28 @@ set(srv_files
   "vision/srv/DetectPose.srv"
 )
 
+set(frida_interfaces_valid_modules hri manipulation navigation task_manager vision)
+
+if(_frida_modules STREQUAL "" OR _frida_modules STREQUAL "all")
+  set(frida_interfaces_requested_modules ${frida_interfaces_valid_modules})
+else()
+  string(REPLACE "," ";" frida_interfaces_requested_modules "${_frida_modules}")
+endif()
+
+set(interface_files "")
+foreach(module ${frida_interfaces_requested_modules})
+  list(FIND frida_interfaces_valid_modules "${module}" module_index)
+  if(module_index EQUAL -1)
+    message(FATAL_ERROR "Unknown frida_interfaces module '${module}'. Valid modules: ${frida_interfaces_valid_modules}")
+  endif()
+  list(APPEND interface_files ${${module}_files})
+  install(DIRECTORY ${module} DESTINATION share/${PROJECT_NAME})
+endforeach()
+
 # Generate interfaces only keep the necessary runtimes (python, c++)
 rosidl_generate_interfaces(${PROJECT_NAME}
-  ${action_files}
-  ${msg_files}
-  ${srv_files}
+  ${interface_files}
   DEPENDENCIES std_msgs unique_identifier_msgs action_msgs geometry_msgs sensor_msgs shape_msgs
-)
-
-# Installation configurations
-install(
-  DIRECTORY hri manipulation navigation task_manager vision
-  DESTINATION share/${PROJECT_NAME}
 )
 
 # Export dependencies for other packages
