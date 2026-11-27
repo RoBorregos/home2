@@ -95,6 +95,8 @@ CATEGORIZE_IDK_THRESHOLD = 0.01
 # STT
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 DEFAULT_HOTWORDS = "Frida, RoBorregos"
+# Finals command phase: biases STT towards the command verbs
+FINALS_HOTWORDS = "where is bring find look stop"
 
 
 # Fundamental frequency range for human voice (Hz)
@@ -105,3 +107,4 @@ VOWEL_FREQ_HIGH = 255
 SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.7
 SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.7
 TIMEOUT = 5.0
+LOCATION_HOTWORDS_RETRY = 30.0  # s before asking nav for areas again after it failed

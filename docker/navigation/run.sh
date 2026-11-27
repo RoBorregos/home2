@@ -119,7 +119,7 @@ case $TASK in
     "--mapping")
         RUN="ros2 launch nav_main mapping.launch.py"
         ;;
-    "--hric" | "--ppc" | "--dlc" | "--gpsr" | "--safety" )
+    "--hric" | "--ppc" | "--dlc" | "--gpsr" | "--safety" | "--finals" )
         RUN="ros2 launch nav_main general_navigation.launch.py"
         ;;
     "--restaurant")

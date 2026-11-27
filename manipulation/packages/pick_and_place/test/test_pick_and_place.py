@@ -1458,7 +1458,7 @@ def test_scan_surveys_then_puts_each_seen_object_on_its_level(monkeypatch):
 
 def test_scan_fails_without_a_captured_view_or_a_shelf(monkeypatch):
     monkeypatch.setattr(shelf_pipeline.time, "sleep", lambda s: None)
-    no_views = FakeArm(named_position_results=[False, False])
+    no_views = FakeArm(named_position_results=[False] * 4)
     assert shelf_pipeline.scan(no_views, FakePerception(), SHELF_TUNING) is None
     no_shelf = FakePerception(shelf_result=None)
     assert shelf_pipeline.scan(FakeArm(), no_shelf, SHELF_TUNING) is None

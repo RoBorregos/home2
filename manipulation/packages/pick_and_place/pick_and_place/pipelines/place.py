@@ -205,6 +205,7 @@ def _reach_place_pose(
             return True
         return arm.move_to_pose(
             pose,
+            velocity=0.65,
             target_link=target_link,
             tolerance_position=PLACE_TOLERANCE_POSITION,
             tolerance_orientation=PLACE_TOLERANCE_ORIENTATION,
@@ -223,10 +224,15 @@ def _reach_place_pose(
                     log.error(f"Failed to reach pre-place pose at rung {index}")
                     continue
 
-        with arm.phase("place"):
-            if reach(final, straight=is_shelf and straight_in):
-                log.info(f"Place pose reached at rung {index}")
-                return True
+        # Cheap IK + self-collision check: skip a doomed rung before paying for
+        # a full OMPL planning attempt that would just time out anyway.
+        if arm.endpoint_self_collides(final):
+            log.info(f"Rung {index} has no IK or self-collides, skipping")
+        else:
+            with arm.phase("place"):
+                if reach(final, straight=is_shelf and straight_in):
+                    log.info(f"Place pose reached at rung {index}")
+                    return True
 
     log.error("Failed to reach any place pose")
     return False

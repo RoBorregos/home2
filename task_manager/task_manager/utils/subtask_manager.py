@@ -1,3 +1,4 @@
+from task_manager.subtask_managers.composite_tasks import CompositeTasks
 from task_manager.subtask_managers.hri_tasks import HRITasks
 from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
 from task_manager.subtask_managers.nav_tasks import NavigationTasks
@@ -18,6 +19,7 @@ class SubtaskManager:
         )
         self.hri = HRITasks(node, task=task, mock_data=("hri" in mock_areas))
         self.hri.nav = self.nav
+        self.composite = CompositeTasks(node, self.vision, self.nav, self.manipulation, self.hri)
 
         self.mocked_areas = mock_areas
 
