@@ -34,7 +34,7 @@ FOLLOW_MAX_DURATION = 180.0
 DOOR_WAIT_TIMEOUT = 15.0
 
 # Default task time limit in seconds, from the start button; override with the ROS param time_limit.
-TASK_TIME_LIMIT = 480.0
+TASK_TIME_LIMIT = 420.0
 
 
 class Guest:

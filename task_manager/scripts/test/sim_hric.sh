@@ -5,7 +5,7 @@
 #
 #   task_manager/scripts/test/sim_hric.sh run [answer_on_try] [time_limit]
 #       answer_on_try: 1 cooperative (default), 3 hesitant (answers on the 3rd ask), 0 silent
-#       time_limit:    seconds from the start button (default 480); lower it to force skipping
+#       time_limit:    seconds from the start button (default 420); lower it to force skipping
 #   task_manager/scripts/test/sim_hric.sh display [DISPLAY]   FRIDA's screen UI (default $DISPLAY, :10 in Remote Desktop)
 #   task_manager/scripts/test/sim_hric.sh report [tag]        timing report of the last (or a tagged) run
 set -e
@@ -29,7 +29,7 @@ case "${1:-run}" in
   run)
     docker ps --format '{{.Names}}' | grep -q "^$C$" || { echo "HRI is not running: ./run.sh hri --hric"; exit 1; }
     setup_audio
-    TRY=${2:-1}; LIMIT=${3:-480}; TAG=try${TRY}_limit${LIMIT}
+    TRY=${2:-1}; LIMIT=${3:-420}; TAG=try${TRY}_limit${LIMIT}
     echo "$TAG" > /tmp/sim_hric_last_tag
     docker exec $C bash -c "mkdir -p $LOGS && rm -f $LOGS/${TAG}_*.log"
     docker exec -d $C bash -c "source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
