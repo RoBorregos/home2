@@ -72,6 +72,7 @@ class HearStreaming(Node):
         self.transcript_thread = None
         self.cancel_requested = False
         self._speaker_stopped = False
+        self._speech_started = False
 
         # gRPC Stub
         channel = grpc.insecure_channel(server_ip)
@@ -126,9 +127,12 @@ class HearStreaming(Node):
         transcription, flag it so execute_callback can exit cleanly.
         """
         if msg.data:
+            self._speech_started = True
             if self.debug_audio_logs:
                 self.get_logger().info("Voice activity: speaker started talking")
-        elif not self.stop_flag.is_set():
+        # Only a stop that follows a start during this listen counts: the VAD also reports the end of
+        # speech that began before it (e.g. the robot's own voice) and that would cut the listen short.
+        elif not self.stop_flag.is_set() and self._speech_started:
             if self.debug_audio_logs:
                 self.get_logger().info(
                     "Voice activity: speaker stopped — stopping transcription"
@@ -219,6 +223,7 @@ class HearStreaming(Node):
         self.prev_transcription = ""
         self.cancel_requested = False
         self._speaker_stopped = False
+        self._speech_started = False
 
         start_time = time.time()
         last_word_time = start_time
@@ -237,11 +242,14 @@ class HearStreaming(Node):
 
         self.record_subscribed(self.hotwords, self.initial_prompt)
 
+        # A long silence_time means a keyword listen: it must not end because the VAD saw a voice
+        # (e.g. the robot's own) stop, or an interrupt said right after would be lost.
+        vad_stop = goal_handle.request.silence_time < 5.0
         try:
             while (
                 not goal_handle.is_cancel_requested
                 and not self.cancel_requested
-                and not self._speaker_stopped
+                and not (self._speaker_stopped and vad_stop)
                 and time.time() - start_time < goal_handle.request.timeout
                 and (
                     (
@@ -273,7 +281,7 @@ class HearStreaming(Node):
         except Exception as e:
             self.get_logger().error(f"Execution interrupted: {e}")
 
-        if self._speaker_stopped:
+        if self._speaker_stopped and vad_stop:
             self.get_logger().info("Speaker stopped talking, stopping transcription.")
             reason = "silence"
         elif time.time() - last_word_time >= goal_handle.request.silence_time:

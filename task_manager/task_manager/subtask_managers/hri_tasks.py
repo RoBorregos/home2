@@ -117,6 +117,10 @@ def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}? Yes or no?"
 
 
+# What the mic hears back from our own "3, 2, 1"; must not count as the user speaking.
+COUNTDOWN_WORDS = {"one", "two", "three", "four", "five", "1", "2", "3", "4", "5"}
+
+
 def contains_any(text: List[str], keywords: List[str]) -> bool:
     """
     Check if any of the keywords are present in the text.
@@ -804,6 +808,57 @@ class HRITasks:
         )
         return Status.TIMEOUT, ""
 
+    @mockable(return_value=True)
+    def announce_and_count(
+        self,
+        intent: str,
+        seconds: int = 3,
+        interrupt_keywords: tuple = ("stop", "no"),
+        tick_seconds: float = 1.5,
+    ) -> bool:
+        """Say what will happen, count down aloud and listen for an interrupt.
+
+        Alternative to `confirm`: proceeds by default, so the countdown is what tells the
+        user they must speak up now.
+
+        Returns:
+            bool: True to proceed (timeout), False if the user said an interrupt keyword.
+        """
+        # Transcribe from the moment the announcement starts, so a "stop" during it is caught too.
+        # The cue must not contain an interrupt keyword: the mic also hears the robot's own voice.
+        hotwords = ", ".join(interrupt_keywords)
+        self.current_transcription = ""  # drop text left over from the previous listen
+        accepted = self.hear_streaming(
+            timeout=60.0, silence_time=60.0, play_chime=False, hotwords=hotwords
+        )
+        self.say(f"{intent} Interrupt me if that is wrong.")
+
+        # Each number is spoken and shown on its tick (log + display overlay); the timer fires
+        # while interpret_keyword spins the node.
+        ticks = iter(range(seconds, 0, -1))
+
+        def tick():
+            n = next(ticks, None)
+            if n is not None:
+                Logger.info(self.node, f"Countdown: {n}")
+                self.say(str(n), wait=False)
+                self.display_keyword_publisher.publish(
+                    String(data=json.dumps({"keyword": str(n), "source": "countdown"}))
+                )
+
+        tick()
+        timer = self.node.create_timer(tick_seconds, tick)
+        # Whole count + 2 s: STT lags ~2 s behind speech
+        s, _ = self.interpret_keyword(
+            list(interrupt_keywords),
+            timeout=seconds * tick_seconds + 2,
+            play_chime=False,
+            hotwords=hotwords,
+            accepted=accepted,
+        )
+        self.node.destroy_timer(timer)
+        return s != Status.EXECUTION_SUCCESS
+
     def _interpret_confirmation(
         self,
         text: str,
@@ -917,6 +972,7 @@ class HRITasks:
         skip_extract_data: bool = False,
         skip_confirmation: bool = False,
         always_confirm: bool = False,
+        countdown_text: Union[str, callable, None] = None,
         options: list[str] = None,
         remap: dict = None,
         initial_prompt: str = "",
@@ -931,6 +987,7 @@ class HRITasks:
             query: the data to extract from the interpreted text
             context: the context of the question. It could be used to help the extraction.
             confirm_question: a string or a callable function that returns a string used confirm the answer
+            countdown_text: if set (string or callable like confirm_question), announce it and count down instead of asking; the answer is accepted unless the user interrupts, which falls back to the normal confirmation.
             use_keyword: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
@@ -1026,6 +1083,15 @@ class HRITasks:
                 if not always_confirm and skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info
 
+                if countdown_text is not None and target_info and target_found:
+                    announcement = (
+                        countdown_text(interpreted_text, target_info)
+                        if callable(countdown_text)
+                        else countdown_text
+                    )
+                    if self.announce_and_count(announcement):
+                        return Status.EXECUTION_SUCCESS, target_info
+
                 # Determine the confirmation question
                 if callable(confirm_question):
                     confirmation_text = confirm_question(interpreted_text, target_info)
@@ -1074,6 +1140,13 @@ class HRITasks:
         )
         return Status.TIMEOUT, None
 
+    def _heard_words(self) -> List[str]:
+        """Words of the live transcription, minus STT hotword echo and our own countdown."""
+        text = self.current_transcription.strip()
+        if not text or text == self.last_hotwords.strip():
+            return []
+        return [w for w in format_transcription(text) if w and w not in COUNTDOWN_WORDS]
+
     @mockable(
         _mock_callback=lambda self, keywords, *args, **kwargs: (
             Status.EXECUTION_SUCCESS,
@@ -1081,14 +1154,29 @@ class HRITasks:
         )
     )
     def interpret_keyword(
-        self, keywords: list[str], timeout: float, play_chime: bool = True
+        self,
+        keywords: list[str],
+        timeout: float,
+        play_chime: bool = True,
+        hotwords: str = "",
+        accepted=None,
     ) -> str:
-        self.cancel_hear_action()
+        """Listen until one of `keywords` is heard or `timeout` passes.
 
-        self.hear_streaming(timeout=timeout, silence_time=timeout, play_chime=play_chime)
+        Args:
+            hotwords: bias for the STT (e.g. the keywords themselves); empty keeps the default.
+            accepted: goal future of a `hear_streaming` the caller already started, so speech from
+                before this call still counts; None starts a fresh listen.
+        """
+        if accepted is None:
+            self.cancel_hear_action()
+            accepted = self.hear_streaming(
+                timeout=timeout, silence_time=timeout, play_chime=play_chime, hotwords=hotwords
+            )
+            self.keyword = ""
+        result_future = None
 
         start_time = self.node.get_clock().now()
-        self.keyword = ""
 
         Logger.info(
             self.node,
@@ -1097,12 +1185,19 @@ class HRITasks:
 
         while (
             self.keyword not in keywords
-            and not contains_any(format_transcription(self.current_transcription), keywords)
+            and not contains_any(self._heard_words(), keywords)
             and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
         ):
             rclpy.spin_once(self.node, timeout_sec=0.1)
+            if result_future is None and accepted.done() and accepted.result().accepted:
+                result_future = accepted.result().get_result_async()
+            elif result_future is not None and result_future.done():
+                accepted = self.hear_streaming(
+                    timeout=timeout, silence_time=timeout, play_chime=False, hotwords=hotwords
+                )
+                result_future = None
 
-        keyword_listened = contains_any(format_transcription(self.current_transcription), keywords)
+        keyword_listened = contains_any(self._heard_words(), keywords)
 
         if keyword_listened in keywords:
             self.display_keyword_publisher.publish(

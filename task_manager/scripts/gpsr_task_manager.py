@@ -117,6 +117,10 @@ class GPSRTM(Node):
             self.get_parameter("batch_size").get_parameter_value().integer_value or BATCH_SIZE
         )
         self.test_mode = bool(self.get_parameter("test_mode").get_parameter_value().bool_value)
+        self.declare_parameter("confirm_countdown", False)
+        self.confirm_countdown = bool(
+            self.get_parameter("confirm_countdown").get_parameter_value().bool_value
+        )
         self.test_nl_commands = list(
             self.get_parameter("test_commands").get_parameter_value().string_array_value
         )
@@ -474,6 +478,11 @@ class GPSRTM(Node):
                     min_wait_between_retries=5.0,
                     skip_extract_data=True,
                     always_confirm=True,
+                    countdown_text=(
+                        (lambda _text, target: f"I understood your command as: {target}.")
+                        if self.confirm_countdown
+                        else None
+                    ),
                     max_audio_length=20.0,
                     hotwords=self.subtask_manager.hri.names_hotwords,
                 )
