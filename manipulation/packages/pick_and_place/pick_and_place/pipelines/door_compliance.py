@@ -250,22 +250,33 @@ def _yaw(rotation: Rotation) -> float:
     return float(rotation.as_euler("ZYX")[0])
 
 
-def compliant_swing(arm, base, hinge, side: str = "right", angle: float = SWING_ANGLE):
-    """Turn the base ``angle`` deg about ``hinge`` (odom PointStamped) with the arm compliant; returns degrees the grip turned."""
-    sign = swing_sign(side)
+def effort_baseline(arm):
+    """Median joint efforts over a short still window, or None."""
     samples = []
     for _ in range(BASELINE_SAMPLES):
         efforts = _efforts(arm)
         if efforts is not None:
             samples.append(efforts)
         time.sleep(0.02)
+    return np.median(samples, axis=0) if samples else None
+
+
+def compliant_swing(
+    arm, base, hinge, side: str = "right", angle: float = SWING_ANGLE, baseline=None
+):
+    """Turn the base ``angle`` deg about ``hinge`` (odom PointStamped) with the arm compliant; returns degrees the grip turned.
+
+    ``baseline``: efforts before the door loaded the grip (just after grasping), else sampled now.
+    """
+    sign = swing_sign(side)
+    if baseline is None:
+        baseline = effort_baseline(arm)
     arm_in_base = _in_frame(arm, BASE_FRAME, ARM_FRAME)
     start = grip_state(arm)
     start_pose = base.pose()
-    if not samples or arm_in_base is None or start is None or start_pose is None:
+    if baseline is None or arm_in_base is None or start is None or start_pose is None:
         arm.logger.error("Door swing: no joint efforts, TF or odometry")
         return 0.0
-    baseline = np.median(samples, axis=0)
     arm_offset, arm_rotation = arm_in_base
     to_base = arm_rotation
     to_arm = arm_rotation.inv()
@@ -396,6 +407,7 @@ __all__ = [
     "compliant_swing",
     "deadband",
     "door_angle",
+    "effort_baseline",
     "fit_circle",
     "jacobian",
     "radial",

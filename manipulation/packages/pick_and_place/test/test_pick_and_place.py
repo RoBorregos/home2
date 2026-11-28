@@ -1793,6 +1793,18 @@ def test_compliant_swing_refits_a_wrong_hinge_guess(monkeypatch):
     assert world.worst < 0.03
 
 
+def test_compliant_swing_relieves_a_grip_loaded_before_the_swing(monkeypatch):
+    world = _DoorWorld()
+    # The straight pull left the grip 2 cm outside the handle's arc
+    world.radius -= 0.02
+    _world_tf(monkeypatch, world)
+    hinge = make_point(*world.hinge, 0.0, frame="odom")
+    door_compliance.compliant_swing(
+        world, world.base, hinge, "right", baseline=np.zeros(6)
+    )
+    assert abs(world.error_now()[1] - world.radius) < 0.005
+
+
 def test_compliant_swing_stops_when_the_door_pushes_back(monkeypatch):
     world = _DoorWorld()
     _world_tf(monkeypatch, world)
@@ -1980,7 +1992,8 @@ def test_door_pull_swings_with_the_base_then_backs_off(monkeypatch, mode, module
     monkeypatch.setattr(
         module,
         name,
-        lambda arm, base, hinge: swings.append(hinge) or door_swing.SWING_ANGLE,
+        lambda arm, base, hinge, **kwargs: swings.append(hinge)
+        or door_swing.SWING_ANGLE,
     )
     arm = FakeArm(
         link_pose=make_pose(),

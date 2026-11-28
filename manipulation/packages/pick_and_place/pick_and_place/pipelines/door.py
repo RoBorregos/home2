@@ -188,6 +188,8 @@ def pick_handle(
             f"Door handle approach: {'touched the door' if result.contact else 'no contact'} after {result.descended_m * 1000:.0f} mm"
         )
         arm.close_gripper()
+        # Before the press and pull load the grip, for the compliant swing
+        baseline = door_compliance.effort_baseline(arm)
     with arm.phase("press_lever"):
         unpress = press_lever(arm)
         if unpress is None:
@@ -206,12 +208,17 @@ def pick_handle(
             )
             opened = pull_open(arm, unpress, pull)
         if opened and base is not None:
-            return swing(arm, base, handle, door_width, swing_mode)
+            return swing(arm, base, handle, door_width, swing_mode, baseline)
     return let_go(arm, opened)
 
 
 def swing(
-    arm, base, handle, door_width=door_swing.DOOR_WIDTH, swing_mode=SWING_MODE
+    arm,
+    base,
+    handle,
+    door_width=door_swing.DOOR_WIDTH,
+    swing_mode=SWING_MODE,
+    baseline=None,
 ) -> bool:
     """Turn the base about the hinge holding the lever, then let go and back off it."""
     with arm.phase("swing_door"):
@@ -220,7 +227,9 @@ def swing(
             arm.logger.error("Door swing: no TF from the handle to odom")
             return let_go(arm, False)
         if swing_mode == "compliant":
-            turned = door_compliance.compliant_swing(arm, base, hinge)
+            turned = door_compliance.compliant_swing(
+                arm, base, hinge, baseline=baseline
+            )
         else:
             turned = door_swing.swing_open(arm, base, hinge)
     let_go(arm, True)
