@@ -49,6 +49,13 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["voice_detection"]["ros__parameters"]
 
+    speaker_verification_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "speaker_verification.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["speaker_verification"]["ros__parameters"]
+
     doorbell_detection_config = parse_ros_config(
         os.path.join(
             get_package_share_directory("speech"), "config", "doorbell_detection.yaml"
@@ -177,6 +184,18 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 parameters=[respeaker_config],
+            )
+        )
+        # Who is speaking and from where: needs the 4 raw ReSpeaker mics
+        nodes.append(
+            Node(
+                package="speech",
+                executable="speaker_verification.py",
+                ros_arguments=["--log-level", f"speaker_verification:={LOG_LEVEL}"],
+                name="speaker_verification",
+                output="screen",
+                emulate_tty=True,
+                parameters=[speaker_verification_config],
             )
         )
 

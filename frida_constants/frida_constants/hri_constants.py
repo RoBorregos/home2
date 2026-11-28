@@ -12,9 +12,16 @@ EI_DETECTION_TOPIC = "/hri/speech/ei_detection"
 DOORBELL_ARMED_TOPIC = "/hri/doorbell/armed"
 USEFUL_AUDIO_TOPIC = "/hri/speech/useful_audio"
 RAW_AUDIO_TOPIC = "/hri/rawAudioChunk"
+# All 6 ReSpeaker channels interleaved (ch0 processed, ch1-4 raw mics, ch5 playback)
+MULTICHANNEL_AUDIO_TOPIC = "/hri/rawAudioMultichannel"
 PROCESSED_AUDIO_TOPIC = "/hri/processedAudioChunk"
 VAD_AUDIO_TOPIC = "/hri/vadAudioChunk"
 VOICE_ACTIVITY_TOPIC = "/hri/voice_activity"
+# Speaker id (speaker_verification.py): who is speaking and from where (JSON),
+# enrollment commands and their replies
+SPEAKER_ID_LOCATED_TOPIC = "/hri/speaker_id/located"
+SPEAKER_ID_COMMAND_TOPIC = "/hri/speaker_id/command"
+SPEAKER_ID_STATUS_TOPIC = "/hri/speaker_id/status"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
 LLM_WRAPPER_SERVICE = "/hri/nlp/llm"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"

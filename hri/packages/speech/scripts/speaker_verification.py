@@ -1,0 +1,813 @@
+#!/usr/bin/env python3
+"""Speaker verification node: who is speaking and from where (issue #1459).
+
+    ReSpeaker ch1-4 (raw mics) -> RTF-MVDR beam -> Silero VAD + energy gate
+        -> speech segments -> WeSpeaker ResNet34 embedding (GPU)
+        -> cosine vs enrolled profiles -> TARGET / NOT_TARGET / UNKNOWN / MIXED
+    ReSpeaker ch1-4 -> SRP-PHAT direction over the *same* window as each embedding
+
+Output: SPEAKER_ID_LOCATED_TOPIC (String JSON), one message per decision (every
+EMBED_HOP_SEC while someone talks, plus one per finished segment) with the
+speaker name, the azimuth in the robot frame (0 = front, +90 = left) and the
+scores. When the target and someone else share a segment (MIXED) it publishes
+one message per voice, each with its own direction.
+
+Commands (String JSON on SPEAKER_ID_COMMAND_TOPIC, replies on
+SPEAKER_ID_STATUS_TOPIC), e.g.::
+
+    {"op": "enroll_start"}
+    {"op": "enroll_commit", "name": "mario"}
+    {"op": "enroll_abort"}
+    {"op": "enroll_lookback", "name": "mario", "seconds": 20}
+    {"op": "set_target", "name": "mario"}      # "" = any enrolled person
+    {"op": "forget", "name": "mario"}
+    {"op": "list"} / {"op": "reload"}
+
+Without the ReSpeaker (MULTICHANNEL_AUDIO_TOPIC empty) it identifies speakers
+from RAW_AUDIO_TOPIC and the direction fields are null.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import threading
+import time
+from collections import Counter, deque
+from dataclasses import dataclass
+
+# numpy's OpenBLAS keeps ~12 threads spinning after every small matrix product
+# (fbank, MVDR): measured ~50 % of an Orin core wasted. Set before numpy loads.
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
+import numpy as np
+import rclpy
+from frida_interfaces.msg import AudioData
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from speech.spatial_utils import (
+    ArrayGeometry,
+    DoaConfig,
+    FrontEndConfig,
+    MvdrFrontEnd,
+    SpeakerTracker,
+    SrpPhat,
+    TrackerConfig,
+    direction_label,
+    merge_doas,
+)
+from speech.speaker_id_utils import (
+    DEFAULT_MODEL_FILE,
+    FRAME_SAMPLES,
+    MIXED,
+    NOT_TARGET,
+    TARGET,
+    ProfileStore,
+    Segment,
+    Segmenter,
+    SegmenterConfig,
+    SileroVAD,
+    SpeakerEmbedder,
+    VerifierConfig,
+    aggregate_segment,
+    build_profile,
+    decide,
+)
+from std_msgs.msg import Bool, String
+
+SRC_SPEECH_DIR = "/workspace/src/hri/packages/speech"
+
+
+def _default_data_dir() -> str:
+    if os.path.isdir(SRC_SPEECH_DIR):
+        return os.path.join(SRC_SPEECH_DIR, "assets", "downloads", "speaker_id")
+    from ament_index_python.packages import get_package_share_directory
+
+    return os.path.join(
+        get_package_share_directory("speech"), "assets", "downloads", "speaker_id"
+    )
+
+
+def _default_silero() -> str:
+    candidates = [os.path.join(SRC_SPEECH_DIR, "assets", "silero_vad.onnx")]
+    try:
+        from ament_index_python.packages import get_package_share_directory
+
+        candidates.append(
+            os.path.join(
+                get_package_share_directory("speech"), "assets", "silero_vad.onnx"
+            )
+        )
+    except Exception:
+        pass
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return candidates[0]
+
+
+@dataclass
+class Job:
+    kind: str  # "partial" | "final" | "commit" | "lookback"
+    seg_id: int = 0
+    wave: np.ndarray | None = None
+    duration: float = 0.0
+    snr_db: float = 0.0
+    vad_p: float = 0.0
+    t_wall_start: float = 0.0
+    t_wall_end: float = 0.0
+    cut_by_tts: bool = False
+    name: str = ""
+    seconds: float = 0.0
+    doa: dict | None = None
+
+
+class SpeakerVerification(Node):
+    def __init__(self) -> None:
+        super().__init__("speaker_verification")
+        p = self._declare_params()
+
+        self.sr = p["SAMPLE_RATE"]
+        data_dir = _default_data_dir()
+        embed_model = p["EMBED_MODEL"] or os.path.join(data_dir, DEFAULT_MODEL_FILE)
+        profile_dir = p["PROFILE_DIR"] or os.path.join(data_dir, "profiles")
+
+        self.seg_cfg = SegmenterConfig(
+            sample_rate=self.sr,
+            frame_samples=FRAME_SAMPLES,
+            vad_on=p["VAD_ON"],
+            vad_off=p["VAD_OFF"],
+            energy_margin_db=p["ENERGY_MARGIN_DB"],
+            noise_floor_tau_sec=p["NOISE_FLOOR_TAU_SEC"],
+            min_speech_sec=p["MIN_SPEECH_SEC"],
+            min_silence_sec=p["MIN_SILENCE_SEC"],
+            pad_sec=p["PAD_SEC"],
+            max_segment_sec=p["MAX_SEGMENT_SEC"],
+        )
+        self.ver_cfg = VerifierConfig(
+            accept_th=p["ACCEPT_TH"],
+            reject_th=p["REJECT_TH"],
+            margin=p["MARGIN"],
+            min_sec=p["EMBED_MIN_SEC"],
+            adapt_th=p["ADAPT_TH"],
+            adapt_min_sec=p["ADAPT_MIN_SEC"],
+            pool_max=p["POOL_MAX"],
+            enroll_min_sec=p["ENROLL_MIN_SEC"],
+            enroll_good_sec=p["ENROLL_GOOD_SEC"],
+            enroll_outlier_th=p["ENROLL_OUTLIER_TH"],
+        )
+        self.p = p
+        self.backend = p["EMBED_BACKEND"]
+        self.target = p["TARGET_NAME"]
+
+        # Models
+        silero_path = p["SILERO_MODEL"] or _default_silero()
+        self.vad = SileroVAD(silero_path, self.sr)
+        if not os.path.isfile(embed_model):
+            raise FileNotFoundError(
+                f"Speaker model not found: {embed_model}. "
+                "Run docker/hri/scripts/download-model.sh (option speaker-id)"
+            )
+        providers = [x for x in p["ORT_PROVIDERS"].split(",") if x.strip()]
+        self.embedder = SpeakerEmbedder(embed_model, providers, self.sr)
+        self.embedder.warmup()
+        self.store = ProfileStore(profile_dir, self.backend)
+        for msg in self.store.load_all():
+            self.get_logger().warning(f"Skipped profile {msg}")
+
+        # Streaming state (audio thread)
+        self.segmenter = Segmenter(self.seg_cfg)
+        self._pending = np.zeros(0, dtype=np.float32)
+        self._muted_until = 0.0
+        self._saying = False
+        self._vad_state = False
+        self._seg_wall_start: dict[int, float] = {}
+        self._last_partial_t = 0.0
+
+        # Worker state
+        self._jobs: deque[Job] = deque()
+        self._cv = threading.Condition()
+        self._lock = threading.Lock()
+        self._enrolling = False
+        self._enroll_started = 0.0
+        self._enroll_waves: list[np.ndarray] = []
+        self._lookback: deque[tuple[float, np.ndarray]] = deque()
+        # partial windows of the open segments: (label, target_score, best,
+        # score, doa); used to split MIXED segments per voice
+        self._seg_windows: dict[int, list[tuple]] = {}
+        self._running = True
+
+        # ROS I/O
+        latched = QoSProfile(
+            depth=1,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            reliability=ReliabilityPolicy.RELIABLE,
+        )
+        self.status_pub = self.create_publisher(
+            String, p["SPEAKER_ID_STATUS_TOPIC"], latched
+        )
+        self.located_pub = self.create_publisher(
+            String, p["SPEAKER_ID_LOCATED_TOPIC"], 10
+        )
+        self.srp: SrpPhat | None = None
+        self.tracker = SpeakerTracker(
+            TrackerConfig(
+                max_age_sec=p["TRACK_MAX_AGE_SEC"], match_deg=p["TRACK_MATCH_DEG"]
+            )
+        )
+        mc_topic = p["MULTICHANNEL_AUDIO_TOPIC"]
+        if mc_topic:
+            geo = ArrayGeometry(
+                offset_deg=float(p["DOA_OFFSET_DEG"]), mirror=bool(p["DOA_MIRROR"])
+            )
+            self.srp = SrpPhat(
+                DoaConfig(sample_rate=self.sr, geometry=geo),
+                history_sec=p["EMBED_MAX_SEC"] + 2.0,
+            )
+            self.mvdr_fe = None
+            if p["MONO_SOURCE"] == "mvdr":
+                # embeddings from the RTF-MVDR beam of the raw mics (no DFN:
+                # it did not improve speaker separation in the offline eval)
+                self.mvdr_fe = MvdrFrontEnd(
+                    SileroVAD(silero_path, self.sr),
+                    FrontEndConfig(output_gain_db=p["MVDR_OUTPUT_GAIN_DB"]),
+                )
+                audio_topic = f"{mc_topic} (MVDR ch1-4 + DOA ch1-4)"
+            else:
+                audio_topic = f"{mc_topic} (ch{p['MONO_CHANNEL']} + DOA ch1-4)"
+            self.create_subscription(AudioData, mc_topic, self._mc_audio_cb, 50)
+        else:
+            self.mvdr_fe = None
+            audio_topic = p["RAW_AUDIO_TOPIC"]
+            self.create_subscription(AudioData, audio_topic, self._audio_cb, 50)
+        self.audio_topic = audio_topic
+        self.create_subscription(Bool, p["SAYING_TOPIC"], self._saying_cb, 10)
+        self.create_subscription(
+            String, p["SPEAKER_ID_COMMAND_TOPIC"], self._command_cb, 10
+        )
+
+        self._worker = threading.Thread(target=self._worker_loop, daemon=True)
+        self._worker.start()
+
+        self._status("startup", True, "ready")
+        self.get_logger().info(
+            f"SpeakerVerification ready | in: {audio_topic} | silero "
+            f"{'v5' if self.vad.is_v5 else 'v4'} | embed {self.backend} "
+            f"dim={self.embedder.dim} providers={self.embedder.providers} "
+            f"warmup={self.embedder.last_infer_ms:.1f}ms | profiles: "
+            f"{list(self.store.profiles) or 'none'} | target: "
+            f"{self.target or 'any'} | accept>={self.ver_cfg.accept_th} "
+            f"reject<={self.ver_cfg.reject_th} margin={self.ver_cfg.margin}"
+        )
+
+    # ------------------------------------------------------------ params
+    def _declare_params(self) -> dict:
+        defaults = {
+            "RAW_AUDIO_TOPIC": "/hri/rawAudioChunk",
+            "SAYING_TOPIC": "/saying",
+            "SPEAKER_ID_COMMAND_TOPIC": "/hri/speaker_id/command",
+            "SPEAKER_ID_STATUS_TOPIC": "/hri/speaker_id/status",
+            "SPEAKER_ID_LOCATED_TOPIC": "/hri/speaker_id/located",
+            "MULTICHANNEL_AUDIO_TOPIC": "",
+            "MC_CHANNELS": 6,
+            "MONO_CHANNEL": 0,
+            "MONO_SOURCE": "channel",
+            "MVDR_OUTPUT_GAIN_DB": 10.0,
+            "DOA_OFFSET_DEG": 0.0,
+            "DOA_MIRROR": False,
+            "DOA_MIN_CONF": 0.15,
+            "TRACK_MAX_AGE_SEC": 8.0,
+            "TRACK_MATCH_DEG": 25.0,
+            "SAMPLE_RATE": 16000,
+            "SILERO_MODEL": "",
+            "EMBED_MODEL": "",
+            "EMBED_BACKEND": "wespeaker_resnet34_lm",
+            "ORT_PROVIDERS": "cuda,cpu",
+            "PROFILE_DIR": "",
+            "VAD_ON": 0.5,
+            "VAD_OFF": 0.4,
+            "ENERGY_MARGIN_DB": 3.0,
+            "NOISE_FLOOR_TAU_SEC": 3.0,
+            "MIN_SPEECH_SEC": 0.25,
+            "MIN_SILENCE_SEC": 0.5,
+            "PAD_SEC": 0.2,
+            "MAX_SEGMENT_SEC": 15.0,
+            "TTS_TAIL_SEC": 0.3,
+            "TARGET_NAME": "",
+            "EMBED_MIN_SEC": 1.0,
+            "EMBED_HOP_SEC": 0.5,
+            "EMBED_WIN_SEC": 1.5,
+            "EMBED_MAX_SEC": 6.0,
+            "ACCEPT_TH": 0.38,
+            "REJECT_TH": 0.24,
+            "MARGIN": 0.10,
+            "ADAPT": True,
+            "ADAPT_TH": 0.65,
+            "ADAPT_MIN_SEC": 2.0,
+            "POOL_MAX": 10,
+            "ENROLL_MIN_SEC": 3.0,
+            "ENROLL_GOOD_SEC": 6.0,
+            "ENROLL_OUTLIER_TH": 0.45,
+            "ENROLL_TIMEOUT_SEC": 90.0,
+            "LOOKBACK_SEC": 30.0,
+        }
+        out = {}
+        for name, default in defaults.items():
+            self.declare_parameter(name, default)
+            out[name] = self.get_parameter(name).value
+        return out
+
+    # ------------------------------------------------------- audio thread
+    def _saying_cb(self, msg: Bool) -> None:
+        self._saying = bool(msg.data)
+        if not msg.data:
+            self._muted_until = time.monotonic() + self.p["TTS_TAIL_SEC"]
+
+    def _is_muted(self) -> bool:
+        return self._saying or time.monotonic() < self._muted_until
+
+    def _audio_cb(self, msg: AudioData) -> None:
+        self._process_mono(np.frombuffer(bytes(msg.data), dtype=np.int16))
+
+    def _mc_audio_cb(self, msg: AudioData) -> None:
+        n_ch = self.p["MC_CHANNELS"]
+        x = np.frombuffer(bytes(msg.data), dtype=np.int16)
+        x = x[: x.shape[0] - x.shape[0] % n_ch].reshape(-1, n_ch)
+        # VAD state of the previous chunk labels these frames for the noise model
+        self.srp.set_speech(self._vad_state and not self._is_muted())
+        self.srp.push(x[:, 1:5].astype(np.float32) / 32768.0)
+        if self.mvdr_fe is not None:
+            y = self.mvdr_fe.process(x, self._is_muted())
+            mono = (y * 32767).astype(np.int16)
+        else:
+            mono = np.ascontiguousarray(x[:, self.p["MONO_CHANNEL"]])
+        if mono.size:
+            self._process_mono(mono)
+
+    def _doa_for(self, n_samples: int) -> dict | None:
+        if self.srp is None:
+            return None
+        est = self.srp.localize(n_samples)
+        if est is None:
+            return None
+        d = est.as_dict()
+        d["direction"] = direction_label(est.azimuth_deg)
+        d["reliable"] = est.confidence >= self.p["DOA_MIN_CONF"]
+        return d
+
+    def _process_mono(self, samples: np.ndarray) -> None:
+        audio = samples.astype(np.float32) / 32768.0
+        self._pending = np.concatenate([self._pending, audio])
+
+        muted = self._is_muted()
+        closed = self.segmenter.mute(muted)
+        if closed is not None:
+            self._finish_segment(closed)
+
+        while self._pending.shape[0] >= FRAME_SAMPLES:
+            frame = self._pending[:FRAME_SAMPLES]
+            self._pending = self._pending[FRAME_SAMPLES:]
+            prob = self.vad(frame)
+            info, started, finished = self.segmenter.push(frame, prob)
+            if started is not None:
+                self._seg_wall_start[started.seg_id] = time.time()
+                self._last_partial_t = 0.0
+                self._set_vad(True)
+                self.get_logger().debug(
+                    f"[seg {started.seg_id}] speech start "
+                    f"(p={prob:.2f} {info.db:.0f}dB floor {info.noise_floor_db:.0f}dB)"
+                )
+            if finished is not None:
+                self._finish_segment(finished)
+            elif self.segmenter.current is not None:
+                self._maybe_partial(self.segmenter.current)
+
+    def _set_vad(self, active: bool) -> None:
+        self._vad_state = active
+
+    def _seg_stats(self, seg: Segment) -> tuple[float, float]:
+        probs = np.asarray(seg.probs) if seg.probs else np.zeros(1)
+        dbs = np.asarray(seg.dbs) if seg.dbs else np.zeros(1)
+        voiced = dbs[probs >= self.seg_cfg.vad_off]
+        level = float(np.mean(voiced)) if voiced.size else float(np.mean(dbs))
+        return level - self.segmenter.noise_floor_db, float(np.mean(probs))
+
+    def _maybe_partial(self, seg: Segment) -> None:
+        dur = seg.duration(self.sr)
+        if dur < self.p["EMBED_MIN_SEC"]:
+            return
+        if self.segmenter.t - self._last_partial_t < self.p["EMBED_HOP_SEC"]:
+            return
+        self._last_partial_t = self.segmenter.t
+        # sliding window: who is speaking *now* (segments can mix several voices)
+        wave_ = seg.wave()[-int(self.p["EMBED_WIN_SEC"] * self.sr) :]
+        snr, vad_p = self._seg_stats(seg)
+        self._enqueue(
+            Job(
+                "partial",
+                seg.seg_id,
+                wave_,
+                wave_.shape[0] / self.sr,
+                snr,
+                vad_p,
+                self._seg_wall_start.get(seg.seg_id, time.time()),
+                doa=self._doa_for(wave_.shape[0]),
+            )
+        )
+
+    def _finish_segment(self, seg: Segment) -> None:
+        self._set_vad(False)
+        snr, vad_p = self._seg_stats(seg)
+        wave_ = seg.wave()[-int(self.p["EMBED_MAX_SEC"] * self.sr) :]
+        self._enqueue(
+            Job(
+                "final",
+                seg.seg_id,
+                wave_,
+                seg.duration(self.sr),
+                snr,
+                vad_p,
+                self._seg_wall_start.pop(seg.seg_id, time.time()),
+                time.time(),
+                seg.cut_by_tts,
+                doa=self._doa_for(wave_.shape[0]),
+            )
+        )
+
+    def _enqueue(self, job: Job) -> None:
+        with self._cv:
+            if job.kind == "partial":
+                # keep only the newest partial; finals/commands are never dropped
+                self._jobs = deque(j for j in self._jobs if j.kind != "partial")
+            self._jobs.append(job)
+            self._cv.notify()
+
+    # ------------------------------------------------------------ worker
+    def _worker_loop(self) -> None:
+        while self._running:
+            with self._cv:
+                while not self._jobs and self._running:
+                    self._cv.wait(timeout=0.5)
+                if not self._running:
+                    return
+                job = self._jobs.popleft()
+            try:
+                if job.kind in ("partial", "final"):
+                    self._process_segment(job)
+                elif job.kind == "commit":
+                    self._do_commit(job.name, list(self._enroll_waves), "session")
+                elif job.kind == "lookback":
+                    cutoff = time.time() - job.seconds
+                    waves = [w for t, w in self._lookback if t >= cutoff]
+                    self._do_commit(job.name, waves, "lookback")
+            except Exception as exc:  # keep the worker alive
+                self.get_logger().error(f"worker error on {job.kind}: {exc!r}")
+
+    def _process_segment(self, job: Job) -> None:
+        final = job.kind == "final"
+        if final:
+            self._remember_segment(job)
+
+        result = {
+            "t": round(time.time(), 3),
+            "seg_id": job.seg_id,
+            "final": final,
+            "dur": round(job.duration, 2),
+            "snr_db": round(job.snr_db, 1),
+            "vad_p": round(job.vad_p, 2),
+            "tts_cut": job.cut_by_tts,
+            "enrolling": self._enrolling,
+            "src": self.audio_topic,
+        }
+        label = "UNKNOWN"
+        wins: list = []
+        if job.cut_by_tts and final:
+            label = "TTS_CUT"
+            result.update({"label": label, "target": self.target})
+        elif job.duration < 0.5 or job.wave is None:
+            label = "TOO_SHORT"
+            result.update({"label": label, "target": self.target})
+        else:
+            emb = self.embedder.embed(job.wave)
+            infer_ms = self.embedder.last_infer_ms
+            with self._lock:
+                dec = decide(
+                    emb, self.store.profiles, self.target, job.duration, self.ver_cfg
+                )
+            label = dec.label
+            result.update(dec.as_dict())
+            result["infer_ms"] = round(infer_ms, 1)
+            if not final:
+                self._seg_windows.setdefault(job.seg_id, []).append(
+                    (
+                        label,
+                        dec.target_score,
+                        result.get("best", ""),
+                        result.get("score", 0.0),
+                        job.doa,
+                    )
+                )
+            else:
+                wins = self._seg_windows.pop(job.seg_id, [])
+                labels = [w[0] for w in wins]
+                label = aggregate_segment(dec.label, labels)
+                result["whole_label"] = dec.label
+                result["label"] = label
+                result["win_n"] = len(wins)
+                result["win_target"] = labels.count(TARGET)
+                result["win_not"] = labels.count(NOT_TARGET)
+                result["win_max"] = round(max((w[1] for w in wins), default=0.0), 3)
+                if self.p["ADAPT"] and not self._enrolling and label == TARGET:
+                    self._maybe_adapt(dec, emb, job.duration)
+
+        now = time.time()
+        if final:
+            result["lat_ms"] = round((now - job.t_wall_end) * 1000.0, 1)
+            self._seg_windows.pop(job.seg_id, None)
+        else:
+            result["since_onset_ms"] = round((now - job.t_wall_start) * 1000.0, 1)
+
+        # MIXED finals are published per voice; everything else as one message
+        split = final and label == MIXED and self._publish_mixed(result, wins)
+        if "score" in result and not split:
+            self._publish_located(result, job.doa)
+        if final:
+            self._log_final(result, job.doa)
+
+    def _publish_mixed(self, r: dict, wins: list) -> bool:
+        """A segment where the target and someone else both spoke: the
+        whole-segment embedding and DOA blend both voices, so publish one
+        located message per voice, each with the direction of its own windows."""
+        groups = {
+            TARGET: [w for w in wins if w[0] == TARGET],
+            NOT_TARGET: [w for w in wins if w[0] == NOT_TARGET],
+        }
+        published = False
+        for lbl, ws in groups.items():
+            doa = merge_doas([w[4] for w in ws], self.p["DOA_MIN_CONF"])
+            if doa is None:
+                continue
+            best = Counter(w[2] for w in ws).most_common(1)[0][0]
+            part = dict(r)
+            part.update(
+                {
+                    "label": lbl,
+                    "best": best,
+                    "score": round(float(np.median([w[3] for w in ws])), 3),
+                    "second_score": -1.0,
+                    "part": "target" if lbl == TARGET else "other",
+                }
+            )
+            if lbl == NOT_TARGET:
+                part["best"] = ""  # unknown voice: never named
+            self._publish_located(part, doa)
+            self.get_logger().info(
+                f"[seg {r['seg_id']}]   {part['part']:6s} voice: "
+                f"{best or '?'}:{part['score']:.2f} x{len(ws)} windows | "
+                f"DOA {doa['azimuth_deg']:+.0f}deg {doa['direction']} "
+                f"conf={doa['confidence']:.2f}"
+            )
+            published = True
+        return published
+
+    def _publish_located(self, r: dict, doa: dict | None) -> None:
+        """Who is speaking and from where, in one message."""
+        doa = doa or {
+            "azimuth_deg": None,
+            "direction": None,
+            "confidence": 0.0,
+            "reliable": False,
+            "sources": [],
+        }
+        known = (
+            r.get("best")
+            and r.get("score", 0.0) >= self.ver_cfg.accept_th
+            and r.get("score", 0.0) - max(r.get("second_score", -1.0), -1.0)
+            >= self.ver_cfg.margin
+        )
+        now = time.time()
+        speaker, via = self.tracker.update(
+            now,
+            r.get("best") if known else None,
+            bool(known),
+            doa["azimuth_deg"],
+            doa["reliable"],
+            rejected=r.get("score", 0.0) <= self.ver_cfg.reject_th,
+        )
+        located = {
+            "t": r["t"],
+            "seg_id": r["seg_id"],
+            "final": r["final"],
+            "speaker": speaker,
+            "via": via,  # "voice" | "direction" (unsure voice, known direction) | "none"
+            "best": r.get("best", ""),
+            "score": r.get("score", 0.0),
+            "label": r.get("label", ""),
+            "target": r.get("target", ""),
+            "azimuth_deg": doa["azimuth_deg"],
+            "direction": doa["direction"],
+            "doa_confidence": doa["confidence"],
+            "doa_reliable": doa["reliable"],
+            "sources": doa["sources"],
+            "second": r.get("second", ""),
+            "second_score": r.get("second_score", 0.0),
+            "dur": r["dur"],
+            "snr_db": r["snr_db"],
+            "part": r.get("part", "whole"),
+            "tracks": self.tracker.snapshot(now),
+        }
+        self.located_pub.publish(String(data=json.dumps(located)))
+
+    def _remember_segment(self, job: Job) -> None:
+        if job.wave is None or job.cut_by_tts:
+            return
+        now = time.time()
+        self._lookback.append((now, job.wave))
+        while self._lookback and now - self._lookback[0][0] > self.p["LOOKBACK_SEC"]:
+            self._lookback.popleft()
+        if self._enrolling:
+            if now - self._enroll_started > self.p["ENROLL_TIMEOUT_SEC"]:
+                self._enrolling = False
+                self._enroll_waves = []
+                self._status("enroll_timeout", False, "enrollment session expired")
+            elif job.duration >= 0.8:
+                self._enroll_waves.append(job.wave)
+                total = sum(w.shape[0] for w in self._enroll_waves) / self.sr
+                self._status(
+                    "enroll_progress",
+                    True,
+                    f"collected {total:.1f}s (+{job.duration:.1f}s)",
+                    collected_sec=round(total, 2),
+                )
+
+    def _maybe_adapt(self, dec, emb: np.ndarray, duration: float) -> None:
+        if dec.label != TARGET or duration < self.ver_cfg.adapt_min_sec:
+            return
+        name = dec.target or dec.best
+        if dec.scores.get(name, 0.0) < self.ver_cfg.adapt_th:
+            return
+        with self._lock:
+            prof = self.store.get(name)
+            if prof is None:
+                return
+            prof.add_to_pool(emb, self.ver_cfg.pool_max)
+            self.store.save(prof)
+
+    def _log_final(self, r: dict, doa: dict | None) -> None:
+        if "score" in r:
+            second = (
+                f" 2nd={r['second']}:{r['second_score']:.2f}" if r["second"] else ""
+            )
+            tgt = f" tgt={r['target']}:{r['target_score']:.2f}" if r["target"] else ""
+            self.get_logger().info(
+                f"[seg {r['seg_id']}] {r['dur']:.1f}s {r['label']:<10} "
+                f"best={r['best']}:{r['score']:.2f}{second}{tgt} "
+                f"win(T/N/all)={r.get('win_target', 0)}/{r.get('win_not', 0)}/"
+                f"{r.get('win_n', 0)} max={r.get('win_max', 0):.2f} "
+                f"vad_p={r['vad_p']:.2f} snr={r['snr_db']:.0f}dB "
+                f"infer={r['infer_ms']:.0f}ms lat={r['lat_ms']:.0f}ms"
+                + (
+                    f" | DOA {doa['azimuth_deg']:+.0f}deg {doa['direction']}"
+                    f" conf={doa['confidence']:.2f}"
+                    if doa
+                    else ""
+                )
+                + (" [enrolling]" if r["enrolling"] else "")
+            )
+        else:
+            self.get_logger().info(
+                f"[seg {r['seg_id']}] {r['dur']:.1f}s {r['label']} "
+                f"snr={r['snr_db']:.0f}dB" + (" [enrolling]" if r["enrolling"] else "")
+            )
+
+    def _do_commit(self, name: str, waves: list[np.ndarray], source: str) -> None:
+        res = build_profile(name, waves, self.embedder, self.backend, self.ver_cfg)
+        if res.ok and res.profile is not None:
+            with self._lock:
+                self.store.forget(name)
+                path = self.store.save(res.profile)
+            self._enrolling = False
+            self._enroll_waves = []
+            self.get_logger().info(f"ENROLLED ({res.quality}, {source}): {res.message}")
+            self._status(
+                "enroll_commit",
+                True,
+                res.message,
+                quality=res.quality,
+                enrolled_sec=round(res.kept_sec, 2),
+                consistency=round(res.consistency, 3),
+                path=path,
+            )
+        else:
+            # keep the session open so the task can collect more speech
+            self.get_logger().warning(f"Enrollment of {name} failed: {res.message}")
+            self._status(
+                "enroll_commit",
+                False,
+                res.message,
+                quality=res.quality,
+                enrolled_sec=round(res.kept_sec, 2),
+            )
+
+    # ---------------------------------------------------------- commands
+    def _command_cb(self, msg: String) -> None:
+        try:
+            cmd = (
+                json.loads(msg.data)
+                if msg.data.strip().startswith("{")
+                else {"op": msg.data.strip()}
+            )
+        except json.JSONDecodeError as exc:
+            self._status("error", False, f"bad JSON: {exc}")
+            return
+        op = cmd.get("op", "")
+        name = str(cmd.get("name", "")).strip()
+        if op == "enroll_start":
+            self._enrolling = True
+            self._enroll_started = time.time()
+            self._enroll_waves = []
+            self._status(op, True, "collecting speech; send enroll_commit with name")
+        elif op == "enroll_commit":
+            if not name:
+                self._status(op, False, "missing name")
+            elif not self._enrolling:
+                self._status(op, False, "no enrollment session (send enroll_start)")
+            else:
+                self._enqueue(Job("commit", name=name))
+        elif op == "enroll_abort":
+            self._enrolling = False
+            self._enroll_waves = []
+            self._status(op, True, "enrollment aborted")
+        elif op == "enroll_lookback":
+            if not name:
+                self._status(op, False, "missing name")
+            else:
+                secs = float(cmd.get("seconds", self.p["LOOKBACK_SEC"]))
+                self._enqueue(Job("lookback", name=name, seconds=secs))
+        elif op == "set_target":
+            if name and self.store.get(name) is None:
+                self._status(op, False, f"unknown profile '{name}'")
+            else:
+                prof = self.store.get(name) if name else None
+                self.target = prof.name if prof else ""
+                self._status(op, True, f"target = {self.target or 'any enrolled'}")
+        elif op == "forget":
+            with self._lock:
+                ok = self.store.forget(name) if name else False
+            if ok and self.target and self.store.get(self.target) is None:
+                self.target = ""
+            self._status(op, ok, f"forgot {name}" if ok else f"no profile '{name}'")
+        elif op == "reload":
+            with self._lock:
+                skipped = self.store.load_all()
+            self._status(op, True, f"reloaded; skipped: {skipped}")
+        elif op == "list":
+            self._status(op, True, "profiles")
+        else:
+            self._status("error", False, f"unknown op '{op}'")
+
+    def _status(self, op: str, ok: bool, message: str, **extra) -> None:
+        payload = {
+            "t": round(time.time(), 3),
+            "op": op,
+            "ok": ok,
+            "message": message,
+            "target": self.target,
+            "enrolling": self._enrolling,
+            "profiles": [p.summary() for p in self.store.profiles.values()],
+        }
+        payload.update(extra)
+        self.status_pub.publish(String(data=json.dumps(payload)))
+        if op not in ("startup", "list", "enroll_progress"):
+            log = self.get_logger().info if ok else self.get_logger().warning
+            log(f"[cmd {op}] {message}")
+
+    def destroy_node(self) -> None:
+        self._running = False
+        with self._cv:
+            self._cv.notify_all()
+        super().destroy_node()
+
+
+def main(args=None) -> None:
+    rclpy.init(args=args)
+    try:
+        node = SpeakerVerification()
+    except FileNotFoundError as exc:
+        # the rest of the HRI pipeline keeps running without speaker id
+        rclpy.logging.get_logger("speaker_verification").error(str(exc))
+        rclpy.shutdown()
+        return
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
