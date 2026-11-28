@@ -49,6 +49,7 @@ from pick_and_place.manipulation_core import ManipulationCore
 from pick_and_place.pipelines import shelf as shelf_pipeline
 from pick_and_place.pipelines import (
     door as door_pipeline,
+    door_compliance,
     door_swing,
     follow as follow_pipeline,
     pick as pick_pipeline,
@@ -1671,7 +1672,10 @@ def test_open_door_measures_the_handle_then_hands_it_to_the_pick(monkeypatch):
     monkeypatch.setattr(
         door_pipeline,
         "pick_handle",
-        lambda arm, handle, base=None: picked.append(handle) or False,
+        lambda arm, handle, base=None, door_width=None, swing_mode=None: picked.append(
+            handle
+        )
+        or False,
     )
     arm, perception = FakeArm(), FakePerception(door_handle=_door_handle())
     assert door_pipeline.execute(arm, perception) is False
@@ -1693,6 +1697,173 @@ class _SwingArm:
     def joint_state(self):
         self.reads += 1
         return SimpleNamespace(effort=self._efforts(self.reads))
+
+
+class _DoorWorld:
+    """A gripper on a door handle 1500 N/m off its arc, a base that executes twists scaled by ``scale``."""
+
+    def __init__(self, scale=1.0, hinge=(0.0, 0.403)):
+        self.logger = FakeLogger()
+        self.hinge = np.array(hinge)
+        self.base = FakeBase(x=0.75, y=-0.25, yaw=np.pi)
+        self.scale = scale
+        self.grip = np.array([0.69, 0.03, 1.0])
+        self.radius = self.error_now()[1]
+        self.worst = 0.0
+        self.commands = 0
+        send = self.base.send
+        self.base.send = lambda vx, vy, wz: send(scale * vx, scale * vy, wz)
+
+    def error_now(self):
+        """(grip in odom, distance from the hinge)."""
+        x, y, yaw = self.base.state
+        c, s = np.cos(yaw), np.sin(yaw)
+        world = np.array(
+            [
+                x + c * self.grip[0] - s * self.grip[1],
+                y + s * self.grip[0] + c * self.grip[1],
+            ]
+        )
+        return world, float(np.linalg.norm(world - self.hinge))
+
+    def check_abort(self):
+        pass
+
+    @contextmanager
+    def cartesian_velocity_mode(self, label, on_mode1=None):
+        yield
+
+    def send_cartesian_velocity(self, linear, angular=(0.0, 0.0, 0.0), duration=0.3):
+        self.commands += 1
+        self.grip = self.grip + self.base.dt * np.asarray(linear)
+
+    @property
+    def joint_state(self):
+        world, distance = self.error_now()
+        error = distance - self.radius
+        self.worst = max(self.worst, abs(error))
+        outward = (world - self.hinge) / distance
+        force = -1500.0 * error * outward
+        yaw = self.base.state[2]
+        c, s = np.cos(yaw), np.sin(yaw)
+        local = [c * force[0] + s * force[1], -s * force[0] + c * force[1]]
+        return SimpleNamespace(effort=[*local, 0.0, 0.0, 0.0, 0.0])
+
+
+def _world_tf(monkeypatch, world):
+    monkeypatch.setattr(door_compliance.time, "sleep", lambda s: None)
+    monkeypatch.setattr(
+        door_compliance,
+        "_in_frame",
+        lambda arm, frame, child: (np.zeros(3), Rotation.identity()),
+    )
+    monkeypatch.setattr(
+        door_compliance,
+        "grip_state",
+        lambda arm: (
+            world.grip.copy(),
+            world.grip.copy(),
+            Rotation.identity(),
+            np.eye(6),
+        ),
+    )
+
+
+def test_compliant_swing_keeps_the_grip_on_the_arc_despite_base_slip(monkeypatch):
+    world = _DoorWorld(scale=0.85)
+    _world_tf(monkeypatch, world)
+    hinge = make_point(*world.hinge, 0.0, frame="odom")
+    turned = door_compliance.compliant_swing(world, world.base, hinge, "right")
+    assert turned >= door_swing.SWING_ANGLE
+    assert world.worst < 0.02
+    assert world.base.stops == 1
+    # The base re-centred: the grip ends near where it started on the arm
+    assert np.linalg.norm(world.grip[:2] - [0.69, 0.03]) < 0.03
+
+
+def test_compliant_swing_refits_a_wrong_hinge_guess(monkeypatch):
+    world = _DoorWorld()
+    _world_tf(monkeypatch, world)
+    # The guess is 4 cm short along the door, as for a 0.76 m leaf taken for 0.80 m
+    guess = make_point(world.hinge[0], world.hinge[1] - 0.04, 0.0, frame="odom")
+    turned = door_compliance.compliant_swing(world, world.base, guess, "right")
+    assert turned >= door_swing.SWING_ANGLE - 1.0
+    assert world.worst < 0.03
+
+
+def test_compliant_swing_stops_when_the_door_pushes_back(monkeypatch):
+    world = _DoorWorld()
+    _world_tf(monkeypatch, world)
+    reads = []
+    push = door_compliance.FORCE_LIMIT * 2
+
+    def efforts(self):
+        reads.append(1)
+        return SimpleNamespace(
+            effort=[0.0, push if len(reads) > 20 else 0.0, 0.0, 0.0, 0.0, 0.0]
+        )
+
+    monkeypatch.setattr(type(world), "joint_state", property(efforts))
+    hinge = make_point(*world.hinge, 0.0, frame="odom")
+    assert door_compliance.compliant_swing(world, world.base, hinge, "right") < 1.0
+
+
+def test_door_wrench_comes_back_from_the_joint_efforts():
+    rng = np.random.default_rng(3)
+    origins = rng.uniform(-0.3, 0.3, (6, 3))
+    axes = rng.normal(size=(6, 3))
+    axes /= np.linalg.norm(axes, axis=1, keepdims=True)
+    jac = door_compliance.jacobian(origins, axes, np.array([0.5, 0.1, 0.4]))
+    wrench = np.array([4.0, -12.0, 2.0, 0.5, -0.2, 0.3])
+    assert door_compliance.wrench_from_efforts(jac, jac.T @ wrench) == pytest.approx(
+        wrench
+    )
+
+
+def test_door_admittance_yields_radially_and_holds_the_swing_direction():
+    velocity, turn = door_compliance.admittance([10.0, 10.0, 0.0], 0.0, [1.0, 0.0])
+    assert velocity[0] > 0.0 and velocity[1] == pytest.approx(0.0)
+    assert np.linalg.norm(velocity) <= door_compliance.MAX_ARM_SPEED + 1e-9
+    still, _ = door_compliance.admittance([2.0, 0.0, 0.0], 0.0, [1.0, 0.0])
+    assert still == pytest.approx([0.0, 0.0, 0.0])
+    assert door_compliance.admittance([0.0] * 3, 5.0, [1.0, 0.0])[1] > 0.0
+
+
+def test_door_recentering_moves_the_base_without_moving_the_grip():
+    correction = door_compliance.recenter(np.array([0.02, -0.01]), 0.05)
+    grip = np.array([0.69, 0.03])
+    carried = door_compliance.base_point_velocity(correction, grip)
+    # The arm takes the opposite of what the base carries the grip, so the sum is zero
+    assert carried - door_compliance.base_point_velocity(
+        correction, grip
+    ) == pytest.approx([0.0, 0.0])
+    assert correction[0] > 0.0 and correction[1] < 0.0 and correction[2] > 0.0
+
+
+def test_door_circle_fit_finds_the_hinge_from_a_noisy_arc():
+    rng = np.random.default_rng(1)
+    angles = np.radians(np.linspace(-95.0, -75.0, 30))
+    points = np.column_stack([0.7 * np.cos(angles), 0.4 + 0.7 * np.sin(angles)])
+    points += rng.normal(0.0, 0.002, points.shape)
+    centre, radius, residual = door_compliance.fit_circle(points, [0.0, 0.44])
+    assert centre == pytest.approx([0.0, 0.4], abs=0.03)
+    assert radius == pytest.approx(0.7, abs=0.03)
+    assert door_compliance.accept_fit(points, centre, radius, residual)
+    assert not door_compliance.accept_fit(
+        points[:5], *door_compliance.fit_circle(points[:5], [0.0, 0.44])
+    )
+
+
+def test_door_angle_counts_opening_positive():
+    hinge = np.array([0.0, 0.4])
+    start = np.array([0.0, -0.3])
+    opened = np.array(
+        [0.7 * np.sin(np.radians(30)), 0.4 - 0.7 * np.cos(np.radians(30))]
+    )
+    assert door_compliance.door_angle(opened, start, hinge, 1.0) == pytest.approx(30.0)
+    assert door_compliance.door_angle(opened, start, hinge, -1.0) == pytest.approx(
+        -30.0
+    )
 
 
 def test_door_hinge_is_on_the_door_face_toward_the_lever_tip():
@@ -1740,11 +1911,18 @@ def test_door_swing_stops_when_the_arm_strains(monkeypatch):
     assert 0.0 < turned < door_swing.SWING_ANGLE
 
 
-def test_door_pull_swings_with_the_base_then_backs_off(monkeypatch):
+@pytest.mark.parametrize(
+    "mode, module, name",
+    [
+        ("compliant", door_compliance, "compliant_swing"),
+        ("rigid", door_swing, "swing_open"),
+    ],
+)
+def test_door_pull_swings_with_the_base_then_backs_off(monkeypatch, mode, module, name):
     swings = []
     monkeypatch.setattr(
-        door_swing,
-        "swing_open",
+        module,
+        name,
         lambda arm, base, hinge: swings.append(hinge) or door_swing.SWING_ANGLE,
     )
     arm = FakeArm(
@@ -1761,7 +1939,7 @@ def test_door_pull_swings_with_the_base_then_backs_off(monkeypatch):
         standoff=0.043,
         hinge_distance=0.75,
     )
-    assert door_pipeline.pick_handle(arm, handle, FakeBase()) is True
+    assert door_pipeline.pick_handle(arm, handle, FakeBase(), swing_mode=mode) is True
     assert len(swings) == 1 and swings[0].header.frame_id == "odom"
     retreat = [a for a in arm.approaches if a[1] == door_pipeline.RETREAT_DISTANCE]
     assert len(retreat) == 1 and list(retreat[0][0]) == [0.0, 1.0, 0.0]
@@ -1786,7 +1964,10 @@ def test_door_lines_the_base_up_then_measures_the_handle_again(monkeypatch):
     monkeypatch.setattr(
         door_pipeline,
         "pick_handle",
-        lambda arm, handle, base=None: picked.append(handle) or False,
+        lambda arm, handle, base=None, door_width=None, swing_mode=None: picked.append(
+            handle
+        )
+        or False,
     )
     monkeypatch.setattr(door_pipeline.time, "sleep", lambda s: None)
     perception = FakePerception(door_handle=_door_handle())

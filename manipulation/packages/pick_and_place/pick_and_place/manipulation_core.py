@@ -89,6 +89,9 @@ class ManipulationCore(Node):
         # Shelf speed-ups to try on the robot one at a time (defaults: as validated).
         self.declare_parameter("shelf_acceleration", SHELF_ACCELERATION)
         self.declare_parameter("shelf_place_straight", False)
+        # Leaf width the door swing assumes to place the hinge (m)
+        self.declare_parameter("door_width", door_pipeline.door_swing.DOOR_WIDTH)
+        self.declare_parameter("door_swing_mode", door_pipeline.SWING_MODE)
         self.add_on_set_parameters_callback(self._validate_parameters)
 
         self.arm = RobotArm(self)
@@ -236,6 +239,14 @@ class ManipulationCore(Node):
     def _validate_parameters(self, parameters):
         """Reject a pick_method typo or an acceleration outside (0, 1]."""
         for parameter in parameters:
+            if (
+                parameter.name == "door_swing_mode"
+                and parameter.value not in door_pipeline.SWING_MODES
+            ):
+                return SetParametersResult(
+                    successful=False,
+                    reason=f"door_swing_mode must be one of {door_pipeline.SWING_MODES}",
+                )
             if parameter.name == "pick_method" and parameter.value not in PICK_METHODS:
                 return SetParametersResult(
                     successful=False,
@@ -261,7 +272,13 @@ class ManipulationCore(Node):
 
     def _run_open_door(self, request) -> bool:
         """Face the door handle, find it, grasp it, press the lever, push, else pull."""
-        return door_pipeline.execute(self.arm, self.perception, self.base)
+        return door_pipeline.execute(
+            self.arm,
+            self.perception,
+            self.base,
+            float(self.get_parameter("door_width").value),
+            self.get_parameter("door_swing_mode").value,
+        )
 
     def _current_shelf(self):
         """The last scan while the base has not moved since, else None (and no boxes)."""

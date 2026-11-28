@@ -18,7 +18,7 @@ from frida_constants.manipulation_constants import (
 from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Rotation
 
-from pick_and_place.pipelines import door_swing
+from pick_and_place.pipelines import door_compliance, door_swing
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.robot.geometry import offset_along_approach, set_quaternion
 
@@ -86,9 +86,14 @@ APPROACH_GUARD = replace(
 
 # m the gripper backs off the lever after letting go of a swung door
 RETREAT_DISTANCE = 0.08
+# "compliant": the arm yields to the door while the base turns; "rigid": the arm holds still
+SWING_MODE = "compliant"
+SWING_MODES = ("compliant", "rigid")
 
 
-def execute(arm, perception, base=None) -> bool:
+def execute(
+    arm, perception, base=None, door_width=door_swing.DOOR_WIDTH, swing_mode=SWING_MODE
+) -> bool:
     """Go to the door handle stare pose, find the handle and open the door with it (swung with ``base``)."""
     arm.set_context("open_door")
     with arm.phase("door_handle_stare"):
@@ -115,7 +120,7 @@ def execute(arm, perception, base=None) -> bool:
         handle = line_up(arm, perception, base, handle)
         if handle is None:
             return False
-    return pick_handle(arm, handle, base)
+    return pick_handle(arm, handle, base, door_width, swing_mode)
 
 
 def line_up(arm, perception, base, handle):
@@ -150,7 +155,9 @@ def vision_point(perception):
     return point
 
 
-def pick_handle(arm, handle, base=None) -> bool:
+def pick_handle(
+    arm, handle, base=None, door_width=door_swing.DOOR_WIDTH, swing_mode=SWING_MODE
+) -> bool:
     """Grasp straight on (-y), press the lever, push (-y), else pull (+y) and swing with ``base``, let go."""
     poses = grasp_poses(arm, handle)
     if not poses:
@@ -199,18 +206,23 @@ def pick_handle(arm, handle, base=None) -> bool:
             )
             opened = pull_open(arm, unpress, pull)
         if opened and base is not None:
-            return swing(arm, base, handle)
+            return swing(arm, base, handle, door_width, swing_mode)
     return let_go(arm, opened)
 
 
-def swing(arm, base, handle) -> bool:
+def swing(
+    arm, base, handle, door_width=door_swing.DOOR_WIDTH, swing_mode=SWING_MODE
+) -> bool:
     """Turn the base about the hinge holding the lever, then let go and back off it."""
     with arm.phase("swing_door"):
-        hinge = door_swing.odom_hinge(arm, handle)
+        hinge = door_swing.odom_hinge(arm, handle, width=door_width)
         if hinge is None:
             arm.logger.error("Door swing: no TF from the handle to odom")
             return let_go(arm, False)
-        turned = door_swing.swing_open(arm, base, hinge)
+        if swing_mode == "compliant":
+            turned = door_compliance.compliant_swing(arm, base, hinge)
+        else:
+            turned = door_swing.swing_open(arm, base, hinge)
     let_go(arm, True)
     with arm.phase("retreat_from_door"):
         if not arm.cartesian_approach(PULL, RETREAT_DISTANCE, PULL_SPEED):

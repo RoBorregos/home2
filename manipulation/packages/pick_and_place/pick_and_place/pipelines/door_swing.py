@@ -33,7 +33,9 @@ ALIGN_TOLERANCE = 0.015  # m
 ALIGN_HEADING_TOLERANCE = math.radians(2.0)
 
 
-def hinge_point(handle, side: str = HINGE_SIDE) -> np.ndarray:
+def hinge_point(
+    handle, side: str = HINGE_SIDE, width: float = DOOR_WIDTH
+) -> np.ndarray:
     """Hinge axis (x, y) in the handle's frame, from the lever on the door face."""
     c, n = handle.center.point, handle.door_normal
     centre = np.array([c.x, c.y])
@@ -42,7 +44,7 @@ def hinge_point(handle, side: str = HINGE_SIDE) -> np.ndarray:
     # z x normal: the robot's right while it faces the door
     right = np.array([-normal[1], normal[0]])
     toward = right if side == "right" else -right
-    reach = DOOR_WIDTH - LEVER_PIVOT_INSET - handle.length / 2.0
+    reach = width - LEVER_PIVOT_INSET - handle.length / 2.0
     return centre - normal * handle.standoff + toward * reach
 
 
@@ -103,9 +105,9 @@ def align(arm, base, handle) -> bool:
     )
 
 
-def odom_hinge(arm, handle, side: str = HINGE_SIDE):
+def odom_hinge(arm, handle, side: str = HINGE_SIDE, width: float = DOOR_WIDTH):
     """The hinge as an odom PointStamped, or None without TF."""
-    x, y = hinge_point(handle, side)
+    x, y = hinge_point(handle, side, width)
     point = PointStamped()
     point.header.frame_id = handle.center.header.frame_id
     point.point.x, point.point.y, point.point.z = float(x), float(y), 0.0
