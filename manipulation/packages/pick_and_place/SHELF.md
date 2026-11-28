@@ -26,13 +26,19 @@ them to the scene.
 2. Crop, 1 cm voxels, normals. Up-facing horizontal points give one Z peak per board;
    peaks narrower than 60 % of the shelf or with gaps are objects. Down-facing peaks
    give the thickness and a board above the camera; vertical planes at the extremes
-   are the walls.
+   are the walls. Only vertical points inside the shelf's volume count (not below the
+   lowest board, not in front of the boards), and a side wall seen in a single
+   compartment (15 cm) is enough.
 3. Boards and walls become boxes (`frida_shelf_*`), grown 2 cm into the free space
-   except the board tops.
+   except the board tops. Walls run from the floor up to the highest wall point seen
+   (an open-top shelf's walls rise past its top board). A wall that was not seen is
+   still boxed at the boards' edge (`assume_walls`): a missing box let MoveIt plan
+   through a real wall.
 
 On-site tunables are `grasp_generator` parameters under `shelf.`: the search box
 (`x_min`, `x_max`, `y_half`, `z_min`, `z_max`), `min_width_fraction`,
-`min_level_spacing`, `min_level_points`.
+`min_level_spacing`, `min_level_points`, `side_wall_min_height`, `assume_walls`,
+`walls_to_floor`.
 
 | Survey pose | Joints (deg) | Camera in base_link | Sees |
 | --- | --- | --- | --- |

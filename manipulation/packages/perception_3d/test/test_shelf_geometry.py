@@ -240,3 +240,143 @@ def test_boxes_keep_a_safety_margin_except_on_board_tops(geometry):
     assert right.center[1] - right.size[1] / 2 == pytest.approx(
         geometry.y_max - p.padding
     )
+
+
+def _with(frames, index, *parts):
+    """``frames`` with ``parts`` added to the points of frame ``index``."""
+    frames = list(frames)
+    frame = frames[index]
+    frames[index] = Frame(
+        points=np.vstack([frame.points, *parts]), viewpoint=frame.viewpoint
+    )
+    return frames
+
+
+def _wall_boxes(geometry):
+    return {box.id.removeprefix("frida_shelf_"): box for box in geometry.boxes}
+
+
+def test_clutter_in_front_is_not_a_side_wall():
+    # On the robot a plinth in front of the shelf beat a side wall seen only in one
+    # compartment: the wall box landed 12 cm outside the real wall.
+    clutter = _patch(
+        np.arange(FRONT - 0.25, FRONT - 0.12, STEP),
+        [-Y_HALF - 0.10],
+        np.arange(0.10, 0.40, STEP),
+    )
+    partial_wall = _patch(
+        np.arange(FRONT, BACK, STEP), [-Y_HALF], np.arange(0.45, 0.63, STEP)
+    )
+    frames = _with(shelf_frames(walls=False), 0, clutter, partial_wall)
+    geometry = detect_shelf(frames)
+    assert geometry.has_left_wall
+    assert abs(geometry.y_min + Y_HALF) < 0.02, geometry.y_min
+
+
+def test_walls_not_seen_are_still_boxed():
+    # A missing wall box let MoveIt plan through a real wall.
+    geometry = detect_shelf(shelf_frames(walls=False, top=False))
+    assert not (geometry.has_left_wall or geometry.has_right_wall)
+    boxes = _wall_boxes(geometry)
+    assert {"wall_left", "wall_right", "wall_back"} <= set(boxes)
+    left = boxes["wall_left"]
+    assert left.center[1] + left.size[1] / 2 == pytest.approx(
+        geometry.y_min + ShelfParams().padding
+    )
+
+
+def test_walls_not_seen_can_be_left_open():
+    params = ShelfParams(assume_walls=False)
+    geometry = detect_shelf(shelf_frames(walls=False, top=False), params)
+    assert not any("wall" in box.id for box in geometry.boxes)
+
+
+def test_walls_rise_past_the_top_board_of_an_open_shelf():
+    # The robot's shelf has 23 cm of wall above its top board and no lid.
+    geometry = detect_shelf(shelf_frames(top=False))
+    assert geometry.wall_top > BOARDS[-1] + 0.2
+    for name in ("wall_left", "wall_right", "wall_back"):
+        box = _wall_boxes(geometry)[name]
+        assert box.center[2] + box.size[2] / 2 == pytest.approx(geometry.wall_top)
+
+
+def test_walls_reach_the_floor():
+    p = ShelfParams()
+    geometry = detect_shelf(shelf_frames())
+    for name in ("wall_left", "wall_right", "wall_back"):
+        box = _wall_boxes(geometry)[name]
+        assert box.center[2] - box.size[2] / 2 == pytest.approx(p.z_min)
+
+
+def test_room_wall_far_behind_is_not_the_back_wall():
+    room = _patch(
+        [BACK + 0.25], np.arange(-Y_HALF, Y_HALF, STEP), np.arange(0.2, 1.2, STEP)
+    )
+    geometry = detect_shelf(_with(shelf_frames(walls=False), 0, room))
+    assert not geometry.has_back_wall
+    assert geometry.back_x < BACK + 0.05
+
+
+def test_assumed_walls_are_as_tall_as_the_shelf():
+    # No side wall in view, but the back panel shows the shelf rises to 1.30 m: the
+    # assumed side walls must not stop at the top board (1.05 m).
+    back_panel = _patch(
+        [BACK], np.arange(-Y_HALF, Y_HALF, STEP), np.arange(0.6, 1.30, STEP)
+    )
+    frames = _with(shelf_frames(walls=False, top=False), 0, back_panel)
+    geometry = detect_shelf(frames)
+    assert not (geometry.has_left_wall or geometry.has_right_wall)
+    for name in ("wall_left", "wall_right"):
+        box = _wall_boxes(geometry)[name]
+        assert box.center[2] + box.size[2] / 2 > 1.30
+
+
+def test_object_side_inside_the_boards_is_not_a_wall():
+    # With its wall out of view, a tall box 10 cm in from the edge became the wall.
+    side = _patch(
+        np.arange(0.60, 0.80, STEP), [Y_HALF - 0.10], np.arange(0.68, 1.00, STEP)
+    )
+    geometry = detect_shelf(_with(shelf_frames(walls=False, top=False), 0, side))
+    assert not geometry.has_right_wall
+    assert geometry.y_max > Y_HALF - 0.04
+
+
+def test_assumed_walls_grow_outward_not_inward():
+    p = ShelfParams()
+    geometry = detect_shelf(shelf_frames(walls=False, top=False))
+    boxes = _wall_boxes(geometry)
+    left, right = boxes["wall_left"], boxes["wall_right"]
+    assert left.center[1] - left.size[1] / 2 == pytest.approx(
+        geometry.y_min - p.assumed_wall_thickness
+    )
+    assert right.center[1] + right.size[1] / 2 == pytest.approx(
+        geometry.y_max + p.assumed_wall_thickness
+    )
+    # A seen wall keeps the thin box.
+    seen = _wall_boxes(detect_shelf(shelf_frames()))["wall_left"]
+    assert seen.size[1] == pytest.approx(p.wall_thickness + p.padding)
+
+
+def test_sparse_floor_edge_does_not_stretch_the_shelf():
+    # On the robot the floor's edge (z=0.05) showed up 1.3 m wide but 24 % filled: it
+    # set the boards' extent and the real right wall, 29 cm inside it, was dropped.
+    floor = np.vstack(
+        [
+            _patch(np.arange(0.35, 0.50, STEP), np.arange(y0, y0 + 0.2, STEP), [0.05])
+            for y0 in (-0.75, 0.45)
+        ]
+    )
+    frames = _with(shelf_frames(objects=False, top=False), 1, floor)
+    geometry = detect_shelf(frames, ShelfParams(z_min=0.02))
+    assert geometry.has_left_wall and geometry.has_right_wall
+    assert abs(geometry.y_min + Y_HALF) < 0.02 and abs(geometry.y_max - Y_HALF) < 0.02
+
+
+def test_tall_object_face_near_the_back_is_not_the_back_wall():
+    # On the robot a 14 cm wide, 30 cm tall box face beat the real back panel.
+    face = _patch(
+        [BACK - 0.07], np.arange(-0.35, -0.21, STEP), np.arange(0.40, 0.70, STEP)
+    )
+    geometry = detect_shelf(_with(shelf_frames(), 1, face))
+    assert geometry.has_back_wall
+    assert abs(geometry.back_x - BACK) < 0.02, geometry.back_x
