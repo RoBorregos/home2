@@ -46,6 +46,8 @@ from rclpy.action import GoalResponse
 from perception_3d.geometric_grasps import approaches, compartment_band
 from frida_pymoveit2.robots import xarm6
 from pick_and_place.manipulation_core import ManipulationCore
+from pick_and_place.robot import base as robot_base
+from pick_and_place.robot.base import Base
 from pick_and_place.pipelines import shelf as shelf_pipeline
 from pick_and_place.pipelines import (
     door as door_pipeline,
@@ -1864,6 +1866,27 @@ def test_door_angle_counts_opening_positive():
     assert door_compliance.door_angle(opened, start, hinge, -1.0) == pytest.approx(
         -30.0
     )
+
+
+def test_base_move_reaches_the_target_despite_a_heading_bias(monkeypatch):
+    sim = FakeBase()
+    send = sim.send
+    # A steady 0.02 rad/s turn the wheels add whenever the base moves
+    monkeypatch.setattr(
+        sim,
+        "send",
+        lambda vx, vy, wz: send(vx, vy, wz + 0.02 if (vx or vy or wz) else wz),
+    )
+    base = Base.__new__(Base)
+    base._log = FakeLogger()
+    base.pose = sim.pose
+    base.send = sim.send
+    monkeypatch.setattr(robot_base.time, "sleep", lambda s: None)
+    target = np.array([0.05, -0.03, 0.05])
+    assert base.move_to(
+        target, tolerance=0.0075, heading_tolerance=np.radians(1.0), timeout=5.0
+    )
+    assert sim.state == pytest.approx(target, abs=0.02)
 
 
 def test_door_hinge_is_on_the_door_face_toward_the_lever_tip():

@@ -17,6 +17,10 @@ MOVE_GAIN = 1.0  # 1/s
 MAX_SPEED = 0.10  # m/s
 MAX_TURN = 0.3  # rad/s
 MOVE_PERIOD = 0.05  # s
+# Integral action takes out a steady slip or heading bias the proportional term leaves
+INTEGRAL_GAIN = 0.5  # 1/s^2
+MAX_INTEGRAL_SPEED = 0.03  # m/s
+MAX_INTEGRAL_TURN = 0.05  # rad/s
 
 
 class Base:
@@ -62,8 +66,10 @@ class Base:
         heading_tolerance: float = 0.02,
         timeout: float = 20.0,
     ) -> bool:
-        """Drive to (x, y, yaw) in odom with a proportional controller; True when there."""
+        """Drive to (x, y, yaw) in odom with a PI controller; True when there."""
         start = time.time()
+        # Accumulated offset (odom) and heading error, scaled to velocity
+        integral = np.zeros(3)
         try:
             while time.time() - start < timeout:
                 pose = self.pose()
@@ -73,18 +79,25 @@ class Base:
                 turn = math.remainder(target[2] - pose[2], 2 * math.pi)
                 if np.linalg.norm(offset) < tolerance and abs(turn) < heading_tolerance:
                     return True
-                c, s = math.cos(pose[2]), math.sin(pose[2])
-                local = np.array(
-                    [c * offset[0] + s * offset[1], -s * offset[0] + c * offset[1]]
+                integral += INTEGRAL_GAIN * MOVE_PERIOD * np.array([*offset, turn])
+                linear = np.linalg.norm(integral[:2])
+                if linear > MAX_INTEGRAL_SPEED:
+                    integral[:2] *= MAX_INTEGRAL_SPEED / linear
+                integral[2] = np.clip(
+                    integral[2], -MAX_INTEGRAL_TURN, MAX_INTEGRAL_TURN
                 )
-                velocity = MOVE_GAIN * local
+                push = MOVE_GAIN * offset + integral[:2]
+                c, s = math.cos(pose[2]), math.sin(pose[2])
+                velocity = np.array(
+                    [c * push[0] + s * push[1], -s * push[0] + c * push[1]]
+                )
                 speed = float(np.linalg.norm(velocity))
                 if speed > MAX_SPEED:
                     velocity *= MAX_SPEED / speed
                 self.send(
                     velocity[0],
                     velocity[1],
-                    float(np.clip(MOVE_GAIN * turn, -MAX_TURN, MAX_TURN)),
+                    float(np.clip(MOVE_GAIN * turn + integral[2], -MAX_TURN, MAX_TURN)),
                 )
                 time.sleep(MOVE_PERIOD)
             self._log.warn(f"Base move to {np.round(target, 3).tolist()} timed out")
