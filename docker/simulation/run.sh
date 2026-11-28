@@ -158,7 +158,7 @@ sim_args() {
            "camera_rate:=2 spawn_x:=4.1776 spawn_y:=-11.6974 spawn_z:=0.02 spawn_yaw:=-1.9890" ;;
     door|door_nav)
       # Facing the door, the lever ahead of the arm
-      echo "gui:=$GUI world:=door_house.sdf mobile_base:=true grasp_assist:=false door:=true" \
+      echo "gui:=$GUI world:=door_house.sdf mobile_base:=true grasp_assist:=false door:=true odom_drift:=true" \
            "spawn_x:=$DOOR_X spawn_y:=$DOOR_Y spawn_z:=0.02 spawn_yaw:=$DOOR_YAW" ;;
     all)
       # Both stacks on one machine: half the camera rate so nav2 keeps its control loop

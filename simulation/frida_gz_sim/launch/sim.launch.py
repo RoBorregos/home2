@@ -2,7 +2,9 @@
 """Gazebo world + FRIDA + ros2_control + sensor bridge."""
 
 import os
+import tempfile
 
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from frida_gz_sim.description import build_robot_description
 from launch import LaunchDescription
@@ -34,6 +36,23 @@ def _resource_path() -> str:
     return os.pathsep.join(paths)
 
 
+def _nav_bridge(share: str, odom_drift: bool) -> str:
+    """Mobile-base bridge config; with odom drift the true odometry goes to odom_drift.py."""
+    path = os.path.join(share, "config", "bridge_nav.yaml")
+    if not odom_drift:
+        return path
+    with open(path) as f:
+        topics = yaml.safe_load(f)
+    topics = [t for t in topics if t["gz_topic_name"] != "/sim/odom_tf"]
+    for topic in topics:
+        if topic["ros_topic_name"] == "/odom":
+            topic["ros_topic_name"] = "/sim/odom_true"
+    out = tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False)
+    yaml.safe_dump(topics, out)
+    out.close()
+    return out.name
+
+
 def launch_setup(context, *args, **kwargs):
     share = get_package_share_directory("frida_gz_sim")
     gui = LaunchConfiguration("gui").perform(context).lower() == "true"
@@ -55,6 +74,7 @@ def launch_setup(context, *args, **kwargs):
     objects_file = LaunchConfiguration("objects_file").perform(context)
     grasp_max_gap = float(LaunchConfiguration("grasp_max_gap").perform(context))
     door = LaunchConfiguration("door").perform(context).lower() == "true"
+    odom_drift = LaunchConfiguration("odom_drift").perform(context).lower() == "true"
 
     robot_description = build_robot_description(
         image_width=width,
@@ -107,7 +127,7 @@ def launch_setup(context, *args, **kwargs):
 
     bridge_configs = [os.path.join(share, "config", "bridge.yaml")]
     if mobile_base:
-        bridge_configs.append(os.path.join(share, "config", "bridge_nav.yaml"))
+        bridge_configs.append(_nav_bridge(share, odom_drift))
 
     bridges = [
         Node(
@@ -185,6 +205,13 @@ def launch_setup(context, *args, **kwargs):
         parameters=[sim_time, {"objects_file": objects_file, "max_gap": grasp_max_gap}],
     )
 
+    drift = Node(
+        package="frida_gz_sim",
+        executable="odom_drift.py",
+        output="screen",
+        parameters=[sim_time],
+    )
+
     door_sim = Node(
         package="frida_gz_sim",
         executable="door_sim.py",
@@ -205,6 +232,7 @@ def launch_setup(context, *args, **kwargs):
         + ([grasp_attach] if grasp_assist else [])
         + ([cmd_vel_relay] if mobile_base else [])
         + ([door_sim] if door else [])
+        + ([drift] if mobile_base and odom_drift else [])
     )
 
 
@@ -228,6 +256,8 @@ def generate_launch_description():
             DeclareLaunchArgument("lidar_rate", default_value="10"),
             # Latch, lever grip and ground truth for the office_door model
             DeclareLaunchArgument("door", default_value="false"),
+            # Odometry drift between gz and /odom, set at runtime on the odom_drift node
+            DeclareLaunchArgument("odom_drift", default_value="false"),
             # Graspable objects of a generated world (JSON); empty = the pnp_table set
             DeclareLaunchArgument("objects_file", default_value=""),
             # Largest finger-to-object gap grasp assist still welds (m)
