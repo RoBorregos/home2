@@ -1844,7 +1844,7 @@ def test_door_recentering_moves_the_base_without_moving_the_grip():
 
 def test_door_circle_fit_finds_the_hinge_from_a_noisy_arc():
     rng = np.random.default_rng(1)
-    angles = np.radians(np.linspace(-95.0, -75.0, 30))
+    angles = np.radians(np.linspace(-95.0, -60.0, 40))
     points = np.column_stack([0.7 * np.cos(angles), 0.4 + 0.7 * np.sin(angles)])
     points += rng.normal(0.0, 0.002, points.shape)
     centre, radius, residual = door_compliance.fit_circle(points, [0.0, 0.44])
@@ -1854,6 +1854,40 @@ def test_door_circle_fit_finds_the_hinge_from_a_noisy_arc():
     assert not door_compliance.accept_fit(
         points[:5], *door_compliance.fit_circle(points[:5], [0.0, 0.44])
     )
+
+
+def test_door_tracking_pulls_the_base_back_onto_its_turn_about_the_hinge():
+    hinge = np.array([0.0, 0.4])
+    start = np.array([0.75, -0.25, np.pi])
+    tracker = door_compliance.RigidTracker(start, hinge)
+    assert tracker.correction(start, hinge) == pytest.approx([0.0, 0.0, 0.0])
+    # 2 cm closer to the hinge: back out, along the base's -x (it faces the door)
+    closer = start.copy()
+    closer[:2] = hinge + (start[:2] - hinge) * (
+        1.0 - 0.02 / np.linalg.norm(start[:2] - hinge)
+    )
+    vx, vy, wz = door_compliance.RigidTracker(start, hinge).correction(closer, hinge)
+    assert np.hypot(vx, vy) == pytest.approx(
+        door_compliance.TRACK_GAIN * 0.02, rel=0.05
+    )
+    assert wz == pytest.approx(0.0, abs=1e-6)
+    # Turned 3 deg too far: turn back
+    turned = start + np.array([0.0, 0.0, np.radians(3.0)])
+    assert door_compliance.RigidTracker(start, hinge).correction(turned, hinge)[2] < 0.0
+
+
+def test_compliant_swing_holds_the_base_radius_under_slip_and_yaw_bias(monkeypatch):
+    world = _DoorWorld(scale=0.85)
+    send = world.base.send
+    world.base.send = lambda vx, vy, wz: send(vx, vy, wz + 0.02)
+    _world_tf(monkeypatch, world)
+    hinge = make_point(*world.hinge, 0.0, frame="odom")
+    start = np.linalg.norm(world.base.state[:2] - world.hinge)
+    assert door_compliance.compliant_swing(world, world.base, hinge, "right") >= 74.0
+    assert np.linalg.norm(world.base.state[:2] - world.hinge) == pytest.approx(
+        start, abs=0.02
+    )
+    assert world.worst < 0.01
 
 
 def test_door_angle_counts_opening_positive():

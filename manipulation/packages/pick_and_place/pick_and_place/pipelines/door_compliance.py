@@ -1,6 +1,7 @@
 """Compliant door swing: the base turns about the hinge while the arm yields to the door.
 
-Each cycle the wrench on the gripper (from the joint efforts) moves the grip radially, up and
+Each cycle the base is held on the rigid turn about the hinge from odometry (its distance
+to the hinge and its heading toward it, as at the start), which takes out wheel slip; the wrench on the gripper (from the joint efforts) moves the grip radially, up and
 down and in yaw (admittance); the base drifts back under the arm so the arm keeps its reach
 (re-centering, with the opposite arm motion so the grip stays put); and the grip's path in
 odom refines the hinge estimate (circle fit). Only the swing direction is held stiff.
@@ -41,14 +42,22 @@ MAX_ARM_TURN = 0.3  # rad/s
 RECENTER_GAIN = 0.8  # 1/s
 MAX_RECENTER_SPEED = 0.03  # m/s
 MAX_RECENTER_TURN = 0.1  # rad/s
+# Rigid-turn tracking: base speed per metre off its hinge radius and per radian off its heading
+TRACK_GAIN = 1.0  # 1/s
+TRACK_INTEGRAL_GAIN = 0.5  # 1/s^2
+MAX_TRACK_SPEED = 0.04  # m/s
+MAX_TRACK_TURN = 0.15  # rad/s
 # Stops: wrench the door may push back with, and how far the grip may leave its spot
 FORCE_LIMIT = 40.0  # N
 MAX_DRIFT = 0.08  # m
 # Hinge fit: arc needed, plausible radius, fit residual, pull toward the guess (point vs guess spread)
-FIT_ARC = 15.0  # deg
+FIT_ARC = 30.0  # deg
 FIT_RADIUS = (0.5, 1.0)  # m
 FIT_RESIDUAL = 0.01  # m
-FIT_PRIOR_WEIGHT = 0.06
+FIT_PRIOR_WEIGHT = 0.1
+# Farthest the fit may move the hinge from the guess; a grip sliding on the bar bends the path
+FIT_MAX_SHIFT = 0.06  # m
+FIT_UPDATE = 0.01  # m the fit must move the hinge before the base follows it
 FIT_POINT_SPACING = 0.01  # m between recorded grip points
 ARM_COMMAND_DURATION = 0.3  # s the arm keeps a twist before its watchdog stops it
 LOG_PERIOD = 1.0  # s
@@ -135,12 +144,68 @@ def arc_degrees(points, centre) -> float:
     return abs(math.degrees(math.atan2(np.cross(first, last), first.dot(last))))
 
 
-def accept_fit(points, centre, radius: float, residual: float) -> bool:
+def accept_fit(points, centre, radius: float, residual: float, guess=None) -> bool:
     return bool(
-        FIT_RADIUS[0] <= radius <= FIT_RADIUS[1]
+        (guess is None or np.linalg.norm(centre - guess) <= FIT_MAX_SHIFT)
+        and FIT_RADIUS[0] <= radius <= FIT_RADIUS[1]
         and residual <= FIT_RESIDUAL
         and arc_degrees(points, centre) >= FIT_ARC
     )
+
+
+class RigidTracker:
+    """Holds the base on a rigid turn about the hinge from odometry: its radius and its heading relative to the hinge."""
+
+    def __init__(self, pose, hinge_xy):
+        self.reset(pose, hinge_xy)
+
+    def reset(self, pose, hinge_xy) -> None:
+        out = np.asarray(pose[:2]) - hinge_xy
+        self.radius = float(np.linalg.norm(out))
+        self.heading = float(pose[2] - math.atan2(out[1], out[0]))
+        self.integral = np.zeros(2)
+
+    def rehinge(self, pose, old_xy, new_xy) -> None:
+        """Keep where the base is meant to be now while the hinge estimate moves."""
+        old = np.asarray(pose[:2]) - old_xy
+        new = np.asarray(pose[:2]) - new_xy
+        self.radius += float(np.linalg.norm(new) - np.linalg.norm(old))
+        self.heading += math.atan2(old[1], old[0]) - math.atan2(new[1], new[0])
+
+    def shift(self, radius: float, heading: float) -> None:
+        """Move the reference by what the base was moved on purpose."""
+        self.radius += radius
+        self.heading += heading
+
+    def correction(self, pose, hinge_xy, dt: float = LOOP_PERIOD) -> np.ndarray:
+        """Base correction (vx, vy, wz) in base_link back onto the turn."""
+        out = np.asarray(pose[:2]) - hinge_xy
+        radius = max(float(np.linalg.norm(out)), 1e-6)
+        error = np.array(
+            [
+                self.radius - radius,
+                math.remainder(
+                    self.heading + math.atan2(out[1], out[0]) - pose[2], 2 * math.pi
+                ),
+            ]
+        )
+        # Integral action takes out a steady slip or heading bias
+        self.integral = np.clip(
+            self.integral + TRACK_INTEGRAL_GAIN * dt * error,
+            [-MAX_TRACK_SPEED, -MAX_TRACK_TURN],
+            [MAX_TRACK_SPEED, MAX_TRACK_TURN],
+        )
+        push, turn = TRACK_GAIN * error + self.integral
+        push = float(np.clip(push, -MAX_TRACK_SPEED, MAX_TRACK_SPEED))
+        c, s = math.cos(pose[2]), math.sin(pose[2])
+        unit = out / radius
+        return np.array(
+            [
+                push * (c * unit[0] + s * unit[1]),
+                push * (-s * unit[0] + c * unit[1]),
+                float(np.clip(turn, -MAX_TRACK_TURN, MAX_TRACK_TURN)),
+            ]
+        )
 
 
 def door_angle(grip_xy, start_xy, hinge_xy, sign: float) -> float:
@@ -208,6 +273,7 @@ def compliant_swing(arm, base, hinge, side: str = "right", angle: float = SWING_
     nominal_yaw = _yaw(to_base * start[2])
     guess = np.array([hinge.point.x, hinge.point.y])
     h = guess.copy()
+    tracker = RigidTracker(start_pose, h)
     path = []
     wrench = np.zeros(6)
     turned = 0.0
@@ -243,7 +309,11 @@ def compliant_swing(arm, base, hinge, side: str = "right", angle: float = SWING_
                     path.append(grip_odom)
                 if len(path) >= 5:
                     centre, radius, residual = fit_circle(path, guess)
-                    if accept_fit(path, centre, radius, residual):
+                    if (
+                        accept_fit(path, centre, radius, residual, guess)
+                        and np.linalg.norm(centre - h) > FIT_UPDATE
+                    ):
+                        tracker.rehinge(pose, h, centre)
                         h = centre
                 turned = door_angle(grip_odom, path[0], h, sign)
                 if turned >= angle:
@@ -276,10 +346,21 @@ def compliant_swing(arm, base, hinge, side: str = "right", angle: float = SWING_
                     [c * offset[0] + s * offset[1], -s * offset[0] + c * offset[1]]
                 )
                 correction = recenter(drift, drift_yaw)
+                # What the re-centering moves on purpose becomes the new rigid reference
+                outward = radial(pose[:2], h)
+                moved = np.array(
+                    [
+                        c * correction[0] - s * correction[1],
+                        s * correction[0] + c * correction[1],
+                    ]
+                )
+                tracker.shift(
+                    LOOP_PERIOD * moved.dot(outward), LOOP_PERIOD * correction[2]
+                )
                 twist = np.array(
                     base_twist(hinge_local, sign * _rate(elapsed, turned, angle))
                 )
-                base.send(*(twist + correction))
+                base.send(*(twist + correction + tracker.correction(pose, h)))
                 # Arm: yield to the door, minus what the correction carries the grip
                 radial_base = radial(grip_odom, h)
                 radial_base = np.array(
@@ -319,5 +400,6 @@ __all__ = [
     "jacobian",
     "radial",
     "recenter",
+    "RigidTracker",
     "wrench_from_efforts",
 ]
