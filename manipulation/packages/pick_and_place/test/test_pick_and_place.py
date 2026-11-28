@@ -1778,7 +1778,7 @@ def test_compliant_swing_keeps_the_grip_on_the_arc_despite_base_slip(monkeypatch
     assert np.linalg.norm(world.grip[:2] - [0.69, 0.03]) < 0.03
 
 
-def test_compliant_swing_refits_a_wrong_hinge_guess(monkeypatch):
+def test_compliant_swing_absorbs_a_wrong_hinge_guess(monkeypatch):
     world = _DoorWorld()
     _world_tf(monkeypatch, world)
     # The guess is 4 cm short along the door, as for a 0.76 m leaf taken for 0.80 m
@@ -1841,20 +1841,6 @@ def test_door_admittance_yields_radially_and_holds_the_swing_direction():
 def test_door_recentering_moves_the_base_toward_the_drifted_grip():
     vx, vy, wz = door_compliance.recenter(np.array([0.02, -0.01]))
     assert vx > 0.0 and vy < 0.0 and wz == 0.0
-
-
-def test_door_circle_fit_finds_the_hinge_from_a_noisy_arc():
-    rng = np.random.default_rng(1)
-    angles = np.radians(np.linspace(-95.0, -60.0, 40))
-    points = np.column_stack([0.7 * np.cos(angles), 0.4 + 0.7 * np.sin(angles)])
-    points += rng.normal(0.0, 0.002, points.shape)
-    centre, radius, residual = door_compliance.fit_circle(points, [0.0, 0.44])
-    assert centre == pytest.approx([0.0, 0.4], abs=0.03)
-    assert radius == pytest.approx(0.7, abs=0.03)
-    assert door_compliance.accept_fit(points, centre, radius, residual)
-    assert not door_compliance.accept_fit(
-        points[:5], *door_compliance.fit_circle(points[:5], [0.0, 0.44])
-    )
 
 
 def test_door_tracking_pulls_the_base_back_onto_its_turn_about_the_hinge():
