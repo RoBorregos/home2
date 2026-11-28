@@ -4,7 +4,9 @@
 Serves set_mode / set_state / vc_set_cartesian_velocity and publishes robot_states with
 the TCP pose in the arm base frame. A cartesian twist becomes a straight MoveIt path
 (rotating at the commanded angular rate), timed at the commanded speed and sent to the
-trajectory controller until the velocity is zeroed or the mode changes.
+trajectory controller until the velocity is zeroed or the mode changes. A twist with a
+duration is servoed instead (joint rates from the Jacobian, re-sent every tick) and stops
+when the duration runs out, as the real driver's watchdog does.
 """
 
 import time
@@ -42,6 +44,11 @@ MAX_TRAVEL = 0.30
 PATH_STEP = 0.005
 # Longest rotation planned for a pure angular command (rad)
 MAX_TURN = 1.0
+JOINT_LINKS = [f"link{i}" for i in range(1, 7)]
+# Wall seconds of motion each servo tick commands ahead, damping and joint rate limit
+SERVO_HORIZON = 0.15
+SERVO_DAMPING = 0.01
+MAX_JOINT_RATE = 1.0  # rad/s
 
 
 class XArmVelocitySim(Node):
@@ -56,6 +63,8 @@ class XArmVelocitySim(Node):
         self.angular = np.zeros(3)
         # Wall time the streamed line runs out, to plan the next one while the twist holds
         self._line_end = None
+        # Wall time a servoed twist expires, None when streaming lines
+        self._servo_end = None
         self.joints: dict[str, float] = {}
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -100,7 +109,9 @@ class XArmVelocitySim(Node):
 
     def _set_mode(self, request, response):
         self.mode = int(request.data)
-        if self.mode != CARTESIAN_VELOCITY_MODE and self._moving():
+        if self.mode != CARTESIAN_VELOCITY_MODE and (
+            self._moving() or self._servo_end is not None
+        ):
             self.velocity = np.zeros(3)
             self.angular = np.zeros(3)
             self._hold()
@@ -115,7 +126,12 @@ class XArmVelocitySim(Node):
             return response
         self.velocity = np.array(request.speeds[:3]) / 1000.0
         self.angular = np.array(request.speeds[3:6], dtype=float)
-        if self._moving():
+        if self._moving() and request.duration > 0.0:
+            self._line_end = None
+            self._servo_end = time.monotonic() + float(request.duration)
+            self._servo()
+        elif self._moving():
+            self._servo_end = None
             self._start_line()
         else:
             self._hold()
@@ -144,6 +160,13 @@ class XArmVelocitySim(Node):
 
     def _step(self):
         self._update_rtf()
+        if self._servo_end is not None:
+            if time.monotonic() > self._servo_end:
+                self.velocity = np.zeros(3)
+                self.angular = np.zeros(3)
+                self._hold()
+            else:
+                self._servo()
         if (
             self._moving()
             and self._line_end is not None
@@ -235,9 +258,51 @@ class XArmVelocitySim(Node):
         # A short line (a joint limit, an IK branch change) is planned again from where it ends
         self._line_end = time.monotonic() + duration / max(self.rtf, 0.05)
 
+    def _frame(self, child: str):
+        try:
+            tf = self.tf_buffer.lookup_transform(ARM_BASE_FRAME, child, Time())
+        except tf2_ros.TransformException:
+            return None
+        t, q = tf.transform.translation, tf.transform.rotation
+        return np.array([t.x, t.y, t.z]), Rotation.from_quat([q.x, q.y, q.z, q.w])
+
+    def jacobian(self):
+        """Geometric Jacobian of the TCP in the arm base frame, or None without TF."""
+        frames = [self._frame(link) for link in JOINT_LINKS + [TCP_FRAME]]
+        if any(frame is None for frame in frames):
+            return None
+        tcp = frames[-1][0]
+        columns = []
+        for position, rotation in frames[:-1]:
+            axis = rotation.apply([0.0, 0.0, 1.0])
+            columns.append(np.concatenate([np.cross(axis, tcp - position), axis]))
+        return np.array(columns).T
+
+    def _servo(self):
+        """Send the joints SERVO_HORIZON ahead along the commanded twist."""
+        jacobian = self.jacobian()
+        if jacobian is None or len(self.joints) < len(JOINTS):
+            return
+        twist = np.concatenate([self.velocity, self.angular])
+        # Damped least squares keeps the rates bounded near singularities
+        rates = jacobian.T @ np.linalg.solve(
+            jacobian @ jacobian.T + SERVO_DAMPING**2 * np.eye(6), twist
+        )
+        peak = float(np.max(np.abs(rates)))
+        if peak > MAX_JOINT_RATE:
+            rates *= MAX_JOINT_RATE / peak
+        target = [self.joints[j] + r * SERVO_HORIZON for j, r in zip(JOINTS, rates)]
+        seconds = SERVO_HORIZON * self.rtf
+        point = JointTrajectoryPoint(positions=[float(v) for v in target])
+        point.time_from_start = Duration(
+            sec=int(seconds), nanosec=int((seconds % 1.0) * 1e9)
+        )
+        self.traj_pub.publish(JointTrajectory(joint_names=JOINTS, points=[point]))
+
     def _hold(self):
         """Stop where the arm is."""
         self._line_end = None
+        self._servo_end = None
         if len(self.joints) < len(JOINTS):
             return
         point = JointTrajectoryPoint(positions=[self.joints[j] for j in JOINTS])

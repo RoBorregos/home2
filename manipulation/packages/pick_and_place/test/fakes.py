@@ -116,6 +116,7 @@ class FakeArm:
         self.guard_directions: List[Any] = []
         self.published_place_poses: List[PoseStamped] = []
         self.published_points: List[PointStamped] = []
+        self.cartesian_velocities = []
         self.joint_velocities: List[list] = []
         self._link_pose = link_pose
         self.accelerations: List[float] = []
@@ -247,6 +248,10 @@ class FakeArm:
     def leave_joint_velocity_mode(self):
         self.calls.append("leave_joint_velocity_mode")
         return True
+
+    def send_cartesian_velocity(self, linear, angular=(0.0, 0.0, 0.0), duration=0.3):
+        self.calls.append("send_cartesian_velocity")
+        self.cartesian_velocities.append((list(linear), list(angular)))
 
     def send_joint_velocity(self, speeds):
         self.calls.append("send_joint_velocity")

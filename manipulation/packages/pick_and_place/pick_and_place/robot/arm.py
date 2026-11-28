@@ -760,6 +760,7 @@ class RobotArm:
         label: str,
         direction=(0.0, 0.0, 1.0),
         angular=(0.0, 0.0, 0.0),
+        duration: float = 0.0,
     ) -> None:
         if not self._cartesian_velocity_client.wait_for_service(timeout_sec=2.0):
             raise PickHardwareError(f"[{label}] vc_set_cartesian_velocity unavailable")
@@ -768,11 +769,19 @@ class RobotArm:
         # angular: rad/s about the base axes, at the TCP.
         request.speeds = [*(speed_mm_s * np.asarray(direction)), *map(float, angular)]
         request.is_tool_coord = False
-        request.duration = 0.0
+        request.duration = float(duration)
 
         future = self._cartesian_velocity_client.call_async(request)
         if not self.wait_for_future(future, timeout=5) or future.result() is None:
             raise PickHardwareError(f"[{label}] velocity command failed")
+
+    def send_cartesian_velocity(
+        self, linear, angular=(0.0, 0.0, 0.0), duration: float = 0.3
+    ) -> None:
+        """Stream a TCP twist (m/s, rad/s, link_base axes) inside cartesian_velocity_mode; it stops after ``duration`` s unless renewed."""
+        self._send_cartesian_velocity(
+            1000.0, "stream", np.asarray(linear, dtype=float), angular, duration
+        )
 
     def force_guarded_descent(
         self, guard: ForceGuardProfile, direction=(0.0, 0.0, -1.0)
