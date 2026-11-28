@@ -3,7 +3,7 @@
 
 Contact and welds on a lever deep in a joint chain are not usable in Gazebo's DART, so the
 door joints are position-driven from here:
-- A gripper closed around the bar holds it firmly: it may slide along the bar, push it up to
+- A gripper closed around the bar holds it firmly: it may slide along the bar (unless ``slide`` is off), push it up to
   ``depth_slack`` deeper once the push beats the pads' friction (which then keeps it there) and turn about the bar.
 - The lever turns with the grip (spring back to 0 when free); past ``unlatch_angle`` the
   latch lets the leaf go, and the leaf then swings with the grip. A shut door latches again.
@@ -68,6 +68,9 @@ class DoorSim(Node):
         self.swing_damping = self.declare_parameter("swing_damping", 15.0).value
         self.lose_distance = self.declare_parameter("lose_distance", 0.05).value
         self.lose_height = self.declare_parameter("lose_height", 0.12).value
+        # False holds the pads where they closed along the bar, as a firm grip on a real lever
+        self.slide = self.declare_parameter("slide", True).value
+        self.grip_along = None
         door_pose = self.declare_parameter("door_pose", [0.0, 0.0, 0.0]).value
         self.door_origin = np.array([door_pose[0], door_pose[1], 0.0])
         self.door_rotation = _rot_z(door_pose[2])
@@ -163,7 +166,8 @@ class DoorSim(Node):
         """Closest admissible grip point (leaf frame) to ``leaf`` and the lever angle it gives."""
         rel = leaf - PIVOT_IN_LEAF
         angle = float(np.clip(math.atan2(rel[2], rel[1]), *LEVER_LIMITS))
-        along = float(np.clip(math.hypot(rel[1], rel[2]), *BAR_SPAN))
+        span = BAR_SPAN if self.grip_along is None else (self.grip_along,) * 2
+        along = float(np.clip(math.hypot(rel[1], rel[2]), *span))
         x = float(np.clip(leaf[0], *x_range))
         point = PIVOT_IN_LEAF + np.array(
             [x, along * math.cos(angle), along * math.sin(angle)]
@@ -287,6 +291,9 @@ class DoorSim(Node):
             return
         self.grip_depth = float(leaf[0])
         self.grip_floor = self.grip_depth - self.depth_slack
+        if not self.slide:
+            rel = nearest - PIVOT_IN_LEAF
+            self.grip_along = float(math.hypot(rel[1], rel[2]))
         self.hinge_cmd = self.hinge
         self.attached_pub.publish(Bool(data=True))
         self.object_pub.publish(String(data="door_lever"))
@@ -298,6 +305,7 @@ class DoorSim(Node):
         if self.grip_depth is None:
             return
         self.grip_depth = None
+        self.grip_along = None
         self.attached_pub.publish(Bool(data=False))
         self.object_pub.publish(String(data=""))
         self.get_logger().info(f"Released the lever ({why})")
