@@ -1,8 +1,9 @@
 """Compliant door swing: the base turns about the hinge while the arm yields to the door.
 
 Each cycle the base is held on the rigid turn about the hinge from odometry (its distance
-to the hinge and its heading toward it, as at the start), which takes out wheel slip; the wrench on the gripper (from the joint efforts) moves the grip radially, up and
-down and in yaw (admittance); the base drifts back under the arm so the arm keeps its reach
+to the hinge and its heading toward it, as at the start), which takes out wheel slip; the force
+on the gripper (from the joint efforts) moves the grip radially and up and down (admittance);
+the base drifts back under the arm so the arm keeps its reach
 (re-centering, with the opposite arm motion so the grip stays put); and the grip's path in
 odom refines the hinge estimate (circle fit). Only the swing direction is held stiff.
 """
@@ -32,16 +33,12 @@ EFFORT_SIGN = 1.0
 BASELINE_SAMPLES = 10
 WRENCH_SMOOTHING = 0.3  # EMA weight of the newest wrench
 FORCE_DEADBAND = 3.0  # N
-TORQUE_DEADBAND = 0.3  # Nm
 # Admittance: grip speed per unit of wrench, and its clamps
 FORCE_GAIN = 0.002  # (m/s)/N
-TORQUE_GAIN = 0.1  # (rad/s)/Nm
 MAX_ARM_SPEED = 0.03  # m/s
-MAX_ARM_TURN = 0.3  # rad/s
 # Re-centering: base speed per metre / radian the grip has drifted in base_link
 RECENTER_GAIN = 0.8  # 1/s
 MAX_RECENTER_SPEED = 0.03  # m/s
-MAX_RECENTER_TURN = 0.1  # rad/s
 # Rigid-turn tracking: base speed per metre off its hinge radius and per radian off its heading
 TRACK_GAIN = 1.0  # 1/s
 TRACK_INTEGRAL_GAIN = 0.5  # 1/s^2
@@ -94,30 +91,18 @@ def radial(grip_xy, hinge_xy) -> np.ndarray:
     return offset / max(float(np.linalg.norm(offset)), 1e-6)
 
 
-def admittance(force, torque_z: float, radial_xy) -> tuple:
-    """Grip velocity (xyz) and yaw rate that yield to ``force`` radially and vertically and to ``torque_z``."""
+def admittance(force, radial_xy) -> np.ndarray:
+    """Grip velocity (xyz) that yields to ``force`` radially and vertically."""
     out = np.append(np.asarray(radial_xy, dtype=float), 0.0)
     force = deadband(force, FORCE_DEADBAND)
     velocity = FORCE_GAIN * (force.dot(out) * out + force[2] * np.array([0, 0, 1.0]))
-    turn = TORQUE_GAIN * float(deadband([torque_z], TORQUE_DEADBAND)[0])
-    return _clamp_norm(velocity, MAX_ARM_SPEED), float(
-        np.clip(turn, -MAX_ARM_TURN, MAX_ARM_TURN)
-    )
+    return _clamp_norm(velocity, MAX_ARM_SPEED)
 
 
-def recenter(drift_xy, drift_yaw: float) -> np.ndarray:
-    """Base correction (vx, vy, wz) in base_link toward a grip that drifted by ``drift_xy``/``drift_yaw``."""
+def recenter(drift_xy) -> np.ndarray:
+    """Base correction (vx, vy, wz) in base_link toward a grip that drifted by ``drift_xy``."""
     linear = _clamp_norm(RECENTER_GAIN * np.asarray(drift_xy), MAX_RECENTER_SPEED)
-    turn = float(
-        np.clip(RECENTER_GAIN * drift_yaw, -MAX_RECENTER_TURN, MAX_RECENTER_TURN)
-    )
-    return np.array([linear[0], linear[1], turn])
-
-
-def base_point_velocity(twist, point_xy) -> np.ndarray:
-    """Velocity (xy, base_link) of a point carried by the base moving with ``twist``."""
-    vx, vy, wz = twist
-    return np.array([vx - wz * point_xy[1], vy + wz * point_xy[0]])
+    return np.array([linear[0], linear[1], 0.0])
 
 
 def fit_circle(points, prior=None) -> tuple:
@@ -172,10 +157,9 @@ class RigidTracker:
         self.radius += float(np.linalg.norm(new) - np.linalg.norm(old))
         self.heading += math.atan2(old[1], old[0]) - math.atan2(new[1], new[0])
 
-    def shift(self, radius: float, heading: float) -> None:
-        """Move the reference by what the base was moved on purpose."""
+    def shift(self, radius: float) -> None:
+        """Move the reference radius by what the base was moved on purpose."""
         self.radius += radius
-        self.heading += heading
 
     def correction(self, pose, hinge_xy, dt: float = LOOP_PERIOD) -> np.ndarray:
         """Base correction (vx, vy, wz) in base_link back onto the turn."""
@@ -225,7 +209,7 @@ def _in_frame(arm, frame: str, child: str):
 
 
 def grip_state(arm):
-    """Grip (fingertip) and eef positions, eef rotation and the Jacobian at the grip, all in link_base; None without TF."""
+    """Grip (fingertip) position and the Jacobian there, in link_base; None without TF."""
     frames = [_in_frame(arm, ARM_FRAME, link) for link in JOINT_LINKS + [EEF_LINK]]
     if any(frame is None for frame in frames):
         return None
@@ -236,7 +220,7 @@ def grip_state(arm):
         [f[1].apply([0.0, 0.0, 1.0]) for f in frames[:-1]],
         grip,
     )
-    return grip, eef, rotation, jac
+    return grip, jac
 
 
 def _efforts(arm):
@@ -244,10 +228,6 @@ def _efforts(arm):
     if state is None or len(state.effort) < 6:
         return None
     return EFFORT_SIGN * np.array(state.effort[:6], dtype=float)
-
-
-def _yaw(rotation: Rotation) -> float:
-    return float(rotation.as_euler("ZYX")[0])
 
 
 def effort_baseline(arm):
@@ -281,7 +261,6 @@ def compliant_swing(
     to_base = arm_rotation
     to_arm = arm_rotation.inv()
     nominal = (to_base.apply(start[0]) + arm_offset)[:2]
-    nominal_yaw = _yaw(to_base * start[2])
     guess = np.array([hinge.point.x, hinge.point.y])
     h = guess.copy()
     tracker = RigidTracker(start_pose, h)
@@ -304,7 +283,7 @@ def compliant_swing(
                 if pose is None or state is None or efforts is None:
                     why = "lost odometry, TF or efforts"
                     break
-                grip, eef, rotation, jac = state
+                grip, jac = state
                 c, s = math.cos(pose[2]), math.sin(pose[2])
                 grip_base = (to_base.apply(grip) + arm_offset)[:2]
                 grip_odom = pose[:2] + np.array(
@@ -345,9 +324,6 @@ def compliant_swing(
                     why = f"door pushing back {np.linalg.norm(wrench[:3]):.0f} N"
                     break
                 drift = grip_base - nominal
-                drift_yaw = math.remainder(
-                    _yaw(to_base * rotation) - nominal_yaw, 2 * math.pi
-                )
                 if np.linalg.norm(drift) > MAX_DRIFT:
                     why = f"grip {np.linalg.norm(drift) * 100:.0f} cm off its spot"
                     break
@@ -356,7 +332,7 @@ def compliant_swing(
                 hinge_local = np.array(
                     [c * offset[0] + s * offset[1], -s * offset[0] + c * offset[1]]
                 )
-                correction = recenter(drift, drift_yaw)
+                correction = recenter(drift)
                 # What the re-centering moves on purpose becomes the new rigid reference
                 outward = radial(pose[:2], h)
                 moved = np.array(
@@ -365,9 +341,7 @@ def compliant_swing(
                         s * correction[0] + c * correction[1],
                     ]
                 )
-                tracker.shift(
-                    LOOP_PERIOD * moved.dot(outward), LOOP_PERIOD * correction[2]
-                )
+                tracker.shift(LOOP_PERIOD * moved.dot(outward))
                 twist = np.array(
                     base_twist(hinge_local, sign * _rate(elapsed, turned, angle))
                 )
@@ -380,17 +354,15 @@ def compliant_swing(
                         -s * radial_base[0] + c * radial_base[1],
                     ]
                 )
-                velocity, turn = admittance(wrench[:3], wrench[5], radial_base)
-                velocity[:2] -= base_point_velocity(correction, grip_base)
-                turn -= correction[2]
-                # The arm moves its eef; the grip is GRIPPER_REACH beyond it
-                angular = to_arm.apply([0.0, 0.0, turn])
-                linear = to_arm.apply(velocity) - np.cross(angular, grip - eef)
-                arm.send_cartesian_velocity(linear, angular, ARM_COMMAND_DURATION)
+                velocity = admittance(wrench[:3], radial_base)
+                velocity[:2] -= correction[:2]
+                arm.send_cartesian_velocity(
+                    to_arm.apply(velocity), duration=ARM_COMMAND_DURATION
+                )
                 if time.time() - last_log > LOG_PERIOD:
                     last_log = time.time()
                     arm.logger.info(
-                        f"Door swing: {turned:.0f} deg, hinge {np.round(h, 3).tolist()}, force {np.round(wrench[:3], 1).tolist()} N, drift {drift[0] * 1000:.0f},{drift[1] * 1000:.0f} mm {math.degrees(drift_yaw):.0f} deg"
+                        f"Door swing: {turned:.0f} deg, hinge {np.round(h, 3).tolist()}, force {np.round(wrench[:3], 1).tolist()} N, drift {drift[0] * 1000:.0f},{drift[1] * 1000:.0f} mm"
                     )
                 time.sleep(LOOP_PERIOD)
     finally:
@@ -403,7 +375,6 @@ __all__ = [
     "accept_fit",
     "admittance",
     "arc_degrees",
-    "base_point_velocity",
     "compliant_swing",
     "deadband",
     "door_angle",

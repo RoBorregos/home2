@@ -1762,12 +1762,7 @@ def _world_tf(monkeypatch, world):
     monkeypatch.setattr(
         door_compliance,
         "grip_state",
-        lambda arm: (
-            world.grip.copy(),
-            world.grip.copy(),
-            Rotation.identity(),
-            np.eye(6),
-        ),
+        lambda arm: (world.grip.copy(), np.eye(6)),
     )
 
 
@@ -1835,23 +1830,17 @@ def test_door_wrench_comes_back_from_the_joint_efforts():
 
 
 def test_door_admittance_yields_radially_and_holds_the_swing_direction():
-    velocity, turn = door_compliance.admittance([10.0, 10.0, 0.0], 0.0, [1.0, 0.0])
+    velocity = door_compliance.admittance([10.0, 10.0, 0.0], [1.0, 0.0])
     assert velocity[0] > 0.0 and velocity[1] == pytest.approx(0.0)
     assert np.linalg.norm(velocity) <= door_compliance.MAX_ARM_SPEED + 1e-9
-    still, _ = door_compliance.admittance([2.0, 0.0, 0.0], 0.0, [1.0, 0.0])
-    assert still == pytest.approx([0.0, 0.0, 0.0])
-    assert door_compliance.admittance([0.0] * 3, 5.0, [1.0, 0.0])[1] > 0.0
+    assert door_compliance.admittance([2.0, 0.0, 0.0], [1.0, 0.0]) == pytest.approx(
+        [0.0] * 3
+    )
 
 
-def test_door_recentering_moves_the_base_without_moving_the_grip():
-    correction = door_compliance.recenter(np.array([0.02, -0.01]), 0.05)
-    grip = np.array([0.69, 0.03])
-    carried = door_compliance.base_point_velocity(correction, grip)
-    # The arm takes the opposite of what the base carries the grip, so the sum is zero
-    assert carried - door_compliance.base_point_velocity(
-        correction, grip
-    ) == pytest.approx([0.0, 0.0])
-    assert correction[0] > 0.0 and correction[1] < 0.0 and correction[2] > 0.0
+def test_door_recentering_moves_the_base_toward_the_drifted_grip():
+    vx, vy, wz = door_compliance.recenter(np.array([0.02, -0.01]))
+    assert vx > 0.0 and vy < 0.0 and wz == 0.0
 
 
 def test_door_circle_fit_finds_the_hinge_from_a_noisy_arc():
