@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
+import json
 import os
 import time
 import wave
+
+# Stop OpenBLAS threads spinning (~50 % of an Orin core); set before numpy
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 import numpy as np
 import scipy.fft
@@ -12,7 +16,10 @@ from frida_constants.hri_constants import VOWEL_FREQ_LOW, VOWEL_FREQ_HIGH
 from frida_interfaces.msg import AudioData
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Bool
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from speech.speaker_verification_utils import PARAMS as SPEAKER_ID_PARAMS
+from speech.speaker_verification_utils import SpeakerVerifier
+from std_msgs.msg import Bool, String
 
 
 class VoiceDetection(Node):
@@ -102,6 +109,80 @@ class VoiceDetection(Node):
         self.get_logger().debug(
             f"VoiceDetection | in: {processed_topic} | out: {vad_topic}"
         )
+
+        self._init_speaker_id()
+
+    # ------------------------------------------------------- speaker id
+    def _init_speaker_id(self) -> None:
+        self.declare_parameter("SPEAKER_ID_TOPIC", "/hri/speaker_id/decision")
+        self.declare_parameter("SPEAKER_ID_COMMAND_TOPIC", "/hri/speaker_id/command")
+        self.declare_parameter("SPEAKER_ID_STATUS_TOPIC", "/hri/speaker_id/status")
+        self.declare_parameter("SAYING_TOPIC", "/saying")
+        self.declare_parameter("TTS_TAIL_SEC", 0.3)
+        for name, default in SPEAKER_ID_PARAMS.items():
+            self.declare_parameter(f"speaker_id.{name}", default)
+        params = {
+            name: self.get_parameter(f"speaker_id.{name}").value
+            for name in SPEAKER_ID_PARAMS
+        }
+        self.speaker_id = None
+        if not params["ENABLED"]:
+            return
+        latched = QoSProfile(
+            depth=1,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            reliability=ReliabilityPolicy.RELIABLE,
+        )
+        decision_pub = self.create_publisher(
+            String, self.get_parameter("SPEAKER_ID_TOPIC").value, 10
+        )
+        status_pub = self.create_publisher(
+            String, self.get_parameter("SPEAKER_ID_STATUS_TOPIC").value, latched
+        )
+        try:
+            self.speaker_id = SpeakerVerifier(
+                params,
+                lambda d: decision_pub.publish(String(data=json.dumps(d))),
+                lambda d: status_pub.publish(String(data=json.dumps(d))),
+                self.get_logger(),
+                self.sample_rate,
+            )
+        except Exception as exc:
+            self.get_logger().error(f"Speaker id disabled: {exc}")
+            return
+        self._tts_tail = self.get_parameter("TTS_TAIL_SEC").value
+        self._saying = False
+        self._muted_until = 0.0
+        self.create_subscription(
+            AudioData, params["AUDIO_TOPIC"], self._speaker_id_audio_cb, 50
+        )
+        self.create_subscription(
+            Bool, self.get_parameter("SAYING_TOPIC").value, self._saying_cb, 10
+        )
+        self.create_subscription(
+            String,
+            self.get_parameter("SPEAKER_ID_COMMAND_TOPIC").value,
+            lambda msg: self.speaker_id.command(msg.data),
+            10,
+        )
+        self.get_logger().info(
+            f"Speaker id ready | in: {params['AUDIO_TOPIC']} | "
+            f"{self.speaker_id.describe()}"
+        )
+
+    def _saying_cb(self, msg: Bool) -> None:
+        self._saying = bool(msg.data)
+        if not msg.data:
+            self._muted_until = time.monotonic() + self._tts_tail
+
+    def _speaker_id_audio_cb(self, msg: AudioData) -> None:
+        muted = self._saying or time.monotonic() < self._muted_until
+        self.speaker_id.push(np.frombuffer(bytes(msg.data), dtype=np.int16), muted)
+
+    def destroy_node(self) -> None:
+        if self.speaker_id is not None:
+            self.speaker_id.close()
+        super().destroy_node()
 
     def _get_mfcc(self, audio_f: np.ndarray) -> np.ndarray:
         """Extract mean MFCCs using numpy/scipy — no librosa/numba needed."""
@@ -286,11 +367,13 @@ class VoiceDetection(Node):
 
 def main(args=None):
     rclpy.init(args=args)
+    node = VoiceDetection()
     try:
-        rclpy.spin(VoiceDetection())
+        rclpy.spin(node)
     except (ExternalShutdownException, KeyboardInterrupt):
         pass
     finally:
+        node.destroy_node()
         rclpy.try_shutdown()
 
 
